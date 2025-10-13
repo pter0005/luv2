@@ -168,7 +168,7 @@ export default function Home() {
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container">
-          <div className="border border-border/60 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+          <div className="border-4 border-primary/20 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
               <p className="text-lg text-muted-foreground mt-4 mb-6">
@@ -208,6 +208,7 @@ export default function Home() {
 
       <section id="experiencia" className="py-20 md:py-28">
         <div className="container">
+           <div className="border-4 border-primary/20 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-3xl mx-auto mb-16">
                 <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
                 <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
@@ -234,33 +235,36 @@ export default function Home() {
                     </Link>
                 </Button>
             </div>
+          </div>
         </div>
       </section>
 
       <section id="avaliacoes" className="py-20 md:py-28">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
-            <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, i) => (
-              <Card key={i} className="bg-card/80 border-border/60 p-6 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-2 text-yellow-400 mb-4">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
-                  </div>
-                  <p className="mb-6 text-foreground/90">"{testimonial.text}"</p>
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person" />
-                      <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-semibold">{testimonial.name}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="border-4 border-primary/20 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
+              <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {testimonials.map((testimonial, i) => (
+                <Card key={i} className="bg-card/80 border-border/60 p-6 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
+                  <CardContent className="p-0">
+                    <div className="flex items-center gap-2 text-yellow-400 mb-4">
+                      {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
+                    </div>
+                    <p className="mb-6 text-foreground/90">"{testimonial.text}"</p>
+                    <div className="flex items-center gap-4">
+                      <Avatar>
+                        <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person" />
+                        <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <p className="font-semibold">{testimonial.name}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>
