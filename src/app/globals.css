@@ -10,7 +10,7 @@
     --card-foreground: 275 10% 95%;
     --popover: 275 60% 10%;
     --popover-foreground: 275 10% 95%;
-    --primary: 275 89% 57%; /* #9B2FF4 */
+    --primary: 275 89% 40%; /* #5C1D8F - Darker Purple */
     --primary-foreground: 275 10% 98%;
     --secondary: 275 50% 25%;
     --secondary-foreground: 275 10% 85%;
@@ -33,7 +33,7 @@
     --card-foreground: 275 10% 95%;
     --popover: 275 60% 10%;
     --popover-foreground: 275 10% 95%;
-    --primary: 275 89% 57%; /* #9B2FF4 */
+    --primary: 275 89% 40%; /* #5C1D8F - Darker Purple */
     --primary-foreground: 275 10% 98%;
     --secondary: 275 50% 25%;
     --secondary-foreground: 275 10% 85%;
@@ -107,11 +107,11 @@
   }
 
   .mystic-fog-1 {
-    @apply absolute -top-[10rem] -left-[10rem] w-[50rem] h-[50rem] bg-primary/30 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite];
+    @apply absolute -top-[10rem] -left-[10rem] w-[50rem] h-[50rem] bg-primary/50 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite];
   }
 
   .mystic-fog-2 {
-      @apply absolute -bottom-[10rem] -right-[10rem] w-[50rem] h-[50rem] bg-accent/30 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_70s_linear_infinite_reverse];
+      @apply absolute -bottom-[10rem] -right-[10rem] w-[50rem] h-[50rem] bg-accent/50 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_70s_linear_infinite_reverse];
   }
   
   .heart {
