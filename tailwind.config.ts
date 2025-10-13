@@ -17,7 +17,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['PT Sans', 'sans-serif'],
+        body: ['Poppins', 'sans-serif'],
+        display: ['Playfair Display', 'serif'],
+        handwriting: ['Dancing Script', 'cursive'],
         headline: ['Playfair Display', 'serif'],
         script: ['Dancing Script', 'cursive'],
         code: ['monospace'],
@@ -98,14 +100,30 @@ export default {
         },
         'fall': {
           to: {
-            transform: 'translateY(100vh) rotate(360deg)',
+            transform: 'translateY(110vh) rotate(360deg)',
           },
+        },
+        'rise': {
+          to: {
+            transform: 'translateY(-110vh) rotate(360deg)',
+          }
+        },
+        'spin': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        'blink': {
+          'from, to': { color: 'transparent' },
+          '50%': { color: 'hsl(var(--primary))' },
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fall': 'fall 15s linear infinite',
+        'rise': 'rise 15s linear infinite',
+        'spin': 'spin 50s linear infinite',
+        'blink': 'blink 1s step-end infinite',
       },
     },
   },

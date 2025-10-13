@@ -28,25 +28,25 @@ export default function Header() {
   const logoUrl = PlaceHolderImages.find((p) => p.id === "logo")?.imageUrl || "";
 
   return (
-    <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-background/80 backdrop-blur-sm border-b border-b-border/50">
+    <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-transparent">
       <div className="container flex items-center justify-between h-24">
-        <Link href="/" className="flex items-center gap-2 font-script text-3xl font-bold">
-            <Heart className="w-7 h-7 text-primary fill-current" />
-            <span className="gradient-text">LIN</span>
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src={logoUrl}
+            alt="Amore Pages Logo"
+            width={140}
+            height={140}
+            className="w-28 h-28 md:w-32 md:h-32"
+            data-ai-hint="logo"
+          />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-2">
+        <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                buttonVariants({ variant: "link" }),
-                "text-foreground/80 hover:text-primary text-sm",
-                pathname === link.href && "text-primary font-bold"
-              )}
-            >
-              {link.label}
+            <Link key={link.href} href={link.href}>
+              <Button variant="link" className="text-foreground/80 hover:text-primary">
+                {link.label}
+              </Button>
             </Link>
           ))}
         </nav>
@@ -67,8 +67,14 @@ export default function Header() {
             <SheetContent side="right">
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2 text-2xl font-script">
-                  <Heart className="w-6 h-6 text-primary" />
-                  Amore Pages
+                   <Image
+                      src={logoUrl}
+                      alt="Amore Pages Logo"
+                      width={120}
+                      height={120}
+                      className="w-24 h-24"
+                      data-ai-hint="logo"
+                    />
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col space-y-4 mt-8">

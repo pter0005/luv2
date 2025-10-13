@@ -130,40 +130,42 @@ export default function Home() {
 
   return (
     <>
-      <FallingHearts />
-      <div className="w-full h-full absolute top-0 left-0 -z-10 bg-black mystic-glow" />
-      <section className="py-20 md:py-32">
-        <div className="container max-w-6xl">
-          <div className="grid md:grid-cols-2 items-center gap-12">
-            <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-2 leading-tight">
-                Declare seu amor
-              </h1>
-              <p className="text-4xl md:text-5xl font-script gradient-text mb-6">
-                {typedPhrase}
-                <span className="animate-pulse">|</span>
-              </p>
-              <p className="max-w-xl text-lg text-muted-foreground mb-10">
-                Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
-              </p>
-              <Link href="/criar">
-                <Button size="lg" className="shadow-[0_0_20px_0px] shadow-primary/50">
-                  Criar minha página
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </Link>
+      <section className="relative section-padding flex items-center min-h-[calc(100vh-80px)] overflow-hidden">
+        <div className="top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none absolute">
+            <div className="mystic-fog-1"></div>
+            <div className="mystic-fog-2"></div>
+        </div>
+        <FallingHearts />
+        <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-display leading-tight">
+                    Declare seu amor <br />
+                    <span className="block font-handwriting text-primary text-5xl md:text-6xl lg:text-7xl mt-1 h-20">
+                        {typedPhrase}
+                        <span className="animate-blink">|</span>
+                    </span>
+                </h1>
+                <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 my-8">
+                    Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+                </p>
+                <a href="/criar">
+                    <Button size="lg" className="h-12 text-base md:h-14 group relative w-full sm:w-auto shadow-[0_0_20px_0px] shadow-primary/50">
+                        Criar minha página
+                        <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                </a>
             </div>
-            <div className="hidden md:flex items-center justify-center">
-                <Image 
-                    src={heroImageUrl}
-                    alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
-                    width={400}
-                    height={400}
-                    className="rounded-2xl shadow-[0_0_40px_10px] shadow-primary/30 object-cover aspect-square"
-                    data-ai-hint="road trees"
-                />
+            <div className="relative w-full max-w-md mx-auto lg:max-w-none lg:mx-0">
+                <div className="aspect-square relative">
+                    <Image 
+                        src={"https://picsum.photos/800/800"}
+                        alt="Casal feliz"
+                        fill
+                        className="rounded-3xl shadow-2xl shadow-primary/20 object-cover"
+                        data-ai-hint="happy couple"
+                    />
+                </div>
             </div>
-          </div>
         </div>
       </section>
 
@@ -186,7 +188,7 @@ export default function Home() {
                     <span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}
                   </p>
                   <p
-                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 mt-0 group-hover:mt-2"
+                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 -translate-y-2 mt-0 group-hover:opacity-100 group-hover:translate-y-0 group-hover:mt-2"
                     style={{
                       maxHeight: "0px",
                       transition: "max-height 0.7s ease-out, opacity 0.7s ease-out, transform 0.5s ease-out, margin-top 0.5s ease-out"

@@ -62,6 +62,9 @@
 }
 
 @layer utilities {
+  .section-padding {
+    @apply py-20 md:py-28;
+  }
   .mystic-glow::before {
     content: '';
     position: absolute;
@@ -88,11 +91,11 @@
   
   .card-glow {
     @apply bg-muted/30 backdrop-blur-sm transition-all duration-300 border-border/20 border;
-    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1), 0 2px 8px 0px hsl(var(--background) / 0.5);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0), 0 2px 8px 0px hsl(var(--background) / 0.5);
   }
   .card-glow:hover {
     @apply border-primary/30;
-    box-shadow: 0 0 15px 0px hsl(var(--primary) / 0.2), 0 0 0 1px hsl(var(--primary) / 0.3);
+    box-shadow: 0 0 15px 0px hsl(var(--primary) / 0.1), 0 0 0 1px hsl(var(--primary) / 0.2);
   }
 
   .puzzle-board {
@@ -101,5 +104,44 @@
 
   .puzzle-slot {
     @apply border border-primary/20 transition-colors duration-300;
+  }
+
+  .mystic-fog-1 {
+    @apply absolute -top-[20rem] left-0 w-[80rem] h-[50rem] bg-primary/5 opacity-40 rounded-full blur-3xl -z-10 animate-[spin_50s_linear_infinite];
+  }
+
+  .mystic-fog-2 {
+    @apply absolute -bottom-[20rem] -right-[10rem] w-[80rem] h-[50rem] bg-accent/5 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite_reverse];
+  }
+  
+  .heart {
+    position: absolute;
+    bottom: -10%;
+    opacity: 0.2;
+  }
+
+  .heart-rise {
+    animation-name: rise;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes rise {
+    to {
+      transform: translateY(-110vh) rotate(360deg);
+    }
+  }
+
+  .animate-blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    from, to {
+      color: transparent;
+    }
+    50% {
+      color: hsl(var(--primary));
+    }
   }
 }
