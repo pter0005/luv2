@@ -131,11 +131,12 @@ export default function Home() {
   return (
     <>
       <FallingHearts />
+      <div className="w-full h-full absolute top-0 left-0 -z-10 bg-black mystic-glow" />
       <section className="py-20 md:py-32">
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
             <div className="flex flex-col items-center md:items-start text-center md:text-left md:-ml-8">
-              <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+              <h1 className="text-7xl md:text-8xl font-headline font-bold tracking-tighter mb-2 leading-tight">
                 Declare seu amor
               </h1>
               <p className="text-7xl md:text-8xl font-script gradient-text h-32 md:h-36 min-h-[8rem]">
@@ -176,7 +177,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <Card key={step.title} className="card-glow-subtle group text-center flex flex-col p-6 transition-all duration-300 bg-black/30 backdrop-blur-sm">
+              <Card key={step.title} className="card-glow group text-center flex flex-col p-6 transition-all duration-300">
                 <CardHeader className="p-0 mb-4 flex-grow">
                   <div className="flex flex-col items-center gap-4">
                     <span className="text-2xl font-bold text-primary/80">{index + 1}.</span>
@@ -206,7 +207,7 @@ export default function Home() {
            </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature) => (
-                  <Card key={feature.title} className="card-glow-subtle p-6 text-left flex flex-col gap-4 transition-all bg-black/30 backdrop-blur-sm">
+                  <Card key={feature.title} className="card-glow p-6 text-left flex flex-col gap-4 transition-all">
                       <div className="flex items-center gap-4">
                           <div className="p-3 bg-primary/10 rounded-lg">
                               <feature.icon className="w-6 h-6 text-primary" />
@@ -218,7 +219,7 @@ export default function Home() {
               ))}
           </div>
           <div className="text-center mt-16">
-              <h3 className="text-2xl font-headline font-bold mb-4">Veja a Revelação em Ação</h3>
+              <h3 className="text-2xl font-headline font-bold mb-4">Veja o Quebra-cabeça em Ação</h3>
               <p className="text-muted-foreground mb-6">Descubra como funciona a experiência interativa que torna sua declaração inesquecível.</p>
               <Button asChild>
                   <Link href="/como-funciona">
@@ -237,7 +238,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, i) => (
-              <Card key={i} className="card-glow-subtle p-6 transition-all bg-black/30 backdrop-blur-sm">
+              <Card key={i} className="card-glow p-6 transition-all">
                 <CardContent className="p-0">
                   <div className="flex items-center gap-2 text-yellow-400 mb-4">
                     {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
