@@ -46,7 +46,7 @@ const steps = [
     id: "message",
     title: "Sua Mensagem de Amor",
     description: "Escreva a mensagem principal que você quer compartilhar.",
-    fields: ["message"],
+    fields: ["message", "messageFontSize", "messageFormatting"],
   },
 ];
 
@@ -205,7 +205,7 @@ export default function CreatePageWizard() {
     alert("Página criada com sucesso! (Verifique o console para os dados)");
   };
   
-  const progressValue = ((currentStep + 1) / (steps.length || 8)) * 100;
+  const progressValue = ((currentStep + 1) / (steps.length || 1)) * 100;
 
   return (
     <FormProvider {...methods}>
@@ -215,7 +215,7 @@ export default function CreatePageWizard() {
           <div className="w-full max-w-md">
              <div className="mb-8">
               <Progress value={progressValue} />
-              <p className="mt-2 text-right text-sm text-muted-foreground">{currentStep + 1}/{steps.length || 8}</p>
+              <p className="mt-2 text-right text-sm text-muted-foreground">{currentStep + 1}/{steps.length}</p>
             </div>
             
             <div>
@@ -303,3 +303,5 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
+
+    
