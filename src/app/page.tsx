@@ -135,10 +135,10 @@ export default function Home() {
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
             <div className="flex flex-col items-center md:items-start text-center md:text-left md:-ml-8">
-              <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+              <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-6xl md:text-7xl font-script gradient-text h-28 md:h-32 min-h-[7rem]">
+              <p className="text-7xl md:text-8xl font-script gradient-text h-32 md:h-36 min-h-[8rem]">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
@@ -176,7 +176,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <Card key={step.title} className="card-glow text-center flex flex-col p-6 transition-all duration-300 hover:-translate-y-2 bg-card/80 border-border/10">
+              <Card key={step.title} className="card-glow-subtle group text-center flex flex-col p-6 transition-all duration-300 bg-black/30 backdrop-blur-sm">
                 <CardHeader className="p-0 mb-4 flex-grow">
                   <div className="flex flex-col items-center gap-4">
                     <span className="text-2xl font-bold text-primary/80">{index + 1}.</span>
@@ -184,7 +184,7 @@ export default function Home() {
                     <h3 className="text-xl font-semibold mt-2">{step.title}</h3>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0 mt-4">
+                <CardContent className="p-0 mt-4 max-h-0 opacity-0 group-hover:max-h-screen group-hover:opacity-100 transition-all duration-500 ease-in-out">
                   <p className="text-sm text-muted-foreground">{step.description}</p>
                 </CardContent>
               </Card>
@@ -206,7 +206,7 @@ export default function Home() {
            </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature) => (
-                  <Card key={feature.title} className="card-glow p-6 text-left flex flex-col gap-4 transition-all bg-card/80 border-border/10">
+                  <Card key={feature.title} className="card-glow-subtle p-6 text-left flex flex-col gap-4 transition-all bg-black/30 backdrop-blur-sm">
                       <div className="flex items-center gap-4">
                           <div className="p-3 bg-primary/10 rounded-lg">
                               <feature.icon className="w-6 h-6 text-primary" />
@@ -237,7 +237,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, i) => (
-              <Card key={i} className="card-glow p-6 transition-all bg-card/80 border-border/10">
+              <Card key={i} className="card-glow-subtle p-6 transition-all bg-black/30 backdrop-blur-sm">
                 <CardContent className="p-0">
                   <div className="flex items-center gap-2 text-yellow-400 mb-4">
                     {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
