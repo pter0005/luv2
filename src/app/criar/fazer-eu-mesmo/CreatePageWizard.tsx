@@ -1,8 +1,9 @@
 
+
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, FormProvider, useWatch } from "react-hook-form";
+import { useState, useEffect, useCallback, ChangeEvent } from "react";
+import { useForm, FormProvider, useWatch, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -17,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -28,6 +29,7 @@ import { ptBR } from "date-fns/locale";
 import Countdown from "./Countdown";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 
 // Define the schema for the entire wizard
@@ -39,6 +41,8 @@ const pageSchema = z.object({
   messageFormatting: z.array(z.string()).default([]),
   specialDate: z.date().optional(),
   countdownStyle: z.string().default("Padrão"),
+  galleryImages: z.array(z.object({ file: z.any(), preview: z.string() })).default([]),
+  galleryStyle: z.string().default("Cube"),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -62,6 +66,12 @@ const steps = [
     description: "Informe a data que simboliza o início de uma união ou um momento marcante.",
     fields: ["specialDate", "countdownStyle"],
   },
+  {
+    id: "gallery",
+    title: "Galeria de Fotos",
+    description: "Adicione fotos para personalizar a galeria.",
+    fields: ["galleryImages", "galleryStyle"],
+  }
 ];
 
 const TitleStep = () => (
@@ -259,8 +269,116 @@ const SpecialDateStep = () => {
     );
 };
 
+const GalleryStep = () => {
+  const { control, setValue, getValues } = useFormContext<PageData>();
+  const images = useWatch({ control, name: "galleryImages" });
 
-const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />];
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      const filesArray = Array.from(event.target.files);
+      const currentImages = getValues("galleryImages") || [];
+      
+      const newImages = filesArray.slice(0, 8 - currentImages.length).map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+
+      setValue("galleryImages", [...currentImages, ...newImages]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const currentImages = getValues("galleryImages") || [];
+    const updatedImages = currentImages.filter((_, i) => i !== index);
+    setValue("galleryImages", updatedImages);
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <FormLabel>Suas Fotos</FormLabel>
+        <FormControl>
+          <label
+            htmlFor="photo-upload"
+            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block"
+          >
+            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+            <p className="font-semibold">Clique para adicionar fotos</p>
+            <p className="text-xs text-muted-foreground">PNG, JPG, GIF (máx. 8 fotos)</p>
+            <input
+              id="photo-upload"
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={(images?.length ?? 0) >= 8}
+            />
+          </label>
+        </FormControl>
+        {images && images.length > 0 && (
+          <div className="grid grid-cols-4 gap-4 mt-4">
+            {images.map((image, index) => (
+              <div key={index} className="relative group">
+                <Image
+                  src={image.preview}
+                  alt={`Preview ${index}`}
+                  width={100}
+                  height={100}
+                  className="rounded-md object-cover w-full h-24"
+                  onLoad={() => URL.revokeObjectURL(image.preview)}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                  onClick={() => removeImage(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <FormField
+        control={control}
+        name="galleryStyle"
+        render={({ field }) => (
+          <FormItem className="space-y-3">
+            <FormLabel className="font-semibold">Modo de Exibição da Galeria</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                className="grid grid-cols-2 gap-4"
+              >
+                {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
+                  <FormItem key={style}>
+                    <FormControl>
+                      <RadioGroupItem value={style} id={`gallery-${style.toLowerCase()}`} className="peer sr-only" />
+                    </FormControl>
+                    <Label
+                      htmlFor={`gallery-${style.toLowerCase()}`}
+                      className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                    >
+                      {style}
+                    </Label>
+                  </FormItem>
+                ))}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+};
+
+
+const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />];
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -275,6 +393,8 @@ export default function CreatePageWizard() {
       messageFormatting: [],
       specialDate: undefined,
       countdownStyle: "Padrão",
+      galleryImages: [],
+      galleryStyle: "Cube",
     },
   });
 
@@ -397,6 +517,24 @@ export default function CreatePageWizard() {
                                             targetDate={formData.specialDate.toISOString()} 
                                             style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
                                         />
+                                    )}
+                                    {formData.galleryImages && formData.galleryImages.length > 0 && (
+                                      <div className="w-full">
+                                        <h2 className="text-2xl font-bold mb-4">Galeria</h2>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {formData.galleryImages.map((img, index) => (
+                                            <div key={index} className="relative aspect-square">
+                                              <Image
+                                                src={img.preview}
+                                                alt={`preview ${index}`}
+                                                fill
+                                                className="object-cover rounded-md"
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
+                                      </div>
                                     )}
                                 </div>
                                 </div>

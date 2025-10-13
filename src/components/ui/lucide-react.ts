@@ -1,1 +1,1 @@
-export { Strikethrough, Bold, Italic } from 'lucide-react';
+export { Strikethrough, Bold, Italic, Upload, X } from 'lucide-react';
