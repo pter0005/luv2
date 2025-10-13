@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Calendar as CalendarIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -27,6 +27,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Countdown from "./Countdown";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 
 // Define the schema for the entire wizard
@@ -173,96 +175,102 @@ const MessageStep = () => {
     );
 };
 
-const SpecialDateStep = () => (
-    <div className="space-y-8">
-        <FormField
-            name="specialDate"
-            render={({ field }) => (
-                <FormItem className="flex flex-col">
-                    <FormLabel>Data do Evento</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                >
-                                    {field.value ? (
-                                        format(field.value, "PPP", { locale: ptBR })
-                                    ) : (
-                                        <span>Escolha uma data</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                                locale={ptBR}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                    <FormDescription>
-                        Essa data será usada para o contador.
-                    </FormDescription>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
+const SpecialDateStep = () => {
+    const specialDate = useWatch({ name: "specialDate" });
 
-        <FormField
-            name="countdownStyle"
-            render={({ field }) => (
-                <FormItem className="space-y-3">
-                    <FormLabel>Modo de Exibição do Contador</FormLabel>
-                    <FormControl>
-                        <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-2 gap-4"
-                        >
-                            <FormItem>
+    return (
+        <div className="space-y-8">
+            <FormField
+                name="specialDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Data do Evento</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
                                 <FormControl>
-                                    <RadioGroupItem value="Padrão" id="style-default" className="peer sr-only" />
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                        )}
+                                    >
+                                        {field.value ? (
+                                            format(field.value, "PPP", { locale: ptBR })
+                                        ) : (
+                                            <span>Escolha uma data</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
                                 </FormControl>
-                                <Label htmlFor="style-default" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    Padrão
-                                </Label>
-                            </FormItem>
-                            <FormItem>
-                                <FormControl>
-                                    <RadioGroupItem value="Clássico" id="style-classic" className="peer sr-only" />
-                                </FormControl>
-                                <Label htmlFor="style-classic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    Clássico
-                                </Label>
-                            </FormItem>
-                             <FormItem>
-                                <FormControl>
-                                    <RadioGroupItem value="Simples" id="style-simple" className="peer sr-only" />
-                                </FormControl>
-                                <Label htmlFor="style-simple" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    Simples
-                                </Label>
-                            </FormItem>
-                        </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) =>
+                                        date > new Date() || date < new Date("1900-01-01")
+                                    }
+                                    initialFocus
+                                    locale={ptBR}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <FormDescription>
+                            Essa data será usada para o contador.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            {specialDate && (
+                <FormField
+                    name="countdownStyle"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                            <FormLabel>Modo de Exibição do Contador</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    <FormItem>
+                                        <FormControl>
+                                            <RadioGroupItem value="Padrão" id="style-default" className="peer sr-only" />
+                                        </FormControl>
+                                        <Label htmlFor="style-default" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                            Padrão
+                                        </Label>
+                                    </FormItem>
+                                    <FormItem>
+                                        <FormControl>
+                                            <RadioGroupItem value="Clássico" id="style-classic" className="peer sr-only" />
+                                        </FormControl>
+                                        <Label htmlFor="style-classic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                            Clássico
+                                        </Label>
+                                    </FormItem>
+                                    <FormItem>
+                                        <FormControl>
+                                            <RadioGroupItem value="Simples" id="style-simple" className="peer sr-only" />
+                                        </FormControl>
+                                        <Label htmlFor="style-simple" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                            Simples
+                                        </Label>
+                                    </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             )}
-        />
-    </div>
-);
+        </div>
+    );
+};
 
 
 const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />];
@@ -278,7 +286,7 @@ export default function CreatePageWizard() {
       message: "",
       messageFontSize: "text-base",
       messageFormatting: [],
-      specialDate: new Date(),
+      specialDate: undefined,
       countdownStyle: "Padrão",
     },
   });
@@ -415,5 +423,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
