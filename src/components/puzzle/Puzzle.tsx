@@ -137,7 +137,7 @@ const Puzzle = () => {
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-            width: `${PUZLE_SIZE}px`,
+            width: `${PUZZLE_SIZE}px`,
             height: `${PUZZLE_SIZE}px`,
           }}
         >
