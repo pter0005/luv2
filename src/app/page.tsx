@@ -167,8 +167,8 @@ export default function Home() {
       </section>
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
-        <div className="container">
-          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+        <div className="container max-w-6xl">
+          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
               <p className="text-lg text-muted-foreground mt-4 mb-6">
@@ -199,8 +199,8 @@ export default function Home() {
       </section>
 
       <section id="experiencia" className="py-20 md:py-28">
-        <div className="container">
-           <div className="border-4 border-primary/40 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+        <div className="container max-w-6xl">
+           <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-3xl mx-auto mb-16">
                 <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
                 <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
@@ -232,8 +232,8 @@ export default function Home() {
       </section>
 
       <section id="avaliacoes" className="py-20 md:py-28">
-        <div className="container">
-          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+        <div className="container max-w-6xl">
+          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
               <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
