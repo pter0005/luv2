@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 260 40% 10%;
+    --background: 260 40% 5%; /* Deep Black */
     --foreground: 260 10% 95%;
-    --card: 260 40% 15%;
+    --card: 260 40% 12%;
     --card-foreground: 260 10% 95%;
-    --popover: 260 40% 12%;
+    --popover: 260 40% 10%;
     --popover-foreground: 260 10% 95%;
-    --primary: 265 80% 65%; /* Bright Purple */
-    --primary-foreground: 265 10% 98%;
-    --secondary: 260 30% 25%;
+    --primary: 275 85% 65%; /* More intense Purple */
+    --primary-foreground: 275 10% 98%;
+    --secondary: 260 30% 20%;
     --secondary-foreground: 260 10% 85%;
-    --muted: 260 30% 20%;
+    --muted: 260 30% 15%;
     --muted-foreground: 260 10% 60%;
-    --accent: 300 70% 60%; /* Magenta/Pink accent */
-    --accent-foreground: 300 10% 98%;
+    --accent: 290 70% 60%; /* Complementary Pink/Purple accent */
+    --accent-foreground: 290 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 260 30% 30%;
-    --input: 260 30% 30%;
-    --ring: 265 80% 70%;
+    --border: 260 30% 25%;
+    --input: 260 30% 25%;
+    --ring: 275 85% 70%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 260 40% 10%;
+    --background: 260 40% 5%; /* Deep Black */
     --foreground: 260 10% 95%;
-    --card: 260 40% 15%;
+    --card: 260 40% 12%;
     --card-foreground: 260 10% 95%;
-    --popover: 260 40% 12%;
+    --popover: 260 40% 10%;
     --popover-foreground: 260 10% 95%;
-    --primary: 265 80% 65%; /* Bright Purple */
-    --primary-foreground: 265 10% 98%;
-    --secondary: 260 30% 25%;
+    --primary: 275 85% 65%; /* More intense Purple */
+    --primary-foreground: 275 10% 98%;
+    --secondary: 260 30% 20%;
     --secondary-foreground: 260 10% 85%;
-    --muted: 260 30% 20%;
+    --muted: 260 30% 15%;
     --muted-foreground: 260 10% 60%;
-    --accent: 300 70% 60%; /* Magenta/Pink accent */
-    --accent-foreground: 300 10% 98%;
+    --accent: 290 70% 60%; /* Complementary Pink/Purple accent */
+    --accent-foreground: 290 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 260 30% 30%;
-    --input: 260 30% 30%;
-    --ring: 265 80% 70%;
+    --border: 260 30% 25%;
+    --input: 260 30% 25%;
+    --ring: 275 85% 70%;
   }
 }
 
@@ -55,7 +55,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(265, 50%, 20%));
+    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.3), transparent);
   }
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
