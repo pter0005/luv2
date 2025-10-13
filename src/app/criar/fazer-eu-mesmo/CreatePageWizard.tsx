@@ -160,7 +160,7 @@ const MessageStep = () => {
                                     <ToggleGroupItem value="bold" aria-label="Toggle bold">
                                         <Bold className="h-4 w-4" />
                                     </ToggleGroupItem>
-                                    <ToggleGroupItem value="italic" aria-label_content>Toggle italic">
+                                    <ToggleGroupItem value="italic" aria-label="Toggle italic">
                                         <Italic className="h-4 w-4" />
                                     </ToggleGroupItem>
                                     <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough">
