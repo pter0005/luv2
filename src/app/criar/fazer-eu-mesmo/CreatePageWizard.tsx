@@ -17,14 +17,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
   title: z.string().default("Seu Título Aqui"),
   titleColor: z.string().default("#FFFFFF"),
   message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
+  messageFontSize: z.string().default("text-base"),
+  messageFormatting: z.array(z.string()).default([]),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -80,26 +86,79 @@ const TitleStep = () => (
   </div>
 );
 
-const MessageStep = () => (
-    <div className="space-y-8">
-        <FormField
-        name="message"
-        render={({ field }) => (
-            <FormItem>
-            <FormLabel>Mensagem</FormLabel>
-            <FormControl>
-                <Textarea
-                placeholder="Escreva aqui sua declaração..."
-                className="min-h-[250px]"
-                {...field}
+const MessageStep = () => {
+    return (
+        <div className="space-y-8">
+            <FormField
+                name="messageFontSize"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Tamanho do Texto</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um tamanho" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="text-sm">Pequeno</SelectItem>
+                                <SelectItem value="text-base">Padrão</SelectItem>
+                                <SelectItem value="text-lg">Grande</SelectItem>
+                                <SelectItem value="text-xl">Extra Grande</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <div className="space-y-2">
+                <FormLabel>Sua Mensagem</FormLabel>
+                <FormField
+                    name="messageFormatting"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <ToggleGroup
+                                    type="multiple"
+                                    variant="outline"
+                                    className="justify-start"
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
+                                    <ToggleGroupItem value="bold" aria-label="Toggle bold">
+                                        <Bold className="h-4 w-4" />
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem value="italic" aria-label="Toggle italic">
+                                        <Italic className="h-4 w-4" />
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough">
+                                        <Strikethrough className="h-4 w-4" />
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
                 />
-            </FormControl>
-            <FormMessage />
-            </FormItem>
-        )}
-        />
-    </div>
-);
+                <FormField
+                    name="message"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <Textarea
+                                    placeholder="Escreva aqui sua declaração..."
+                                    className="min-h-[200px]"
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        </div>
+    );
+};
 
 
 const stepComponents = [<TitleStep key="title" />, <MessageStep key="message"/>];
@@ -113,6 +172,8 @@ export default function CreatePageWizard() {
       title: "Seu Título Aqui",
       titleColor: "#FFFFFF",
       message: "",
+      messageFontSize: "text-base",
+      messageFormatting: [],
     },
   });
 
@@ -220,7 +281,13 @@ export default function CreatePageWizard() {
                                     >
                                         {formData.title || 'Seu Título Aqui'}
                                     </h1>
-                                    <p className="text-base text-white/80 whitespace-pre-wrap break-words">
+                                    <p className={cn(
+                                        "text-white/80 whitespace-pre-wrap break-words",
+                                        formData.messageFontSize,
+                                        formData.messageFormatting?.includes("bold") && "font-bold",
+                                        formData.messageFormatting?.includes("italic") && "italic",
+                                        formData.messageFormatting?.includes("strikethrough") && "line-through"
+                                      )}>
                                         {formData.message || 'Sua mensagem de amor...'}
                                     </p>
                                     </div>
