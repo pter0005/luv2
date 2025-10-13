@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,11 +17,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import Countdown from "./Countdown";
 
 
 // Define the schema for the entire wizard
@@ -31,6 +36,8 @@ const pageSchema = z.object({
   message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
   messageFontSize: z.string().default("text-base"),
   messageFormatting: z.array(z.string()).default([]),
+  specialDate: z.date().optional(),
+  countdownStyle: z.string().default("Padrão"),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -47,6 +54,12 @@ const steps = [
     title: "Sua Mensagem de Amor",
     description: "Escreva a mensagem principal que você quer compartilhar.",
     fields: ["message", "messageFontSize", "messageFormatting"],
+  },
+  {
+    id: "specialDate",
+    title: "Data Especial",
+    description: "Informe a data que simboliza o início de uma união ou um momento marcante.",
+    fields: ["specialDate", "countdownStyle"],
   },
 ];
 
@@ -160,8 +173,99 @@ const MessageStep = () => {
     );
 };
 
+const SpecialDateStep = () => (
+    <div className="space-y-8">
+        <FormField
+            name="specialDate"
+            render={({ field }) => (
+                <FormItem className="flex flex-col">
+                    <FormLabel>Data do Evento</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value ? (
+                                        format(field.value, "PPP", { locale: ptBR })
+                                    ) : (
+                                        <span>Escolha uma data</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                    date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                                locale={ptBR}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                        Essa data será usada para o contador.
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
 
-const stepComponents = [<TitleStep key="title" />, <MessageStep key="message"/>];
+        <FormField
+            name="countdownStyle"
+            render={({ field }) => (
+                <FormItem className="space-y-3">
+                    <FormLabel>Modo de Exibição do Contador</FormLabel>
+                    <FormControl>
+                        <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-2 gap-4"
+                        >
+                            <FormItem>
+                                <FormControl>
+                                    <RadioGroupItem value="Padrão" id="style-default" className="peer sr-only" />
+                                </FormControl>
+                                <Label htmlFor="style-default" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    Padrão
+                                </Label>
+                            </FormItem>
+                            <FormItem>
+                                <FormControl>
+                                    <RadioGroupItem value="Clássico" id="style-classic" className="peer sr-only" />
+                                </FormControl>
+                                <Label htmlFor="style-classic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    Clássico
+                                </Label>
+                            </FormItem>
+                             <FormItem>
+                                <FormControl>
+                                    <RadioGroupItem value="Simples" id="style-simple" className="peer sr-only" />
+                                </FormControl>
+                                <Label htmlFor="style-simple" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    Simples
+                                </Label>
+                            </FormItem>
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    </div>
+);
+
+
+const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />];
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -174,6 +278,8 @@ export default function CreatePageWizard() {
       message: "",
       messageFontSize: "text-base",
       messageFormatting: [],
+      specialDate: new Date(),
+      countdownStyle: "Padrão",
     },
   });
 
@@ -273,7 +379,7 @@ export default function CreatePageWizard() {
                         <div className="flex-grow bg-black rounded-b-lg overflow-hidden relative">
                             <div className="w-full h-full flex flex-col relative overflow-hidden bg-black">
                                 <div className="w-full h-full flex flex-col relative overflow-hidden">
-                                <div className="flex-grow p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto">
+                                <div className="flex-grow p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto space-y-8">
                                     <div className="relative z-10 w-full max-w-4xl mx-auto space-y-8">
                                     <h1
                                         className="text-5xl md:text-6xl font-handwriting break-words"
@@ -291,6 +397,12 @@ export default function CreatePageWizard() {
                                         {formData.message || 'Sua mensagem de amor...'}
                                     </p>
                                     </div>
+                                    {formData.specialDate && (
+                                        <Countdown 
+                                            targetDate={formData.specialDate.toISOString()} 
+                                            style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
+                                        />
+                                    )}
                                 </div>
                                 </div>
                             </div>
