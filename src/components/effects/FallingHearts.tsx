@@ -39,7 +39,7 @@ export default function FallingHearts() {
   }, []);
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
       <div className="relative w-full h-full">
         {hearts.map((heart) => (
           <div key={heart.id} className="heart-fall" style={heart.style}>

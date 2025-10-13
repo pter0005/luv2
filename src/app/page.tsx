@@ -91,14 +91,14 @@ export default function Home() {
 
   return (
     <>
-      <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+      <div className="absolute top-0 left-0 w-full h-full -z-20 overflow-hidden pointer-events-none">
         <div className="mystic-fog-1"></div>
         <div className="mystic-fog-2"></div>
       </div>
       <FallingHearts />
       <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
         <div className="flex flex-col items-start text-left">
-          <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+          <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-2 leading-tight">
             Declare seu amor
           </h1>
           <p className="text-5xl md:text-5xl font-script gradient-text h-20 md:h-24 min-h-[5rem]">

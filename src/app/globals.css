@@ -64,10 +64,10 @@
 
 @layer utilities {
   .mystic-fog-1 {
-    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/10 rounded-full blur-3xl opacity-50;
+    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/20 rounded-full blur-3xl opacity-60;
   }
   .mystic-fog-2 {
-    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/10 rounded-full blur-3xl opacity-50;
+    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/20 rounded-full blur-3xl opacity-60;
   }
   .heart-fall {
     @apply absolute top-0 -translate-y-full animate-fall;
