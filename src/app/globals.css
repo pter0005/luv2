@@ -20,7 +20,7 @@
     --accent-foreground: 260 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 260 30% 25%;
+    --border: 275 89% 20%;
     --input: 260 30% 25%;
     --ring: 275 89% 62%;
     --radius: 0.5rem;
@@ -43,7 +43,7 @@
     --accent-foreground: 260 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 260 30% 25%;
+    --border: 275 89% 20%;
     --input: 260 30% 25%;
     --ring: 275 89% 62%;
   }
@@ -64,15 +64,18 @@
 
 @layer utilities {
   .mystic-fog-1 {
-    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/20 rounded-full blur-3xl opacity-60;
+    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/10 rounded-full blur-3xl opacity-40;
   }
   .mystic-fog-2 {
-    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/20 rounded-full blur-3xl opacity-60;
+    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/10 rounded-full blur-3xl opacity-40;
   }
   .heart-fall {
     @apply absolute top-0 -translate-y-full animate-fall;
   }
   @keyframes fall {
+    from {
+      transform: translateY(-100vh) rotate(0deg);
+    }
     to {
       transform: translateY(100vh) rotate(360deg);
     }

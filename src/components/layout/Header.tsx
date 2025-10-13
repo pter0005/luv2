@@ -28,7 +28,7 @@ export default function Header() {
   const logoUrl = PlaceHolderImages.find((p) => p.id === "logo")?.imageUrl || "";
 
   return (
-    <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-transparent">
+    <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-background/80 backdrop-blur-sm border-b border-b-border/50">
       <div className="container flex items-center justify-between h-24">
         <Link href="/" className="flex items-center gap-2 font-script text-3xl font-bold">
             <Heart className="w-7 h-7 text-primary fill-current" />
