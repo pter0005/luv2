@@ -168,43 +168,45 @@ export default function Home() {
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container">
-          <div className="grid md:grid-cols-2 gap-16 items-center mb-16">
+          <div className="border border-border/60 rounded-xl p-8 md:p-12">
+            <div className="grid md:grid-cols-2 gap-16 items-center mb-16">
               <div className="text-left">
-                  <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
+                <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
               </div>
               <div>
-                  <p className="text-lg text-muted-foreground mb-6">
+                <p className="text-lg text-muted-foreground mb-6">
                   Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
-                  </p>
-                  <Link href="/criar">
-                      <Button variant="outline">Comece agora!</Button>
-                  </Link>
+                </p>
+                <Link href="/criar">
+                  <Button variant="outline">Comece agora!</Button>
+                </Link>
               </div>
-          </div>
-          <TooltipProvider>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {steps.map((step, index) => (
-                <Tooltip key={step.title}>
-                  <TooltipTrigger asChild>
-                    <Card className="bg-card/80 border-border/60 text-left flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:-translate-y-2">
-                      <CardHeader className="p-0 mb-4">
-                        <div className="flex items-center justify-between">
+            </div>
+            <TooltipProvider>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {steps.map((step, index) => (
+                  <Tooltip key={step.title}>
+                    <TooltipTrigger asChild>
+                      <Card className="bg-card/80 border-border/60 text-left flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:-translate-y-2">
+                        <CardHeader className="p-0 mb-4">
+                          <div className="flex items-center justify-between">
                             <span className="text-3xl font-bold text-primary/50">0{index + 1}.</span>
                             <step.icon className="w-10 h-10 text-primary/80" />
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-0 flex-grow flex flex-col justify-end">
-                        <h3 className="text-2xl font-semibold">{step.title}</h3>
-                      </CardContent>
-                    </Card>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{step.description}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </TooltipProvider>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-0 flex-grow flex flex-col justify-end">
+                          <h3 className="text-2xl font-semibold">{step.title}</h3>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{step.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          </div>
         </div>
       </section>
 
