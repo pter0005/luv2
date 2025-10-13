@@ -135,34 +135,40 @@ export default function Home() {
         <div className="mystic-fog-2"></div>
       </div>
       <FallingHearts />
-      <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
-        <div className="flex flex-col items-center md:items-start text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter mb-2 leading-tight">
-            Declare seu amor
-          </h1>
-          <p className="text-5xl md:text-6xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
-            {typedPhrase}
-            <span className="animate-pulse">|</span>
-          </p>
-          <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-6">
-            Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
-          </p>
-          <Link href="/criar">
-            <Button size="lg">
-              Criar minha página
-              <ChevronRight className="w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-        <div className="hidden md:flex items-center justify-center">
-            <Image 
-                src={heroImageUrl}
-                alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
-                width={350}
-                height={500}
-                className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
-                data-ai-hint="road trees"
-            />
+      <section className="py-20 md:py-28">
+        <div className="container max-w-6xl">
+          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+            <div className="grid md:grid-cols-2 items-center gap-12">
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+                  Declare seu amor
+                </h1>
+                <p className="text-5xl md:text-6xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
+                  {typedPhrase}
+                  <span className="animate-pulse">|</span>
+                </p>
+                <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-6">
+                  Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+                </p>
+                <Link href="/criar">
+                  <Button size="lg">
+                    Criar minha página
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="hidden md:flex items-center justify-center">
+                  <Image 
+                      src={heroImageUrl}
+                      alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
+                      width={350}
+                      height={500}
+                      className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
+                      data-ai-hint="road trees"
+                  />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
