@@ -160,7 +160,7 @@ export default function Home() {
                 alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
                 width={350}
                 height={500}
-                className="rounded-2xl shadow-2xl shadow-primary/20 object-cover"
+                className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
                 data-ai-hint="road trees"
             />
         </div>
@@ -168,7 +168,7 @@ export default function Home() {
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container">
-          <div className="border border-border/60 rounded-xl p-8 md:p-12">
+          <div className="border border-border/60 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
               <p className="text-lg text-muted-foreground mt-4 mb-6">
@@ -183,7 +183,7 @@ export default function Home() {
                 {steps.map((step, index) => (
                   <Tooltip key={step.title}>
                     <TooltipTrigger asChild>
-                      <Card className="bg-card/80 border-border/60 text-left flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:-translate-y-2">
+                      <Card className="bg-card/80 border-border/60 text-left flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_15px_0px] hover:shadow-primary/30 hover:-translate-y-2">
                         <CardHeader className="p-0 mb-4">
                           <div className="flex items-center justify-between">
                             <span className="text-3xl font-bold text-primary/50">0{index + 1}.</span>
@@ -214,7 +214,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {features.map((feature) => (
-                    <Card key={feature.title} className="bg-card/80 border-border/60 p-6 text-left flex flex-col gap-4">
+                    <Card key={feature.title} className="bg-card/80 border-border/60 p-6 text-left flex flex-col gap-4 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-primary/10 rounded-lg">
                                 <feature.icon className="w-6 h-6 text-primary" />
@@ -245,7 +245,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {testimonials.map((testimonial, i) => (
-              <Card key={i} className="bg-card/80 border-border/60 p-6">
+              <Card key={i} className="bg-card/80 border-border/60 p-6 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
                 <CardContent className="p-0">
                   <div className="flex items-center gap-2 text-yellow-400 mb-4">
                     {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
