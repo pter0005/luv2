@@ -30,26 +30,19 @@ export default function Header() {
   return (
     <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-transparent">
       <div className="container flex items-center justify-between h-24">
-        <Link href="/" className="flex items-center gap-2">
-           <Image
-            src={logoUrl}
-            alt="Amore Pages Logo"
-            width={140}
-            height={140}
-            className="w-28 h-28 md:w-32 md:h-32"
-            priority
-            data-ai-hint="logo"
-          />
+        <Link href="/" className="flex items-center gap-2 font-script text-3xl font-bold">
+            <Heart className="w-7 h-7 text-primary fill-current" />
+            <span className="gradient-text">LIN</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
                 buttonVariants({ variant: "link" }),
-                "text-foreground/80 hover:text-primary",
+                "text-foreground/80 hover:text-primary text-sm",
                 pathname === link.href && "text-primary font-bold"
               )}
             >

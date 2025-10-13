@@ -16,7 +16,7 @@
     --secondary-foreground: 260 10% 85%;
     --muted: 260 30% 15%;
     --muted-foreground: 260 10% 60%;
-    --accent: 260 70% 60%; /* Lighter Purple accent */
+    --accent: 300 85% 70%; /* Lighter Purple accent */
     --accent-foreground: 260 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -39,7 +39,7 @@
     --secondary-foreground: 260 10% 85%;
     --muted: 260 30% 15%;
     --muted-foreground: 260 10% 60%;
-    --accent: 260 70% 60%; /* Lighter Purple accent */
+    --accent: 300 85% 70%; /* Lighter Purple accent */
     --accent-foreground: 260 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -55,7 +55,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.3), transparent);
+    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.1), transparent);
   }
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;

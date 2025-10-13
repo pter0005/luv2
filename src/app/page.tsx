@@ -67,7 +67,7 @@ const cursivePhrases = [
 export default function Home() {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
-  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
+  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroLandscape')?.imageUrl || '';
 
 
   useEffect(() => {
@@ -98,10 +98,10 @@ export default function Home() {
       <FallingHearts />
       <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
         <div className="flex flex-col items-start text-left">
-          <h1 className="text-6xl md:text-8xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+          <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
             Declare seu amor
           </h1>
-          <p className="text-5xl md:text-6xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
+          <p className="text-5xl md:text-5xl font-script gradient-text h-20 md:h-24 min-h-[5rem]">
             {typedPhrase}
             <span className="animate-pulse">|</span>
           </p>
@@ -118,11 +118,11 @@ export default function Home() {
         <div className="hidden md:flex items-center justify-center">
             <Image 
                 src={heroImageUrl}
-                alt="Imagem de um casal se abraçando"
-                width={400}
-                height={600}
+                alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
+                width={600}
+                height={400}
                 className="rounded-2xl shadow-2xl shadow-primary/20 object-cover"
-                data-ai-hint="couple hugging"
+                data-ai-hint="road trees"
             />
         </div>
       </section>
