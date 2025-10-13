@@ -93,17 +93,18 @@ const Puzzle = () => {
 
   const handleBankDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if(dragPiece.current) {
-        // If piece was on board, remove it
-        const newBoard = board.map(p => p?.id === dragPiece.current!.id ? null : p);
-        if (JSON.stringify(newBoard) !== JSON.stringify(board)) {
-            setBoard(newBoard);
-        }
-        setPieces(prev => {
-            if (prev.find(p => p.id === dragPiece.current!.id)) return prev;
-            return [...prev, dragPiece.current!]
-        });
-        dragPiece.current = null;
+    if (dragPiece.current) {
+      const pieceToReturn = dragPiece.current;
+      // If piece was on board, remove it
+      const newBoard = board.map(p => p?.id === pieceToReturn.id ? null : p);
+      if (JSON.stringify(newBoard) !== JSON.stringify(board)) {
+        setBoard(newBoard);
+      }
+      setPieces(prev => {
+        if (prev.find(p => p.id === pieceToReturn.id)) return prev;
+        return [...prev, pieceToReturn]
+      });
+      dragPiece.current = null;
     }
   }
 
