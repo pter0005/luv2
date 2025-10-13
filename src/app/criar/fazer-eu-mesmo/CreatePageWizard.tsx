@@ -17,13 +17,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Countdown from "./Countdown";
@@ -183,40 +182,24 @@ const SpecialDateStep = () => {
             <FormField
                 name="specialDate"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                        <FormLabel>Data do Evento</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-full pl-3 text-left font-normal",
-                                            !field.value && "text-muted-foreground"
-                                        )}
-                                    >
-                                        {field.value ? (
-                                            format(field.value, "PPP", { locale: ptBR })
-                                        ) : (
-                                            <span>Escolha uma data</span>
-                                        )}
-                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                        date > new Date() || date < new Date("1900-01-01")
-                                    }
-                                    initialFocus
-                                    locale={ptBR}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                    <FormItem className="flex flex-col items-center">
+                        <FormLabel>Início do relacionamento</FormLabel>
+                         <FormControl>
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                    date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                                locale={ptBR}
+                                captionLayout="dropdown-buttons"
+                                fromYear={1960}
+                                toYear={new Date().getFullYear()}
+                                className="border rounded-md"
+                            />
+                        </FormControl>
                         <FormDescription>
                             Essa data será usada para o contador.
                         </FormDescription>
