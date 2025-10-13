@@ -136,10 +136,10 @@ export default function Home() {
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
             <div className="flex flex-col items-center md:items-start text-center md:text-left md:-ml-8">
-              <h1 className="text-7xl md:text-8xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+              <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-7xl md:text-8xl font-script gradient-text h-32 md:h-36 min-h-[8rem]">
+              <p className="text-6xl md:text-7xl font-script gradient-text h-24 md:h-28 min-h-[7rem]">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
