@@ -135,11 +135,11 @@ export default function Home() {
       <section className="py-20 md:py-32">
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
-            <div className="flex flex-col items-center md:items-start text-center md:text-left md:-ml-8">
-              <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+            <div className="flex flex-col items-center md:items-start text-center md:text-left">
+              <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-4 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-6xl md:text-7xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
+              <p className="text-5xl md:text-6xl font-script gradient-text mb-4 min-h-[5rem]">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
