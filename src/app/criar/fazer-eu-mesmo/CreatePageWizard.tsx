@@ -30,6 +30,14 @@ import Countdown from "./Countdown";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel"
 
 
 // Define the schema for the entire wizard
@@ -152,7 +160,7 @@ const MessageStep = () => {
                                     <ToggleGroupItem value="bold" aria-label="Toggle bold">
                                         <Bold className="h-4 w-4" />
                                     </ToggleGroupItem>
-                                    <ToggleGroupItem value="italic" aria-label="Toggle italic">
+                                    <ToggleGroupItem value="italic" aria-label_content>Toggle italic">
                                         <Italic className="h-4 w-4" />
                                     </ToggleGroupItem>
                                     <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough">
@@ -427,6 +435,48 @@ export default function CreatePageWizard() {
   };
   
   const progressValue = ((currentStep + 1) / (steps.length || 1)) * 100;
+  
+  const getCarouselOptions = (style: string) => {
+    switch (style) {
+      case "Coverflow":
+        return {
+          effect: "coverflow",
+          grabCursor: true,
+          centeredSlides: true,
+          slidesPerView: "auto",
+          coverflowEffect: {
+            rotate: 50,
+            stretch: 0,
+            depth: 100,
+            modifier: 1,
+            slideShadows: true,
+          },
+        };
+      case "Cards":
+        return {
+          effect: "cards",
+          grabCursor: true,
+        };
+      case "Flip":
+        return {
+          effect: "flip",
+          grabCursor: true,
+        };
+      case "Cube":
+      default:
+        return {
+          effect: "cube",
+          grabCursor: true,
+          cubeEffect: {
+            shadow: true,
+            slideShadows: true,
+            shadowOffset: 20,
+            shadowScale: 0.94,
+          },
+        };
+    }
+  };
+  
 
   return (
     <FormProvider {...methods}>
@@ -519,21 +569,32 @@ export default function CreatePageWizard() {
                                         />
                                     )}
                                     {formData.galleryImages && formData.galleryImages.length > 0 && (
-                                      <div className="w-full">
-                                        <h2 className="text-2xl font-bold mb-4">Galeria</h2>
-                                        <div className="grid grid-cols-2 gap-2">
-                                          {formData.galleryImages.map((img, index) => (
-                                            <div key={index} className="relative aspect-square">
-                                              <Image
-                                                src={img.preview}
-                                                alt={`preview ${index}`}
-                                                fill
-                                                className="object-cover rounded-md"
-                                              />
-                                            </div>
-                                          ))}
-                                        </div>
-                                        <p className="text-sm text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
+                                      <div className="w-full max-w-sm mx-auto">
+                                        <h2 className="text-3xl font-bold mb-6">Nossos Momentos</h2>
+                                        <Carousel
+                                            opts={getCarouselOptions(formData.galleryStyle)}
+                                            className="w-full"
+                                        >
+                                            <CarouselContent>
+                                                {formData.galleryImages.map((img, index) => (
+                                                    <CarouselItem key={index}>
+                                                        <div className="p-1">
+                                                            <div className="relative aspect-square">
+                                                                <Image
+                                                                    src={img.preview}
+                                                                    alt={`Galeria de fotos ${index + 1}`}
+                                                                    fill
+                                                                    className="object-cover rounded-md"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </CarouselItem>
+                                                ))}
+                                            </CarouselContent>
+                                            <CarouselPrevious className="left-[-1rem]" />
+                                            <CarouselNext className="right-[-1rem]" />
+                                        </Carousel>
+                                         <p className="text-sm text-muted-foreground mt-4">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}
                                 </div>
