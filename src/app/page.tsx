@@ -130,139 +130,129 @@ export default function Home() {
 
   return (
     <>
-      <div className="absolute top-0 left-0 w-full h-full -z-20 overflow-hidden pointer-events-none">
-        <div className="mystic-fog-1"></div>
-        <div className="mystic-fog-2"></div>
-      </div>
       <FallingHearts />
-      <section className="py-20 md:py-28">
+      <section className="py-20 md:py-32">
         <div className="container max-w-6xl">
-          <div className="p-8 md:p-12">
-            <div className="grid md:grid-cols-2 items-center gap-12">
-              <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter mb-2 leading-tight">
-                  Declare seu amor
-                </h1>
-                <p className="text-5xl md:text-6xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
-                  {typedPhrase}
-                  <span className="animate-pulse">|</span>
-                </p>
-                <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-6">
-                  Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
-                </p>
-                <Link href="/criar">
-                  <Button size="lg">
-                    Criar minha página
-                    <ChevronRight className="w-5 h-5" />
-                  </Button>
-                </Link>
-              </div>
-              <div className="hidden md:flex items-center justify-center">
-                  <Image 
-                      src={heroImageUrl}
-                      alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
-                      width={350}
-                      height={500}
-                      className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
-                      data-ai-hint="road trees"
-                  />
-              </div>
+          <div className="grid md:grid-cols-2 items-center gap-12">
+            <div className="flex flex-col items-center md:items-start text-center md:text-left md:-ml-8">
+              <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+                Declare seu amor
+              </h1>
+              <p className="text-6xl md:text-7xl font-script gradient-text h-28 md:h-32 min-h-[7rem]">
+                {typedPhrase}
+                <span className="animate-pulse">|</span>
+              </p>
+              <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-6">
+                Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+              </p>
+              <Link href="/criar">
+                <Button size="lg" className="shadow-[0_0_20px_0px] shadow-primary/50">
+                  Criar minha página
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              </Link>
+            </div>
+            <div className="hidden md:flex items-center justify-center">
+                <Image 
+                    src={heroImageUrl}
+                    alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
+                    width={350}
+                    height={500}
+                    className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
+                    data-ai-hint="road trees"
+                />
             </div>
           </div>
         </div>
       </section>
 
-      <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
-        <div className="container max-w-6xl">
-          <div className="p-8 md:p-16">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
-              <p className="text-lg text-muted-foreground mt-4 mb-6">
-                Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
-              </p>
+      <section id="recursos" className="py-20 md:py-28">
+        <div className="container max-w-5xl text-center">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
+            <p className="text-lg text-muted-foreground mt-4 mb-6">
+              Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => (
+              <Card key={step.title} className="card-glow text-center flex flex-col p-6 transition-all duration-300 hover:-translate-y-2 bg-card/80 border-border/10">
+                <CardHeader className="p-0 mb-4 flex-grow">
+                  <div className="flex flex-col items-center gap-4">
+                    <span className="text-2xl font-bold text-primary/80">{index + 1}.</span>
+                    <step.icon className="w-12 h-12 text-primary/80 mt-2" />
+                    <h3 className="text-xl font-semibold mt-2">{step.title}</h3>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0 mt-4">
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+           <div className="text-center mt-16">
               <Link href="/criar">
                 <Button variant="outline">Comece agora!</Button>
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {steps.map((step, index) => (
-                <Card key={step.title} className="card-glow text-center flex flex-col p-6 transition-all duration-300 hover:-translate-y-2">
-                  <CardHeader className="p-0 mb-4 flex-grow">
-                    <div className="flex flex-col items-center gap-4">
-                      <span className="text-xl font-bold text-primary/80">{index + 1}.</span>
-                      <h3 className="text-2xl font-semibold">{step.title}</h3>
-                      <step.icon className="w-12 h-12 text-primary/80 mt-2" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0 mt-4">
-                    <p className="text-sm text-muted-foreground">{step.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
       <section id="experiencia" className="py-20 md:py-28">
-        <div className="container max-w-6xl">
-           <div className="p-8 md:p-16">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-                <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
-                <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {features.map((feature) => (
-                    <Card key={feature.title} className="card-glow p-6 text-left flex flex-col gap-4 transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-primary/10 rounded-lg">
-                                <feature.icon className="w-6 h-6 text-primary" />
-                            </div>
-                            <CardTitle className="text-xl">{feature.title}</CardTitle>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{feature.description}</p>
-                    </Card>
-                ))}
-            </div>
-            <div className="text-center mt-16">
-                <h3 className="text-2xl font-headline font-bold mb-4">Veja a Revelação em Ação</h3>
-                <p className="text-muted-foreground mb-6">Descubra como funciona a experiência interativa que torna sua declaração inesquecível.</p>
-                <Button asChild>
-                    <Link href="/como-funciona">
-                        Como funciona?
-                    </Link>
-                </Button>
-            </div>
+        <div className="container max-w-5xl">
+           <div className="text-center max-w-3xl mx-auto mb-16">
+              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
+              <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
+           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature) => (
+                  <Card key={feature.title} className="card-glow p-6 text-left flex flex-col gap-4 transition-all bg-card/80 border-border/10">
+                      <div className="flex items-center gap-4">
+                          <div className="p-3 bg-primary/10 rounded-lg">
+                              <feature.icon className="w-6 h-6 text-primary" />
+                          </div>
+                          <CardTitle className="text-xl">{feature.title}</CardTitle>
+                      </div>
+                      <p className="text-muted-foreground text-sm">{feature.description}</p>
+                  </Card>
+              ))}
+          </div>
+          <div className="text-center mt-16">
+              <h3 className="text-2xl font-headline font-bold mb-4">Veja a Revelação em Ação</h3>
+              <p className="text-muted-foreground mb-6">Descubra como funciona a experiência interativa que torna sua declaração inesquecível.</p>
+              <Button asChild>
+                  <Link href="/como-funciona">
+                      Como funciona?
+                  </Link>
+              </Button>
           </div>
         </div>
       </section>
 
       <section id="avaliacoes" className="py-20 md:py-28">
-        <div className="container max-w-6xl">
-          <div className="p-8 md:p-16">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
-              <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, i) => (
-                <Card key={i} className="card-glow p-6 transition-all">
-                  <CardContent className="p-0">
-                    <div className="flex items-center gap-2 text-yellow-400 mb-4">
-                      {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
-                    </div>
-                    <p className="mb-6 text-foreground/90">"{testimonial.text}"</p>
-                    <div className="flex items-center gap-4">
-                      <Avatar>
-                        <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person" />
-                        <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <p className="font-semibold">{testimonial.name}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        <div className="container max-w-5xl">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
+            <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, i) => (
+              <Card key={i} className="card-glow p-6 transition-all bg-card/80 border-border/10">
+                <CardContent className="p-0">
+                  <div className="flex items-center gap-2 text-yellow-400 mb-4">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
+                  </div>
+                  <p className="mb-6 text-foreground/90">"{testimonial.text}"</p>
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person" />
+                      <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold">{testimonial.name}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
