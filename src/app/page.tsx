@@ -136,7 +136,7 @@ export default function Home() {
       </div>
       <FallingHearts />
       <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
-        <div className="flex flex-col items-start text-left">
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-2 leading-tight">
             Declare seu amor
           </h1>
@@ -169,18 +169,14 @@ export default function Home() {
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container">
           <div className="border border-border/60 rounded-xl p-8 md:p-12">
-            <div className="grid md:grid-cols-2 gap-16 items-center mb-16">
-              <div className="text-left">
-                <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
-              </div>
-              <div>
-                <p className="text-lg text-muted-foreground mb-6">
-                  Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
-                </p>
-                <Link href="/criar">
-                  <Button variant="outline">Comece agora!</Button>
-                </Link>
-              </div>
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
+              <p className="text-lg text-muted-foreground mt-4 mb-6">
+                Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
+              </p>
+              <Link href="/criar">
+                <Button variant="outline">Comece agora!</Button>
+              </Link>
             </div>
             <TooltipProvider>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
