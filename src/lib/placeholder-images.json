@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "logo",
+      "description": "Amore Pages logo",
+      "imageUrl": "https://i.imgur.com/rmStAv2.png",
+      "imageHint": "logo love"
+    },
+    {
+      "id": "avatar1",
+      "description": "Avatar for Juliana S.",
+      "imageUrl": "https://picsum.photos/seed/avatar1/100/100",
+      "imageHint": "person woman"
+    },
+    {
+      "id": "avatar2",
+      "description": "Avatar for Ricardo M.",
+      "imageUrl": "https://picsum.photos/seed/avatar2/100/100",
+      "imageHint": "person man"
+    },
+    {
+      "id": "avatar3",
+      "description": "Avatar for Fernanda L.",
+      "imageUrl": "https://picsum.photos/seed/avatar3/100/100",
+      "imageHint": "person woman"
+    }
+  ]
 }

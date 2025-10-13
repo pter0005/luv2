@@ -8,10 +8,18 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "1rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['PT Sans', 'sans-serif'],
+        headline: ['Playfair Display', 'serif'],
+        script: ['Dancing Script', 'cursive'],
         code: ['monospace'],
       },
       colors: {
@@ -88,10 +96,16 @@ export default {
             height: '0',
           },
         },
+        'fall': {
+          to: {
+            transform: 'translateY(100vh) rotate(360deg)',
+          },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'fall': 'fall 15s linear infinite',
       },
     },
   },
