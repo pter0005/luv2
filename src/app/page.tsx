@@ -4,11 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   Heart,
-  Paintbrush,
-  Camera,
-  Sparkles,
   Star,
   ChevronRight,
+  Gift,
+  CircleDollarSign,
+  QrCode,
+  Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -16,27 +17,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import FallingHearts from '@/components/effects/FallingHearts';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useEffect, useState } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const features = [
+const steps = [
   {
-    icon: Paintbrush,
-    title: 'Personalização Completa',
-    description: 'Escolha cores, fontes e layouts. Deixe a página com a cara de vocês.',
+    icon: Gift,
+    title: "Preencha os campos",
+    description: "Insira suas mensagens, fotos e vídeos para criar uma experiência personalizada e emocionante.",
   },
   {
-    icon: Camera,
-    title: 'Suas Fotos, Sua História',
-    description: 'Adicione suas fotos favoritas e crie uma galeria de momentos inesquecíveis.',
+    icon: CircleDollarSign,
+    title: "Pagamento",
+    description: "Realize o pagamento de forma rápida e segura para finalizar a criação da sua página.",
   },
   {
-    icon: Sparkles,
-    title: 'Inspiração com IA',
-    description: 'Sem palavras? Nossa IA sugere frases, poemas e citações para te inspirar.',
+    icon: QrCode,
+    title: "Código QR e Link",
+    description: "Receba um link exclusivo e um Código QR para acessar e compartilhar sua declaração de amor.",
   },
   {
-    icon: Heart,
-    title: 'Link Único e Secreto',
-    description: 'Compartilhe sua declaração através de um link exclusivo que só vocês conhecem.',
+    icon: Share2,
+    title: "Compartilhe a memória",
+    description: "Envie o link ou o QR Code para a pessoa amada e surpreenda-a com essa lembrança inesquecível.",
   },
 ];
 
@@ -67,7 +69,7 @@ const cursivePhrases = [
 export default function Home() {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
-  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroLandscape')?.imageUrl || '';
+  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
 
 
   useEffect(() => {
@@ -98,10 +100,10 @@ export default function Home() {
       <FallingHearts />
       <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
         <div className="flex flex-col items-start text-left">
-          <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-2 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-2 leading-tight">
             Declare seu amor
           </h1>
-          <p className="text-5xl md:text-5xl font-script gradient-text h-20 md:h-24 min-h-[5rem]">
+          <p className="text-5xl md:text-6xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
             {typedPhrase}
             <span className="animate-pulse">|</span>
           </p>
@@ -119,8 +121,8 @@ export default function Home() {
             <Image 
                 src={heroImageUrl}
                 alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
-                width={600}
-                height={400}
+                width={350}
+                height={500}
                 className="rounded-2xl shadow-2xl shadow-primary/20 object-cover"
                 data-ai-hint="road trees"
             />
@@ -129,25 +131,43 @@ export default function Home() {
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Recursos Feitos para Apaixonar</h2>
-            <p className="mt-4 text-lg text-muted-foreground">Tudo que você precisa para criar uma declaração de amor perfeita.</p>
+          <div className="grid md:grid-cols-2 gap-16 items-center mb-16">
+              <div className="text-left">
+                  <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
+              </div>
+              <div>
+                  <p className="text-lg text-muted-foreground mb-6">
+                  Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
+                  </p>
+                  <Link href="/criar">
+                      <Button variant="outline">Comece agora!</Button>
+                  </Link>
+              </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature) => (
-              <Card key={feature.title} className="bg-card/80 border-border/60 text-center flex flex-col items-center p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:-translate-y-2">
-                <CardHeader>
-                  <div className="p-4 bg-primary/10 rounded-full mb-4 self-center">
-                    <feature.icon className="w-8 h-8 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <TooltipProvider>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {steps.map((step, index) => (
+                <Tooltip key={step.title}>
+                  <TooltipTrigger asChild>
+                    <Card className="bg-card/80 border-border/60 text-left flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:-translate-y-2">
+                      <CardHeader className="p-0 mb-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-3xl font-bold text-primary/50">0{index + 1}.</span>
+                            <step.icon className="w-10 h-10 text-primary/80" />
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-0 flex-grow flex flex-col justify-end">
+                        <h3 className="text-2xl font-semibold">{step.title}</h3>
+                      </CardContent>
+                    </Card>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{step.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
         </div>
       </section>
 

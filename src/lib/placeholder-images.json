@@ -25,10 +25,10 @@
       "imageHint": "person woman"
     },
     {
-      "id": "heroLandscape",
-      "description": "A landscape image for the hero section.",
-      "imageUrl": "https://picsum.photos/seed/hero-landscape/600/400",
-      "imageHint": "road trees"
+      "id": "heroVertical",
+      "description": "A vertical image for the hero section.",
+      "imageUrl": "https://picsum.photos/seed/hero-vertical/350/500",
+      "imageHint": "couple love"
     }
   ]
 }
