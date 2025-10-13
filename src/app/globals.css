@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 349 67% 94%; /* light pink */
-    --foreground: 342 50% 15%;
-    --card: 349 67% 96%;
-    --card-foreground: 342 50% 15%;
-    --popover: 349 67% 96%;
-    --popover-foreground: 342 50% 15%;
-    --primary: 342 60% 56%; /* deep fuchsia */
-    --primary-foreground: 342 60% 98%;
-    --secondary: 32 30% 85%;
-    --secondary-foreground: 342 50% 25%;
-    --muted: 32 28% 88%;
-    --muted-foreground: 342 30% 40%;
-    --accent: 32 26% 75%; /* dusty rose */
-    --accent-foreground: 342 50% 15%;
+    --background: 260 40% 10%;
+    --foreground: 260 10% 95%;
+    --card: 260 40% 15%;
+    --card-foreground: 260 10% 95%;
+    --popover: 260 40% 12%;
+    --popover-foreground: 260 10% 95%;
+    --primary: 265 80% 65%; /* Bright Purple */
+    --primary-foreground: 265 10% 98%;
+    --secondary: 260 30% 25%;
+    --secondary-foreground: 260 10% 85%;
+    --muted: 260 30% 20%;
+    --muted-foreground: 260 10% 60%;
+    --accent: 300 70% 60%; /* Magenta/Pink accent */
+    --accent-foreground: 300 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 342 20% 80%;
-    --input: 342 20% 85%;
-    --ring: 342 60% 56%;
+    --border: 260 30% 30%;
+    --input: 260 30% 30%;
+    --ring: 265 80% 70%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 348 20% 10%;
-    --foreground: 349 67% 94%;
-    --card: 348 20% 12%;
-    --card-foreground: 349 67% 94%;
-    --popover: 348 20% 10%;
-    --popover-foreground: 349 67% 94%;
-    --primary: 342 60% 56%;
-    --primary-foreground: 342 60% 98%;
-    --secondary: 348 15% 20%;
-    --secondary-foreground: 349 67% 94%;
-    --muted: 348 15% 20%;
-    --muted-foreground: 349 60% 70%;
-    --accent: 32 26% 75%;
-    --accent-foreground: 348 20% 10%;
+    --background: 260 40% 10%;
+    --foreground: 260 10% 95%;
+    --card: 260 40% 15%;
+    --card-foreground: 260 10% 95%;
+    --popover: 260 40% 12%;
+    --popover-foreground: 260 10% 95%;
+    --primary: 265 80% 65%; /* Bright Purple */
+    --primary-foreground: 265 10% 98%;
+    --secondary: 260 30% 25%;
+    --secondary-foreground: 260 10% 85%;
+    --muted: 260 30% 20%;
+    --muted-foreground: 260 10% 60%;
+    --accent: 300 70% 60%; /* Magenta/Pink accent */
+    --accent-foreground: 300 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 348 15% 25%;
-    --input: 348 15% 25%;
-    --ring: 342 60% 56%;
+    --border: 260 30% 30%;
+    --input: 260 30% 30%;
+    --ring: 265 80% 70%;
   }
 }
 
@@ -55,9 +55,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(265, 50%, 20%));
   }
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-fuchsia-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
   }
 }
 

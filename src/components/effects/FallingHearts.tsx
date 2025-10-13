@@ -8,7 +8,7 @@ interface Heart {
   style: React.CSSProperties;
 }
 
-const heartCount = 20;
+const heartCount = 25;
 
 export default function FallingHearts() {
   const [hearts, setHearts] = useState<Heart[]>([]);
@@ -16,7 +16,7 @@ export default function FallingHearts() {
   useEffect(() => {
     const generateHearts = () => {
       const newHearts = Array.from({ length: heartCount }, (_, i) => {
-        const size = Math.random() * 4 + 2; // 2rem to 6rem
+        const size = Math.random() * 2 + 0.5; // 0.5rem to 2.5rem
         const duration = Math.random() * 15 + 15; // 15s to 30s
         const delay = Math.random() * 5; // 0s to 5s
         const rotation = Math.random() * 90 - 45; // -45deg to 45deg
