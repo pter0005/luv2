@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState, useEffect, useCallback, ChangeEvent } from "react";
@@ -31,16 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCoverflow, Pagination, Navigation, EffectCards, EffectFlip, EffectCube } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/effect-cards';
-import 'swiper/css/effect-flip';
-import 'swiper/css/effect-cube';
-
-
+import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
@@ -545,6 +534,8 @@ export default function CreatePageWizard() {
                                                 slideShadows: true,
                                             }}
                                             cardsEffect={{
+                                                perSlideRotate: 2,
+                                                perSlideOffset: 8,
                                                 slideShadows: true,
                                             }}
                                             cubeEffect={{
@@ -554,14 +545,11 @@ export default function CreatePageWizard() {
                                                 shadowScale: 0.94,
                                             }}
                                             pagination={{ clickable: true }}
-                                            modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Navigation]}
-                                            className="mySwiper w-full h-[300px]"
+                                            modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
+                                            className="mySwiper"
                                         >
                                             {formData.galleryImages.map((img, index) => (
-                                                <SwiperSlide key={index} className={cn(
-                                                  "bg-center bg-cover",
-                                                  formData.galleryStyle.toLowerCase() !== 'cards' && "rounded-lg"
-                                                  )}>
+                                                <SwiperSlide key={index}>
                                                     <Image
                                                         src={img.preview}
                                                         alt={`Galeria de fotos ${index + 1}`}
