@@ -139,7 +139,7 @@ export default function Home() {
               <h1 className="text-6xl md:text-7xl font-headline font-bold tracking-tighter mb-2 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-6xl md:text-7xl font-script gradient-text h-24 md:h-28 min-h-[7rem]">
+              <p className="text-6xl md:text-7xl font-script gradient-text h-24 md:h-28 min-h-[6rem]">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
@@ -175,18 +175,33 @@ export default function Home() {
               Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="flex flex-col items-center justify-center gap-y-4 mt-16 sm:grid sm:grid-cols-2 sm:gap-x-2 sm:px-8 md:px-[4.5rem] xl:gap-4 xl:flex xl:flex-row">
             {steps.map((step, index) => (
-              <Card key={step.title} className="card-glow group text-center flex flex-col items-center justify-start p-6 transition-all duration-300 overflow-hidden h-48">
-                <div className="flex flex-col items-center gap-4 transition-transform duration-500 ease-out group-hover:-translate-y-2">
-                  <span className="text-2xl font-bold text-primary/80">{index + 1}.</span>
-                  <step.icon className="w-12 h-12 text-primary/80 mt-2" />
-                  <h3 className="text-xl font-semibold mt-2">{step.title}</h3>
+              <div
+                key={step.title}
+                className="group relative flex flex-col justify-between gap-4 p-8 rounded-2xl w-full transition-all duration-500 ease-in-out cursor-pointer overflow-hidden bg-muted/80 items-center max-h-[18.125rem] min-h-[18.125rem] max-w-[14rem] min-w-[13rem] card-glow"
+              >
+                <div>
+                  <p className="flex flex-wrap w-full text-2xl font-semibold text-center transition-all duration-500 ease-out gap-x-1 text-neutral-200 items-center justify-center group-hover:-translate-y-2">
+                    <span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}
+                  </p>
+                  <p
+                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 mt-0 group-hover:mt-2"
+                    style={{ maxHeight: '0px', transition: 'max-height 0.7s ease-out, opacity 0.7s ease-out, transform 0.5s ease-out, margin-top 0.5s ease-out' }}
+                    ref={el => {
+                      if (el) {
+                        el.style.maxHeight = el.parentElement?.parentElement?.classList.contains('group') && el.parentElement?.parentElement?.matches(':hover') ? `${el.scrollHeight}px` : '0px';
+                      }
+                    }}
+                  >
+                   {step.description}
+                  </p>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 pt-2 origin-left transform scale-x-0 group-hover:scale-x-100 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out">
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                <div className="relative">
+                    <step.icon className="w-20 h-20 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
+                    <step.icon className="w-16 h-16 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
            <div className="text-center mt-16">
