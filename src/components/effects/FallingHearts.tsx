@@ -18,12 +18,15 @@ export default function FallingHearts() {
       const newHearts = Array.from({ length: heartCount }, (_, i) => {
         const size = Math.random() * 2 + 0.5; // 0.5rem to 2.5rem
         const duration = Math.random() * 15 + 15; // 15s to 30s
-        const delay = Math.random() * 5; // 0s to 5s
+        const delay = Math.random() * -30; // Start at different negative delays
         const rotation = Math.random() * 90 - 45; // -45deg to 45deg
         return {
           id: i,
           style: {
             left: `${Math.random() * 100}%`,
+            animationName: 'fall',
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
             animationDuration: `${duration}s`,
             animationDelay: `${delay}s`,
             width: `${size}rem`,
@@ -39,10 +42,10 @@ export default function FallingHearts() {
   }, []);
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
+    <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
       <div className="relative w-full h-full">
         {hearts.map((heart) => (
-          <div key={heart.id} className="heart-fall" style={heart.style}>
+          <div key={heart.id} className="absolute -top-[10%]" style={heart.style}>
             <HeartIcon />
           </div>
         ))}

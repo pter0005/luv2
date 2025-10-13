@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 275 60% 8%; /* Very Dark Purple */
+    --background: 275 60% 4%; /* Very Dark Purple, almost black */
     --foreground: 275 10% 95%;
     --card: 275 50% 15%;
     --card-foreground: 275 10% 95%;
@@ -27,7 +27,7 @@
   }
 
   .dark {
-    --background: 275 60% 8%; /* Very Dark Purple */
+    --background: 275 60% 4%; /* Very Dark Purple, almost black */
     --foreground: 275 10% 95%;
     --card: 275 50% 15%;
     --card-foreground: 275 10% 95%;
@@ -64,10 +64,10 @@
 
 @layer utilities {
   .mystic-fog-1 {
-    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/10 rounded-full blur-3xl opacity-40;
+    @apply absolute -top-[20rem] -left-[20rem] w-[50rem] h-[50rem] bg-primary/20 rounded-full blur-3xl opacity-50;
   }
   .mystic-fog-2 {
-    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/10 rounded-full blur-3xl opacity-40;
+    @apply absolute -bottom-[20rem] -right-[20rem] w-[50rem] h-[50rem] bg-accent/20 rounded-full blur-3xl opacity-50;
   }
   .heart-fall {
     @apply absolute -translate-y-full animate-fall;
