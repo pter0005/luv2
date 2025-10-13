@@ -549,13 +549,8 @@ export default function CreatePageWizard() {
                                             className="mySwiper"
                                         >
                                             {formData.galleryImages.map((img, index) => (
-                                                <SwiperSlide key={index}>
-                                                    <Image
-                                                        src={img.preview}
-                                                        alt={`Galeria de fotos ${index + 1}`}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
+                                                <SwiperSlide key={index} style={{ backgroundImage: `url(${img.preview})` }}>
+                                                   {/* A imagem agora é um background */}
                                                 </SwiperSlide>
                                             ))}
                                         </Swiper>
