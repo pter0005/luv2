@@ -31,14 +31,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Navigation } from 'swiper/modules';
+import { EffectCoverflow, Pagination, Navigation, EffectCards, EffectFlip, EffectCube } from 'swiper/modules';
 import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 import 'swiper/css/effect-coverflow';
 import 'swiper/css/effect-cards';
 import 'swiper/css/effect-flip';
 import 'swiper/css/effect-cube';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
 
 
 
@@ -529,9 +529,10 @@ export default function CreatePageWizard() {
                                         />
                                     )}
                                     {formData.galleryImages && formData.galleryImages.length > 0 && (
-                                      <div className="w-full max-w-sm mx-auto">
+                                       <div className="w-full max-w-sm mx-auto">
                                         <h2 className="text-3xl font-bold mb-6">Nossos Momentos</h2>
                                         <Swiper
+                                            key={formData.galleryStyle}
                                             effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
                                             grabCursor={true}
                                             centeredSlides={formData.galleryStyle === 'Coverflow'}
@@ -553,12 +554,14 @@ export default function CreatePageWizard() {
                                                 shadowScale: 0.94,
                                             }}
                                             pagination={{ clickable: true }}
-                                            navigation={true}
                                             modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Navigation]}
                                             className="mySwiper w-full h-[300px]"
                                         >
                                             {formData.galleryImages.map((img, index) => (
-                                                <SwiperSlide key={index} className="bg-center bg-cover">
+                                                <SwiperSlide key={index} className={cn(
+                                                  "bg-center bg-cover",
+                                                  formData.galleryStyle.toLowerCase() !== 'cards' && "rounded-lg"
+                                                  )}>
                                                     <Image
                                                         src={img.preview}
                                                         alt={`Galeria de fotos ${index + 1}`}
