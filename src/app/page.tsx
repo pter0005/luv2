@@ -137,7 +137,7 @@ export default function Home() {
       <FallingHearts />
       <section className="py-20 md:py-28">
         <div className="container max-w-6xl">
-          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-12 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+          <div className="p-8 md:p-12">
             <div className="grid md:grid-cols-2 items-center gap-12">
               <div className="flex flex-col items-center md:items-start text-center md:text-left">
                 <h1 className="text-3xl md:text-4xl font-headline font-bold tracking-tighter mb-2 leading-tight">
@@ -174,7 +174,7 @@ export default function Home() {
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">
         <div className="container max-w-6xl">
-          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+          <div className="p-8 md:p-16">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
               <p className="text-lg text-muted-foreground mt-4 mb-6">
@@ -186,7 +186,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {steps.map((step, index) => (
-                <Card key={step.title} className="bg-card/80 border-border/60 text-center flex flex-col p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_15px_0px] hover:shadow-primary/30 hover:-translate-y-2">
+                <Card key={step.title} className="card-glow text-center flex flex-col p-6 transition-all duration-300 hover:-translate-y-2">
                   <CardHeader className="p-0 mb-4 flex-grow">
                     <div className="flex flex-col items-center gap-4">
                       <span className="text-xl font-bold text-primary/80">{index + 1}.</span>
@@ -206,14 +206,14 @@ export default function Home() {
 
       <section id="experiencia" className="py-20 md:py-28">
         <div className="container max-w-6xl">
-           <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+           <div className="p-8 md:p-16">
             <div className="text-center max-w-3xl mx-auto mb-16">
                 <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
                 <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {features.map((feature) => (
-                    <Card key={feature.title} className="bg-card/80 border-border/60 p-6 text-left flex flex-col gap-4 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
+                    <Card key={feature.title} className="card-glow p-6 text-left flex flex-col gap-4 transition-all">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-primary/10 rounded-lg">
                                 <feature.icon className="w-6 h-6 text-primary" />
@@ -239,14 +239,14 @@ export default function Home() {
 
       <section id="avaliacoes" className="py-20 md:py-28">
         <div className="container max-w-6xl">
-          <div className="border-4 border-primary/40 rounded-xl p-8 md:p-16 transition-all hover:shadow-[0_0_20px_0px] hover:shadow-primary/30">
+          <div className="p-8 md:p-16">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
               <p className="mt-4 text-lg text-muted-foreground">Veja o que casais apaixonados estão dizendo sobre Amore Pages.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {testimonials.map((testimonial, i) => (
-                <Card key={i} className="bg-card/80 border-border/60 p-6 transition-all hover:shadow-[0_0_15px_0px] hover:shadow-primary/30">
+                <Card key={i} className="card-glow p-6 transition-all">
                   <CardContent className="p-0">
                     <div className="flex items-center gap-2 text-yellow-400 mb-4">
                       {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
