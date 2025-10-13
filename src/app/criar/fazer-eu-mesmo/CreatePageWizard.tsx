@@ -197,7 +197,7 @@ const SpecialDateStep = () => {
                                 captionLayout="dropdown-buttons"
                                 fromYear={1960}
                                 toYear={new Date().getFullYear()}
-                                className="border rounded-md"
+                                className="border rounded-md bg-card/80"
                             />
                         </FormControl>
                         <FormDescription>
@@ -410,5 +410,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
