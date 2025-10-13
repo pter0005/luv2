@@ -16,8 +16,8 @@
     --secondary-foreground: 275 10% 85%;
     --muted: 275 50% 20%;
     --muted-foreground: 275 10% 65%;
-    --accent: 275 90% 65%; /* Brighter Purple Accent */
-    --accent-foreground: 275 10% 98%;
+    --accent: 325 90% 65%; /* Brighter Pinkish Accent */
+    --accent-foreground: 325 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 275 89% 30%;
@@ -39,8 +39,8 @@
     --secondary-foreground: 275 10% 85%;
     --muted: 275 50% 20%;
     --muted-foreground: 275 10% 65%;
-    --accent: 275 90% 65%; /* Brighter Purple Accent */
-    --accent-foreground: 275 10% 98%;
+    --accent: 325 90% 65%; /* Brighter Pinkish Accent */
+    --accent-foreground: 325 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 275 89% 30%;
@@ -87,10 +87,11 @@
   }
   
   .card-glow {
-    @apply bg-muted/80 backdrop-blur-sm transition-all duration-300;
+    @apply bg-muted/30 backdrop-blur-sm transition-all duration-300 border-border/20 border;
     box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1), 0 2px 8px 0px hsl(var(--background) / 0.5);
   }
   .card-glow:hover {
+    @apply border-primary/30;
     box-shadow: 0 0 15px 0px hsl(var(--primary) / 0.2), 0 0 0 1px hsl(var(--primary) / 0.3);
   }
 

@@ -27,7 +27,7 @@
     {
       "id": "heroVertical",
       "description": "A vertical image for the hero section.",
-      "imageUrl": "https://picsum.photos/seed/hero-vertical/350/500",
+      "imageUrl": "https://picsum.photos/seed/hero-vertical/400/400",
       "imageHint": "couple love"
     }
   ]

@@ -98,8 +98,8 @@ const testimonials = [
 ];
 
 const cursivePhrases = [
-  "de forma única!",
   "para alguém especial!",
+  "de forma única!",
   "para quem merece!",
 ];
 
@@ -136,14 +136,14 @@ export default function Home() {
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-2 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-4xl md:text-5xl font-script gradient-text mb-4 min-h-[5rem]">
+              <p className="text-4xl md:text-5xl font-script gradient-text mb-6">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
-              <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-6">
+              <p className="max-w-xl text-lg text-muted-foreground mb-10">
                 Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
               </p>
               <Link href="/criar">
@@ -157,9 +157,9 @@ export default function Home() {
                 <Image 
                     src={heroImageUrl}
                     alt="Estrada ladeada de árvores com uma luz brilhante ao fundo"
-                    width={350}
-                    height={500}
-                    className="rounded-2xl shadow-[0_0_30px_5px] shadow-primary/40 object-cover"
+                    width={400}
+                    height={400}
+                    className="rounded-2xl shadow-[0_0_40px_10px] shadow-primary/30 object-cover aspect-square"
                     data-ai-hint="road trees"
                 />
             </div>
@@ -179,18 +179,21 @@ export default function Home() {
             {steps.map((step, index) => (
               <div
                 key={step.title}
-                className="group relative flex flex-col justify-between gap-4 p-8 rounded-2xl w-full transition-all duration-500 ease-in-out cursor-pointer overflow-hidden bg-muted/80 items-center max-h-[18.125rem] min-h-[18.125rem] max-w-[14rem] min-w-[13rem] card-glow"
+                className="group relative flex flex-col justify-between gap-4 p-8 rounded-2xl w-full transition-all duration-500 ease-in-out cursor-pointer overflow-hidden bg-neutral-800 items-center max-h-[18.125rem] min-h-[18.125rem] max-w-[14rem] min-w-[13rem]"
               >
                 <div>
                   <p className="flex flex-wrap w-full text-2xl font-semibold text-center transition-all duration-500 ease-out gap-x-1 text-neutral-200 items-center justify-center group-hover:-translate-y-2">
                     <span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}
                   </p>
                   <p
-                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 mt-0 group-hover:mt-2"
-                    style={{ maxHeight: '0px', transition: 'max-height 0.7s ease-out, opacity 0.7s ease-out, transform 0.5s ease-out, margin-top 0.5s ease-out' }}
-                    ref={el => {
+                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 mt-0 group-hover:mt-2"
+                    style={{
+                      maxHeight: "0px",
+                      transition: "max-height 0.7s ease-out, opacity 0.7s ease-out, transform 0.5s ease-out, margin-top 0.5s ease-out"
+                    }}
+                     ref={el => {
                       if (el) {
-                        el.style.maxHeight = el.parentElement?.parentElement?.classList.contains('group') && el.parentElement?.parentElement?.matches(':hover') ? `${el.scrollHeight}px` : '0px';
+                        el.style.maxHeight = el.parentElement?.parentElement?.matches(':hover') ? `${el.scrollHeight}px` : '0px';
                       }
                     }}
                   >
@@ -198,8 +201,8 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="relative">
-                    <step.icon className="w-16 h-16 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
-                    <step.icon className="w-14 h-14 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
+                    <step.icon className="w-14 h-14 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
+                    <step.icon className="w-12 h-12 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
                 </div>
               </div>
             ))}
