@@ -30,14 +30,16 @@ import Countdown from "./Countdown";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel"
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/effect-cards';
+import 'swiper/css/effect-flip';
+import 'swiper/css/effect-cube';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+
 
 
 // Define the schema for the entire wizard
@@ -435,48 +437,6 @@ export default function CreatePageWizard() {
   };
   
   const progressValue = ((currentStep + 1) / (steps.length || 1)) * 100;
-  
-  const getCarouselOptions = (style: string) => {
-    switch (style) {
-      case "Coverflow":
-        return {
-          effect: "coverflow",
-          grabCursor: true,
-          centeredSlides: true,
-          slidesPerView: "auto",
-          coverflowEffect: {
-            rotate: 50,
-            stretch: 0,
-            depth: 100,
-            modifier: 1,
-            slideShadows: true,
-          },
-        };
-      case "Cards":
-        return {
-          effect: "cards",
-          grabCursor: true,
-        };
-      case "Flip":
-        return {
-          effect: "flip",
-          grabCursor: true,
-        };
-      case "Cube":
-      default:
-        return {
-          effect: "cube",
-          grabCursor: true,
-          cubeEffect: {
-            shadow: true,
-            slideShadows: true,
-            shadowOffset: 20,
-            shadowScale: 0.94,
-          },
-        };
-    }
-  };
-  
 
   return (
     <FormProvider {...methods}>
@@ -571,29 +531,43 @@ export default function CreatePageWizard() {
                                     {formData.galleryImages && formData.galleryImages.length > 0 && (
                                       <div className="w-full max-w-sm mx-auto">
                                         <h2 className="text-3xl font-bold mb-6">Nossos Momentos</h2>
-                                        <Carousel
-                                            opts={getCarouselOptions(formData.galleryStyle)}
-                                            className="w-full"
+                                        <Swiper
+                                            effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                                            grabCursor={true}
+                                            centeredSlides={formData.galleryStyle === 'Coverflow'}
+                                            slidesPerView={'auto'}
+                                            coverflowEffect={{
+                                                rotate: 50,
+                                                stretch: 0,
+                                                depth: 100,
+                                                modifier: 1,
+                                                slideShadows: true,
+                                            }}
+                                            cardsEffect={{
+                                                slideShadows: true,
+                                            }}
+                                            cubeEffect={{
+                                                shadow: true,
+                                                slideShadows: true,
+                                                shadowOffset: 20,
+                                                shadowScale: 0.94,
+                                            }}
+                                            pagination={{ clickable: true }}
+                                            navigation={true}
+                                            modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Navigation]}
+                                            className="mySwiper w-full h-[300px]"
                                         >
-                                            <CarouselContent>
-                                                {formData.galleryImages.map((img, index) => (
-                                                    <CarouselItem key={index}>
-                                                        <div className="p-1">
-                                                            <div className="relative aspect-square">
-                                                                <Image
-                                                                    src={img.preview}
-                                                                    alt={`Galeria de fotos ${index + 1}`}
-                                                                    fill
-                                                                    className="object-cover rounded-md"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </CarouselItem>
-                                                ))}
-                                            </CarouselContent>
-                                            <CarouselPrevious className="left-[-1rem]" />
-                                            <CarouselNext className="right-[-1rem]" />
-                                        </Carousel>
+                                            {formData.galleryImages.map((img, index) => (
+                                                <SwiperSlide key={index} className="bg-center bg-cover">
+                                                    <Image
+                                                        src={img.preview}
+                                                        alt={`Galeria de fotos ${index + 1}`}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
                                          <p className="text-sm text-muted-foreground mt-4">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}

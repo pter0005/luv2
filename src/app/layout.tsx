@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/effect-cards';
+import 'swiper/css/effect-flip';
+import 'swiper/css/effect-cube';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
