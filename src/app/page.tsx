@@ -177,13 +177,13 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <Card key={step.title} className="card-glow group text-center flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden">
-                <div className="flex flex-col items-center gap-4 transition-transform duration-500 ease-out group-hover:-translate-y-4">
+              <Card key={step.title} className="card-glow group text-center flex flex-col items-center justify-start p-6 transition-all duration-300 overflow-hidden h-48">
+                <div className="flex flex-col items-center gap-4 transition-transform duration-500 ease-out group-hover:-translate-y-2">
                   <span className="text-2xl font-bold text-primary/80">{index + 1}.</span>
                   <step.icon className="w-12 h-12 text-primary/80 mt-2" />
                   <h3 className="text-xl font-semibold mt-2">{step.title}</h3>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 pt-0 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out">
+                <div className="absolute bottom-0 left-0 right-0 p-6 pt-2 origin-left transform scale-x-0 group-hover:scale-x-100 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out">
                   <p className="text-sm text-muted-foreground">{step.description}</p>
                 </div>
               </Card>
@@ -258,5 +258,3 @@ export default function Home() {
     </>
   );
 }
-
-    
