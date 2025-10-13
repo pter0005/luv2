@@ -136,10 +136,10 @@ export default function Home() {
         <div className="container max-w-6xl">
           <div className="grid md:grid-cols-2 items-center gap-12">
             <div className="flex flex-col items-center md:items-start text-center md:text-left">
-              <h1 className="text-5xl md:text-6xl font-headline font-bold tracking-tighter mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter mb-4 leading-tight">
                 Declare seu amor
               </h1>
-              <p className="text-5xl md:text-6xl font-script gradient-text mb-4 min-h-[5rem]">
+              <p className="text-4xl md:text-5xl font-script gradient-text mb-4 min-h-[5rem]">
                 {typedPhrase}
                 <span className="animate-pulse">|</span>
               </p>
@@ -198,8 +198,8 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="relative">
-                    <step.icon className="w-20 h-20 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
-                    <step.icon className="w-16 h-16 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
+                    <step.icon className="w-16 h-16 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
+                    <step.icon className="w-14 h-14 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
                 </div>
               </div>
             ))}
