@@ -213,37 +213,41 @@ const SpecialDateStep = () => {
                     name="countdownStyle"
                     render={({ field }) => (
                         <FormItem className="space-y-3">
-                            <FormLabel>Modo de Exibição do Contador</FormLabel>
+                            <FormLabel className="text-center block">Modo de Exibição do Contador</FormLabel>
                             <FormControl>
                                 <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
-                                    className="grid grid-cols-2 gap-4"
+                                    className="flex flex-col items-center"
                                 >
-                                    <FormItem>
-                                        <FormControl>
-                                            <RadioGroupItem value="Padrão" id="style-default" className="peer sr-only" />
-                                        </FormControl>
-                                        <Label htmlFor="style-default" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                            Padrão
-                                        </Label>
-                                    </FormItem>
-                                    <FormItem>
-                                        <FormControl>
-                                            <RadioGroupItem value="Clássico" id="style-classic" className="peer sr-only" />
-                                        </FormControl>
-                                        <Label htmlFor="style-classic" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                            Clássico
-                                        </Label>
-                                    </FormItem>
-                                    <FormItem>
-                                        <FormControl>
-                                            <RadioGroupItem value="Simples" id="style-simple" className="peer sr-only" />
-                                        </FormControl>
-                                        <Label htmlFor="style-simple" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                            Simples
-                                        </Label>
-                                    </FormItem>
+                                    <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+                                        <FormItem>
+                                            <FormControl>
+                                                <RadioGroupItem value="Padrão" id="style-default" className="peer sr-only" />
+                                            </FormControl>
+                                            <Label htmlFor="style-default" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer w-full">
+                                                Padrão
+                                            </Label>
+                                        </FormItem>
+                                        <FormItem>
+                                            <FormControl>
+                                                <RadioGroupItem value="Clássico" id="style-classic" className="peer sr-only" />
+                                            </FormControl>
+                                            <Label htmlFor="style-classic" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer w-full">
+                                                Clássico
+                                            </Label>
+                                        </FormItem>
+                                    </div>
+                                    <div className="w-full max-w-sm px-[calc(25%_+_0.5rem)]">
+                                        <FormItem>
+                                            <FormControl>
+                                                <RadioGroupItem value="Simples" id="style-simple" className="peer sr-only" />
+                                            </FormControl>
+                                            <Label htmlFor="style-simple" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer w-full">
+                                                Simples
+                                            </Label>
+                                        </FormItem>
+                                    </div>
                                 </RadioGroup>
                             </FormControl>
                             <FormMessage />
@@ -406,3 +410,5 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
+
+    
