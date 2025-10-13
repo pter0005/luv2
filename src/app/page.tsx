@@ -1,18 +1,21 @@
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   Heart,
-  MessageCircle,
   Paintbrush,
   Camera,
   Sparkles,
   Star,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import FallingHearts from '@/components/effects/FallingHearts';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useEffect, useState } from 'react';
 
 const features = [
   {
@@ -55,7 +58,24 @@ const testimonials = [
   },
 ];
 
+const cursivePhrases = [
+  "de forma única!",
+  "para alguém especial!",
+  "para quem merece!",
+];
+
 export default function Home() {
+  const [currentPhrase, setCurrentPhrase] = useState(0);
+  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroForestPath')?.imageUrl || '';
+
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPhrase((prev) => (prev + 1) % cursivePhrases.length);
+    }, 3000); // Change phrase every 3 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
@@ -63,22 +83,43 @@ export default function Home() {
         <div className="mystic-fog-2"></div>
       </div>
       <FallingHearts />
-      <section className="container text-center flex flex-col items-center justify-center py-20 md:py-32">
-        <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tighter mb-6 leading-tight">
-          Crie uma <span className="gradient-text">página de amor</span>,
-          <br />
-          única como sua história.
-        </h1>
-        <p className="max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground mb-10">
-          Transforme seus sentimentos em uma experiência digital inesquecível.
-          Personalize, adicione fotos, use nossa IA para se inspirar e compartilhe um presente que dura para sempre.
-        </p>
-        <Link href="/criar">
-          <Button size="lg" className="gap-2 group">
-            Começar a Criar
-            <Heart className="w-5 h-5 group-hover:fill-primary-foreground transition-colors" />
-          </Button>
-        </Link>
+      <section className="container grid md:grid-cols-2 items-center gap-12 py-20 md:py-32 min-h-[calc(100vh-6rem)]">
+        <div className="flex flex-col items-start text-left">
+          <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tighter mb-4 leading-tight">
+            Declare seu amor
+          </h1>
+          <div className="h-24 md:h-28">
+            {cursivePhrases.map((phrase, index) => (
+              <p
+                key={index}
+                className={`text-4xl md:text-5xl font-script gradient-text transition-opacity duration-1000 ${
+                  currentPhrase === index ? 'opacity-100' : 'opacity-0'
+                } absolute`}
+              >
+                {phrase}
+              </p>
+            ))}
+          </div>
+          <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-4">
+            Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+          </p>
+          <Link href="/criar">
+            <Button size="lg">
+              Criar minha página
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </Link>
+        </div>
+        <div className="hidden md:flex items-center justify-center">
+            <Image 
+                src={heroImageUrl}
+                alt="Caminho romântico em uma floresta"
+                width={600}
+                height={400}
+                className="rounded-2xl shadow-2xl shadow-primary/20 object-cover"
+                data-ai-hint="forest path"
+            />
+        </div>
       </section>
 
       <section id="recursos" className="py-20 md:py-28 bg-background/80 backdrop-blur-sm">

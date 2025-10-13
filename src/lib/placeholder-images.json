@@ -23,6 +23,12 @@
       "description": "Avatar for Fernanda L.",
       "imageUrl": "https://picsum.photos/seed/avatar3/100/100",
       "imageHint": "person woman"
+    },
+    {
+      "id": "heroForestPath",
+      "description": "A romantic path in a forest for the hero section.",
+      "imageUrl": "https://picsum.photos/seed/hero-forest/600/400",
+      "imageHint": "forest path"
     }
   ]
 }
