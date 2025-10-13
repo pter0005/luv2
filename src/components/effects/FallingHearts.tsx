@@ -42,7 +42,7 @@ export default function FallingHearts() {
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
       <div className="relative w-full h-full">
         {hearts.map((heart) => (
-          <div key={heart.id} className="heart heart-rise" style={heart.style}>
+          <div key={heart.id} className="heart heart-fall" style={heart.style}>
             <HeartIcon />
           </div>
         ))}

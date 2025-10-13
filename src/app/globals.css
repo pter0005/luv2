@@ -116,19 +116,19 @@
   
   .heart {
     position: absolute;
-    bottom: -10%;
+    top: -10%;
     opacity: 0.2;
   }
 
-  .heart-rise {
-    animation-name: rise;
+  .heart-fall {
+    animation-name: fall;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
   }
 
-  @keyframes rise {
+  @keyframes fall {
     to {
-      transform: translateY(-110vh) rotate(360deg);
+      transform: translateY(110vh) rotate(360deg);
     }
   }
 
