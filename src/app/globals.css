@@ -16,7 +16,7 @@
     --secondary-foreground: 275 10% 85%;
     --muted: 275 50% 20%;
     --muted-foreground: 275 10% 65%;
-    --accent: 275 90% 70%; /* Lighter Purple Accent */
+    --accent: 300 90% 60%;
     --accent-foreground: 275 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -39,7 +39,7 @@
     --secondary-foreground: 275 10% 85%;
     --muted: 275 50% 20%;
     --muted-foreground: 275 10% 65%;
-    --accent: 275 90% 70%; /* Lighter Purple Accent */
+    --accent: 300 90% 60%;
     --accent-foreground: 275 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -107,11 +107,11 @@
   }
 
   .mystic-fog-1 {
-    @apply absolute -top-[20rem] left-0 w-[80rem] h-[50rem] bg-primary/10 opacity-60 rounded-full blur-3xl -z-10 animate-[spin_50s_linear_infinite];
+    @apply absolute -top-[10rem] -left-[10rem] w-[50rem] h-[50rem] bg-primary/30 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite];
   }
 
   .mystic-fog-2 {
-    @apply absolute -bottom-[20rem] -right-[10rem] w-[80rem] h-[50rem] bg-accent/10 opacity-70 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite_reverse];
+      @apply absolute -bottom-[10rem] -right-[10rem] w-[50rem] h-[50rem] bg-accent/30 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_70s_linear_infinite_reverse];
   }
   
   .heart {
