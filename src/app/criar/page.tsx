@@ -2,16 +2,10 @@ import Link from "next/link";
 import { Files, Brush, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import FallingHearts from "@/components/effects/FallingHearts";
 
 export default function CreatePage() {
   return (
     <div className="relative min-h-screen">
-      <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
-        <div className="mystic-fog-1"></div>
-        <div className="mystic-fog-2"></div>
-      </div>
-      <FallingHearts />
       <div className="relative z-10 container py-20 flex flex-col items-center justify-center min-h-screen">
         <div className="w-full max-w-md text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-headline">
@@ -23,7 +17,7 @@ export default function CreatePage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
           <Link href="/#recursos" passHref>
-            <Card className="bg-card/80 hover:border-primary/50 hover:bg-card/100 transition-all duration-300 h-full flex flex-col items-center justify-center text-center p-8">
+            <Card className="card-glow hover:border-primary/50 hover:bg-card/100 transition-all duration-300 h-full flex flex-col items-center justify-center text-center p-8">
               <CardHeader>
                 <div className="p-4 bg-primary/10 rounded-full mb-4 self-center">
                   <Files className="w-8 h-8 text-primary" />
@@ -36,7 +30,7 @@ export default function CreatePage() {
             </Card>
           </Link>
           <Link href="/criar/fazer-eu-mesmo" passHref>
-            <Card className="bg-card/80 hover:border-primary/50 hover:bg-card/100 transition-all duration-300 h-full flex flex-col items-center justify-center text-center p-8">
+            <Card className="card-glow hover:border-primary/50 hover:bg-card/100 transition-all duration-300 h-full flex flex-col items-center justify-center text-center p-8">
               <CardHeader>
                 <div className="p-4 bg-primary/10 rounded-full mb-4 self-center">
                   <Brush className="w-8 h-8 text-primary" />

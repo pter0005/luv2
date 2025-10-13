@@ -1,15 +1,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gift, Images, Puzzle as PuzzleIcon } from "lucide-react";
-import FallingHearts from "@/components/effects/FallingHearts";
 import Puzzle from "@/components/puzzle/Puzzle";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ComoFuncionaPage() {
   return (
     <div className="relative min-h-screen">
-      <div className="w-full h-full absolute top-0 left-0 -z-10 bg-black mystic-glow" />
-      <FallingHearts />
       <div className="container py-12 md:py-20 text-center">
         <Button asChild variant="outline" className="absolute top-8 left-8 bg-transparent">
           <Link href="/">

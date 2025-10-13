@@ -16,9 +16,9 @@ export default function FallingHearts() {
   useEffect(() => {
     const generateHearts = () => {
       const newHearts = Array.from({ length: heartCount }, (_, i) => {
-        const size = Math.random() * 4 + 2; // 2rem to 6rem
-        const duration = Math.random() * 15 + 15; // 15s to 30s
-        const delay = Math.random() * 5; // Start at different delays
+        const size = Math.random() * 2 + 1; // 1rem to 3rem
+        const duration = Math.random() * 10 + 10; // 10s to 20s
+        const delay = Math.random() * 10; // Start at different delays
         const rotation = Math.random() * 90 - 45; // -45deg to 45deg
         return {
           id: i,

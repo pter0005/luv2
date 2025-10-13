@@ -18,10 +18,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import FallingHearts from '@/components/effects/FallingHearts';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useEffect, useState } from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const steps = [
   {
@@ -131,16 +129,11 @@ export default function Home() {
   return (
     <>
       <section className="relative section-padding flex items-center min-h-[calc(100vh-80px)] overflow-hidden">
-        <div className="top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none absolute">
-            <div className="mystic-fog-1"></div>
-            <div className="mystic-fog-2"></div>
-        </div>
-        <FallingHearts />
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-display leading-tight">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground font-display leading-tight">
                     Declare seu amor <br />
-                    <span className="block font-handwriting text-primary text-5xl md:text-6xl lg:text-7xl mt-1 h-20">
+                    <span className="block font-handwriting text-primary text-5xl md:text-6xl mt-2 leading-relaxed">
                         {typedPhrase}
                         <span className="animate-blink">|</span>
                     </span>
@@ -184,14 +177,16 @@ export default function Home() {
                 className="group relative flex flex-col justify-between gap-4 p-8 rounded-2xl w-full transition-all duration-500 ease-in-out cursor-pointer overflow-hidden bg-neutral-800 items-center max-h-[18.125rem] min-h-[18.125rem] max-w-[14rem] min-w-[13rem]"
               >
                 <div>
-                  <p className="flex flex-wrap w-full text-2xl font-semibold text-center transition-all duration-500 ease-out gap-x-1 text-neutral-200 items-center justify-center group-hover:-translate-y-2">
-                    <span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}
-                  </p>
+                  <p className="
+                      flex flex-wrap w-full text-2xl font-semibold text-center
+                      transition-all duration-500 ease-out gap-x-1 text-neutral-200
+                      items-center justify-center group-hover:-translate-y-2
+                    "><span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}</p>
                   <p
                     className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 -translate-y-2 mt-0 group-hover:opacity-100 group-hover:translate-y-0 group-hover:mt-2"
-                    style={{
+                     style={{
                       maxHeight: "0px",
-                      transition: "max-height 0.7s ease-out, opacity 0.7s ease-out, transform 0.5s ease-out, margin-top 0.5s ease-out"
+                      transition: "all 0.7s ease-out"
                     }}
                      ref={el => {
                       if (el) {
@@ -203,8 +198,8 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="relative">
-                    <step.icon className="w-14 h-14 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
-                    <step.icon className="w-12 h-12 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
+                    <step.icon className="w-12 h-12 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
+                    <step.icon className="w-10 h-10 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
                 </div>
               </div>
             ))}

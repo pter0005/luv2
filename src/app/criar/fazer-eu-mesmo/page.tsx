@@ -1,14 +1,8 @@
 import CreatePageForm from "./CreatePageForm";
-import FallingHearts from "@/components/effects/FallingHearts";
 
 export default function DoItYourselfPage() {
   return (
     <div className="relative min-h-screen">
-      <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
-        <div className="mystic-fog-1"></div>
-        <div className="mystic-fog-2"></div>
-      </div>
-       <FallingHearts />
       <div className="container py-12 md:py-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
