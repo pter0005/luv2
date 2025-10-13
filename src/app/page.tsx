@@ -65,16 +65,29 @@ const cursivePhrases = [
 ];
 
 export default function Home() {
-  const [currentPhrase, setCurrentPhrase] = useState(0);
-  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroForestPath')?.imageUrl || '';
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [typedPhrase, setTypedPhrase] = useState('');
+  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
 
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPhrase((prev) => (prev + 1) % cursivePhrases.length);
-    }, 3000); // Change phrase every 3 seconds
-    return () => clearInterval(interval);
-  }, []);
+    const currentPhrase = cursivePhrases[phraseIndex];
+    // Typing effect
+    if (typedPhrase.length < currentPhrase.length) {
+      const timeout = setTimeout(() => {
+        setTypedPhrase(currentPhrase.slice(0, typedPhrase.length + 1));
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+
+    // Pause and switch to next phrase
+    const timeout = setTimeout(() => {
+      setPhraseIndex((prevIndex) => (prevIndex + 1) % cursivePhrases.length);
+      setTypedPhrase('');
+    }, 2000); // Pause for 2 seconds
+
+    return () => clearTimeout(timeout);
+  }, [phraseIndex, typedPhrase]);
 
   return (
     <>
@@ -88,18 +101,10 @@ export default function Home() {
           <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tighter mb-4 leading-tight">
             Declare seu amor
           </h1>
-          <div className="h-24 md:h-28">
-            {cursivePhrases.map((phrase, index) => (
-              <p
-                key={index}
-                className={`text-4xl md:text-5xl font-script gradient-text transition-opacity duration-1000 ${
-                  currentPhrase === index ? 'opacity-100' : 'opacity-0'
-                } absolute`}
-              >
-                {phrase}
-              </p>
-            ))}
-          </div>
+          <p className="text-4xl md:text-5xl font-script gradient-text h-24 md:h-28">
+            {typedPhrase}
+            <span className="animate-pulse">|</span>
+          </p>
           <p className="max-w-xl text-lg text-muted-foreground mb-10 mt-4">
             Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
           </p>
@@ -113,11 +118,11 @@ export default function Home() {
         <div className="hidden md:flex items-center justify-center">
             <Image 
                 src={heroImageUrl}
-                alt="Caminho romântico em uma floresta"
-                width={600}
-                height={400}
+                alt="Imagem de um casal se abraçando"
+                width={400}
+                height={600}
                 className="rounded-2xl shadow-2xl shadow-primary/20 object-cover"
-                data-ai-hint="forest path"
+                data-ai-hint="couple hugging"
             />
         </div>
       </section>
