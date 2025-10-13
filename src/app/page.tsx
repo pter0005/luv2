@@ -9,9 +9,14 @@ import {
   QrCode,
   Share2,
   Star,
+  Puzzle,
+  Clock,
+  Images,
+  Music,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import FallingHearts from '@/components/effects/FallingHearts';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -40,6 +45,39 @@ const steps = [
     description: "Envie o link ou o QR Code para a pessoa amada e surpreenda-a com essa lembrança inesquecível.",
   },
 ];
+
+const features = [
+    {
+      icon: Puzzle,
+      title: "Quebra-Cabeça Interativo",
+      description: "Transforme a revelação em um jogo! A pessoa amada monta uma foto especial para desvendar a surpresa e acessar sua página.",
+    },
+    {
+      icon: Clock,
+      title: "Contador de tempo",
+      description: "Mostre há quanto tempo vocês estão juntos com um contador em tempo real.",
+    },
+    {
+      icon: Images,
+      title: "Galerias de Fotos",
+      description: "Conte sua história com galerias de fotos animadas e personalizadas.",
+    },
+    {
+      icon: Music,
+      title: "Música dedicada",
+      description: "Adicione a trilha sonora do seu amor com uma música do YouTube.",
+    },
+    {
+      icon: Globe,
+      title: "Acesso Global",
+      description: "Sua página acessível de qualquer lugar do mundo, com um link exclusivo.",
+    },
+    {
+      icon: QrCode,
+      title: "QR Code Exclusivo",
+      description: "Receba um QR Code para imprimir e surpreender de forma criativa.",
+    },
+  ];
 
 const testimonials = [
   {
@@ -167,6 +205,37 @@ export default function Home() {
               ))}
             </div>
           </TooltipProvider>
+        </div>
+      </section>
+
+      <section id="experiencia" className="py-20 md:py-28">
+        <div className="container">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+                <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
+                <p className="mt-4 text-lg text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {features.map((feature) => (
+                    <Card key={feature.title} className="bg-card/80 border-border/60 p-6 text-left flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-lg">
+                                <feature.icon className="w-6 h-6 text-primary" />
+                            </div>
+                            <CardTitle className="text-xl">{feature.title}</CardTitle>
+                        </div>
+                        <p className="text-muted-foreground text-sm">{feature.description}</p>
+                    </Card>
+                ))}
+            </div>
+            <div className="text-center mt-16">
+                <h3 className="text-2xl font-headline font-bold mb-4">Veja a Revelação em Ação</h3>
+                <p className="text-muted-foreground mb-6">Descubra como funciona a experiência interativa que torna sua declaração inesquecível.</p>
+                <Button asChild>
+                    <Link href="/como-funciona">
+                        Como funciona?
+                    </Link>
+                </Button>
+            </div>
         </div>
       </section>
 
