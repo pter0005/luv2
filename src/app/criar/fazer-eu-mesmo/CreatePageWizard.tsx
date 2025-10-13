@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -17,12 +18,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
   title: z.string().default("Seu Título Aqui"),
   titleColor: z.string().default("#FFFFFF"),
-  // Add other fields for subsequent steps here
+  message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -34,7 +36,12 @@ const steps = [
     description: "Escreva o título dedicatório. Ex: João & Maria, Feliz Aniversário, etc.",
     fields: ["title", "titleColor"],
   },
-  // Add other steps here
+  {
+    id: "message",
+    title: "Sua Mensagem de Amor",
+    description: "Escreva a mensagem principal que você quer compartilhar.",
+    fields: ["message"],
+  },
 ];
 
 const TitleStep = () => (
@@ -73,7 +80,29 @@ const TitleStep = () => (
   </div>
 );
 
-const stepComponents = [<TitleStep key="title" />];
+const MessageStep = () => (
+    <div className="space-y-8">
+        <FormField
+        name="message"
+        render={({ field }) => (
+            <FormItem>
+            <FormLabel>Mensagem</FormLabel>
+            <FormControl>
+                <Textarea
+                placeholder="Escreva aqui sua declaração..."
+                className="min-h-[250px]"
+                {...field}
+                />
+            </FormControl>
+            <FormMessage />
+            </FormItem>
+        )}
+        />
+    </div>
+);
+
+
+const stepComponents = [<TitleStep key="title" />, <MessageStep key="message"/>];
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -83,6 +112,7 @@ export default function CreatePageWizard() {
     defaultValues: {
       title: "Seu Título Aqui",
       titleColor: "#FFFFFF",
+      message: "",
     },
   });
 
@@ -111,7 +141,7 @@ export default function CreatePageWizard() {
 
   const processForm = (data: PageData) => {
     console.log("Form data:", data);
-    // Handle form submission logic
+    alert("Página criada com sucesso! (Verifique o console para os dados)");
   };
   
   const progressValue = ((currentStep + 1) / (steps.length || 8)) * 100;
@@ -182,14 +212,17 @@ export default function CreatePageWizard() {
                         <div className="flex-grow bg-black rounded-b-lg overflow-hidden relative">
                             <div className="w-full h-full flex flex-col relative overflow-hidden bg-black">
                                 <div className="w-full h-full flex flex-col relative overflow-hidden">
-                                <div className="flex-grow p-4 flex flex-col items-center justify-center text-center relative overflow-y-auto">
-                                    <div className="relative z-10 w-full max-w-4xl mx-auto">
+                                <div className="flex-grow p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto">
+                                    <div className="relative z-10 w-full max-w-4xl mx-auto space-y-8">
                                     <h1
                                         className="text-5xl md:text-6xl font-handwriting break-words"
                                         style={{ color: formData.titleColor }}
                                     >
                                         {formData.title || 'Seu Título Aqui'}
                                     </h1>
+                                    <p className="text-base text-white/80 whitespace-pre-wrap break-words">
+                                        {formData.message || 'Sua mensagem de amor...'}
+                                    </p>
                                     </div>
                                 </div>
                                 </div>
