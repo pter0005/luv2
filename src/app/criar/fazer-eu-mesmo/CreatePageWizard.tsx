@@ -412,7 +412,7 @@ const GalleryStep = () => {
 };
 
 const MusicStep = () => {
-    const { control, setValue, getValues } => useFormContext<PageData>();
+    const { control, setValue, getValues } = useFormContext<PageData>();
     const musicOption = useWatch({ control, name: "musicOption" });
     const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
     const [isSearching, startTransition] = useTransition();
@@ -841,7 +841,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
