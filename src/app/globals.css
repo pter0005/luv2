@@ -187,8 +187,13 @@
     width: 100%;
     height: 300px;
   }
+
+  .mySwiper-small {
+    width: 100%;
+    height: 220px;
+  }
   
-  .mySwiper .swiper-slide {
+  .mySwiper .swiper-slide, .mySwiper-small .swiper-slide {
     display: flex;
     align-items: center;
     justify-content: center;

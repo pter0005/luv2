@@ -604,7 +604,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -667,8 +667,8 @@ export default function CreatePageWizard() {
         </div>
 
         {/* Right Panel: Preview */}
-        <div className="w-full h-[80vh] md:h-screen p-4 md:p-8 bg-background md:sticky md:top-0 order-1 md:order-2 flex items-center justify-center">
-            <div className="w-full h-full max-w-full md:max-w-xl aspect-auto md:aspect-[9/16] mx-auto">
+        <div className="w-full h-[60vh] md:h-screen p-4 md:p-8 bg-background md:sticky md:top-0 order-1 md:order-2 flex items-center justify-center">
+            <div className="w-full h-full max-w-full md:max-w-md aspect-auto md:aspect-[9/16] mx-auto">
                 <div className="relative w-full h-full group/preview">
                     <div className="relative z-10 w-full h-full bg-zinc-950 rounded-2xl flex flex-col shadow-2xl">
                         {/* Browser Chrome */}
@@ -687,16 +687,16 @@ export default function CreatePageWizard() {
                         <div className="flex-grow bg-black rounded-b-lg overflow-hidden relative">
                             <div className="w-full h-full flex flex-col relative overflow-hidden bg-black">
                                 <div className="w-full h-full flex flex-col relative overflow-hidden">
-                                <div className="flex-grow p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto space-y-6 md:space-y-8">
-                                    <div className="relative z-10 w-full max-w-4xl mx-auto space-y-6 md:space-y-8">
+                                <div className="flex-grow p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto space-y-4 md:space-y-6">
+                                    <div className="relative z-10 w-full max-w-4xl mx-auto space-y-4 md:space-y-6">
                                     <h1
-                                        className="text-4xl md:text-5xl font-handwriting break-words"
+                                        className="text-3xl md:text-4xl font-handwriting break-words"
                                         style={{ color: formData.titleColor }}
                                     >
                                         {formData.title || 'Seu Título Aqui'}
                                     </h1>
                                     <p className={cn(
-                                        "text-white/80 whitespace-pre-wrap break-words",
+                                        "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
                                         formData.messageFontSize,
                                         formData.messageFormatting?.includes("bold") && "font-bold",
                                         formData.messageFormatting?.includes("italic") && "italic",
@@ -712,8 +712,8 @@ export default function CreatePageWizard() {
                                         />
                                     )}
                                     {formData.galleryImages && formData.galleryImages.length > 0 && (
-                                       <div className="w-full max-w-sm mx-auto">
-                                        <h2 className="text-2xl md:text-3xl font-bold mb-4">Nossos Momentos</h2>
+                                       <div className="w-full max-w-xs mx-auto">
+                                        <h2 className="text-xl md:text-2xl font-bold mb-4">Nossos Momentos</h2>
                                         <Swiper
                                             key={formData.galleryStyle}
                                             effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
@@ -741,7 +741,7 @@ export default function CreatePageWizard() {
                                             }}
                                             pagination={{ clickable: true }}
                                             modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
-                                            className="mySwiper"
+                                            className="mySwiper-small"
                                         >
                                             {formData.galleryImages.map((img, index) => (
                                                 <SwiperSlide key={index} style={{ backgroundImage: `url(${img.preview})` }}>
@@ -749,7 +749,7 @@ export default function CreatePageWizard() {
                                                 </SwiperSlide>
                                             ))}
                                         </Swiper>
-                                         <p className="text-sm text-muted-foreground mt-4">Estilo: {formData.galleryStyle}</p>
+                                         <p className="text-xs text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}
                                     {formData.musicOption === 'youtube' && formData.youtubeUrl && (
@@ -770,5 +770,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
