@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Loader2 } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
@@ -9,13 +9,7 @@ interface MusicPlayerCardProps {
   url: string;
 }
 
-const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
-  // Garante que o ReactPlayer só renderize no cliente
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
+const MusicPlayer: React.FC<MusicPlayerCardProps> = ({ url }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -29,32 +23,24 @@ const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
 
   return (
     <div className="relative w-full h-48 flex items-center justify-center">
-      {/* Player do YouTube fica escondido, só para tocar o áudio */}
-      <div className="hidden">
-        {hasMounted && (
+      <div className="absolute opacity-0 pointer-events-none">
           <ReactPlayer
             url={url}
             playing={isPlaying}
             onReady={() => setIsReady(true)}
             onEnded={() => setIsPlaying(false)}
-            width="0"
-            height="0"
+            width="1px"
+            height="1px"
             config={{
               youtube: {
                 playerVars: {
                   controls: 0,
-                  disablekb: 1,
-                  fs: 0,
-                  modestbranding: 1,
-                  playsinline: 1,
                 },
               },
             }}
           />
-        )}
       </div>
 
-      {/* Botão de Play/Pause */}
       <motion.button
         onClick={togglePlayPause}
         disabled={!isReady}
@@ -82,7 +68,6 @@ const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
         </AnimatePresence>
       </motion.button>
       
-      {/* Efeito de brilho roxo */}
       {isPlaying && isReady && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {particles.map((_, i) => (
@@ -94,4 +79,4 @@ const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
   );
 };
 
-export default MusicPlayerCard;
+export default MusicPlayer;
