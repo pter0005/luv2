@@ -22,30 +22,20 @@ const FindVideoOutputSchema = z.object({
 });
 export type FindVideoOutput = z.infer<typeof FindVideoOutputSchema>;
 
-// Tool to search on YouTube
-const searchYoutubeTool = ai.defineTool(
-  {
-    name: 'searchYoutube',
-    description: 'Search for a video on YouTube and return the URL of the first result.',
-    inputSchema: z.object({
-      query: z.string(),
-    }),
-    outputSchema: z.string(),
-  },
-  async ({ query }) => {
-    try {
-      const video = await YouTube.searchOne(query, 'video');
-      if (video) {
-        return video.url;
-      }
-      return 'No video found';
-    } catch (error) {
-      console.error(error);
-      return 'Error searching YouTube';
+// This function is not a tool, but a direct implementation
+async function searchYoutube({ query }: { query: string }): Promise<string> {
+  try {
+    const video = await YouTube.searchOne(query, 'video');
+    if (video) {
+      return video.url;
     }
+    return 'No video found';
+  } catch (error) {
+    console.error('Error searching YouTube:', error);
+    // Return a more descriptive error or an empty string
+    return ''; 
   }
-);
-
+}
 
 export async function findYoutubeVideo(input: FindVideoInput): Promise<FindVideoOutput> {
   return findVideoFlow(input);
@@ -58,28 +48,12 @@ const findVideoFlow = ai.defineFlow(
     outputSchema: FindVideoOutputSchema,
   },
   async (input) => {
-    const prompt = `You are an expert at finding music videos. Use the provided tool to find a YouTube video for the song "${input.songName}" by "${input.artistName}". Prioritize official music videos, lyric videos, or official audio.`;
-
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-2.5-flash',
-      tools: [searchYoutubeTool],
-    });
-
-    const toolResponse = llmResponse.toolRequest();
-    
-    if (toolResponse) {
-        const toolOutput = await toolResponse.run();
-        
-        const url = toolOutput.media?.url ?? (typeof toolOutput.output === 'string' ? toolOutput.output : '');
-        
-        if (url && url.startsWith('http')) {
-             return { url };
-        }
+    const query = `${input.songName} ${input.artistName}`;
+    const url = await searchYoutube({ query });
+    if (url && url.startsWith('http')) {
+        return { url };
     }
-    
-    // Fallback if AI or tool fails
-    const fallbackUrl = await searchYoutubeTool({ query: `${input.songName} ${input.artistName}` });
-    return { url: fallbackUrl };
+    // Throw an error if no URL is found, which can be caught in the UI
+    throw new Error('Could not find a video for the given song and artist.');
   }
 );
