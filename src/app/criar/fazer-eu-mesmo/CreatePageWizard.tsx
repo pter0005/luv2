@@ -32,8 +32,8 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from 'next/dynamic';
 
-const MusicPlayerCard = dynamic(() => import('./MusicPlayer'), {
-  loading: () => <div className="flex items-center justify-center h-48"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>,
+const MusicPlayer = dynamic(() => import('./MusicPlayer'), {
+  loading: () => <div className="flex items-center justify-center h-24"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>,
   ssr: false,
 });
 
@@ -758,7 +758,7 @@ export default function CreatePageWizard() {
                                       </div>
                                     )}
                                     {formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                                      <MusicPlayerCard url={formData.youtubeUrl} />
+                                      <MusicPlayer url={formData.youtubeUrl} />
                                     )}
                                     {formData.musicOption === 'record' && formData.audioRecording && (
                                       <CustomAudioPlayer src={formData.audioRecording} />
@@ -775,3 +775,5 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
+
+    
