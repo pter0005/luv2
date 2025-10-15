@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Menu, Heart } from "lucide-react";
+import { Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +24,26 @@ const navLinks = [
 
 export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const logoUrl = PlaceHolderImages.find((p) => p.id === "logo")?.imageUrl || "";
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 left-0 w-full z-50 transition-all duration-300 bg-transparent">
+    <header className={cn(
+        "sticky top-0 left-0 w-full z-50 transition-all duration-300",
+        isScrolled ? "bg-background/80 backdrop-blur-sm border-b border-border/50 shadow-lg" : "bg-transparent"
+      )}>
       <div className="container flex items-center justify-between h-24">
         <Link href="/" className="flex items-center gap-2">
           <Image
