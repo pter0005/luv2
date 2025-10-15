@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -609,7 +609,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
@@ -768,7 +768,7 @@ export default function CreatePageWizard() {
                                             />
                                         </div>
                                     )}
-                                    {formData.musicOption === 'record' && formData.audioRecording && (
+                                    {isClient && formData.musicOption === 'record' && formData.audioRecording && (
                                       <CustomAudioPlayer src={formData.audioRecording} />
                                     )}
                                 </div>
@@ -783,3 +783,5 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
+
+    
