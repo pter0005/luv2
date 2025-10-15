@@ -609,7 +609,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -757,7 +757,7 @@ export default function CreatePageWizard() {
                                          <p className="text-xs text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}
-                                    {formData.musicOption === 'youtube' && formData.youtubeUrl && isClient && (
+                                    {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
                                         <div className="w-full aspect-video relative">
                                             <ReactPlayer
                                                 url={formData.youtubeUrl}
