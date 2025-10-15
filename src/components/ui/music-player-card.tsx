@@ -1,9 +1,9 @@
 'use client';
 
-import { convertVideoToAudio } from '@/ai/flows/youtube-to-audio';
-import { Loader2, Pause, Play } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from './button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Pause, Loader2 } from 'lucide-react';
+import ReactPlayer from 'react-player/youtube';
 
 const formatTime = (timeInSeconds: number): string => {
   if (isNaN(timeInSeconds) || timeInSeconds < 0) return '00:00';
@@ -17,89 +17,61 @@ interface MusicPlayerCardProps {
 }
 
 const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
+  const [isClient, setIsClient] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [audioSrc, setAudioSrc] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [playedSeconds, setPlayedSeconds] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
+  const progressBarRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!url) return;
-
-    const fetchAudio = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await convertVideoToAudio({ url });
-        setAudioSrc(result.media);
-      } catch (err) {
-        console.error('Error converting video to audio:', err);
-        setError('Não foi possível carregar o áudio.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAudio();
-  }, [url]);
+    setIsClient(true);
+  }, []);
 
   const handlePlayPause = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play().catch(e => console.error("Play error:", e));
-    }
     setIsPlaying(!isPlaying);
   };
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+    if (isPlaying) {
+      setPlayedSeconds(state.playedSeconds);
+      if (progressBarRef.current) {
+        const progressPercent = state.played * 100;
+        progressBarRef.current.style.setProperty('--progress', `${progressPercent}%`);
+      }
     }
   };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
+  
+  const handleDuration = (duration: number) => {
+    setDuration(duration);
+    setIsLoading(false);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (audioRef.current) {
-      const newTime = parseFloat(e.target.value);
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
+    const newTime = parseFloat(e.target.value);
+    setPlayedSeconds(newTime);
+    playerRef.current?.seekTo(newTime);
   };
-
-  if (isLoading) {
+  
+  const handleReady = () => {
+    setIsLoading(false);
+  };
+  
+  if (!isClient) {
     return (
-      <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center border border-border/60 min-h-[150px]">
-        <Loader2 className="animate-spin text-primary" size={32} />
-        <p className="text-sm text-muted-foreground mt-4">Processando áudio...</p>
-      </div>
+        <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center border border-border/60 min-h-[190px]">
+            <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
     );
   }
 
-  if (error) {
-    return (
-       <div className="w-full max-w-xs mx-auto bg-destructive/20 text-destructive-foreground rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center border border-destructive/60 min-h-[150px]">
-        <p className="text-sm text-center">{error}</p>
-      </div>
-    )
-  }
-
-  if (!audioSrc) return null;
-
   return (
     <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-border/60">
-       <style>{`
+      <style>{`
         .progress-bar {
-            --progress: ${duration > 0 ? (currentTime / duration) * 100 : 0}%;
+            --progress: ${duration > 0 ? (playedSeconds / duration) * 100 : 0}%;
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
@@ -112,57 +84,63 @@ const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
             background-size: var(--progress) 100%;
             background-repeat: no-repeat;
         }
+        .progress-bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; background: white; border-radius: 50%; cursor: pointer; margin-top: -4px; }
+        .progress-bar::-moz-range-thumb { width: 14px; height: 14px; background: white; border-radius: 50%; cursor: pointer; }
+      `}</style>
+      
+      <div style={{ display: 'none' }}>
+        <ReactPlayer
+          ref={playerRef}
+          url={url}
+          playing={isPlaying}
+          onProgress={handleProgress}
+          onDuration={handleDuration}
+          onReady={handleReady}
+          onEnded={() => setIsPlaying(false)}
+          width="0"
+          height="0"
+        />
+      </div>
 
-        .progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-            margin-top: -4px;
-        }
+      <p className="text-sm text-muted-foreground mb-4 h-5">
+        {isLoading ? 'Carregando música...' : 'Música Pronta'}
+      </p>
 
-        .progress-bar::-moz-range-thumb {
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-       `}</style>
-      <audio
-        ref={audioRef}
-        src={audioSrc}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)}
-        className="hidden"
-      />
-      <div className="w-full">
-        <div className="flex justify-between items-center text-xs font-mono text-muted-foreground mb-1">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
+      <div className="w-full flex items-center gap-x-3 mb-4">
+        <span className="text-xs font-mono text-muted-foreground w-12 text-left">{formatTime(playedSeconds)}</span>
         <input
+          ref={progressBarRef}
           type="range"
           min="0"
           max={duration || 0}
-          step="0.01"
-          value={currentTime}
+          step="any"
+          value={playedSeconds}
           onChange={handleSeek}
-          className="progress-bar w-full"
+          className="progress-bar flex-grow"
+          disabled={isLoading}
         />
+        <span className="text-xs font-mono text-muted-foreground w-12 text-right">{formatTime(duration)}</span>
       </div>
-      <Button
+
+      <motion.button
         onClick={handlePlayPause}
-        variant="ghost"
-        size="icon"
-        className="w-16 h-16 rounded-full bg-primary text-primary-foreground mt-4"
+        disabled={isLoading}
+        className="bg-primary text-primary-foreground w-16 h-16 rounded-full flex items-center justify-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        whileHover={{ scale: isLoading ? 1 : 1.05 }}
+        whileTap={{ scale: isLoading ? 1 : 0.95 }}
       >
-        {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
-      </Button>
+        <AnimatePresence mode="wait">
+            <motion.div
+              key={isPlaying ? 'pause' : 'play'}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isLoading ? <Loader2 className="animate-spin" size={32} /> : (isPlaying ? <Pause size={32} /> : <Play size={32} className="ml-1" />)}
+            </motion.div>
+        </AnimatePresence>
+      </motion.button>
     </div>
   );
 };
