@@ -30,12 +30,7 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
-import dynamic from 'next/dynamic';
-
-const MusicPlayer = dynamic(() => import('./MusicPlayer'), {
-  loading: () => <div className="flex items-center justify-center h-24"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>,
-  ssr: false,
-});
+import ReactPlayer from "react-player/youtube";
 
 
 // Define the schema for the entire wizard
@@ -571,6 +566,11 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
@@ -757,8 +757,16 @@ export default function CreatePageWizard() {
                                          <p className="text-xs text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}
-                                    {formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                                      <MusicPlayer url={formData.youtubeUrl} />
+                                    {formData.musicOption === 'youtube' && formData.youtubeUrl && isClient && (
+                                        <div className="w-full aspect-video relative">
+                                            <ReactPlayer
+                                                url={formData.youtubeUrl}
+                                                controls={true}
+                                                width="100%"
+                                                height="100%"
+                                                className="absolute top-0 left-0"
+                                            />
+                                        </div>
                                     )}
                                     {formData.musicOption === 'record' && formData.audioRecording && (
                                       <CustomAudioPlayer src={formData.audioRecording} />
@@ -775,5 +783,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
