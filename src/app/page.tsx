@@ -148,7 +148,7 @@ export default function Home() {
                     </Button>
                 </a>
             </div>
-            <div className="relative w-full max-w-md mx-auto lg:max-w-none lg:mx-0">
+            <div className="relative w-full max-w-sm mx-auto lg:max-w-none lg:mx-0">
                 <div className="aspect-square relative">
                     <Image 
                         src={"https://picsum.photos/800/800"}
@@ -170,37 +170,19 @@ export default function Home() {
               Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
             </p>
           </div>
-          <div className="flex flex-col items-center justify-center gap-y-4 mt-16 sm:grid sm:grid-cols-2 sm:gap-x-2 sm:px-8 md:px-[4.5rem] xl:gap-4 xl:flex xl:flex-row">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {steps.map((step, index) => (
               <div
                 key={step.title}
-                className="group relative flex flex-col justify-between gap-4 p-8 rounded-2xl w-full transition-all duration-500 ease-in-out cursor-pointer overflow-hidden bg-neutral-800 items-center max-h-[18.125rem] min-h-[18.125rem] max-w-[14rem] min-w-[13rem]"
+                className="group relative flex flex-col justify-start text-center gap-4 p-6 rounded-2xl w-full transition-all duration-300 ease-in-out overflow-hidden bg-neutral-800 items-center"
               >
-                <div>
-                  <p className="
-                      flex flex-wrap w-full text-2xl font-semibold text-center
-                      transition-all duration-500 ease-out gap-x-1 text-neutral-200
-                      items-center justify-center group-hover:-translate-y-2
-                    "><span className="min-[581px]:w-full w-fit">{index + 1}.</span>{step.title}</p>
-                  <p
-                    className="text-sm text-neutral-200 overflow-hidden transition-all duration-700 ease-out opacity-0 -translate-y-2 mt-0 group-hover:opacity-100 group-hover:translate-y-0 group-hover:mt-2"
-                     style={{
-                      maxHeight: "0px",
-                      transition: "all 0.7s ease-out"
-                    }}
-                     ref={el => {
-                      if (el) {
-                        el.style.maxHeight = el.parentElement?.parentElement?.matches(':hover') ? `${el.scrollHeight}px` : '0px';
-                      }
-                    }}
-                  >
+                <div className="flex items-center justify-center bg-primary/10 p-4 rounded-full mb-4">
+                  <step.icon className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-neutral-200">{index + 1}. {step.title}</h3>
+                <p className="text-sm text-neutral-400">
                    {step.description}
-                  </p>
-                </div>
-                <div className="relative">
-                    <step.icon className="w-12 h-12 text-primary transition-all duration-500 ease-out group-hover:opacity-0 group-hover:scale-75" />
-                    <step.icon className="w-10 h-10 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-100" />
-                </div>
+                </p>
               </div>
             ))}
           </div>

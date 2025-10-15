@@ -204,112 +204,58 @@
     border-radius: theme('borderRadius.lg');
   }
 
-  /* Music Player Card Styles */
-  .music-player-container {
-    @apply w-full max-w-sm mx-auto;
+  /* Music Play Button Glow & Particles */
+  .music-play-button {
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.5), 0 0 30px hsl(var(--primary) / 0.3), inset 0 0 10px hsl(var(--primary) / 0.2);
   }
 
-  .main-music-card {
-    @apply relative bg-card/80 border border-border/60 rounded-lg p-4 shadow-lg flex flex-col gap-3 transition-all duration-300;
-  }
-
-  .track-info {
-    @apply flex items-center gap-4;
-  }
-
-  .album-art {
-    @apply w-16 h-16 bg-cover bg-center rounded-md shrink-0;
-  }
-
-  .track-details {
-    @apply flex-grow overflow-hidden;
-  }
-
-  .track-title {
-    @apply text-lg font-semibold text-primary-foreground truncate;
-  }
-
-  .artist-name {
-    @apply text-sm text-muted-foreground;
-  }
-
-  .volume-bars {
-    @apply flex items-end gap-0.5 h-7;
-  }
-
-  .bar {
-    @apply w-1 h-1.5 bg-primary/70 rounded-full;
-    animation: bounce 1.5s ease-in-out infinite;
-  }
-
-  .volume-bars.paused .bar {
-    animation-play-state: paused;
-    @apply h-1.5; /* Equivalent to 6px if base font size is 16px */
-  }
-
-  .bar:nth-child(2) { animation-delay: -0.2s; }
-  .bar:nth-child(3) { animation-delay: -0.4s; }
-  .bar:nth-child(4) { animation-delay: -0.6s; }
-  .bar:nth-child(5) { animation-delay: -0.8s; }
-  .bar:nth-child(6) { animation-delay: -1s; }
-  .bar:nth-child(7) { animation-delay: -1.2s; }
-  .bar:nth-child(8) { animation-delay: -1.4s; }
-  
-
-  .playback-controls {
-    @apply flex flex-col gap-2;
-  }
-
-  .time-info {
-    @apply flex justify-between text-xs text-muted-foreground;
-  }
-
-  .progress-bar-container {
-    @apply relative w-full h-2 flex items-center;
-  }
-  
-  .progress-slider {
-    @apply w-full h-1 bg-muted rounded-full appearance-none cursor-pointer;
-  }
-  
-  .progress-slider::-webkit-slider-thumb {
-    @apply w-3 h-3 bg-primary-foreground rounded-full border-2 border-primary appearance-none cursor-pointer;
-  }
-
-  .button-row {
-    @apply flex items-center justify-between;
-  }
-
-  .main-control-btns {
-    @apply flex items-center gap-3;
-  }
-
-  .control-button {
-    @apply text-primary-foreground/80 hover:text-primary-foreground transition-colors;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-  .control-button:disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
-
-  .play-pause-btns {
-    @apply w-12 h-12 flex items-center justify-center;
-  }
-
-  .play-pause-button {
-    @apply w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors;
-  }
-  
-  @keyframes bounce {
-    0%,
+  @keyframes particle-anim {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
     100% {
-      transform: scaleY(0.3);
-    }
-    50% {
-      transform: scaleY(1);
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
     }
   }
 
+  .particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background: hsl(var(--accent));
+    border-radius: 50%;
+    animation: particle-fly 1.2s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes particle-fly {
+    0% {
+      transform: scale(0.5);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) scale(0);
+      opacity: 0;
+    }
+  }
+
+  .particle:nth-child(1) { --tx: 60px; --ty: -20px; animation-delay: 0s; }
+  .particle:nth-child(2) { --tx: 80px; --ty: 20px; animation-delay: 0.05s; }
+  .particle:nth-child(3) { --tx: 30px; --ty: 70px; animation-delay: 0.1s; }
+  .particle:nth-child(4) { --tx: -40px; --ty: 75px; animation-delay: 0.15s; }
+  .particle:nth-child(5) { --tx: -80px; --ty: 30px; animation-delay: 0.2s; }
+  .particle:nth-child(6) { --tx: -70px; --ty: -40px; animation-delay: 0.25s; }
+  .particle:nth-child(7) { --tx: -20px; --ty: -80px; animation-delay: 0.3s; }
+  .particle:nth-child(8) { --tx: 40px; --ty: -70px; animation-delay: 0.35s; }
+  .particle:nth-child(9) { --tx: 75px; --ty: 0px; animation-delay: 0.4s; }
+  .particle:nth-child(10) { --tx: 0px; --ty: 80px; animation-delay: 0.45s; }
+  .particle:nth-child(11) { --tx: -75px; --ty: -10px; animation-delay: 0.5s; }
+  .particle:nth-child(12) { --tx: 10px; --ty: -80px; animation-delay: 0.55s; }
+  .particle:nth-child(13) { --tx: 50px; --ty: 50px; animation-delay: 0.6s; }
+  .particle:nth-child(14) { --tx: -50px; --ty: 50px; animation-delay: 0.65s; }
+  .particle:nth-child(15) { --tx: -50px; --ty: -50px; animation-delay: 0.7s; }
 }

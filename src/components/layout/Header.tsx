@@ -70,9 +70,9 @@ export default function Header() {
                    <Image
                       src={logoUrl}
                       alt="Amore Pages Logo"
-                      width={120}
-                      height={120}
-                      className="w-24 h-24"
+                      width={140}
+                      height={140}
+                      className="w-32 h-32"
                       data-ai-hint="logo"
                     />
                 </SheetTitle>
@@ -84,7 +84,7 @@ export default function Header() {
                     href={link.href}
                     className={cn(
                       buttonVariants({ variant: "ghost" }),
-                      "justify-start text-lg",
+                      "justify-start text-xl py-6",
                       pathname === link.href && "text-primary font-bold"
                     )}
                     onClick={() => setSheetOpen(false)}
@@ -92,7 +92,7 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
-                <Button asChild size="lg" className="mt-4">
+                <Button asChild size="lg" className="mt-4 text-lg">
                   <Link href="/criar" onClick={() => setSheetOpen(false)}>
                     Criar Página
                   </Link>
