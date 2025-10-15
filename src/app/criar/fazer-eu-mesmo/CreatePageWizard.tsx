@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
-import ReactPlayer from 'react-player/youtube';
+import MusicPlayerCard from "@/components/ui/music-player-card";
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
@@ -750,14 +750,8 @@ export default function CreatePageWizard() {
                                       </div>
                                     )}
                                     {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                                      <div className="w-full max-w-sm mx-auto aspect-video">
-                                        <ReactPlayer
-                                          url={formData.youtubeUrl}
-                                          width="100%"
-                                          height="100%"
-                                          playing={true}
-                                          controls={true}
-                                        />
+                                      <div className="w-full max-w-sm mx-auto">
+                                        <MusicPlayerCard videoUrl={formData.youtubeUrl} />
                                       </div>
                                     )}
                                     {isClient && formData.musicOption === 'record' && formData.audioRecording && (
@@ -777,4 +771,6 @@ export default function CreatePageWizard() {
 }
 
     
+    
+
     
