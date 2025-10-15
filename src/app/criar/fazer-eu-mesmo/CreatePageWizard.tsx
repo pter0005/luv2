@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
+import ReactPlayer from 'react-player/youtube';
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
@@ -42,6 +43,8 @@ const pageSchema = z.object({
   countdownStyle: z.string().default("Padrão"),
   galleryImages: z.array(z.object({ file: z.any(), preview: z.string() })).default([]),
   galleryStyle: z.string().default("Cube"),
+  musicOption: z.string().default("none"),
+  youtubeUrl: z.string().optional(),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -70,7 +73,13 @@ const steps = [
     title: "Galeria de Fotos",
     description: "Adicione fotos para personalizar a galeria.",
     fields: ["galleryImages", "galleryStyle"],
-  }
+  },
+  {
+    id: "music",
+    title: "Música Dedicada",
+    description: "Escolha uma trilha sonora para sua página ou grave uma mensagem de voz.",
+    fields: ["musicOption", "youtubeUrl"],
+  },
 ];
 
 const TitleStep = () => (
@@ -376,11 +385,92 @@ const GalleryStep = () => {
   );
 };
 
+const MusicStep = () => {
+  const { control } = useFormContext<PageData>();
+  const musicOption = useWatch({ control, name: "musicOption" });
 
-const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />];
+  return (
+    <div className="space-y-8">
+      <FormField
+        control={control}
+        name="musicOption"
+        render={({ field }) => (
+          <FormItem className="space-y-3">
+            <FormLabel>Escolha a trilha sonora</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                className="flex flex-col space-y-2"
+              >
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="none" id="music-none" className="peer sr-only" />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-none"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Nenhum Som
+                  </Label>
+                </FormItem>
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="record" id="music-record" className="peer sr-only" disabled />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-record"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Gravar Mensagem de Voz <Mic className="h-5 w-5" />
+                  </Label>
+                </FormItem>
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-youtube"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Usar Música do YouTube <Youtube className="h-5 w-5" />
+                  </Label>
+                </FormItem>
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {musicOption === 'youtube' && (
+        <FormField
+          control={control}
+          name="youtubeUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Link da música no YouTube</FormLabel>
+              <FormControl>
+                <Input placeholder="Cole o link aqui" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </div>
+  );
+};
+
+
+const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />, <MusicStep key="music" />];
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
@@ -394,6 +484,8 @@ export default function CreatePageWizard() {
       countdownStyle: "Padrão",
       galleryImages: [],
       galleryStyle: "Cube",
+      musicOption: "none",
+      youtubeUrl: "",
     },
   });
 
@@ -555,6 +647,17 @@ export default function CreatePageWizard() {
                                             ))}
                                         </Swiper>
                                          <p className="text-sm text-muted-foreground mt-4">Estilo: {formData.galleryStyle}</p>
+                                      </div>
+                                    )}
+                                    {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
+                                      <div className="w-full max-w-sm mx-auto aspect-video">
+                                        <ReactPlayer
+                                          url={formData.youtubeUrl}
+                                          width="100%"
+                                          height="100%"
+                                          playing={true}
+                                          controls={true}
+                                        />
                                       </div>
                                     )}
                                 </div>
