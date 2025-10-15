@@ -8,8 +8,6 @@ interface Heart {
   style: React.CSSProperties;
 }
 
-const heartCount = 20;
-
 export default function FallingHearts({ count = 20, color = 'hsl(var(--primary))' }: { count?: number, color?: string }) {
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [pageHeight, setPageHeight] = useState(0);
@@ -20,9 +18,9 @@ export default function FallingHearts({ count = 20, color = 'hsl(var(--primary))
     const generateHearts = () => {
       const newHearts = Array.from({ length: count }, (_, i) => {
         const size = Math.random() * 2 + 1; // 1rem to 3rem
-        const duration = Math.random() * 20 + 30; // Slower: 30s to 50s
-        const delay = Math.random() * (count / 2); // Stagger delay based on count
-        const rotation = Math.random() * 90 - 45; // -45deg to 45deg
+        const duration = Math.random() * 10 + 10; // 10s to 20s
+        const delay = Math.random() * count;
+        const rotation = Math.random() * 90 - 45;
         return {
           id: i,
           style: {
@@ -40,6 +38,9 @@ export default function FallingHearts({ count = 20, color = 'hsl(var(--primary))
     };
 
     generateHearts();
+    const handleResize = () => setPageHeight(document.documentElement.scrollHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [count, color]);
 
   return (

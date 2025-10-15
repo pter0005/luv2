@@ -10,7 +10,7 @@ const StarrySky = () => {
                 const size = Math.random() * 1.5 + 0.5;
                 const duration = Math.random() * 2 + 1.5;
                 const delay = Math.random() * 3;
-                const colors = ['#FFD700', '#ADD8E6', '#FFFFFF', '#F0E68C'];
+                const colors = ['#FFFFFF', '#FFFFFF', '#ADD8E6', '#F0E68C'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
 
                 return {

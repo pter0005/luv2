@@ -107,11 +107,11 @@
   }
 
   .mystic-fog-1 {
-    @apply absolute -top-[10rem] -left-[10rem] w-[50rem] h-[50rem] bg-primary/50 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite];
+    @apply absolute -top-[10rem] -left-[10rem] w-[50rem] h-[50rem] bg-gradient-to-br from-primary via-accent to-primary/50 opacity-20 rounded-full blur-3xl -z-10 animate-[spin_60s_linear_infinite];
   }
 
   .mystic-fog-2 {
-      @apply absolute -bottom-[10rem] -right-[10rem] w-[50rem] h-[50rem] bg-accent/50 opacity-50 rounded-full blur-3xl -z-10 animate-[spin_70s_linear_infinite_reverse];
+      @apply absolute -bottom-[10rem] -right-[10rem] w-[50rem] h-[50rem] bg-gradient-to-tl from-accent via-primary to-accent/50 opacity-20 rounded-full blur-3xl -z-10 animate-[spin_70s_linear_infinite_reverse];
   }
   
   .heart {
@@ -302,8 +302,17 @@
 
   /* Floating Dots */
   .dot-fall {
-    animation-name: fall;
+    animation-name: dot-fall-anim;
     animation-timing-function: linear;
     animation-iteration-count: infinite;
+  }
+
+  @keyframes dot-fall-anim {
+    from {
+        transform: translateY(0vh);
+    }
+    to {
+      transform: translateY(110vh);
+    }
   }
 }

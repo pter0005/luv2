@@ -15,7 +15,7 @@ const FloatingDots = () => {
 
                 return {
                     left: `${Math.random() * 100}%`,
-                    top: '-5%', // Start above the viewport
+                    top: '-5%',
                     width: `${size}px`,
                     height: `${size}px`,
                     backgroundColor: color,
