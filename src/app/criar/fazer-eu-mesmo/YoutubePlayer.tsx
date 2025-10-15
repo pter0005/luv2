@@ -17,7 +17,7 @@ const YoutubePlayer = ({ url }: YoutubePlayerProps) => {
   }, []);
 
   return (
-    <div className="relative w-full my-6">
+    <div className="relative w-full my-6 rounded-lg overflow-hidden shadow-lg shadow-primary/50">
       {hasWindow && (
         <ReactPlayer
           url={url}
