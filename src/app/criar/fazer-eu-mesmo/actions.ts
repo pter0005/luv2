@@ -1,31 +1,58 @@
-"use server";
-
-import { suggestContent, SuggestContentInput } from "@/ai/flows/ai-powered-content-suggestion";
-import { z } from "zod";
-
-const schema = z.object({
-  userInput: z.string().min(10, { message: "Por favor, descreva com mais detalhes." }),
-});
-
-export async function handleSuggestContent(formData: FormData) {
-  const userInput = formData.get("userInput");
-
-  const validatedFields = schema.safeParse({
-    userInput: userInput,
-  });
-
-  if (!validatedFields.success) {
-    return {
-      error: "Input inválido.",
-      details: validatedFields.error.flatten().fieldErrors,
-    };
-  }
-
-  try {
-    const result = await suggestContent(validatedFields.data as SuggestContentInput);
-    return { suggestions: result.suggestions };
-  } catch (error) {
-    console.error("Error calling GenAI flow:", error);
-    return { error: "Ocorreu um erro ao gerar sugestões. Tente novamente." };
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 9002",
+    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
+    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "build": "NODE_ENV=production next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genkit-ai/google-genai": "^1.20.0",
+    "@genkit-ai/next": "^1.20.0",
+    "@hookform/resolvers": "^4.1.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-toggle-group": "^1.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
+    "framer-motion": "^11.5.7",
+    "genkit": "^1.20.0",
+    "lucide-react": "^0.475.0",
+    "next": "15.3.3",
+    "patch-package": "^8.0.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "react-player": "^2.16.0",
+    "swiper": "^11.1.4",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "genkit-cli": "^1.20.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }
