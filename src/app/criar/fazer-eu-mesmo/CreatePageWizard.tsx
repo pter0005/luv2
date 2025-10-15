@@ -30,7 +30,12 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
-import ReactPlayer from "react-player/youtube";
+import dynamic from "next/dynamic";
+
+const YoutubePlayer = dynamic(() => import("./YoutubePlayer"), {
+  ssr: false,
+  loading: () => <div className="w-full h-24 flex items-center justify-center"><p className="text-sm text-muted-foreground">Carregando Player...</p></div>,
+});
 
 
 // Define the schema for the entire wizard
@@ -757,17 +762,11 @@ export default function CreatePageWizard() {
                                          <p className="text-xs text-muted-foreground mt-2">Estilo: {formData.galleryStyle}</p>
                                       </div>
                                     )}
+                                    
                                     {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                                        <div className="w-full aspect-video relative">
-                                            <ReactPlayer
-                                                url={formData.youtubeUrl}
-                                                controls={true}
-                                                width="100%"
-                                                height="100%"
-                                                className="absolute top-0 left-0"
-                                            />
-                                        </div>
+                                      <YoutubePlayer url={formData.youtubeUrl} />
                                     )}
+
                                     {isClient && formData.musicOption === 'record' && formData.audioRecording && (
                                       <CustomAudioPlayer src={formData.audioRecording} />
                                     )}
@@ -783,5 +782,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
