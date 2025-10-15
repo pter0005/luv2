@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player/youtube';
 import { cn } from '@/lib/utils';
 import { Play, Pause, SkipBack, SkipForward, Radio } from 'lucide-react';
@@ -13,12 +13,13 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isReady, setIsReady] = useState(false);
   
   const playerRef = useRef<ReactPlayer>(null);
 
   const videoIdMatch = videoUrl.match(/(?:v=)([^&]+)/) || videoUrl.match(/(?:youtu.be\/)([^?]+)/);
   const videoId = videoIdMatch ? videoIdMatch[1] : null;
-  const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'https://placehold.co/80x80/000000/FFFFFF/png?text=LUV';
+  const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'https://placehold.co/80x80/000000/FFFFFF/png?text=LUV';
 
   const formatTime = (seconds: number) => {
     if (isNaN(seconds) || seconds === Infinity) {
@@ -31,7 +32,9 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
   };
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (isReady) {
+      setIsPlaying(!isPlaying);
+    }
   };
   
   const handleProgress = (state: { played: number }) => {
@@ -83,7 +86,7 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
                  <SkipBack size={20} />
                </button>
                <div className="play-pause-btns">
-                 <button onClick={handlePlayPause} className="control-button play-pause-button">
+                 <button onClick={handlePlayPause} className="control-button play-pause-button" disabled={!isReady}>
                    {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                  </button>
                </div>
@@ -103,6 +106,7 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
               ref={playerRef}
               url={videoUrl}
               playing={isPlaying}
+              onReady={() => setIsReady(true)}
               onProgress={handleProgress}
               onDuration={handleDuration}
               onEnded={() => setIsPlaying(false)}
