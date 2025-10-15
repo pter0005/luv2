@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
+import { useState, useRef } from 'react';
 import ReactPlayer from 'react-player/youtube';
 import { cn } from '@/lib/utils';
 import { Play, Pause, SkipBack, SkipForward, Radio } from 'lucide-react';
@@ -14,9 +13,9 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
-
-  const playerRef = useRef<ReactPlayer>(null);
   
+  const playerRef = useRef<ReactPlayer>(null);
+
   const videoIdMatch = videoUrl.match(/(?:v=)([^&]+)/) || videoUrl.match(/(?:youtu.be\/)([^?]+)/);
   const videoId = videoIdMatch ? videoIdMatch[1] : null;
   const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'https://placehold.co/80x80/000000/FFFFFF/png?text=LUV';
@@ -49,7 +48,6 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
     playerRef.current?.seekTo(newPlayed);
   };
 
-
   return (
     <div className="music-player-container">
        <div className="main-music-card">
@@ -60,14 +58,7 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
              <div className="artist-name">YouTube</div>
            </div>
            <div className={cn("volume-bars", !isPlaying && "paused")}>
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
-             <div className="bar" />
+             {[...Array(8)].map((_, i) => <div key={i} className="bar" />)}
            </div>
          </div>
          <div className="playback-controls">
@@ -88,7 +79,7 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
            </div>
            <div className="button-row">
              <div className="main-control-btns">
-               <button className="control-button back" disabled>
+               <button className="control-button" disabled>
                  <SkipBack size={20} />
                </button>
                <div className="play-pause-btns">
@@ -96,11 +87,11 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
                    {isPlaying ? <Pause size={24} /> : <Play size={24} />}
                  </button>
                </div>
-               <button className="control-button next" disabled>
+               <button className="control-button" disabled>
                  <SkipForward size={20}/>
                </button>
              </div>
-             <button className="control-button d">
+             <button className="control-button" disabled>
                <Radio size={20}/>
              </button>
            </div>

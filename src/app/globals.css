@@ -238,13 +238,13 @@
   }
 
   .bar {
-    @apply w-1 h-1.5 bg-primary/70 rounded-full transition-all duration-200;
+    @apply w-1 h-1.5 bg-primary/70 rounded-full;
     animation: bounce 1.5s ease-in-out infinite;
   }
 
   .volume-bars.paused .bar {
     animation-play-state: paused;
-    height: 6px;
+    @apply h-1.5; /* Equivalent to 6px if base font size is 16px */
   }
 
   .bar:nth-child(2) { animation-delay: -0.2s; }
@@ -299,7 +299,7 @@
   }
 
   .play-pause-button {
-    @apply w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90;
+    @apply w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors;
   }
   
   @keyframes bounce {
