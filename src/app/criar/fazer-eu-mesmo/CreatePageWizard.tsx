@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, StopCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -400,6 +400,7 @@ const MusicStep = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = []; // Limpa os pedaços anteriores
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
@@ -407,7 +408,7 @@ const MusicStep = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
-        setValue("audioRecording", url); 
+        setValue("audioRecording", url, { shouldDirty: true, shouldValidate: true });
         audioChunksRef.current = [];
       };
       mediaRecorderRef.current.start();
@@ -499,13 +500,13 @@ const MusicStep = () => {
             <h4 className="font-semibold">Gravador de Voz</h4>
              <div className="flex items-center gap-4">
                 {recordingStatus === "idle" && (
-                    <Button onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
                 )}
                 {recordingStatus === "recording" && (
-                    <Button onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
+                    <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
                 )}
                  {recordingStatus === "recorded" && (
-                    <Button onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
                 )}
                 {audioURL && (
                    <audio src={audioURL} controls className="w-full" />
@@ -523,6 +524,44 @@ const MusicStep = () => {
 
 
 const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />, <MusicStep key="music" />];
+
+const CustomAudioPlayer = ({ src }: { src: string }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handleEnded = () => setIsPlaying(false);
+      audio.addEventListener('ended', handleEnded);
+      return () => {
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, []);
+
+  return (
+    <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+      <audio ref={audioRef} src={src} className="hidden" />
+      <Button onClick={togglePlayPause} size="icon" variant="ghost" className="text-primary-foreground bg-primary/80 hover:bg-primary">
+        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+      </Button>
+      <p className="text-sm text-primary-foreground font-semibold">Sua mensagem de voz</p>
+    </div>
+  );
+};
+
 
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -722,9 +761,7 @@ export default function CreatePageWizard() {
                                       </div>
                                     )}
                                     {isClient && formData.musicOption === 'record' && formData.audioRecording && (
-                                        <div className="w-full max-w-sm mx-auto">
-                                            <audio src={formData.audioRecording} controls className="w-full" />
-                                        </div>
+                                      <CustomAudioPlayer src={formData.audioRecording} />
                                     )}
                                 </div>
                                 </div>
@@ -739,4 +776,5 @@ export default function CreatePageWizard() {
   );
 }
 
+    
     
