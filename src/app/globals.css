@@ -63,7 +63,7 @@
 
 @layer utilities {
   .section-padding {
-    @apply py-20 md:py-28;
+    @apply py-16 md:py-24;
   }
   .mystic-glow::before {
     content: '';
@@ -90,7 +90,7 @@
   }
   
   .card-glow {
-    @apply bg-black backdrop-blur-sm transition-all duration-300 border-transparent border;
+    @apply bg-black/80 backdrop-blur-sm transition-all duration-300 border-transparent border;
     box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1), 0 2px 8px 0px hsl(var(--background) / 0.5);
   }
   .card-glow:hover {
