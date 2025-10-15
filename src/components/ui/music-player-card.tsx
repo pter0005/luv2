@@ -1,18 +1,15 @@
 'use client';
 
+import { convertVideoToAudio } from '@/ai/flows/youtube-to-audio';
+import { Loader2, Pause, Play } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import ReactPlayer from 'react-player/youtube';
-import { Play, Pause } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from './button';
 
-// Função auxiliar para formatar o tempo de segundos para MM:SS
-const formatTime = (seconds: number): string => {
-  if (isNaN(seconds) || seconds < 0) return '00:00';
-  const date = new Date(seconds * 1000);
-  const mm = date.getUTCMinutes();
-  const ss = date.getUTCSeconds().toString().padStart(2, '0');
-  return `${mm}:${ss}`;
+const formatTime = (timeInSeconds: number): string => {
+  if (isNaN(timeInSeconds) || timeInSeconds < 0) return '00:00';
+  const minutes = Math.floor(timeInSeconds / 60);
+  const seconds = Math.floor(timeInSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
 interface MusicPlayerCardProps {
@@ -21,41 +18,88 @@ interface MusicPlayerCardProps {
 
 const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const playerRef = useRef<ReactPlayer>(null);
-  const progressBarRef = useRef<HTMLInputElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const fetchAudio = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await convertVideoToAudio({ url });
+        setAudioSrc(result.media);
+      } catch (err) {
+        console.error('Error converting video to audio:', err);
+        setError('Não foi possível carregar o áudio.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAudio();
+  }, [url]);
 
   const handlePlayPause = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(e => console.error("Play error:", e));
+    }
     setIsPlaying(!isPlaying);
   };
 
-  const handleProgress = (state: { played: number; playedSeconds: number }) => {
-    setProgress(state.played);
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
   };
 
-  const handleDuration = (duration: number) => {
-    setDuration(duration);
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newProgress = parseFloat(e.target.value);
-    setProgress(newProgress);
-    playerRef.current?.seekTo(newProgress);
-  };
-  
-  useEffect(() => {
-    if (progressBarRef.current) {
-        const currentProgress = progress * 100;
-        progressBarRef.current.style.setProperty('--progress', `${currentProgress}%`);
+    if (audioRef.current) {
+      const newTime = parseFloat(e.target.value);
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
     }
-  }, [progress]);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center border border-border/60 min-h-[150px]">
+        <Loader2 className="animate-spin text-primary" size={32} />
+        <p className="text-sm text-muted-foreground mt-4">Processando áudio...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+       <div className="w-full max-w-xs mx-auto bg-destructive/20 text-destructive-foreground rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center border border-destructive/60 min-h-[150px]">
+        <p className="text-sm text-center">{error}</p>
+      </div>
+    )
+  }
+
+  if (!audioSrc) return null;
 
   return (
-    <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-4 flex flex-col items-center border border-border/60">
+    <div className="w-full max-w-xs mx-auto bg-card/80 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-border/60">
        <style>{`
         .progress-bar {
-            --progress: 0%;
+            --progress: ${duration > 0 ? (currentTime / duration) * 100 : 0}%;
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
@@ -88,58 +132,37 @@ const MusicPlayerCard: React.FC<MusicPlayerCardProps> = ({ url }) => {
             cursor: pointer;
         }
        `}</style>
-        
-      <div className="absolute -z-10 opacity-0">
-        <ReactPlayer
-          ref={playerRef}
-          url={url}
-          playing={isPlaying}
-          onProgress={handleProgress}
-          onDuration={handleDuration}
-          onEnded={() => setIsPlaying(false)}
-          width="1px"
-          height="1px"
-          volume={0.8}
-        />
-      </div>
-
-      <p className="text-sm font-semibold text-foreground mb-3">Sua Música</p>
-      
-      <div className="w-full flex items-center gap-x-2">
-        <span className="text-xs font-mono text-muted-foreground w-10 text-left">{formatTime(progress * duration)}</span>
+      <audio
+        ref={audioRef}
+        src={audioSrc}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+        className="hidden"
+      />
+      <div className="w-full">
+        <div className="flex justify-between items-center text-xs font-mono text-muted-foreground mb-1">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
         <input
-          ref={progressBarRef}
           type="range"
           min="0"
-          max="0.999999"
-          step="any"
-          value={progress}
+          max={duration || 0}
+          step="0.01"
+          value={currentTime}
           onChange={handleSeek}
-          className="progress-bar flex-grow"
+          className="progress-bar w-full"
         />
-        <span className="text-xs font-mono text-muted-foreground w-10 text-right">{formatTime(duration)}</span>
       </div>
-
-      <div className="mt-2">
-        <motion.button
-          onClick={handlePlayPause}
-          className="bg-primary text-primary-foreground w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={isPlaying ? 'pause' : 'play'}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ duration: 0.2 }}
-            >
-              {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
-            </motion.div>
-          </AnimatePresence>
-        </motion.button>
-      </div>
+      <Button
+        onClick={handlePlayPause}
+        variant="ghost"
+        size="icon"
+        className="w-16 h-16 rounded-full bg-primary text-primary-foreground mt-4"
+      >
+        {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+      </Button>
     </div>
   );
 };
