@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, ChangeEvent, useRef } from "react";
+import { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition } from "react";
 import { useForm, FormProvider, useWatch, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -31,6 +31,8 @@ import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from "next/dynamic";
+import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
+import { useToast } from "@/hooks/use-toast";
 
 const YoutubePlayer = dynamic(() => import("./YoutubePlayer"), {
   ssr: false,
@@ -50,8 +52,10 @@ const pageSchema = z.object({
   galleryImages: z.array(z.object({ file: z.any(), preview: z.string() })).default([]),
   galleryStyle: z.string().default("Cube"),
   musicOption: z.string().default("none"),
-  youtubeUrl: z.string().url({ message: "Por favor, insira um link válido do YouTube." }).optional().or(z.literal('')),
+  youtubeUrl: z.string().optional().or(z.literal('')),
   audioRecording: z.string().optional(),
+  songName: z.string().optional(),
+  artistName: z.string().optional(),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -85,7 +89,7 @@ const steps = [
     id: "music",
     title: "Música Dedicada",
     description: "Escolha uma trilha sonora para sua página ou grave uma mensagem de voz.",
-    fields: ["musicOption", "youtubeUrl", "audioRecording"],
+    fields: ["musicOption", "youtubeUrl", "audioRecording", "songName", "artistName"],
   },
 ];
 
@@ -395,13 +399,52 @@ const GalleryStep = () => {
 };
 
 const MusicStep = () => {
-  const { control, setValue } = useFormContext<PageData>();
+  const { control, setValue, getValues } = useFormContext<PageData>();
   const musicOption = useWatch({ control, name: "musicOption" });
+  const [isSearching, startTransition] = useTransition();
+  const { toast } = useToast();
+
 
   const [recordingStatus, setRecordingStatus] = useState("idle");
   const [audioURL, setAudioURL] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleSearchMusic = () => {
+    const songName = getValues("songName");
+    const artistName = getValues("artistName");
+
+    if (!songName || !artistName) {
+        toast({
+            variant: "destructive",
+            title: "Campos obrigatórios",
+            description: "Por favor, preencha o nome da música e do artista.",
+        });
+        return;
+    }
+
+    startTransition(async () => {
+        try {
+            const result = await findYoutubeVideo({ songName, artistName });
+            if (result.url && result.url.startsWith('http')) {
+                setValue("youtubeUrl", result.url, { shouldDirty: true, shouldValidate: true });
+                toast({
+                    title: "Música encontrada!",
+                    description: `A música "${songName}" foi adicionada.`,
+                });
+            } else {
+                 throw new Error("Nenhuma URL válida retornada.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: "destructive",
+                title: "Erro ao buscar música",
+                description: "Não foi possível encontrar a música. Tente novamente.",
+            });
+        }
+    });
+  }
 
   const startRecording = async () => {
     try {
@@ -444,7 +487,10 @@ const MusicStep = () => {
             <FormLabel>Escolha a trilha sonora</FormLabel>
             <FormControl>
               <RadioGroup
-                onValueChange={field.onChange}
+                onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue("youtubeUrl", ""); // Limpa a URL ao trocar de opção
+                }}
                 defaultValue={field.value}
                 className="flex flex-col space-y-2"
               >
@@ -488,19 +534,40 @@ const MusicStep = () => {
         )}
       />
       {musicOption === 'youtube' && (
-        <FormField
-          control={control}
-          name="youtubeUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Link da música no YouTube</FormLabel>
-              <FormControl>
-                <Input placeholder="Cole o link aqui" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+             <div className="space-y-2">
+                <FormField
+                    control={control}
+                    name="songName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome da Música</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Perfect" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={control}
+                    name="artistName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome do Artista</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Ed Sheeran" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
+                {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
+                Buscar Música
+            </Button>
+        </div>
       )}
       {musicOption === 'record' && (
         <div className="space-y-4 rounded-lg border bg-card/80 p-4">
@@ -521,7 +588,7 @@ const MusicStep = () => {
              </div>
              <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
                 {recordingStatus === 'recording' && 'Gravando...'}
-                {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
+                {recording-status === 'recorded' && 'Gravação concluída. Ouça acima.'}
             </p>
         </div>
       )}
@@ -592,6 +659,8 @@ export default function CreatePageWizard() {
       musicOption: "none",
       youtubeUrl: "",
       audioRecording: "",
+      songName: "",
+      artistName: ""
     },
   });
 
@@ -614,7 +683,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
