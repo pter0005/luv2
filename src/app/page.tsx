@@ -128,17 +128,17 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative py-16 md:py-20 flex items-center min-h-[calc(100vh-80px)] overflow-hidden">
+      <section className="relative py-12 md:py-16 flex items-center min-h-[calc(100vh-80px)] overflow-hidden">
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
-                <h1 className="text-4xl md:text-4xl font-bold tracking-tight text-foreground font-display leading-tight">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground font-display leading-tight">
                     Declare seu amor <br />
-                    <span className="block font-handwriting text-primary text-5xl mt-2 leading-relaxed">
+                    <span className="block font-handwriting text-primary text-4xl md:text-5xl mt-2 leading-relaxed">
                         {typedPhrase}
                         <span className="animate-blink">|</span>
                     </span>
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 my-6">
+                <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0 my-6">
                     Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
                 </p>
                 <a href="/criar">
@@ -148,7 +148,7 @@ export default function Home() {
                     </Button>
                 </a>
             </div>
-            <div className="relative w-full max-w-md mx-auto lg:max-w-none lg:mx-0">
+            <div className="relative w-full max-w-sm mx-auto lg:max-w-md lg:mx-0">
                 <div className="aspect-square relative">
                     <Image 
                         src={"https://picsum.photos/800/800"}
@@ -162,9 +162,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="recursos" className="py-16 md:py-24">
+      <section id="recursos" className="py-12 md:py-20">
         <div className="container max-w-5xl text-center">
-          <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Crie uma memória em 4 passos!</h2>
             <p className="text-base text-muted-foreground mt-4 mb-6">
               Surpreenda alguém especial com uma lembrança digital que fará o coração disparar. É fácil, rápido e inesquecível.
@@ -177,7 +177,7 @@ export default function Home() {
                 className="group relative flex flex-col justify-start text-center gap-4 p-6 rounded-2xl w-full transition-all duration-300 ease-in-out overflow-hidden bg-neutral-800/80 items-center"
               >
                 <div className="flex items-center justify-center bg-primary/10 p-3 rounded-full mb-2">
-                  <step.icon className="w-7 h-7 text-primary" />
+                  <step.icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold text-neutral-200">{index + 1}. {step.title}</h3>
                 <p className="text-sm text-neutral-400">
@@ -194,9 +194,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="experiencia" className="py-16 md:py-24">
+      <section id="experiencia" className="py-12 md:py-20">
         <div className="container max-w-5xl">
-           <div className="text-center max-w-3xl mx-auto mb-12">
+           <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Uma Experiência Incomparável</h2>
               <p className="mt-4 text-base text-muted-foreground">Cada detalhe foi pensado para proporcionar uma declaração de amor que transcende o comum. Oferecemos mais que uma página, uma memória viva.</p>
            </div>
@@ -225,7 +225,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="avaliacoes" className="py-16 md:py-24">
+      <section id="avaliacoes" className="py-12 md:py-20">
         <div className="container max-w-5xl">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Histórias que Inspiram</h2>
