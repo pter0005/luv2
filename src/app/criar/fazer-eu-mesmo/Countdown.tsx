@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { differenceInYears, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds, addYears, addMonths, addDays, addHours, addMinutes } from 'date-fns';
+import { differenceInYears, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds, addYears, addMonths } from 'date-fns';
 
 type CountdownProps = {
   targetDate: string;
@@ -11,47 +11,53 @@ type CountdownProps = {
 
 const Countdown = ({ targetDate, style = 'Padrão' }: CountdownProps) => {
   const calculateTimeLeft = () => {
-    const now = new Date();
     const target = new Date(targetDate);
-
     if (isNaN(target.getTime())) {
-      return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, totalDays: 0, totalHours: 0, totalMinutes: 0 };
+      return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, totalDays: 0 };
+    }
+    
+    let now = new Date();
+    
+    // Se a data alvo for no futuro, não faz sentido contar.
+    if (target > now) {
+        return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, totalDays: 0 };
     }
 
-    const years = differenceInYears(now, target);
-    const dateAfterYears = addYears(target, years);
-    const months = differenceInMonths(now, dateAfterYears);
-    const dateAfterMonths = addMonths(dateAfterYears, months);
+    let years = differenceInYears(now, target);
+    let dateAfterYears = addYears(target, years);
+    if (now < dateAfterYears) {
+      years = years - 1;
+      dateAfterYears = addYears(target, years);
+    }
+    
+    let months = differenceInMonths(now, dateAfterYears);
+    let dateAfterMonths = addMonths(dateAfterYears, months);
+     if (now < dateAfterMonths) {
+      months = months -1;
+      dateAfterMonths = addMonths(dateAfterYears, months);
+    }
+
     const days = differenceInDays(now, dateAfterMonths);
-    const dateAfterDays = addDays(dateAfterMonths, days);
-    const hours = differenceInHours(now, dateAfterDays);
-    const dateAfterHours = addHours(dateAfterDays, hours);
-    const minutes = differenceInMinutes(now, dateAfterHours);
-    const dateAfterMinutes = addMinutes(dateAfterHours, minutes);
-    const seconds = differenceInSeconds(now, dateAfterMinutes);
+    const hours = differenceInHours(now, addDays(dateAfterMonths, days));
+    const minutes = differenceInMinutes(now, addHours(addDays(dateAfterMonths, days), hours));
+    const seconds = differenceInSeconds(now, addMinutes(addHours(addDays(dateAfterMonths, days), hours), minutes));
 
     const totalDays = differenceInDays(now, target);
-    const totalHours = differenceInHours(now, target);
-    const totalMinutes = differenceInMinutes(now, target);
-    
 
     return {
-      years,
-      months,
-      days,
-      hours,
-      minutes,
-      seconds,
-      totalDays,
-      totalHours,
-      totalMinutes,
+      years: Math.max(0, years),
+      months: Math.max(0, months),
+      days: Math.max(0, days),
+      hours: Math.max(0, hours),
+      minutes: Math.max(0, minutes),
+      seconds: Math.max(0, seconds),
+      totalDays: Math.max(0, totalDays),
     };
   };
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   useEffect(() => {
-    // Prevent hydration mismatch by only running on the client
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
