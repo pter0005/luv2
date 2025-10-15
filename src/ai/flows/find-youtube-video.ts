@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Provides a function to find a YouTube video URL for a given song.
@@ -22,20 +23,25 @@ const FindVideoOutputSchema = z.object({
 });
 export type FindVideoOutput = z.infer<typeof FindVideoOutputSchema>;
 
-// This function is not a tool, but a direct implementation
-async function searchYoutube({ query }: { query: string }): Promise<string> {
-  try {
-    const video = await YouTube.searchOne(query, 'video');
-    if (video) {
-      return video.url;
+
+const searchYoutubeTool = ai.defineTool(
+    {
+      name: 'searchYoutubeTool',
+      description: 'Search for a YouTube video and return the URL.',
+      inputSchema: z.object({ query: z.string() }),
+      outputSchema: z.string(),
+    },
+    async ({ query }) => {
+      try {
+        const video = await YouTube.searchOne(query, 'video');
+        return video?.url || '';
+      } catch (error) {
+        console.error('Error in searchYoutubeTool:', error);
+        return '';
+      }
     }
-    return 'No video found';
-  } catch (error) {
-    console.error('Error searching YouTube:', error);
-    // Return a more descriptive error or an empty string
-    return ''; 
-  }
-}
+  );
+  
 
 export async function findYoutubeVideo(input: FindVideoInput): Promise<FindVideoOutput> {
   return findVideoFlow(input);
@@ -49,11 +55,14 @@ const findVideoFlow = ai.defineFlow(
   },
   async (input) => {
     const query = `${input.songName} ${input.artistName}`;
-    const url = await searchYoutube({ query });
+    const url = await searchYoutubeTool({ query });
+    
     if (url && url.startsWith('http')) {
         return { url };
     }
-    // Throw an error if no URL is found, which can be caught in the UI
+
     throw new Error('Could not find a video for the given song and artist.');
   }
 );
+
+    
