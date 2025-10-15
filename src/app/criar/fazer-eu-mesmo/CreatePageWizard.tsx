@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition } from "react";
@@ -17,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -34,6 +33,10 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
+import FallingHearts from "@/components/effects/FallingHearts";
+import StarrySky from "@/components/effects/StarrySky";
+import MysticVortex from "@/components/effects/MysticVortex";
+import FloatingDots from "@/components/effects/FloatingDots";
 
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
@@ -58,6 +61,8 @@ const pageSchema = z.object({
   audioRecording: z.string().optional(),
   songName: z.string().optional(),
   artistName: z.string().optional(),
+  backgroundAnimation: z.string().default("none"),
+  heartColor: z.string().default("Roxo"),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -92,6 +97,12 @@ const steps = [
     title: "Música Dedicada",
     description: "Escolha uma trilha sonora para sua página ou grave uma mensagem de voz.",
     fields: ["musicOption", "youtubeUrl", "audioRecording", "songName", "artistName"],
+  },
+  {
+    id: "background",
+    title: "Animação de Fundo",
+    description: "Escolha uma animação para o fundo da página para um toque especial.",
+    fields: ["backgroundAnimation", "heartColor"],
   },
 ];
 
@@ -642,7 +653,107 @@ const MusicStep = () => {
 };
 
 
-const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />, <MusicStep key="music" />];
+const animationOptions = [
+    { id: "none", name: "Nenhuma" },
+    { id: "falling-hearts", name: "Chuva de Corações" },
+    { id: "starry-sky", name: "Céu Estrelado" },
+    { id: "floating-dots", name: "Pontos Coloridos" },
+    { id: "mystic-fog", name: "Névoa Mística" },
+    { id: "mystic-vortex", name: "Vórtice Púrpura" }
+];
+
+const BackgroundStep = () => {
+    const { control } = useFormContext<PageData>();
+    const backgroundAnimation = useWatch({ control, name: "backgroundAnimation" });
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="backgroundAnimation"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Escolha a Animação</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 gap-4"
+                            >
+                                {animationOptions.map((option) => (
+                                    <FormItem key={option.id}>
+                                        <FormControl>
+                                            <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" />
+                                        </FormControl>
+                                        <Label
+                                            htmlFor={`anim-${option.id}`}
+                                            className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer h-24 text-sm"
+                                        >
+                                            {option.name}
+                                            <div className="absolute inset-0 w-full h-full opacity-30 group-hover/item:opacity-40 -z-10">
+                                                {option.id === "falling-hearts" && <div className="w-full h-full relative overflow-hidden"><FallingHearts count={10} color="hsl(var(--primary))" /></div>}
+                                                {option.id === "starry-sky" && <div className="w-full h-full relative overflow-hidden"><StarrySky /></div>}
+                                                {option.id === "floating-dots" && <div className="w-full h-full relative overflow-hidden"><FloatingDots /></div>}
+                                                {option.id === "mystic-fog" && <div className="w-full h-full relative overflow-hidden"><div className="mystic-fog-1 !opacity-50 !-z-0"></div><div className="mystic-fog-2 !opacity-50 !-z-0"></div></div>}
+                                                {option.id === "mystic-vortex" && <div className="w-full h-full relative overflow-hidden"><MysticVortex /></div>}
+                                            </div>
+                                        </Label>
+                                    </FormItem>
+                                ))}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            {backgroundAnimation === 'falling-hearts' && (
+                <FormField
+                    control={control}
+                    name="heartColor"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                            <FormLabel>Cor dos Corações</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    <FormItem>
+                                        <FormControl>
+                                            <RadioGroupItem value="Roxo" id="heart-roxo" className="peer sr-only" />
+                                        </FormControl>
+                                        <Label
+                                            htmlFor="heart-roxo"
+                                            className="flex items-center justify-center gap-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-sm"
+                                        >
+                                            <Heart className="h-5 w-5 text-primary" fill="hsl(var(--primary))" /> Roxo
+                                        </Label>
+                                    </FormItem>
+                                    <FormItem>
+                                        <FormControl>
+                                            <RadioGroupItem value="Vermelho" id="heart-vermelho" className="peer sr-only" />
+                                        </FormControl>
+                                        <Label
+                                            htmlFor="heart-vermelho"
+                                            className="flex items-center justify-center gap-2 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer text-sm"
+                                        >
+                                            <Heart className="h-5 w-5 text-red-500" fill="currentColor" /> Vermelho
+                                        </Label>
+                                    </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+            )}
+        </div>
+    );
+};
+
+
+const stepComponents = [<TitleStep key="title" />, <MessageStep key="message" />, <SpecialDateStep key="specialDate" />, <GalleryStep key="gallery" />, <MusicStep key="music" />, <BackgroundStep key="background" />];
 
 const CustomAudioPlayer = ({ src }: { src: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -705,7 +816,9 @@ export default function CreatePageWizard() {
       youtubeUrl: "",
       audioRecording: "",
       songName: "",
-      artistName: ""
+      artistName: "",
+      backgroundAnimation: "none",
+      heartColor: "Roxo"
     },
   });
 
@@ -809,9 +922,17 @@ export default function CreatePageWizard() {
 
                         {/* Page Content */}
                         <div className="flex-grow bg-black rounded-b-lg overflow-hidden relative">
-                            <div className="w-full h-full flex flex-col relative overflow-hidden bg-black">
-                                <div className="w-full h-full flex flex-col relative overflow-hidden">
-                                <div className="flex-grow p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-y-auto space-y-4 md:space-y-6">
+                             {/* Background Animations */}
+                             <div className="absolute inset-0 w-full h-full -z-10">
+                                {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts color={formData.heartColor === "Vermelho" ? "#EF4444" : "hsl(var(--primary))"} />}
+                                {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
+                                {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
+                                {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+                                {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
+                            </div>
+
+                            <div className="w-full h-full flex flex-col relative overflow-y-auto">
+                                <div className="flex-grow p-6 md:p-8 flex flex-col items-center justify-center text-center space-y-4 md:space-y-6">
                                     <div className="relative z-10 w-full max-w-4xl mx-auto space-y-4 md:space-y-6">
                                     <h1
                                         className="text-3xl md:text-4xl font-handwriting break-words"
@@ -885,7 +1006,6 @@ export default function CreatePageWizard() {
                                       <CustomAudioPlayer src={formData.audioRecording} />
                                     )}
                                 </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -896,5 +1016,3 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
-
-    
