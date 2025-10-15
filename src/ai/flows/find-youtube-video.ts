@@ -8,16 +8,16 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import YouTube from 'youtube-sr';
 
-export const FindVideoInputSchema = z.object({
+const FindVideoInputSchema = z.object({
   songName: z.string().describe('The name of the song to search for.'),
   artistName: z.string().describe('The name of the artist.'),
 });
 export type FindVideoInput = z.infer<typeof FindVideoInputSchema>;
 
-export const FindVideoOutputSchema = z.object({
+const FindVideoOutputSchema = z.object({
   url: z.string().describe('The YouTube URL of the found video.'),
 });
 export type FindVideoOutput = z.infer<typeof FindVideoOutputSchema>;
@@ -70,12 +70,7 @@ const findVideoFlow = ai.defineFlow(
     
     if (toolResponse) {
         const toolOutput = await toolResponse.run();
-        const finalResponse = await ai.generate({
-            prompt: `The tool returned this URL: ${toolOutput}. Please provide this URL as the final output.`,
-            model: 'googleai/gemini-2.5-flash',
-        });
         
-        // Let's just use the direct tool output to avoid further AI confusion
         const url = toolOutput.media?.url ?? (typeof toolOutput.output === 'string' ? toolOutput.output : '');
         
         if (url && url.startsWith('http')) {
