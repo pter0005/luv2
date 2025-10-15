@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect, useCallback, ChangeEvent } from "react";
+import { useState, useEffect, useCallback, ChangeEvent, useRef } from "react";
 import { useForm, FormProvider, useWatch, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, StopCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -45,6 +46,7 @@ const pageSchema = z.object({
   galleryStyle: z.string().default("Cube"),
   musicOption: z.string().default("none"),
   youtubeUrl: z.string().optional(),
+  audioRecording: z.string().optional(),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -78,7 +80,7 @@ const steps = [
     id: "music",
     title: "Música Dedicada",
     description: "Escolha uma trilha sonora para sua página ou grave uma mensagem de voz.",
-    fields: ["musicOption", "youtubeUrl"],
+    fields: ["musicOption", "youtubeUrl", "audioRecording"],
   },
 ];
 
@@ -157,13 +159,13 @@ const MessageStep = () => {
                                     value={field.value}
                                     onValueChange={field.onChange}
                                 >
-                                    <ToggleGroupItem value="bold" aria-label="Toggle bold">
+                                    <ToggleGroupItem value="bold" aria-label="Negrito">
                                         <Bold className="h-4 w-4" />
                                     </ToggleGroupItem>
-                                    <ToggleGroupItem value="italic" aria-label="Toggle italic">
+                                    <ToggleGroupItem value="italic" aria-label="Itálico">
                                         <Italic className="h-4 w-4" />
                                     </ToggleGroupItem>
-                                    <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough">
+                                    <ToggleGroupItem value="strikethrough" aria-label="Tachado">
                                         <Strikethrough className="h-4 w-4" />
                                     </ToggleGroupItem>
                                 </ToggleGroup>
@@ -386,8 +388,43 @@ const GalleryStep = () => {
 };
 
 const MusicStep = () => {
-  const { control } = useFormContext<PageData>();
+  const { control, setValue } = useFormContext<PageData>();
   const musicOption = useWatch({ control, name: "musicOption" });
+
+  const [recordingStatus, setRecordingStatus] = useState("idle");
+  const [audioURL, setAudioURL] = useState("");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioURL(url);
+        setValue("audioRecording", url); 
+        audioChunksRef.current = [];
+      };
+      mediaRecorderRef.current.start();
+      setRecordingStatus("recording");
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Não foi possível acessar o microfone. Verifique as permissões do seu navegador.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recordingStatus === "recording") {
+      mediaRecorderRef.current.stop();
+      setRecordingStatus("recorded");
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -416,7 +453,7 @@ const MusicStep = () => {
                 </FormItem>
                 <FormItem>
                   <FormControl>
-                    <RadioGroupItem value="record" id="music-record" className="peer sr-only" disabled />
+                    <RadioGroupItem value="record" id="music-record" className="peer sr-only" />
                   </FormControl>
                   <Label
                     htmlFor="music-record"
@@ -457,6 +494,29 @@ const MusicStep = () => {
           )}
         />
       )}
+      {musicOption === 'record' && (
+        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+            <h4 className="font-semibold">Gravador de Voz</h4>
+             <div className="flex items-center gap-4">
+                {recordingStatus === "idle" && (
+                    <Button onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
+                )}
+                {recordingStatus === "recording" && (
+                    <Button onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
+                )}
+                 {recordingStatus === "recorded" && (
+                    <Button onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
+                )}
+                {audioURL && (
+                   <audio src={audioURL} controls className="w-full" />
+                )}
+             </div>
+             <p className="text-sm text-muted-foreground">
+                {recordingStatus === 'recording' && 'Gravando...'}
+                {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
+            </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -486,6 +546,7 @@ export default function CreatePageWizard() {
       galleryStyle: "Cube",
       musicOption: "none",
       youtubeUrl: "",
+      audioRecording: "",
     },
   });
 
@@ -660,6 +721,11 @@ export default function CreatePageWizard() {
                                         />
                                       </div>
                                     )}
+                                    {isClient && formData.musicOption === 'record' && formData.audioRecording && (
+                                        <div className="w-full max-w-sm mx-auto">
+                                            <audio src={formData.audioRecording} controls className="w-full" />
+                                        </div>
+                                    )}
                                 </div>
                                 </div>
                             </div>
@@ -672,3 +738,5 @@ export default function CreatePageWizard() {
     </FormProvider>
   );
 }
+
+    
