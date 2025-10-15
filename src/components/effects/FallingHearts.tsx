@@ -10,12 +10,9 @@ interface Heart {
 
 export default function FallingHearts({ count = 20, color = 'hsl(var(--primary))' }: { count?: number, color?: string }) {
   const [hearts, setHearts] = useState<Heart[]>([]);
-  const [pageHeight, setPageHeight] = useState<number | null>(null);
 
   useEffect(() => {
     // Run this effect only on the client
-    setPageHeight(document.documentElement.scrollHeight);
-    
     const generateHearts = () => {
       const newHearts = Array.from({ length: count }, (_, i) => {
         const size = Math.random() * 2 + 1; // 1rem to 3rem
@@ -39,18 +36,11 @@ export default function FallingHearts({ count = 20, color = 'hsl(var(--primary))
     };
 
     generateHearts();
-    const handleResize = () => setPageHeight(document.documentElement.scrollHeight);
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    }
   }, [count, color]);
 
   return (
     <div 
-      className="absolute top-0 left-0 w-full pointer-events-none overflow-hidden z-0" 
-      style={{ height: pageHeight ? `${pageHeight}px` : '100vh' }}
+      className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0" 
     >
       <div className="relative w-full h-full">
         {hearts.map((heart) => (

@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import FallingHearts from '@/components/effects/FallingHearts';
 
 export const metadata: Metadata = {
   title: 'Amore Pages',
@@ -43,7 +42,6 @@ export default function RootLayout({
                 <div className="mystic-fog-1"></div>
                 <div className="mystic-fog-2"></div>
             </div>
-            <FallingHearts />
           <div className="relative z-10 flex flex-col min-h-screen">
             <Header />
             <main className="flex-grow">{children}</main>

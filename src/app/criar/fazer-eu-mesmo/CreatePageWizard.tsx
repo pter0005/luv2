@@ -412,7 +412,7 @@ const GalleryStep = () => {
 };
 
 const MusicStep = () => {
-    const { control, setValue, getValues } = useFormContext<PageData>();
+    const { control, setValue, getValues } => useFormContext<PageData>();
     const musicOption = useWatch({ control, name: "musicOption" });
     const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
     const [isSearching, startTransition] = useTransition();
@@ -841,7 +841,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
@@ -923,7 +923,7 @@ export default function CreatePageWizard() {
                         {/* Page Content */}
                         <div className="flex-grow bg-black rounded-b-lg overflow-hidden relative">
                              {/* Background Animations */}
-                             <div className="absolute inset-0 w-full h-full -z-10">
+                             <div className="absolute inset-0 w-full h-full -z-10 pointer-events-none">
                                 {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts color={formData.heartColor === "Vermelho" ? "#EF4444" : "hsl(var(--primary))"} />}
                                 {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
                                 {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
