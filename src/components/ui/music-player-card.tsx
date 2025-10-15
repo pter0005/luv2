@@ -14,15 +14,10 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isClient, setIsClient] = useState(false);
 
   const playerRef = useRef<ReactPlayer>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const videoIdMatch = videoUrl.match(/(?:v=)([^&]+)/);
+  
+  const videoIdMatch = videoUrl.match(/(?:v=)([^&]+)/) || videoUrl.match(/(?:youtu.be\/)([^?]+)/);
   const videoId = videoIdMatch ? videoIdMatch[1] : null;
   const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'https://placehold.co/80x80/000000/FFFFFF/png?text=LUV';
 
@@ -112,8 +107,7 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
          </div>
        </div>
 
-       {isClient && (
-        <div className='hidden'>
+       <div className='hidden'>
             <ReactPlayer
               ref={playerRef}
               url={videoUrl}
@@ -125,7 +119,6 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
               height="0"
             />
         </div>
-       )}
     </div>
   );
 };
