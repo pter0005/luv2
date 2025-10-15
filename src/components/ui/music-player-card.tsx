@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import ReactPlayer from 'react-player/youtube';
+import { cn } from '@/lib/utils';
+import { Play, Pause, SkipBack, SkipForward, Radio } from 'lucide-react';
 
 type MusicPlayerCardProps = {
   videoUrl: string;
@@ -10,30 +12,59 @@ type MusicPlayerCardProps = {
 
 const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+
   const playerRef = useRef<ReactPlayer>(null);
-  
-  const videoId = new URL(videoUrl).searchParams.get('v');
-  const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const videoIdMatch = videoUrl.match(/(?:v=)([^&]+)/);
+  const videoId = videoIdMatch ? videoIdMatch[1] : null;
+  const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'https://placehold.co/80x80/000000/FFFFFF/png?text=LUV';
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    if (isNaN(seconds) || seconds === Infinity) {
+      return '0:00';
+    }
+    const date = new Date(seconds * 1000);
+    const minutes = date.getUTCMinutes();
+    const secs = date.getUTCSeconds().toString().padStart(2, '0');
+    return `${minutes}:${secs}`;
   };
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+  
+  const handleProgress = (state: { played: number }) => {
+    setPlayed(state.played);
+  };
+  
+  const handleDuration = (duration: number) => {
+    setDuration(duration);
+  };
+
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPlayed = parseFloat(e.target.value);
+    setPlayed(newPlayed);
+    playerRef.current?.seekTo(newPlayed);
+  };
+
 
   return (
     <div className="music-player-container">
        <div className="main-music-card">
-         <input type="checkbox" id="play-toggle" hidden checked={isPlaying} onChange={() => setIsPlaying(!isPlaying)} />
          <div className="track-info">
            <div className="album-art" style={{ backgroundImage: `url(${thumbnailUrl})` }} />
            <div className="track-details">
              <div className="track-title">Sua Música</div>
              <div className="artist-name">YouTube</div>
            </div>
-           <div className="volume-bars">
+           <div className={cn("volume-bars", !isPlaying && "paused")}>
              <div className="bar" />
              <div className="bar" />
              <div className="bar" />
@@ -46,63 +77,55 @@ const MusicPlayerCard = ({ videoUrl }: MusicPlayerCardProps) => {
          </div>
          <div className="playback-controls">
            <div className="time-info">
-             <span className="current-time">{formatTime(progress * duration)}</span>
-             <span className="remaining-time">{formatTime(duration - (progress * duration))}</span>
+             <span className="current-time">{formatTime(played * duration)}</span>
+             <span className="remaining-time">{formatTime(duration)}</span>
            </div>
-           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
-            <div className="progress-handle" style={{ left: `${progress * 100}%` }}/>
+           <div className="progress-bar-container">
+             <input 
+                type="range" 
+                min={0} 
+                max={0.999999} 
+                step="any"
+                value={played}
+                onChange={handleSeekChange}
+                className="progress-slider"
+             />
            </div>
            <div className="button-row">
              <div className="main-control-btns">
                <button className="control-button back" disabled>
-                 <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} fill="currentColor" className="bi bi-skip-backward-fill" viewBox="0 0 16 16">
-                   <path d="M.5 3.5A.5.5 0 0 0 0 4v8a.5.5 0 0 0 1 0V8.753l6.267 3.636c.54.313 1.233-.066 1.233-.697v-2.94l6.267 3.636c.54.314 1.233-.065 1.233-.696V4.308c0-.63-.693-1.01-1.233-.696L8.5 7.248v-2.94c0-.63-.692-1.01-1.233-.696L1 7.248V4a.5.5 0 0 0-.5-.5" />
-                 </svg>
+                 <SkipBack size={20} />
                </button>
                <div className="play-pause-btns">
-                 <label htmlFor="play-toggle" className="control-button play-pause-button">
-                   <svg className="icon-play" xmlns="http://www.w3.org/2000/svg" width={30} height={30} fill="currentColor" viewBox="0 0 16 16">
-                     <path d="M11.596 8.697l-6.363 3.692c-.54.314-1.233-.065-1.233-.696V4.308c0-.63.693-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
-                   </svg>
-                   <svg className="icon-pause" xmlns="http://www.w3.org/2000/svg" width={30} height={30} fill="currentColor" viewBox="0 0 16 16">
-                     <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5" />
-                   </svg>
-                 </label>
+                 <button onClick={handlePlayPause} className="control-button play-pause-button">
+                   {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                 </button>
                </div>
                <button className="control-button next" disabled>
-                 <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} fill="currentColor" className="bi bi-skip-forward-fill" viewBox="0 0 16 16">
-                   <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5" />
-                 </svg>
+                 <SkipForward size={20}/>
                </button>
              </div>
              <button className="control-button d">
-               <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} fill="currentColor" className="bi bi-radar" viewBox="0 0 16 16">
-                 <path d="M6.634 1.135A7 7 0 0 1 15 8a.5.5 0 0 1-1 0 6 6 0 1 0-6.5 5.98v-1.005A5 5 0 1 1 13 8a.5.5 0 0 1-1 0 4 4 0 1 0-4.5 3.969v-1.011A2.999 2.999 0 1 1 11 8a.5.5 0 0 1-1 0 2 2 0 1 0-2.5 1.936v-1.07a1 1 0 1 1 1 0V15.5a.5.5 0 0 1-1 0v-.518a7 7 0 0 1-.866-13.847" />
-               </svg>
+               <Radio size={20}/>
              </button>
            </div>
          </div>
        </div>
-      <div className='hidden'>
-          <ReactPlayer
-            ref={playerRef}
-            url={videoUrl}
-            playing={isPlaying}
-            onProgress={(state) => setProgress(state.played)}
-            onDuration={setDuration}
-            onEnded={() => setIsPlaying(false)}
-            width="0"
-            height="0"
-            config={{
-                youtube: {
-                playerVars: {
-                    autoplay: 1,
-                },
-                },
-            }}
+
+       {isClient && (
+        <div className='hidden'>
+            <ReactPlayer
+              ref={playerRef}
+              url={videoUrl}
+              playing={isPlaying}
+              onProgress={handleProgress}
+              onDuration={handleDuration}
+              onEnded={() => setIsPlaying(false)}
+              width="0"
+              height="0"
             />
-      </div>
+        </div>
+       )}
     </div>
   );
 };
