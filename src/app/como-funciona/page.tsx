@@ -14,12 +14,12 @@ export default function ComoFuncionaPage() {
             Voltar para o início
           </Link>
         </Button>
-        <div className="flex flex-col items-center">
-            <PuzzleIcon className="w-16 h-16 text-primary mb-6" />
-            <h1 className="text-5xl md:text-6xl font-bold font-headline mb-4 tracking-tight">
+        <div className="flex flex-col items-center pt-16 md:pt-0">
+            <PuzzleIcon className="w-12 h-12 md:w-16 md:h-16 text-primary mb-6" />
+            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tight">
             Uma Revelação <span className="gradient-text">Inesquecível</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-12">
+            <p className="text-md md:text-lg text-muted-foreground max-w-3xl mx-auto mb-12">
             O Quebra-Cabeça Interativo é a forma mais criativa e emocionante de revelar sua página personalizada. Em vez de apenas enviar um link, você entrega uma experiência única e divertida.
             </p>
         </div>
@@ -54,8 +54,8 @@ export default function ComoFuncionaPage() {
         </div>
 
         <div className="max-w-xl mx-auto">
-            <h2 className="text-4xl font-headline font-bold mb-2">Veja em Ação</h2>
-            <h3 className="text-2xl text-muted-foreground font-script mb-2">Experimente montar!</h3>
+            <h2 className="text-3xl md:text-4xl font-headline font-bold mb-2">Veja em Ação</h2>
+            <h3 className="text-xl md:text-2xl text-muted-foreground font-script mb-2">Experimente montar!</h3>
             <p className="text-muted-foreground mb-8">Arraste as peças para trocá-las de lugar e revelar a imagem.</p>
             <Puzzle />
         </div>

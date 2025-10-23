@@ -733,7 +733,7 @@ const MusicStep = () => {
       />
       {musicOption === 'youtube' && (
         <div className="space-y-4 rounded-lg border bg-card/80 p-4">
-             <div className="space-y-2">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                     control={control}
                     name="songName"
