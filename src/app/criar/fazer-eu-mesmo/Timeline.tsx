@@ -2,12 +2,13 @@
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
 import * as THREE from "three"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, useFrame } from "@react-three/fiber"
 import {
   OrbitControls,
   Environment,
   Html,
   Plane,
+  Sphere,
 } from "@react-three/drei"
 import { Download, Heart, X } from "lucide-react"
 
@@ -58,10 +59,9 @@ function StarfieldBackground() {
     if (!mountRef.current) return
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(75, mountRef.current.clientWidth / mountRef.current.clientHeight, 0.1, 2000)
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    
     let currentMount = mountRef.current;
+    const camera = new THREE.PerspectiveCamera(75, currentMount.clientWidth / currentMount.clientHeight, 0.1, 2000)
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     
     renderer.setSize(currentMount.clientWidth, currentMount.clientHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
@@ -120,10 +120,11 @@ function StarfieldBackground() {
   return <div ref={mountRef} className="absolute top-0 left-0 w-full h-full z-0 bg-black" />
 }
 
-function FloatingCard({ card, position }: { card: CardData; position: [number, number, number] }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const [hovered, setHovered] = useState(false);
-  const { setSelectedCard } = useCard();
+function FloatingCard({ card, position }: { card: CardData; position: { x: number; y: number; z: number; rotationX: number; rotationY: number; rotationZ: number } }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
+  const { setSelectedCard } = useCard()
 
   useFrame(({ camera }) => {
     if (groupRef.current) {
@@ -132,25 +133,24 @@ function FloatingCard({ card, position }: { card: CardData; position: [number, n
   })
 
   const handleClick = (e: any) => {
-    e.stopPropagation();
-    setSelectedCard(card);
-  };
-
+    e.stopPropagation()
+    setSelectedCard(card)
+  }
   const handlePointerOver = (e: any) => {
-    e.stopPropagation();
-    setHovered(true);
-    document.body.style.cursor = "pointer";
-  };
-
+    e.stopPropagation()
+    setHovered(true)
+    document.body.style.cursor = "pointer"
+  }
   const handlePointerOut = (e: any) => {
-    e.stopPropagation();
-    setHovered(false);
-    document.body.style.cursor = "auto";
-  };
+    e.stopPropagation()
+    setHovered(false)
+    document.body.style.cursor = "auto"
+  }
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={[position.x, position.y, position.z]}>
       <Plane
+        ref={meshRef}
         args={[4.5, 6]}
         onClick={handleClick}
         onPointerOver={handlePointerOver}
@@ -158,6 +158,7 @@ function FloatingCard({ card, position }: { card: CardData; position: [number, n
       >
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
+
       <Html
         transform
         distanceFactor={10}
@@ -190,9 +191,8 @@ function FloatingCard({ card, position }: { card: CardData; position: [number, n
         </div>
       </Html>
     </group>
-  );
+  )
 }
-
 
 function CardModal() {
   const { selectedCard, setSelectedCard } = useCard()
@@ -200,7 +200,6 @@ function CardModal() {
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Reset favorite state when card changes
     setIsFavorited(false);
   }, [selectedCard]);
 
@@ -231,7 +230,7 @@ function CardModal() {
   const handleBackdropClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
     if (e.target === e.currentTarget) handleClose()
   }
-
+  
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = selectedCard.imageUrl;
@@ -296,85 +295,127 @@ function CardModal() {
   )
 }
 
-const CardGalaxy = () => {
-    const { cards } = useCard();
+function CardGalaxy() {
+  const { cards } = useCard()
+
+  const cardPositions = useMemo(() => {
+    const positions: {
+      x: number
+      y: number
+      z: number
+      rotationX: number
+      rotationY: number
+      rotationZ: number
+    }[] = []
+    const numCards = cards.length;
+    if (numCards === 0) return [];
     
-    const cardPositions = useMemo(() => {
-        const positions: [number, number, number][] = [];
-        const numCards = cards.length;
-        if (numCards === 0) return [];
+    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+    for (let i = 0; i < numCards; i++) {
+        const y = 1 - (i / (numCards -1)) * 2; 
+        const radiusAtY = Math.sqrt(1 - y*y);
+        const theta = (2 * Math.PI * i) / goldenRatio;
         
-        const goldenRatio = (1 + Math.sqrt(5)) / 2;
-        const angleIncrement = Math.PI * 2 * goldenRatio;
-
-        for (let i = 0; i < numCards; i++) {
-            const y = 1 - (i / (numCards -1)) * 2; 
-            const radius = Math.sqrt(1 - y*y);
-            const theta = angleIncrement * i;
-            
-            const x = Math.cos(theta) * radius;
-            const z = Math.sin(theta) * radius;
-            
-            const layerRadius = 12 + (i % 3) * 4;
-            
-            positions.push([x * layerRadius, y * layerRadius, z * layerRadius]);
-        }
-        return positions;
-    }, [cards]);
-
-    return (
-        <>
-            {cards.map((card, i) => {
-                const position = cardPositions[i] || [0,0,0];
-                return (
-                 <FloatingCard key={card.id} card={card} position={position} />
-                )
-            })}
-        </>
-    );
-};
-
-const TimelineComponent = () => {
-    const { cards } = useCard();
-    if (!cards || cards.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8 border border-dashed rounded-lg bg-black/30">
-                <p className="text-muted-foreground">Sua Linha do Tempo aparecerá aqui.</p>
-                <p className="text-sm text-muted-foreground/50">Adicione momentos na etapa anterior para começar.</p>
-            </div>
-        );
+        const x = Math.cos(theta) * radiusAtY;
+        const z = Math.sin(theta) * radiusAtY;
+        
+        const layerRadius = 12 + (i % 3) * 4;
+        
+        positions.push({
+            x: x * layerRadius,
+            y: y * layerRadius,
+            z: z * layerRadius,
+            rotationX: Math.atan2(z, Math.sqrt(x * x + y * y)),
+            rotationY: Math.atan2(x, z),
+            rotationZ: (Math.random() - 0.5) * 0.2,
+        });
     }
-  
-    return (
-      <div className="w-full h-full relative overflow-hidden bg-transparent">
-          <StarfieldBackground />
-          <Canvas
-              camera={{ position: [0, 0, 35], fov: 75 }}
-              className="absolute inset-0 z-10"
-          >
-              <Suspense fallback={null}>
-                  <Environment preset="night" />
-                  <ambientLight intensity={0.8} />
-                  <pointLight position={[0, 15, 0]} intensity={1} />
-                  <CardGalaxy />
-                  <OrbitControls
-                      enablePan={false}
-                      enableZoom={true}
-                      enableRotate
-                      minDistance={5}
-                      maxDistance={40}
-                      autoRotate={true}
-                      autoRotateSpeed={0.3}
-                      rotateSpeed={-0.4} // Invert rotation direction
-                      target={[0, 0, 0]}
-                  />
-              </Suspense>
-          </Canvas>
-          <CardModal />
-      </div>
-    )
+    return positions;
+  }, [cards]);
+
+
+  if (!cards || cards.length === 0) {
+      return null;
+  }
+
+  return (
+    <>
+      <Sphere args={[2, 32, 32]} position={[0, 0, 0]}>
+        <meshStandardMaterial color="#1a1a2e" transparent opacity={0.15} wireframe />
+      </Sphere>
+      <Sphere args={[12, 32, 32]} position={[0, 0, 0]}>
+        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0.05} wireframe />
+      </Sphere>
+      <Sphere args={[16, 32, 32]} position={[0, 0, 0]}>
+        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0.03} wireframe />
+      </Sphere>
+      <Sphere args={[20, 32, 32]} position={[0, 0, 0]}>
+        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0.02} wireframe />
+      </Sphere>
+
+      {cards.map((card, i) => (
+        <FloatingCard key={card.id} card={card} position={cardPositions[i]} />
+      ))}
+    </>
+  )
 }
 
+function TimelineComponent() {
+  const { cards } = useCard()
+  if (!cards || cards.length === 0) {
+      return (
+          <div className="flex flex-col items-center justify-center h-full text-center p-8 border border-dashed rounded-lg bg-black/30">
+              <p className="text-muted-foreground">Sua Linha do Tempo aparecerá aqui.</p>
+              <p className="text-sm text-muted-foreground/50">Adicione momentos na etapa anterior para começar.</p>
+          </div>
+      );
+  }
+
+  return (
+    <div className="w-full h-full relative overflow-hidden bg-black">
+      <StarfieldBackground />
+
+      <Canvas
+        camera={{ position: [0, 0, 35], fov: 60 }}
+        className="absolute inset-0 z-10"
+        onCreated={({ gl }) => {
+          gl.domElement.style.pointerEvents = "auto"
+        }}
+      >
+        <Suspense fallback={null}>
+          <Environment preset="night" />
+          <ambientLight intensity={0.4} />
+          <pointLight position={[10, 10, 10]} intensity={0.6} />
+          <pointLight position={[-10, -10, -10]} intensity={0.3} />
+          <CardGalaxy />
+          <OrbitControls
+            enablePan
+            enableZoom
+            enableRotate
+            minDistance={5}
+            maxDistance={40}
+            autoRotate={true}
+            autoRotateSpeed={0.3}
+            rotateSpeed={-0.4}
+            zoomSpeed={1.2}
+            panSpeed={0.8}
+            target={[0, 0, 0]}
+          />
+        </Suspense>
+      </Canvas>
+
+      <CardModal />
+
+      <div className="absolute top-4 left-4 z-20 text-white pointer-events-none max-w-sm">
+        <h1 className="text-xl md:text-2xl font-bold mb-2 font-headline">Nossa Linha do Tempo</h1>
+        <p className="text-xs md:text-sm opacity-70">Arraste para girar • Use o scroll para aproximar • Clique nos cards para ver os detalhes</p>
+      </div>
+    </div>
+  )
+}
+
+
 export default function Timeline() {
-  return <TimelineComponent />;
+    return <TimelineComponent />;
 }
