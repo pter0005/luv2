@@ -258,7 +258,7 @@ function CardModal() {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
-            <div className="relative w-full mb-4" style={{ aspectRatio: "4 / 3" }}>
+            <div className="relative w-full mb-4 aspect-square">
               <img
                 loading="lazy"
                 className="absolute inset-0 h-full w-full rounded-lg bg-black object-cover"
