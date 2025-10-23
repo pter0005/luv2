@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -1450,186 +1450,15 @@ export default function CreatePageWizard() {
   return (
     <FormProvider {...methods}>
       <div className="flex flex-col md:grid md:grid-cols-2 w-full min-h-screen">
-        {/* Right Panel: Preview - Order 1 on mobile */}
-        <div className="w-full h-[70vh] md:h-screen p-4 md:sticky md:top-0 order-1 flex items-center justify-center">
-            <div className="relative w-full h-full group/preview overflow-hidden rounded-2xl shadow-2xl bg-background">
-                {/* Background Animations */}
-                <div className="absolute inset-0 w-full h-full z-0">
-                    {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
-                    {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
-                    {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
-                    {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
-                    {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
-                    {isClient && formData.backgroundAnimation === 'clouds' && (
-                        <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                            <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
-                        </video>
-                    )}
-                    {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
-                    <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                        <source src={formData.backgroundVideo} />
-                    </video>
-                    )}
-                </div>
-
-                {/* Puzzle Overlay */}
-                 <AnimatePresence>
-                    {isPuzzleActive && !puzzleRevealed && (
-                        <motion.div
-                             initial={{ opacity: 0 }}
-                             animate={{ opacity: 1 }}
-                             exit={{ opacity: 0 }}
-                             transition={{ duration: 0.5 }}
-                             className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center p-8 bg-black/80 backdrop-blur-sm"
-                        >
-                            <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8">
-                                <div>
-                                    <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2">Um enigma para você...</h2>
-                                    <p className="text-muted-foreground text-sm md:text-base">
-                                        Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
-                                    </p>
-                                </div>
-                                <RealPuzzle 
-                                    imageSrc={formData.puzzleImage!.preview} 
-                                    showControls={false}
-                                    onReveal={handlePuzzleReveal}
-                                    dimension={puzzleDimension}
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-                
-                 {/* Timeline Modal */}
-                <AnimatePresence>
-                {isTimelineVisible && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-                    >
-                        <CardProvider events={formData.timelineEvents}>
-                            <Timeline />
-                        </CardProvider>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsTimelineVisible(false)}
-                            className="absolute top-4 right-4 z-50 text-white bg-black/50 hover:bg-black/75 hover:text-white"
-                        >
-                            <X className="h-6 w-6" />
-                        </Button>
-                    </motion.div>
-                )}
-                </AnimatePresence>
-
-                {/* Main Content */}
-                <div className={cn("relative z-10 w-full h-full flex flex-col", isPuzzleActive && !puzzleRevealed && "blur-sm pointer-events-none")}>
-                    {/* Browser Chrome */}
-                    <div className="bg-zinc-800 rounded-t-lg p-2 flex items-center gap-1.5 border-b border-zinc-700 shrink-0">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        </div>
-                        <div className="flex-grow bg-zinc-700 rounded-sm px-2 py-1 text-xs text-zinc-400 text-center truncate">
-                            https://b2gether.com/p/pagina
-                        </div>
-                    </div>
-
-                    {/* Page Content */}
-                    <div className="flex-grow rounded-b-lg overflow-hidden relative">
-                         <div className="w-full h-full flex flex-col relative overflow-y-auto z-20">
-                            <div className="w-full max-w-4xl mx-auto p-6 md:p-8 space-y-8 md:space-y-12">
-                                <div className="relative z-10 space-y-6 text-center">
-                                <h1
-                                    className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
-                                    style={{ color: formData.titleColor }}
-                                >
-                                    {formData.title || 'Seu Título Aqui'}
-                                </h1>
-                                <p className={cn(
-                                    "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
-                                    formData.messageFontSize,
-                                    formData.messageFormatting?.includes("bold") && "font-bold",
-                                    formData.messageFormatting?.includes("italic") && "italic",
-                                    formData.messageFormatting?.includes("strikethrough") && "line-through"
-                                )}>
-                                    {formData.message || 'Sua mensagem de amor...'}
-                                </p>
-                                </div>
-                                
-                                {formData.timelineEvents && formData.timelineEvents.length > 0 && (
-                                     <div className="flex justify-center">
-                                        <Button onClick={() => setIsTimelineVisible(true)} variant="outline" className="bg-background/50 backdrop-blur-sm">
-                                            <CalendarDays className="mr-2" />
-                                            Nossa linha do tempo
-                                        </Button>
-                                    </div>
-                                )}
-
-                                {formData.specialDate && (
-                                    <Countdown 
-                                        targetDate={formData.specialDate.toISOString()} 
-                                        style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
-                                        color={formData.countdownColor}
-                                    />
-                                )}
-                                {formData.galleryImages && formData.galleryImages.length > 0 && (
-                                <div className="w-full max-w-xs mx-auto">
-                                    
-                                    <Swiper
-                                        key={formData.galleryStyle}
-                                        effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
-                                        grabCursor={true}
-                                        centeredSlides={formData.galleryStyle === 'Coverflow'}
-                                        slidesPerView={'auto'}
-                                        autoplay={{ delay: 3000, disableOnInteraction: false }}
-                                        coverflowEffect={{
-                                            rotate: 50,
-                                            stretch: 0,
-                                            depth: 100,
-                                            modifier: 1,
-                                            slideShadows: true,
-                                        }}
-                                        cardsEffect={{
-                                            perSlideRotate: 2,
-                                            perSlideOffset: 8,
-                                            slideShadows: true,
-                                        }}
-                                        cubeEffect={{
-                                            shadow: true,
-                                            slideShadows: true,
-                                            shadowOffset: 20,
-                                            shadowScale: 0.94,
-                                        }}
-                                        pagination={{ clickable: true }}
-                                        modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
-                                        className="mySwiper-small"
-                                    >
-                                        {formData.galleryImages.map((img, index) => (
-                                            <SwiperSlide key={index} className="bg-transparent">
-                                                <div className="relative w-full aspect-square">
-                                                    <Image src={img.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
-                                                </div>
-                                            </SwiperSlide>
-                                        ))}
-                                    </Swiper>
-                                </div>
-                                )}
-                                
-                                {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                                <YoutubePlayer url={formData.youtubeUrl} />
-                                )}
-
-                                {isClient && formData.musicOption === 'record' && formData.audioRecording && (
-                                <CustomAudioPlayer src={formData.audioRecording} />
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        {/* Right Panel: Preview */}
+        <div className="w-full md:sticky md:top-0 md:h-screen p-4 order-1 flex items-center justify-center">
+            {/* Mobile: Landscape container */}
+            <div className="md:hidden w-full aspect-[16/10] rounded-2xl shadow-2xl bg-background group/preview overflow-hidden relative">
+                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} isTimelineVisible={isTimelineVisible} setIsTimelineVisible={setIsTimelineVisible} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef}/>
+            </div>
+            {/* Desktop: Standard container */}
+            <div className="hidden md:block w-full h-full rounded-2xl shadow-2xl bg-background group/preview overflow-hidden relative">
+                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} isTimelineVisible={isTimelineVisible} setIsTimelineVisible={setIsTimelineVisible} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef}/>
             </div>
         </div>
 
@@ -1690,4 +1519,187 @@ export default function CreatePageWizard() {
   );
 }
 
-    
+
+const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, handlePuzzleReveal, puzzleDimension, isTimelineVisible, setIsTimelineVisible, cloudsVideoRef, customVideoRef }: any) => {
+    return (
+        <>
+            {/* Background Animations */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
+                {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
+                {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
+                {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+                {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
+                {isClient && formData.backgroundAnimation === 'clouds' && (
+                    <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                        <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
+                    </video>
+                )}
+                {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
+                <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                    <source src={formData.backgroundVideo} />
+                </video>
+                )}
+            </div>
+
+            {/* Puzzle Overlay */}
+             <AnimatePresence>
+                {isPuzzleActive && !puzzleRevealed && (
+                    <motion.div
+                         initial={{ opacity: 0 }}
+                         animate={{ opacity: 1 }}
+                         exit={{ opacity: 0 }}
+                         transition={{ duration: 0.5 }}
+                         className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center p-8 bg-black/80 backdrop-blur-sm"
+                    >
+                        <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8">
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2">Um enigma para você...</h2>
+                                <p className="text-muted-foreground text-sm md:text-base">
+                                    Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
+                                </p>
+                            </div>
+                            <RealPuzzle 
+                                imageSrc={formData.puzzleImage!.preview} 
+                                showControls={false}
+                                onReveal={handlePuzzleReveal}
+                                dimension={puzzleDimension}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
+             {/* Timeline Modal */}
+            <AnimatePresence>
+            {isTimelineVisible && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                >
+                    <CardProvider events={formData.timelineEvents}>
+                        <Timeline />
+                    </CardProvider>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsTimelineVisible(false)}
+                        className="absolute top-4 right-4 z-50 text-white bg-black/50 hover:bg-black/75 hover:text-white"
+                    >
+                        <X className="h-6 w-6" />
+                    </Button>
+                </motion.div>
+            )}
+            </AnimatePresence>
+
+            {/* Main Content */}
+            <div className={cn("relative z-10 w-full h-full flex flex-col", isPuzzleActive && !puzzleRevealed && "blur-sm pointer-events-none")}>
+                {/* Browser Chrome */}
+                <div className="bg-zinc-800 rounded-t-lg p-2 flex items-center gap-1.5 border-b border-zinc-700 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    </div>
+                    <div className="flex-grow bg-zinc-700 rounded-sm px-2 py-1 text-xs text-zinc-400 text-center truncate">
+                        https://b2gether.com/p/pagina
+                    </div>
+                </div>
+
+                {/* Page Content */}
+                <div className="flex-grow rounded-b-lg overflow-hidden relative">
+                     <div className="w-full h-full flex flex-col relative overflow-y-auto z-20">
+                        <div className="w-full max-w-4xl mx-auto p-6 md:p-8 space-y-8 md:space-y-12">
+                            <div className="relative z-10 space-y-6 text-center">
+                            <h1
+                                className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
+                                style={{ color: formData.titleColor }}
+                            >
+                                {formData.title || 'Seu Título Aqui'}
+                            </h1>
+                            <p className={cn(
+                                "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
+                                formData.messageFontSize,
+                                formData.messageFormatting?.includes("bold") && "font-bold",
+                                formData.messageFormatting?.includes("italic") && "italic",
+                                formData.messageFormatting?.includes("strikethrough") && "line-through"
+                            )}>
+                                {formData.message || 'Sua mensagem de amor...'}
+                            </p>
+                            </div>
+                            
+                            {formData.timelineEvents && formData.timelineEvents.length > 0 && (
+                                 <div className="flex justify-center">
+                                    <Button onClick={() => setIsTimelineVisible(true)} variant="outline" className="bg-background/50 backdrop-blur-sm">
+                                        <CalendarDays className="mr-2" />
+                                        Nossa linha do tempo
+                                    </Button>
+                                </div>
+                            )}
+
+                            {formData.specialDate && (
+                                <Countdown 
+                                    targetDate={formData.specialDate.toISOString()} 
+                                    style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
+                                    color={formData.countdownColor}
+                                />
+                            )}
+                            {formData.galleryImages && formData.galleryImages.length > 0 && (
+                            <div className="w-full max-w-xs mx-auto">
+                                
+                                <Swiper
+                                    key={formData.galleryStyle}
+                                    effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                                    grabCursor={true}
+                                    centeredSlides={formData.galleryStyle === 'Coverflow'}
+                                    slidesPerView={'auto'}
+                                    autoplay={{ delay: 3000, disableOnInteraction: false }}
+                                    coverflowEffect={{
+                                        rotate: 50,
+                                        stretch: 0,
+                                        depth: 100,
+                                        modifier: 1,
+                                        slideShadows: true,
+                                    }}
+                                    cardsEffect={{
+                                        perSlideRotate: 2,
+                                        perSlideOffset: 8,
+                                        slideShadows: true,
+                                    }}
+                                    cubeEffect={{
+                                        shadow: true,
+                                        slideShadows: true,
+                                        shadowOffset: 20,
+                                        shadowScale: 0.94,
+                                    }}
+                                    pagination={{ clickable: true }}
+                                    modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
+                                    className="mySwiper-small"
+                                >
+                                    {formData.galleryImages.map((img, index) => (
+                                        <SwiperSlide key={index} className="bg-transparent">
+                                            <div className="relative w-full aspect-square">
+                                                <Image src={img.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
+                                            </div>
+                                        </SwiperSlide>
+                                    ))}
+                                </Swiper>
+                            </div>
+                            )}
+                            
+                            {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
+                            <YoutubePlayer url={formData.youtubeUrl} />
+                            )}
+
+                            {isClient && formData.musicOption === 'record' && formData.audioRecording && (
+                            <CustomAudioPlayer src={formData.audioRecording} />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}

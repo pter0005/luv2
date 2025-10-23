@@ -25,8 +25,9 @@ const Puzzle = ({
   imageSrc: initialImageSrc,
   showControls = true,
   onReveal,
-  dimension = 450,
+  dimension: initialDimension = 450,
 }: PuzzleProps) => {
+  const [dimension, setDimension] = useState(initialDimension);
   const [imageSrc, setImageSrc] = useState(
     initialImageSrc || `https://picsum.photos/seed/puzzle/${dimension}/${dimension}`
   );
@@ -37,6 +38,11 @@ const Puzzle = ({
   
   const dragPiece = useRef<number | null>(null);
   const dragOverPiece = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDimension(initialDimension);
+  }, [initialDimension]);
 
   const pieceSize = dimension / GRID_SIZE;
 
@@ -78,16 +84,9 @@ const Puzzle = ({
   useEffect(() => {
     if (initialImageSrc) {
       setImageSrc(initialImageSrc);
-      createAndShufflePieces(initialImageSrc);
     }
-  }, [initialImageSrc, createAndShufflePieces]);
-  
-    useEffect(() => {
-    if (!initialImageSrc) {
-      createAndShufflePieces(imageSrc);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    createAndShufflePieces(imageSrc);
+  }, [initialImageSrc, createAndShufflePieces, imageSrc]);
 
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +161,7 @@ const Puzzle = ({
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-4 w-full" ref={containerRef}>
       <div 
         className="w-full aspect-square bg-transparent rounded-lg relative flex items-center justify-center"
         style={{ maxWidth: dimension }}
