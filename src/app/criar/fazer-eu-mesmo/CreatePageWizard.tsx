@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -71,10 +72,10 @@ const pageSchema = z.object({
   specialDate: z.date().optional(),
   countdownStyle: z.string().default("Padrão"),
   countdownColor: z.string().default("#FFFFFF"),
-  galleryImages: z.array(z.object({ file: z.any(), preview: z.string() })).default([]),
+  galleryImages: z.array(z.object({ file: z.any().optional(), preview: z.string() })).default([]),
   galleryStyle: z.string().default("Cube"),
   timelineEvents: z.array(z.object({
-    image: z.object({ file: z.any(), preview: z.string() }),
+    image: z.object({ file: z.any().optional(), preview: z.string() }),
     description: z.string().min(1, "A descrição é obrigatória."),
     date: z.date().optional(),
   })).default([]),
@@ -87,7 +88,7 @@ const pageSchema = z.object({
   heartColor: z.string().default("#8B5CF6"),
   backgroundVideo: z.any().optional(),
   enablePuzzle: z.boolean().default(false),
-  puzzleImage: z.object({ file: z.any(), preview: z.string() }).optional(),
+  puzzleImage: z.object({ file: z.any().optional(), preview: z.string() }).optional(),
   payment: paymentSchema,
 });
 
@@ -764,21 +765,28 @@ const MusicStep = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = []; // Limpa os pedaços anteriores
+      
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
+
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioURL(url);
-        setValue("audioRecording", url, { shouldDirty: true, shouldValidate: true });
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+            const base64Audio = reader.result as string;
+            setAudioURL(base64Audio);
+            setValue("audioRecording", base64Audio, { shouldDirty: true, shouldValidate: true });
+        };
         audioChunksRef.current = [];
       };
+
       mediaRecorderRef.current.start();
       setRecordingStatus("recording");
     } catch (err) {
       console.error("Error accessing microphone:", err);
-      alert("Não foi possível acessar o microfone. Verifique as permissões do seu navegador.");
+      toast({ variant: "destructive", title: "Erro de Microfone", description: "Não foi possível acessar o microfone. Verifique as permissões do seu navegador." });
     }
   };
 
@@ -953,9 +961,13 @@ const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
     const handleVideoFileChange = (event: ChangeEvent<HTMLInputElement>) => {
       if (event.target.files && event.target.files[0]) {
         const file = event.target.files[0];
-        const videoUrl = URL.createObjectURL(file);
-        setValue("backgroundVideo", videoUrl, { shouldValidate: true, shouldDirty: true });
-        setValue("backgroundAnimation", "custom-video", { shouldValidate: true, shouldDirty: true });
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = () => {
+            const base64Video = reader.result as string;
+            setValue("backgroundVideo", base64Video, { shouldValidate: true, shouldDirty: true });
+            setValue("backgroundAnimation", "custom-video", { shouldValidate: true, shouldDirty: true });
+        }
       }
     };
 
@@ -1162,12 +1174,19 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         setIsProcessing(true);
         setError(null);
         setPixData(null);
+        
         const pageData = getValues();
-        const paymentData = data.payment;
-        // Use a temporary but predictable ID for now
+        // Remove file objects before saving to localStorage
+        const serializablePageData = JSON.parse(JSON.stringify(pageData), (key, value) => {
+            if (key === 'file') return undefined;
+            return value;
+        });
+
         const mockPageId = `page-${Date.now()}`;
         
-        const result = await createPixPayment(pageData, mockPageId, paymentData);
+        localStorage.setItem(mockPageId, JSON.stringify(serializablePageData));
+        
+        const result = await createPixPayment(pageData.payment, pageData.timelineEvents.length > 0, pageData.title, mockPageId);
 
         if (result.pixData) {
             setPixData(result.pixData);
@@ -1175,6 +1194,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
             startPolling(result.pixData.paymentId);
         } else {
             setError(result.error || 'Não foi possível gerar o pagamento PIX.');
+            localStorage.removeItem(mockPageId);
         }
         setIsProcessing(false);
     };
@@ -1189,15 +1209,12 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                   }
                   setPaymentComplete(true);
               }
-              // You can also handle 'cancelled' or 'failed' statuses here
           } catch (pollError) {
               console.error("Polling error:", pollError);
-              // Optionally stop polling on error or notify user
           }
-      }, 5000); // Poll every 5 seconds
+      }, 5000); 
     };
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (pollingIntervalRef.current) {
@@ -1244,7 +1261,15 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
     
     return (
         <form onSubmit={handleSubmit(handleFinalizeAndPay)} className="space-y-6">
-            {error && (
+            {!isPaymentConfigured ? (
+                 <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Pagamento Desconfigurado</AlertTitle>
+                    <AlertDescription>
+                        O sistema de pagamento não está configurado. Por favor, contate o suporte.
+                    </AlertDescription>
+                </Alert>
+            ) : error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Erro de Pagamento</AlertTitle>
@@ -1328,7 +1353,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
 const SuccessStep = ({ pageId }: { pageId: string }) => {
     const { toast } = useToast();
-    const pageUrl = `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/p/${pageId}`;
+    const pageUrl = `${window.location.origin}/p/${pageId}`;
     
     const copyToClipboard = () => {
         navigator.clipboard.writeText(pageUrl).then(() => {
@@ -1356,7 +1381,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
                 <h3 className="font-semibold mb-4">Compartilhe sua Página</h3>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <div className="p-2 bg-white rounded-lg">
-                        <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${pageUrl}`} alt="URL QR Code" width={120} height={120} />
+                        <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(pageUrl)}`} alt="URL QR Code" width={120} height={120} />
                     </div>
                     <div className="flex-grow w-full">
                         <Label htmlFor="page-link" className="text-left text-xs text-muted-foreground">Link da Página:</Label>
@@ -1380,7 +1405,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
     )
 }
 
-const stepComponents: React.ReactElement[] = [
+const stepComponents = [
     <TitleStep key="title" />,
     <MessageStep key="message" />,
     <SpecialDateStep key="specialDate" />,
@@ -1516,26 +1541,14 @@ export default function CreatePageWizard() {
 
   useEffect(() => {
     if (customVideoRef.current) {
-      customVideoRef.current.playbackRate = 0.5;
+      const videoElement = customVideoRef.current;
+      if(formData.backgroundVideo) {
+          videoElement.src = formData.backgroundVideo;
+          videoElement.load();
+          videoElement.play().catch(e => console.error("Video play failed:", e));
+      }
     }
   }, [formData.backgroundVideo]);
-  
-  // This effect is kept for the edge case where the user navigates away and comes back
-  // with the payment parameters in the URL, although polling is the primary method.
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('status');
-    const externalReference = urlParams.get('external_reference');
-
-    if (paymentStatus === 'approved' && externalReference && !paymentComplete) {
-      setPaymentComplete(true);
-      setCreatedPageId(externalReference);
-      setCurrentStep(steps.length); // Move to a "success" step index
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [paymentComplete]);
-
 
   const handleNext = async () => {
     const fields = steps[currentStep].fields;
@@ -1674,7 +1687,6 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                 )}
                 {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
                 <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src={formData.backgroundVideo} />
                 </video>
                 )}
             </div>
@@ -1791,7 +1803,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                     modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
                                     className="mySwiper-small"
                                 >
-                                    {formData.galleryImages.map((img, index) => (
+                                    {formData.galleryImages.map((img: any, index: number) => (
                                         <SwiperSlide key={index} className="bg-transparent">
                                             <div className="relative w-full aspect-square">
                                                 <Image src={img.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
@@ -1816,7 +1828,3 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
-
-    
-
-    

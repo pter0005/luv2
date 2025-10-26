@@ -10,49 +10,17 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from 'next/dynamic';
 
-// Import local components that were in CreatePageWizard
 import Countdown from '@/app/criar/fazer-eu-mesmo/Countdown';
 import FallingHearts from '@/components/effects/FallingHearts';
 import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import RealPuzzle from '@/components/puzzle/Puzzle';
+import { Button } from '@/components/ui/button';
+import { Pause, Play } from 'lucide-react';
 
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/app/criar/fazer-eu-mesmo/Timeline'), { ssr: false });
-
-// Mock data structure - In a real app, this would come from a database
-const mockPageData: any = {
-    title: "Para o Amor da Minha Vida",
-    titleColor: "#D1A9FF",
-    message: "Cada momento ao seu lado é um presente. Esta página é uma pequena demonstração do meu amor por você. \n\nCom todo meu coração.",
-    messageFontSize: "text-lg",
-    messageFormatting: ["italic"],
-    specialDate: new Date('2022-05-20T00:00:00'),
-    countdownStyle: "Padrão",
-    countdownColor: "#FFFFFF",
-    galleryImages: [
-        { preview: "https://picsum.photos/seed/gal1/800/800" },
-        { preview: "https://picsum.photos/seed/gal2/800/800" },
-        { preview: "https://picsum.photos/seed/gal3/800/800" },
-        { preview: "https://picsum.photos/seed/gal4/800/800" },
-    ],
-    galleryStyle: "Coverflow",
-    timelineEvents: [
-        { image: { preview: "https://picsum.photos/seed/tl1/400/400" }, description: "Nosso primeiro encontro", date: new Date("2022-05-20T00:00:00") },
-        { image: { preview: "https://picsum.photos/seed/tl2/400/400" }, description: "A primeira viagem juntos", date: new Date("2022-09-10T00:00:00") },
-        { image: { preview: "https://picsum.photos/seed/tl3/400/400" }, description: "O pedido de namoro", date: new Date("2022-12-25T00:00:00") }
-    ],
-    musicOption: "youtube",
-    youtubeUrl: "https://www.youtube.com/watch?v=lp-EO5I60KA", // Ed Sheeran - Perfect
-    audioRecording: "",
-    backgroundAnimation: "falling-hearts",
-    heartColor: "#D1A9FF",
-    backgroundVideo: null,
-    enablePuzzle: true,
-    puzzleImage: { preview: "https://picsum.photos/seed/puzzle-reveal/800/600" },
-};
-
 
 const CustomAudioPlayer = ({ src }: { src: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -83,9 +51,9 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
   return (
     <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
       <audio ref={audioRef} src={src} className="hidden" />
-      <button onClick={togglePlayPause} className="text-primary-foreground bg-primary/80 hover:bg-primary rounded-full p-3">
-        {isPlaying ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>}
-      </button>
+      <Button onClick={togglePlayPause} size="icon" variant="ghost" className="text-primary-foreground bg-primary/80 hover:bg-primary">
+        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+      </Button>
       <p className="text-sm text-primary-foreground font-semibold">Sua mensagem de voz</p>
     </div>
   );
@@ -94,7 +62,7 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
 
 export default function GeneratedPage() {
     const params = useParams();
-    const pageId = params.pageId;
+    const pageId = params.pageId as string;
     const [formData, setFormData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isClient, setIsClient] = useState(false);
@@ -106,19 +74,20 @@ export default function GeneratedPage() {
 
     useEffect(() => {
         setIsClient(true);
-        // In a real app, you would fetch data based on pageId
-        // For now, we use mock data if the ID is a demo or approved payment
         if (pageId) {
-            console.log("Fetching data for pageId:", pageId);
-            // Simulating a fetch
-            setTimeout(() => {
-                setFormData(mockPageData);
-                setLoading(false);
-                 // Only show puzzle if it's enabled and has an image
-                if (!mockPageData.enablePuzzle || !mockPageData.puzzleImage?.preview) {
-                    setPuzzleRevealed(true);
+            const savedData = localStorage.getItem(pageId);
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    setFormData(parsedData);
+                    if (!parsedData.enablePuzzle || !parsedData.puzzleImage?.preview) {
+                        setPuzzleRevealed(true);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse page data from localStorage", e);
                 }
-            }, 1000);
+            }
+            setLoading(false);
         } else {
              setLoading(false);
         }
@@ -144,8 +113,8 @@ export default function GeneratedPage() {
     }, [formData?.backgroundAnimation]);
 
     useEffect(() => {
-        if (customVideoRef.current) {
-            customVideoRef.current.playbackRate = 0.5;
+        if (customVideoRef.current && formData?.backgroundVideo) {
+            customVideoRef.current.src = formData.backgroundVideo;
         }
     }, [formData?.backgroundVideo]);
 
@@ -196,7 +165,6 @@ export default function GeneratedPage() {
                 )}
                 {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
                 <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src={formData.backgroundVideo} />
                 </video>
                 )}
             </div>
@@ -251,7 +219,7 @@ export default function GeneratedPage() {
 
                     {formData.specialDate && (
                         <Countdown 
-                            targetDate={formData.specialDate.toISOString()} 
+                            targetDate={new Date(formData.specialDate).toISOString()} 
                             style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
                             color={formData.countdownColor}
                         />
@@ -297,7 +265,7 @@ export default function GeneratedPage() {
                                 {formData.galleryImages.map((img: any, index: number) => (
                                     <SwiperSlide key={index} className="bg-transparent">
                                         <div className="relative w-full aspect-square">
-                                            <Image src={img.preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" />
+                                            <Image src={img.preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" unoptimized/>
                                         </div>
                                     </SwiperSlide>
                                 ))}
@@ -317,4 +285,3 @@ export default function GeneratedPage() {
         </div>
     );
 }
-

@@ -32,7 +32,7 @@ type PayerData = {
     payerCpf: string;
 }
 
-export async function createPixPayment(pageData: any, pageId: string, payerData: PayerData) {
+export async function createPixPayment(payerData: PayerData, hasTimeline: boolean, pageTitle: string, pageId: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
@@ -50,7 +50,7 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
     const payment = new Payment(client);
 
     let unit_price = 19.90; // Preço base
-    if (pageData.timelineEvents && pageData.timelineEvents.length > 0) {
+    if (hasTimeline) {
       unit_price += 10.00; // Custo adicional pela linha do tempo
     }
     
@@ -61,7 +61,7 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
         const result = await payment.create({
             body: {
                 transaction_amount: unit_price,
-                description: `Página para ${pageData.title}`,
+                description: `Página para ${pageTitle}`,
                 payment_method_id: 'pix',
                 payer: {
                     email: payerData.payerEmail,
@@ -118,5 +118,3 @@ export async function checkPaymentStatus(paymentId: number) {
         return { status: 'error', message: error.message };
     }
 }
-
-    
