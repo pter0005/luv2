@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -1162,10 +1163,11 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         setError(null);
         setPixData(null);
         const pageData = getValues();
+        const paymentData = data.payment;
         // Use a temporary but predictable ID for now
         const mockPageId = `page-${Date.now()}`;
         
-        const result = await createPixPayment(pageData, mockPageId, data.payment);
+        const result = await createPixPayment(pageData, mockPageId, paymentData);
 
         if (result.pixData) {
             setPixData(result.pixData);
@@ -1379,14 +1381,14 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
 }
 
 const stepComponents: React.ReactElement[] = [
-    <TitleStep key="title" />, 
-    <MessageStep key="message" />, 
-    <SpecialDateStep key="specialDate" />, _
-    <GalleryStep key="gallery" />, 
+    <TitleStep key="title" />,
+    <MessageStep key="message" />,
+    <SpecialDateStep key="specialDate" />,
+    <GalleryStep key="gallery" />,
     <TimelineStep key="timeline" />,
-    <MusicStep key="music" />, 
-    <BackgroundStep key="background" isVisible={false} />, 
-    <PuzzleStep key="puzzle" />, 
+    <MusicStep key="music" />,
+    <BackgroundStep key="background" isVisible={false} />,
+    <PuzzleStep key="puzzle" />,
     <PaymentStep key="payment" setPaymentComplete={() => {}} setCreatedPageId={() => {}} />,
 ];
 
@@ -1814,5 +1816,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
+    
 
     
