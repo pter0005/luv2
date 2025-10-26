@@ -25,7 +25,14 @@ export async function handleSuggestContent(formData: FormData) {
   }
 }
 
-export async function createPixPayment(pageData: any, pageId: string) {
+type PayerData = {
+    payerFirstName: string;
+    payerLastName: string;
+    payerEmail: string;
+    payerCpf: string;
+}
+
+export async function createPixPayment(pageData: any, pageId: string, payerData: PayerData) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
@@ -42,6 +49,10 @@ export async function createPixPayment(pageData: any, pageId: string) {
     if (pageData.timelineEvents && pageData.timelineEvents.length > 0) {
       unit_price += 10.00; // Custo adicional pela linha do tempo
     }
+    
+    // Simple CPF cleanup
+    const cleanCpf = payerData.payerCpf.replace(/\D/g, '');
+
 
     try {
         const result = await payment.create({
@@ -50,12 +61,12 @@ export async function createPixPayment(pageData: any, pageId: string) {
                 description: `Página para ${pageData.title}`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: `pedrohenriqww9@gmail.com`,
-                    first_name: 'Alexandre',
-                    last_name: 'da Silva Bezerra',
+                    email: payerData.payerEmail,
+                    first_name: payerData.payerFirstName,
+                    last_name: payerData.payerLastName,
                     identification: {
                         type: 'CPF',
-                        number: '44372032838',
+                        number: cleanCpf,
                     },
                 },
                  notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/mercadopago`,
@@ -80,3 +91,5 @@ export async function createPixPayment(pageData: any, pageId: string) {
         return { error: errorMessage };
     }
 }
+
+    

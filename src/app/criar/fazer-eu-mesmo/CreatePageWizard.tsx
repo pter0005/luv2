@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -52,6 +53,12 @@ const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
 
 const Timeline = dynamic(() => import('./Timeline'), { ssr: false });
 
+const paymentSchema = z.object({
+  payerFirstName: z.string().min(1, "Nome é obrigatório."),
+  payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
+  payerEmail: z.string().email("E-mail inválido."),
+  payerCpf: z.string().min(11, "CPF inválido.").max(14, "CPF inválido."),
+});
 
 // Define the schema for the entire wizard
 const pageSchema = z.object({
@@ -81,6 +88,7 @@ const pageSchema = z.object({
   backgroundVideo: z.any().optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: z.object({ file: z.any(), preview: z.string() }).optional(),
+  payment: paymentSchema.optional(),
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -138,7 +146,7 @@ const steps = [
     id: "payment",
     title: "Finalizar",
     description: "Sua página está quase pronta! Realize o pagamento para gerar o link e o QR Code.",
-    fields: [],
+    fields: ["payment"],
   },
 ];
 
@@ -1140,7 +1148,7 @@ type PixData = {
 }
 
 const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentComplete: (v: boolean) => void, setCreatedPageId: (id: string) => void }) => {
-    const { getValues } = useFormContext<PageData>();
+    const { getValues, control, handleSubmit } = useFormContext<PageData>();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pixData, setPixData] = useState<PixData | null>(null);
@@ -1148,14 +1156,14 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async () => {
+    const handleFinalizeAndPay = async (paymentData: z.infer<typeof paymentSchema>) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
         const pageData = getValues();
         const mockPageId = `page-${Date.now()}`;
         
-        const result = await createPixPayment(pageData, mockPageId);
+        const result = await createPixPayment(pageData, mockPageId, paymentData);
 
         if (result.pixData) {
             setPixData(result.pixData);
@@ -1202,9 +1210,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         );
     }
     
-
     return (
-        <div className="space-y-6 text-center">
+        <form onSubmit={handleSubmit(handleFinalizeAndPay)} className="space-y-6 text-center">
             {error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -1215,7 +1222,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </Alert>
             )}
 
-            {!isPaymentConfigured ? (
+             {!isPaymentConfigured ? (
                  <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>Pagamento não Configurado</AlertTitle>
@@ -1224,19 +1231,76 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                     </AlertDescription>
                 </Alert>
             ) : (
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Passo Final!</AlertTitle>
-                    <AlertDescription>
-                        Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
-                    </AlertDescription>
-                </Alert>
+                <Card className="text-left bg-card/80 p-6">
+                    <CardHeader className="p-0 mb-4">
+                        <CardTitle>Dados do Pagador</CardTitle>
+                        <CardDescription>
+                            Essas informações são necessárias para gerar o PIX.
+                        </CardDescription>
+                    </CardHeader>
+                    <div className="space-y-4">
+                       <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={control}
+                                name="payment.payerFirstName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nome</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="Seu nome" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={control}
+                                name="payment.payerLastName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Sobrenome</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="Seu sobrenome" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                       </div>
+                        <FormField
+                            control={control}
+                            name="payment.payerEmail"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>E-mail</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} placeholder="seu@email.com" type="email" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={control}
+                            name="payment.payerCpf"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>CPF</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} placeholder="000.000.000-00" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </Card>
             )}
             
-            <Button onClick={handleFinalizeAndPay} disabled={isProcessing || !isPaymentConfigured} size="lg">
+            <Button type="submit" disabled={isProcessing || !isPaymentConfigured} size="lg">
                 {isProcessing ? <Loader2 className="animate-spin" /> : "Finalizar e Pagar com PIX"}
             </Button>
-        </div>
+        </form>
     );
 };
 
@@ -1400,6 +1464,12 @@ export default function CreatePageWizard() {
       backgroundVideo: null,
       enablePuzzle: false,
       puzzleImage: undefined,
+      payment: {
+          payerFirstName: "",
+          payerLastName: "",
+          payerEmail: "",
+          payerCpf: ""
+      }
     },
   });
 
@@ -1713,3 +1783,5 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
+    
