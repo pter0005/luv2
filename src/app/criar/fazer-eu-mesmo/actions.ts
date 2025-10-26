@@ -50,12 +50,12 @@ export async function createPixPayment(pageData: any, pageId: string) {
                 description: `Página para ${pageData.title}`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: `test_user_${Math.floor(Math.random() * 1000000)}@testuser.com`, // Use a different test user
-                    first_name: 'Pedro',
-                    last_name: 'Henrique Oliveira de Paula',
+                    email: `pedrohenriqww9@gmail.com`,
+                    first_name: 'Alexandre',
+                    last_name: 'da Silva Bezerra',
                     identification: {
                         type: 'CPF',
-                        number: '58954844847',
+                        number: '44372032838',
                     },
                 },
                  notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/mercadopago`,
