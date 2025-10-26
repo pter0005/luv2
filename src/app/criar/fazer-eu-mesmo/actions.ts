@@ -50,7 +50,7 @@ export async function createPixPayment(pageData: any, pageId: string) {
                 description: `Página para ${pageData.title}`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: 'test_user_123456@testuser.com', // Required test user email
+                    email: `test_user_${Math.floor(Math.random() * 1000000)}@testuser.com`, // Use a different test user
                     first_name: 'Pedro',
                     last_name: 'Henrique Oliveira de Paula',
                     identification: {
@@ -68,9 +68,15 @@ export async function createPixPayment(pageData: any, pageId: string) {
             qrCode: result.point_of_interaction?.transaction_data?.qr_code,
         }
 
+        if (!pixData.qrCodeBase64 || !pixData.qrCode) {
+            throw new Error('Não foi possível obter os dados do PIX a partir da resposta da API.');
+        }
+
+
         return { pixData };
     } catch (error: any) {
         console.error("Error creating Mercado Pago PIX payment:", error.cause ?? error.message);
-        return { error: error.message || "Falha ao iniciar o pagamento com PIX." };
+        const errorMessage = error?.cause?.error?.message || error.message || "Falha ao iniciar o pagamento com PIX.";
+        return { error: errorMessage };
     }
 }
