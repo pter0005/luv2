@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -1140,10 +1140,11 @@ const PaymentStep = () => {
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const { getValues } = useFormContext<PageData>();
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-    const { toast } = useToast();
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
     const handleFinalize = async () => {
         setIsProcessingPayment(true);
+        setPaymentError(null);
         const pageData = getValues();
         const mockPageId = `page-${Date.now()}`;
         const result = await createPaymentPreference(pageData, mockPageId);
@@ -1151,11 +1152,7 @@ const PaymentStep = () => {
         if (result.preferenceId) {
             setPreferenceId(result.preferenceId);
         } else {
-            toast({
-                variant: 'destructive',
-                title: 'Erro de Pagamento',
-                description: result.error || 'Não foi possível iniciar o checkout.',
-            });
+            setPaymentError(result.error || 'Não foi possível iniciar o checkout.');
             setIsProcessingPayment(false);
         }
     };
@@ -1180,13 +1177,23 @@ const PaymentStep = () => {
 
     return (
         <div className="space-y-6 text-center">
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Passo Final!</AlertTitle>
-                <AlertDescription>
-                    Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
-                </AlertDescription>
-            </Alert>
+            {paymentError ? (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Erro de Pagamento</AlertTitle>
+                    <AlertDescription>
+                        {paymentError}
+                    </AlertDescription>
+                </Alert>
+            ) : (
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Passo Final!</AlertTitle>
+                    <AlertDescription>
+                        Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Button onClick={handleFinalize} disabled={isProcessingPayment} size="lg">
                 {isProcessingPayment ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
             </Button>
@@ -1662,3 +1669,4 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
