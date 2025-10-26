@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams }d from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
