@@ -40,6 +40,10 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
         return { error: 'A configuração de pagamento não está disponível no momento. Verifique as chaves da API.' };
     }
 
+    if (!payerData || !payerData.payerCpf) {
+        return { error: "Dados do pagador, especialmente o CPF, são obrigatórios." };
+    }
+
     const client = new MercadoPagoConfig({
         accessToken: accessToken,
     });
@@ -91,5 +95,7 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
         return { error: errorMessage };
     }
 }
+
+    
 
     

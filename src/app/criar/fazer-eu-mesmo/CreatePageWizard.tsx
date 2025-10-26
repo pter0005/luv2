@@ -89,7 +89,7 @@ const pageSchema = z.object({
   backgroundVideo: z.any().optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: z.object({ file: z.any(), preview: z.string() }).optional(),
-  payment: paymentSchema.optional(),
+  payment: paymentSchema,
 });
 
 type PageData = z.infer<typeof pageSchema>;
@@ -1157,14 +1157,14 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (paymentData: z.infer<typeof paymentSchema>) => {
+    const handleFinalizeAndPay = async (data: z.infer<typeof pageSchema>) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
         const pageData = getValues();
         const mockPageId = `page-${Date.now()}`;
         
-        const result = await createPixPayment(pageData, mockPageId, paymentData);
+        const result = await createPixPayment(pageData, mockPageId, data.payment);
 
         if (result.pixData) {
             setPixData(result.pixData);
@@ -1212,7 +1212,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
     }
     
     return (
-        <form onSubmit={handleSubmit(handleFinalizeAndPay)} className="space-y-6 text-center">
+        <form onSubmit={handleSubmit(handleFinalizeAndPay)} className="space-y-6">
             {error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -1298,7 +1298,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </Card>
             )}
             
-            <Button type="submit" disabled={isProcessing || !isPaymentConfigured} size="lg">
+            <Button type="submit" disabled={isProcessing || !isPaymentConfigured} size="lg" className="w-full">
                 {isProcessing ? <Loader2 className="animate-spin" /> : "Finalizar e Pagar com PIX"}
             </Button>
         </form>
@@ -1784,6 +1784,8 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
+    
 
     
 
