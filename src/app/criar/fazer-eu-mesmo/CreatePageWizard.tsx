@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -1157,7 +1156,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (data: z.infer<typeof pageSchema>) => {
+    const handleFinalizeAndPay = async (data: PageData) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
@@ -1319,31 +1318,39 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
 
     return (
         <div className="flex flex-col items-center text-center gap-6">
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1, transition: { type: 'spring', stiffness: 260, damping: 20 }}}>
-                <CheckCircle className="h-20 w-20 text-green-400" />
-            </motion.div>
-            <h2 className="text-3xl font-bold font-headline">Página Criada com Sucesso!</h2>
-            <p className="text-muted-foreground max-w-sm">Sua declaração de amor está pronta para ser compartilhada com o mundo (ou com aquela pessoa especial).</p>
-            
-            <Card className="p-6 bg-card/80 flex flex-col items-center gap-4 w-full max-w-sm">
-                <h3 className="font-semibold">Seu QR Code Exclusivo</h3>
-                <div className="p-2 bg-white rounded-lg">
-                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${pageUrl}`} alt="URL QR Code" width={160} height={160} />
+            <motion.div 
+                initial={{ scale: 0 }} 
+                animate={{ scale: 1, transition: { type: 'spring', stiffness: 260, damping: 20, delay: 0.2 } }}
+            >
+                <div className="relative">
+                    <CheckCircle className="h-20 w-20 text-green-400" />
+                    <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping -z-10"></div>
                 </div>
-                <p className="text-xs text-muted-foreground">Aponte a câmera do celular para o código.</p>
-            </Card>
-
-             <Card className="p-4 bg-card/80 w-full max-w-sm">
-                <h3 className="font-semibold mb-2">Link da sua Página</h3>
-                <div className="flex gap-2">
-                    <Input readOnly value={pageUrl} className="bg-background/50"/>
-                    <Button onClick={copyToClipboard}>Copiar</Button>
+            </motion.div>
+            <h2 className="text-3xl font-bold font-headline">Pagamento Aprovado!</h2>
+            <p className="text-muted-foreground max-w-sm">Sua declaração de amor está pronta. Compartilhe com aquela pessoa especial!</p>
+            
+            <Card className="p-6 bg-card/80 w-full max-w-sm">
+                <h3 className="font-semibold mb-4">Compartilhe sua Página</h3>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="p-2 bg-white rounded-lg">
+                        <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${pageUrl}`} alt="URL QR Code" width={120} height={120} />
+                    </div>
+                    <div className="flex-grow w-full">
+                        <Label htmlFor="page-link" className="text-left text-xs text-muted-foreground">Link da Página:</Label>
+                         <div className="flex gap-2 mt-1">
+                            <Input id="page-link" readOnly value={pageUrl} className="bg-background/50 text-xs"/>
+                            <Button onClick={copyToClipboard} size="icon" variant="outline">
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </Card>
 
             <Button asChild size="lg" className="mt-4">
                 <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-                    Visualizar minha página
+                    Acessar a Página
                     <ChevronRight className="ml-2" />
                 </a>
             </Button>
@@ -1784,9 +1791,5 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
-
-    
-
-    
 
     
