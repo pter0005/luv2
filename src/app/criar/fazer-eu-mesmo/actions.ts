@@ -27,8 +27,11 @@ export async function handleSuggestContent(formData: FormData) {
 
 export async function createPaymentPreference(pageData: any, pageId: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-    if (!accessToken) {
-        console.error('Mercado Pago access token is not configured.');
+    
+    const isPaymentConfigured = accessToken && process.env.NEXT_PUBLIC_MERCADO_PAGO_ACCESS_TOKEN_READY === 'true';
+
+    if (!isPaymentConfigured) {
+        console.error('Mercado Pago access token is not configured or not ready.');
         return { error: 'A configuração de pagamento não está disponível no momento.' };
     }
 

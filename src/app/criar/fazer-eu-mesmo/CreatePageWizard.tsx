@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -1136,15 +1137,18 @@ const PuzzleStep = () => {
     );
 };
 
-const PaymentStep = () => {
+const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentComplete: (v: boolean) => void, setCreatedPageId: (id: string) => void }) => {
     const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const { getValues } = useFormContext<PageData>();
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // This is a simple check. In a real app, you'd use environment variables.
+    const isPaymentConfigured = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY && process.env.NEXT_PUBLIC_MERCADO_PAGO_ACCESS_TOKEN_READY === 'true';
 
     const handleFinalize = async () => {
-        setIsProcessingPayment(true);
-        setPaymentError(null);
+        setIsProcessing(true);
+        setError(null);
         const pageData = getValues();
         const mockPageId = `page-${Date.now()}`;
         const result = await createPaymentPreference(pageData, mockPageId);
@@ -1152,9 +1156,15 @@ const PaymentStep = () => {
         if (result.preferenceId) {
             setPreferenceId(result.preferenceId);
         } else {
-            setPaymentError(result.error || 'Não foi possível iniciar o checkout.');
-            setIsProcessingPayment(false);
+            setError(result.error || 'Não foi possível iniciar o checkout.');
+            setIsProcessing(false);
         }
+    };
+    
+    const handleDemo = () => {
+        const mockPageId = `demo-${Date.now()}`;
+        setCreatedPageId(mockPageId);
+        setPaymentComplete(true);
     };
 
     if (preferenceId) {
@@ -1177,26 +1187,43 @@ const PaymentStep = () => {
 
     return (
         <div className="space-y-6 text-center">
-            {paymentError ? (
+            {error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Erro de Pagamento</AlertTitle>
                     <AlertDescription>
-                        {paymentError}
-                    </AlertDescription>
-                </Alert>
-            ) : (
-                <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Passo Final!</AlertTitle>
-                    <AlertDescription>
-                        Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
+                        {error}
                     </AlertDescription>
                 </Alert>
             )}
-            <Button onClick={handleFinalize} disabled={isProcessingPayment} size="lg">
-                {isProcessingPayment ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
-            </Button>
+
+            {isPaymentConfigured ? (
+                 <>
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Passo Final!</AlertTitle>
+                        <AlertDescription>
+                            Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
+                        </AlertDescription>
+                    </Alert>
+                    <Button onClick={handleFinalize} disabled={isProcessing} size="lg">
+                        {isProcessing ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Modo de Demonstração</AlertTitle>
+                        <AlertDescription>
+                           O pagamento não está configurado. Você pode gerar uma página de demonstração para testar.
+                        </AlertDescription>
+                    </Alert>
+                    <Button onClick={handleDemo} size="lg">
+                       Gerar Página de Demonstração
+                    </Button>
+                </>
+            )}
         </div>
     );
 };
@@ -1256,7 +1283,7 @@ const stepComponents: React.ReactElement[] = [
     <MusicStep key="music" />, 
     <BackgroundStep key="background" isVisible={false} />, 
     <PuzzleStep key="puzzle" />, 
-    <PaymentStep key="payment" />,
+    <PaymentStep key="payment" setPaymentComplete={() => {}} setCreatedPageId={() => {}} />,
 ];
 
 const CustomAudioPlayer = ({ src }: { src: string }) => {
@@ -1418,9 +1445,14 @@ export default function CreatePageWizard() {
     if (paymentComplete && createdPageId) {
       StepComponent = <SuccessStep pageId={createdPageId} />;
     } else {
-        StepComponent = React.cloneElement(stepComponents[currentStep], { 
-            isVisible: currentStep === steps.findIndex(s => s.id === 'background') 
-        });
+        const currentStepId = steps[currentStep].id;
+        if (currentStepId === 'payment') {
+            StepComponent = <PaymentStep setPaymentComplete={setPaymentComplete} setCreatedPageId={setCreatedPageId} />;
+        } else {
+            StepComponent = React.cloneElement(stepComponents[currentStep], { 
+                isVisible: currentStep === steps.findIndex(s => s.id === 'background') 
+            });
+        }
     }
 
   const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.preview;
@@ -1669,4 +1701,5 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
 
