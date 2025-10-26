@@ -208,14 +208,20 @@ function FloatingCard({
   card: Card
   position: { x: number; y: number; z: number; rotationX: number; rotationY: number; rotationZ: number }
 }) {
-  const meshRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const { setSelectedCard } = useCard()
+  const vec = new THREE.Vector3()
 
   useFrame(({ camera }) => {
     if (groupRef.current) {
       groupRef.current.lookAt(camera.position)
+      // Subtle hover effect: move card slightly towards camera
+      if (hovered) {
+        groupRef.current.position.lerp(vec.set(position.x, position.y, position.z + 1), 0.1)
+      } else {
+        groupRef.current.position.lerp(vec.set(position.x, position.y, position.z), 0.1)
+      }
     }
   })
 
@@ -237,7 +243,6 @@ function FloatingCard({
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]}>
       <Plane
-        ref={meshRef}
         args={[4.5, 6]}
         onClick={handleClick}
         onPointerOver={handlePointerOver}
@@ -269,15 +274,15 @@ function FloatingCard({
             <Image
               src={card.imageUrl || "/placeholder.svg"}
               alt={card.alt}
-              layout="fill"
+              fill
               className="object-cover rounded-md"
               unoptimized
             />
           </div>
           <div className="mt-1 text-center flex-grow flex flex-col justify-center px-1">
-            <p className="text-white text-xs font-semibold leading-tight line-clamp-2">{card.title}</p>
+            <p className="text-white text-xs font-semibold leading-tight line-clamp-2" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>{card.title}</p>
              {card.date && (
-              <p className="text-primary/80 text-[12px] font-bold mt-1 tracking-wide" style={{ textRendering: 'optimizeLegibility' }}>
+              <p className="text-primary/80 text-[12px] font-bold mt-1 tracking-wide" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>
                 {format(card.date, "dd MMM yyyy", { locale: ptBR })}
               </p>
             )}
@@ -357,11 +362,11 @@ function CardModal() {
             onMouseLeave={handleMouseLeave}
           >
             <div className="relative w-full mb-4" style={{ aspectRatio: "3 / 4" }}>
-              <img
-                loading="lazy"
+              <Image
                 className="absolute inset-0 h-full w-full rounded-[16px] bg-[#000000] object-cover"
                 alt={selectedCard.alt}
                 src={selectedCard.imageUrl || "/placeholder.svg"}
+                fill
                 style={{ boxShadow: "rgba(0, 0, 0, 0.05) 0px 5px 6px 0px", opacity: 1 }}
                 unoptimized
               />
@@ -504,7 +509,7 @@ export default function StellarCardGallerySingle({ onClose }: { onClose: () => v
               enableRotate
               minDistance={isMobile ? 15 : 5}
               maxDistance={isMobile ? 50 : 40}
-              autoRotate={cards.length > 1}
+              autoRotate={isMobile && cards.length > 1}
               autoRotateSpeed={0.3}
               rotateSpeed={isMobile ? 1.2 : 0.5}
               zoomSpeed={isMobile ? 1.5 : 1.2}
