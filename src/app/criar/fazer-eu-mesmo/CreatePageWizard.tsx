@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -1143,8 +1141,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // This is a simple check. In a real app, you'd use environment variables.
-    const isPaymentConfigured = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY && process.env.NEXT_PUBLIC_MERCADO_PAGO_ACCESS_TOKEN_READY === 'true';
+    const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
     const handleFinalize = async () => {
         setIsProcessing(true);
@@ -1157,8 +1154,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
             setPreferenceId(result.preferenceId);
         } else {
             setError(result.error || 'Não foi possível iniciar o checkout.');
-            setIsProcessing(false);
         }
+        setIsProcessing(false);
     };
     
     if (preferenceId) {
@@ -1191,33 +1188,27 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </Alert>
             )}
 
-            {isPaymentConfigured ? (
-                 <>
-                    <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Passo Final!</AlertTitle>
-                        <AlertDescription>
-                            Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
-                        </AlertDescription>
-                    </Alert>
-                    <Button onClick={handleFinalize} disabled={isProcessing} size="lg">
-                        {isProcessing ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
-                    </Button>
-                </>
+            {!isPaymentConfigured ? (
+                 <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Pagamento não Configurado</AlertTitle>
+                    <AlertDescription>
+                       O sistema de pagamento não está ativo. Por favor, configure as chaves do Mercado Pago para continuar.
+                    </AlertDescription>
+                </Alert>
             ) : (
-                <>
-                    <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Pagamento não Configurado</AlertTitle>
-                        <AlertDescription>
-                           O sistema de pagamento não está ativo. Por favor, configure as chaves do Mercado Pago para continuar.
-                        </AlertDescription>
-                    </Alert>
-                    <Button onClick={handleFinalize} size="lg" disabled>
-                       Ir para o Pagamento
-                    </Button>
-                </>
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Passo Final!</AlertTitle>
+                    <AlertDescription>
+                        Sua página será gerada e disponibilizada assim que o pagamento for confirmado.
+                    </AlertDescription>
+                </Alert>
             )}
+            
+            <Button onClick={handleFinalize} disabled={isProcessing || !isPaymentConfigured} size="lg">
+                {isProcessing ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
+            </Button>
         </div>
     );
 };
@@ -1429,7 +1420,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
   
@@ -1695,6 +1686,3 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
-
-
-
