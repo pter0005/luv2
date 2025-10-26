@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
@@ -39,7 +38,7 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
-import { handleSuggestContent, createPixPayment } from "./actions";
+import { handleSuggestContent, createPixPayment, checkPaymentStatus } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import RealPuzzle from "@/components/puzzle/Puzzle";
 import { initMercadoPago } from '@mercadopago/sdk-react';
@@ -1143,6 +1142,7 @@ const PuzzleStep = () => {
 };
 
 type PixData = {
+    paymentId: number;
     qrCodeBase64: string;
     qrCode: string;
 }
@@ -1153,6 +1153,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
     const [error, setError] = useState<string | null>(null);
     const [pixData, setPixData] = useState<PixData | null>(null);
     const { toast } = useToast();
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
@@ -1161,18 +1162,47 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         setError(null);
         setPixData(null);
         const pageData = getValues();
+        // Use a temporary but predictable ID for now
         const mockPageId = `page-${Date.now()}`;
         
         const result = await createPixPayment(pageData, mockPageId, data.payment);
 
         if (result.pixData) {
             setPixData(result.pixData);
-            setCreatedPageId(mockPageId); // Set pageId to check status later
+            setCreatedPageId(mockPageId); 
+            startPolling(result.pixData.paymentId);
         } else {
             setError(result.error || 'Não foi possível gerar o pagamento PIX.');
         }
         setIsProcessing(false);
     };
+
+    const startPolling = (paymentId: number) => {
+      pollingIntervalRef.current = setInterval(async () => {
+          try {
+              const statusResult = await checkPaymentStatus(paymentId);
+              if (statusResult.status === 'approved') {
+                  if (pollingIntervalRef.current) {
+                      clearInterval(pollingIntervalRef.current);
+                  }
+                  setPaymentComplete(true);
+              }
+              // You can also handle 'cancelled' or 'failed' statuses here
+          } catch (pollError) {
+              console.error("Polling error:", pollError);
+              // Optionally stop polling on error or notify user
+          }
+      }, 5000); // Poll every 5 seconds
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
+    }, []);
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text).then(() => {
@@ -1201,9 +1231,9 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </div>
                  <Alert>
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Importante!</AlertTitle>
+                    <AlertTitle>Aguardando Pagamento...</AlertTitle>
                     <AlertDescription>
-                        Após o pagamento, **volte para esta página e atualize-a** (F5) para receber seu link exclusivo e o QR Code final.
+                        Após o pagamento ser aprovado, esta tela será atualizada automaticamente.
                     </AlertDescription>
                 </Alert>
             </div>
@@ -1222,80 +1252,70 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </Alert>
             )}
 
-             {!isPaymentConfigured ? (
-                 <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Pagamento não Configurado</AlertTitle>
-                    <AlertDescription>
-                       O sistema de pagamento não está ativo. Por favor, configure as chaves do Mercado Pago para continuar.
-                    </AlertDescription>
-                </Alert>
-            ) : (
-                <Card className="text-left bg-card/80 p-6">
-                    <CardHeader className="p-0 mb-4">
-                        <CardTitle>Dados do Pagador</CardTitle>
-                        <CardDescription>
-                            Essas informações são necessárias para gerar o PIX.
-                        </CardDescription>
-                    </CardHeader>
-                    <div className="space-y-4">
-                       <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={control}
-                                name="payment.payerFirstName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Nome</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} placeholder="Seu nome" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={control}
-                                name="payment.payerLastName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Sobrenome</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} placeholder="Seu sobrenome" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                       </div>
+            <Card className="text-left bg-card/80 p-6">
+                <CardHeader className="p-0 mb-4">
+                    <CardTitle>Dados do Pagador</CardTitle>
+                    <CardDescription>
+                        Essas informações são necessárias para gerar o PIX.
+                    </CardDescription>
+                </CardHeader>
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
                         <FormField
                             control={control}
-                            name="payment.payerEmail"
+                            name="payment.payerFirstName"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>E-mail</FormLabel>
+                                    <FormLabel>Nome</FormLabel>
                                     <FormControl>
-                                        <Input {...field} placeholder="seu@email.com" type="email" />
+                                        <Input {...field} placeholder="Seu nome" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <FormField
+                            <FormField
                             control={control}
-                            name="payment.payerCpf"
+                            name="payment.payerLastName"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>CPF</FormLabel>
+                                    <FormLabel>Sobrenome</FormLabel>
                                     <FormControl>
-                                        <Input {...field} placeholder="000.000.000-00" />
+                                        <Input {...field} placeholder="Seu sobrenome" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </div>
-                </Card>
-            )}
+                    <FormField
+                        control={control}
+                        name="payment.payerEmail"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>E-mail</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder="seu@email.com" type="email" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={control}
+                        name="payment.payerCpf"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>CPF</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder="000.000.000-00" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+            </Card>
             
             <Button type="submit" disabled={isProcessing || !isPaymentConfigured} size="lg" className="w-full">
                 {isProcessing ? <Loader2 className="animate-spin" /> : "Finalizar e Pagar com PIX"}
@@ -1361,7 +1381,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
 const stepComponents: React.ReactElement[] = [
     <TitleStep key="title" />, 
     <MessageStep key="message" />, 
-    <SpecialDateStep key="specialDate" />, 
+    <SpecialDateStep key="specialDate" />, _
     <GalleryStep key="gallery" />, 
     <TimelineStep key="timeline" />,
     <MusicStep key="music" />, 
@@ -1433,6 +1453,8 @@ export default function CreatePageWizard() {
     setIsClient(true);
      if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
             initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
+    } else {
+      console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
     }
     const handleResize = () => {
         const screenWidth = window.innerWidth;
@@ -1495,6 +1517,23 @@ export default function CreatePageWizard() {
       customVideoRef.current.playbackRate = 0.5;
     }
   }, [formData.backgroundVideo]);
+  
+  // This effect is kept for the edge case where the user navigates away and comes back
+  // with the payment parameters in the URL, although polling is the primary method.
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('status');
+    const externalReference = urlParams.get('external_reference');
+
+    if (paymentStatus === 'approved' && externalReference && !paymentComplete) {
+      setPaymentComplete(true);
+      setCreatedPageId(externalReference);
+      setCurrentStep(steps.length); // Move to a "success" step index
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [paymentComplete]);
+
 
   const handleNext = async () => {
     const fields = steps[currentStep].fields;
@@ -1506,22 +1545,6 @@ export default function CreatePageWizard() {
         setCurrentStep((prev) => prev + 1);
     }
   };
-
-  // This effect simulates listening for a successful payment webhook/callback
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('status');
-    const externalReference = urlParams.get('external_reference');
-
-    if (paymentStatus === 'approved' && externalReference) {
-      setPaymentComplete(true);
-      setCreatedPageId(externalReference);
-      setCurrentStep(steps.length); // Move to a "success" step index
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
 
   const handleBack = () => {
     if (currentStep > 0) {

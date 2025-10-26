@@ -54,7 +54,6 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
       unit_price += 10.00; // Custo adicional pela linha do tempo
     }
     
-    // Simple CPF cleanup
     const cleanCpf = payerData.payerCpf.replace(/\D/g, '');
 
 
@@ -78,15 +77,19 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
             },
         });
 
+        if (!result.id || !result.point_of_interaction?.transaction_data) {
+             throw new Error('Resposta inválida da API do Mercado Pago ao criar pagamento.');
+        }
+
         const pixData = {
-            qrCodeBase64: result.point_of_interaction?.transaction_data?.qr_code_base64,
-            qrCode: result.point_of_interaction?.transaction_data?.qr_code,
+            paymentId: result.id,
+            qrCodeBase64: result.point_of_interaction.transaction_data.qr_code_base64,
+            qrCode: result.point_of_interaction.transaction_data.qr_code,
         }
 
         if (!pixData.qrCodeBase64 || !pixData.qrCode) {
             throw new Error('Não foi possível obter os dados do PIX a partir da resposta da API.');
         }
-
 
         return { pixData };
     } catch (error: any) {
@@ -96,6 +99,24 @@ export async function createPixPayment(pageData: any, pageId: string, payerData:
     }
 }
 
-    
+
+export async function checkPaymentStatus(paymentId: number) {
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    if (!accessToken) {
+        throw new Error('Mercado Pago access token is not configured.');
+    }
+
+    const client = new MercadoPagoConfig({ accessToken });
+    const payment = new Payment(client);
+
+    try {
+        const result = await payment.get({ id: paymentId });
+        return { status: result.status };
+    } catch (error: any) {
+        console.error(`Error checking payment status for ID ${paymentId}:`, error.message);
+        // Return a neutral status or error status so the client can decide what to do
+        return { status: 'error', message: error.message };
+    }
+}
 
     
