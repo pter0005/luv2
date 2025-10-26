@@ -2,7 +2,7 @@
 'use server';
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 /**
  * Handles the form submission for AI content suggestions.
@@ -25,7 +25,7 @@ export async function handleSuggestContent(formData: FormData) {
   }
 }
 
-export async function createPaymentPreference(pageData: any, pageId: string) {
+export async function createPixPayment(pageData: any, pageId: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
@@ -36,9 +36,7 @@ export async function createPaymentPreference(pageData: any, pageId: string) {
     const client = new MercadoPagoConfig({
         accessToken: accessToken,
     });
-    const preference = new Preference(client);
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002';
+    const payment = new Payment(client);
 
     let unit_price = 19.90; // Preço base
     if (pageData.timelineEvents && pageData.timelineEvents.length > 0) {
@@ -46,33 +44,33 @@ export async function createPaymentPreference(pageData: any, pageId: string) {
     }
 
     try {
-        const result = await preference.create({
+        const result = await payment.create({
             body: {
-                items: [
-                    {
-                        id: pageId,
-                        title: 'Página de Amor Personalizada b2gether',
-                        quantity: 1,
-                        unit_price: unit_price,
-                        description: `Página para ${pageData.title}`,
-                    },
-                ],
+                transaction_amount: unit_price,
+                description: `Página para ${pageData.title}`,
+                payment_method_id: 'pix',
                 payer: {
-                    // Payer info can be collected in the form if needed
+                    email: 'test_user_123456@testuser.com', // Required test user email
+                    first_name: 'Pedro',
+                    last_name: 'Henrique Oliveira de Paula',
+                    identification: {
+                        type: 'CPF',
+                        number: '58954844847',
+                    },
                 },
-                back_urls: {
-                    success: `${siteUrl}/criar/fazer-eu-mesmo?status=approved`,
-                    failure: `${siteUrl}/criar/fazer-eu-mesmo?status=failure`,
-                    pending: `${siteUrl}/criar/fazer-eu-mesmo?status=pending`,
-                },
-                auto_return: 'approved',
-                // We pass the pageId to retrieve it on success
-                external_reference: pageId, 
+                 notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/mercadopago`,
+                 external_reference: pageId,
             },
         });
-        return { preferenceId: result.id };
+
+        const pixData = {
+            qrCodeBase64: result.point_of_interaction?.transaction_data?.qr_code_base64,
+            qrCode: result.point_of_interaction?.transaction_data?.qr_code,
+        }
+
+        return { pixData };
     } catch (error: any) {
-        console.error("Error creating Mercado Pago preference:", error);
-        return { error: error.message || "Falha ao iniciar o pagamento." };
+        console.error("Error creating Mercado Pago PIX payment:", error.cause ?? error.message);
+        return { error: error.message || "Falha ao iniciar o pagamento com PIX." };
     }
 }

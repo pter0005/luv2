@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -38,11 +38,10 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
-import { handleSuggestContent, createPaymentPreference } from "./actions";
+import { handleSuggestContent, createPixPayment } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import RealPuzzle from "@/components/puzzle/Puzzle";
-import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
-import QRCode from "qrcode.react";
+import { initMercadoPago } from '@mercadopago/sdk-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -1135,40 +1134,68 @@ const PuzzleStep = () => {
     );
 };
 
+type PixData = {
+    qrCodeBase64: string;
+    qrCode: string;
+}
+
 const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentComplete: (v: boolean) => void, setCreatedPageId: (id: string) => void }) => {
-    const [preferenceId, setPreferenceId] = useState<string | null>(null);
     const { getValues } = useFormContext<PageData>();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [pixData, setPixData] = useState<PixData | null>(null);
+    const { toast } = useToast();
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalize = async () => {
+    const handleFinalizeAndPay = async () => {
         setIsProcessing(true);
         setError(null);
+        setPixData(null);
         const pageData = getValues();
         const mockPageId = `page-${Date.now()}`;
-        const result = await createPaymentPreference(pageData, mockPageId);
+        
+        const result = await createPixPayment(pageData, mockPageId);
 
-        if (result.preferenceId) {
-            setPreferenceId(result.preferenceId);
+        if (result.pixData) {
+            setPixData(result.pixData);
+            setCreatedPageId(mockPageId); // Set pageId to check status later
         } else {
-            setError(result.error || 'Não foi possível iniciar o checkout.');
+            setError(result.error || 'Não foi possível gerar o pagamento PIX.');
         }
         setIsProcessing(false);
     };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            toast({ title: 'Código PIX copiado!' });
+        }, (err) => {
+            toast({ variant: 'destructive', title: 'Falha ao copiar', description: 'Não foi possível copiar o código.' });
+        });
+    };
     
-    if (preferenceId) {
+    if (pixData) {
         return (
             <div className="flex flex-col items-center gap-6">
-                <h3 className="text-xl font-semibold">Quase lá!</h3>
-                <p className="text-muted-foreground text-center">Use o botão abaixo para concluir o pagamento de forma segura.</p>
-                <Wallet initialization={{ preferenceId }} />
+                <h3 className="text-xl font-semibold">Pague com PIX para liberar sua página</h3>
+                <p className="text-muted-foreground text-center text-sm">Escaneie o QR Code com o app do seu banco.</p>
+                <div className="p-4 bg-white rounded-lg border-4 border-primary">
+                    <Image src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={200} height={200} />
+                </div>
+                <div className="w-full">
+                    <Label htmlFor="pix-code" className="text-xs text-muted-foreground">Ou use o código Copia e Cola:</Label>
+                     <div className="flex gap-2 mt-1">
+                        <Input id="pix-code" readOnly value={pixData.qrCode} className="bg-background/50 text-xs"/>
+                        <Button onClick={() => copyToClipboard(pixData.qrCode)} size="icon">
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
                  <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>Importante!</AlertTitle>
                     <AlertDescription>
-                        Após o pagamento, **volte para esta página e atualize-a** para receber seu link exclusivo e o QR Code.
+                        Após o pagamento, **volte para esta página e atualize-a** (F5) para receber seu link exclusivo e o QR Code final.
                     </AlertDescription>
                 </Alert>
             </div>
@@ -1206,8 +1233,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 </Alert>
             )}
             
-            <Button onClick={handleFinalize} disabled={isProcessing || !isPaymentConfigured} size="lg">
-                {isProcessing ? <Loader2 className="animate-spin" /> : "Ir para o Pagamento"}
+            <Button onClick={handleFinalizeAndPay} disabled={isProcessing || !isPaymentConfigured} size="lg">
+                {isProcessing ? <Loader2 className="animate-spin" /> : "Finalizar e Pagar com PIX"}
             </Button>
         </div>
     );
@@ -1236,7 +1263,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
             <Card className="p-6 bg-card/80 flex flex-col items-center gap-4 w-full max-w-sm">
                 <h3 className="font-semibold">Seu QR Code Exclusivo</h3>
                 <div className="p-2 bg-white rounded-lg">
-                    <QRCode value={pageUrl} size={160} />
+                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${pageUrl}`} alt="URL QR Code" width={160} height={160} />
                 </div>
                 <p className="text-xs text-muted-foreground">Aponte a câmera do celular para o código.</p>
             </Card>
