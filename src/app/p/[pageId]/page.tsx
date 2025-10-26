@@ -1,0 +1,320 @@
+
+"use client";
+
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams }d from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
+import dynamic from 'next/dynamic';
+
+// Import local components that were in CreatePageWizard
+import Countdown from '@/app/criar/fazer-eu-mesmo/Countdown';
+import FallingHearts from '@/components/effects/FallingHearts';
+import StarrySky from '@/components/effects/StarrySky';
+import MysticVortex from '@/components/effects/MysticVortex';
+import FloatingDots from '@/components/effects/FloatingDots';
+import RealPuzzle from '@/components/puzzle/Puzzle';
+
+const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
+const Timeline = dynamic(() => import('@/app/criar/fazer-eu-mesmo/Timeline'), { ssr: false });
+
+// Mock data structure - In a real app, this would come from a database
+const mockPageData: any = {
+    title: "Para o Amor da Minha Vida",
+    titleColor: "#D1A9FF",
+    message: "Cada momento ao seu lado é um presente. Esta página é uma pequena demonstração do meu amor por você. \n\nCom todo meu coração.",
+    messageFontSize: "text-lg",
+    messageFormatting: ["italic"],
+    specialDate: new Date('2022-05-20T00:00:00'),
+    countdownStyle: "Padrão",
+    countdownColor: "#FFFFFF",
+    galleryImages: [
+        { preview: "https://picsum.photos/seed/gal1/800/800" },
+        { preview: "https://picsum.photos/seed/gal2/800/800" },
+        { preview: "https://picsum.photos/seed/gal3/800/800" },
+        { preview: "https://picsum.photos/seed/gal4/800/800" },
+    ],
+    galleryStyle: "Coverflow",
+    timelineEvents: [
+        { image: { preview: "https://picsum.photos/seed/tl1/400/400" }, description: "Nosso primeiro encontro", date: new Date("2022-05-20T00:00:00") },
+        { image: { preview: "https://picsum.photos/seed/tl2/400/400" }, description: "A primeira viagem juntos", date: new Date("2022-09-10T00:00:00") },
+        { image: { preview: "https://picsum.photos/seed/tl3/400/400" }, description: "O pedido de namoro", date: new Date("2022-12-25T00:00:00") }
+    ],
+    musicOption: "youtube",
+    youtubeUrl: "https://www.youtube.com/watch?v=lp-EO5I60KA", // Ed Sheeran - Perfect
+    audioRecording: "",
+    backgroundAnimation: "falling-hearts",
+    heartColor: "#D1A9FF",
+    backgroundVideo: null,
+    enablePuzzle: true,
+    puzzleImage: { preview: "https://picsum.photos/seed/puzzle-reveal/800/600" },
+};
+
+
+const CustomAudioPlayer = ({ src }: { src: string }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handleEnded = () => setIsPlaying(false);
+      audio.addEventListener('ended', handleEnded);
+      return () => {
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, []);
+
+  return (
+    <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+      <audio ref={audioRef} src={src} className="hidden" />
+      <button onClick={togglePlayPause} className="text-primary-foreground bg-primary/80 hover:bg-primary rounded-full p-3">
+        {isPlaying ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>}
+      </button>
+      <p className="text-sm text-primary-foreground font-semibold">Sua mensagem de voz</p>
+    </div>
+  );
+};
+
+
+export default function GeneratedPage() {
+    const params = useParams();
+    const pageId = params.pageId;
+    const [formData, setFormData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [isClient, setIsClient] = useState(false);
+    const cloudsVideoRef = useRef<HTMLVideoElement>(null);
+    const customVideoRef = useRef<HTMLVideoElement>(null);
+    const [puzzleRevealed, setPuzzleRevealed] = useState(false);
+    const [showTimeline, setShowTimeline] = useState(false);
+    const [puzzleDimension, setPuzzleDimension] = useState(360);
+
+    useEffect(() => {
+        setIsClient(true);
+        // In a real app, you would fetch data based on pageId
+        // For now, we use mock data if the ID is a demo or approved payment
+        if (pageId) {
+            console.log("Fetching data for pageId:", pageId);
+            // Simulating a fetch
+            setTimeout(() => {
+                setFormData(mockPageData);
+                setLoading(false);
+                 // Only show puzzle if it's enabled and has an image
+                if (!mockPageData.enablePuzzle || !mockPageData.puzzleImage?.preview) {
+                    setPuzzleRevealed(true);
+                }
+            }, 1000);
+        } else {
+             setLoading(false);
+        }
+
+        const handleResize = () => {
+            const screenWidth = window.innerWidth;
+            if (screenWidth < 640) {
+                setPuzzleDimension(screenWidth * 0.8);
+            } else {
+                setPuzzleDimension(450);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+
+    }, [pageId]);
+
+    useEffect(() => {
+        if (cloudsVideoRef.current) {
+            cloudsVideoRef.current.playbackRate = 0.6;
+        }
+    }, [formData?.backgroundAnimation]);
+
+    useEffect(() => {
+        if (customVideoRef.current) {
+            customVideoRef.current.playbackRate = 0.5;
+        }
+    }, [formData?.backgroundVideo]);
+
+    const isPuzzleActive = useMemo(() => {
+        return isClient && formData?.enablePuzzle && formData?.puzzleImage?.preview;
+    }, [isClient, formData]);
+
+    if (loading) {
+        return (
+            <div className="w-screen h-screen flex flex-col items-center justify-center bg-background text-foreground">
+                <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="mt-4">Carregando sua surpresa...</p>
+            </div>
+        );
+    }
+    
+    if (!formData) {
+        return (
+             <div className="w-screen h-screen flex items-center justify-center bg-background text-foreground">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold">Página não encontrada</h1>
+                    <p className="text-muted-foreground mt-2">O link que você acessou pode estar quebrado ou a página foi removida.</p>
+                </div>
+            </div>
+        )
+    }
+    
+    if (showTimeline) {
+      return <Timeline events={formData.timelineEvents} onClose={() => setShowTimeline(false)} />;
+    }
+
+    return (
+        <div className="min-h-screen w-full bg-background relative overflow-hidden">
+            {/* Background Animations */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
+                {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
+                {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
+                {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+                {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
+                {isClient && formData.backgroundAnimation === 'clouds' && (
+                    <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                        <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
+                    </video>
+                )}
+                {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
+                <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                    <source src={formData.backgroundVideo} />
+                </video>
+                )}
+            </div>
+
+            {/* Puzzle Overlay */}
+             <AnimatePresence>
+                {isPuzzleActive && !puzzleRevealed && (
+                    <motion.div
+                         initial={{ opacity: 0 }}
+                         animate={{ opacity: 1 }}
+                         exit={{ opacity: 0 }}
+                         transition={{ duration: 0.5 }}
+                         className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center p-8 bg-black/80 backdrop-blur-sm"
+                    >
+                        <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8">
+                            <div>
+                                <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2 text-white">Um enigma para você...</h2>
+                                <p className="text-muted-foreground text-sm md:text-base">
+                                    Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
+                                </p>
+                            </div>
+                            <RealPuzzle
+                                imageSrc={formData.puzzleImage!.preview}
+                                showControls={false}
+                                onReveal={() => setPuzzleRevealed(true)}
+                                dimension={puzzleDimension}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <div className={cn("min-h-screen w-full transition-all duration-500", isPuzzleActive && !puzzleRevealed && "blur-md scale-105 pointer-events-none")}>
+                <div className="w-full max-w-4xl mx-auto p-6 md:p-12 space-y-8 md:space-y-12 relative z-10">
+                     <div className="space-y-6 text-center pt-16 md:pt-24">
+                        <h1
+                            className="text-4xl md:text-6xl font-handwriting break-words"
+                            style={{ color: formData.titleColor }}
+                        >
+                            {formData.title}
+                        </h1>
+                        <p className={cn(
+                            "text-white/80 whitespace-pre-wrap break-words max-w-2xl mx-auto",
+                            formData.messageFontSize,
+                            formData.messageFormatting?.includes("bold") && "font-bold",
+                            formData.messageFormatting?.includes("italic") && "italic",
+                            formData.messageFormatting?.includes("strikethrough") && "line-through"
+                        )}>
+                            {formData.message}
+                        </p>
+                    </div>
+
+                    {formData.specialDate && (
+                        <Countdown 
+                            targetDate={formData.specialDate.toISOString()} 
+                            style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
+                            color={formData.countdownColor}
+                        />
+                    )}
+                    
+                    {formData.timelineEvents && formData.timelineEvents.length > 0 && (
+                        <div className="text-center">
+                            <button onClick={() => setShowTimeline(true)} className="px-6 py-2 rounded-full bg-primary/20 text-primary-foreground hover:bg-primary/40 transition-colors">Nossa Linha do Tempo</button>
+                        </div>
+                    )}
+
+                    {formData.galleryImages && formData.galleryImages.length > 0 && (
+                        <div className="w-full max-w-md mx-auto py-8">
+                            <Swiper
+                                key={formData.galleryStyle}
+                                effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                                grabCursor={true}
+                                centeredSlides={formData.galleryStyle === 'Coverflow'}
+                                slidesPerView={'auto'}
+                                autoplay={{ delay: 3000, disableOnInteraction: false }}
+                                coverflowEffect={{
+                                    rotate: 50,
+                                    stretch: 0,
+                                    depth: 100,
+                                    modifier: 1,
+                                    slideShadows: true,
+                                }}
+                                cardsEffect={{
+                                    perSlideRotate: 2,
+                                    perSlideOffset: 8,
+                                    slideShadows: true,
+                                }}
+                                cubeEffect={{
+                                    shadow: true,
+                                    slideShadows: true,
+                                    shadowOffset: 20,
+                                    shadowScale: 0.94,
+                                }}
+                                pagination={{ clickable: true }}
+                                modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
+                                className="mySwiper"
+                            >
+                                {formData.galleryImages.map((img: any, index: number) => (
+                                    <SwiperSlide key={index} className="bg-transparent">
+                                        <div className="relative w-full aspect-square">
+                                            <Image src={img.preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" />
+                                        </div>
+                                    </SwiperSlide>
+                                ))}
+                            </Swiper>
+                        </div>
+                    )}
+                    
+                    {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
+                        <YoutubePlayer url={formData.youtubeUrl} />
+                    )}
+
+                    {isClient && formData.musicOption === 'record' && formData.audioRecording && (
+                        <CustomAudioPlayer src={formData.audioRecording} />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+

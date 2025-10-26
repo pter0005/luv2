@@ -1161,12 +1161,6 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         }
     };
     
-    const handleDemo = () => {
-        const mockPageId = `demo-${Date.now()}`;
-        setCreatedPageId(mockPageId);
-        setPaymentComplete(true);
-    };
-
     if (preferenceId) {
         return (
             <div className="flex flex-col items-center gap-6">
@@ -1214,13 +1208,13 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                 <>
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Modo de Demonstração</AlertTitle>
+                        <AlertTitle>Pagamento não Configurado</AlertTitle>
                         <AlertDescription>
-                           O pagamento não está configurado. Você pode gerar uma página de demonstração para testar.
+                           O sistema de pagamento não está ativo. Por favor, configure as chaves do Mercado Pago para continuar.
                         </AlertDescription>
                     </Alert>
-                    <Button onClick={handleDemo} size="lg">
-                       Gerar Página de Demonstração
+                    <Button onClick={handleFinalize} size="lg" disabled>
+                       Ir para o Pagamento
                     </Button>
                 </>
             )}
@@ -1435,7 +1429,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
   
@@ -1701,5 +1695,6 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
 
 
