@@ -1,3 +1,5 @@
+"use client";
+
 import CreatePageWizard from "./CreatePageWizard";
 
 export default function DoItYourselfPage() {
@@ -18,5 +20,3 @@ export default function DoItYourselfPage() {
     </div>
   );
 }
-
-    
