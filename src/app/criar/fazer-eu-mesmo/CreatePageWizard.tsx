@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
+import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1192,7 +1192,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (paymentData: Pick<PageData, 'payment'>) => {
+    const handleFinalizeAndPay = async (data: z.infer<typeof paymentSchema>) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
@@ -1201,33 +1201,35 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         const mockPageId = `page-${Date.now()}`;
         
         try {
-            // This is a simplified serialization. For production, you might use a library
-            // that handles File objects, or structure your data differently.
-            const serializablePageData = JSON.stringify(allPageData, (key, value) => {
-                if (value instanceof File) {
-                    // We can't serialize the file directly, so we store a placeholder.
-                    // The page will reconstruct it from the form state if needed,
-                    // but for localStorage, we need to handle it.
-                    // For now, let's just store the name.
-                    return {
-                        _isFile: true,
-                        name: value.name,
-                        type: value.type,
-                        size: value.size,
-                    };
-                }
-                return value;
-            });
-            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(allPageData));
+            const serializableData = { ...allPageData };
 
-        } catch (e) {
+            // We can't serialize files directly. For this implementation,
+            // we'll rely on the form state being available on the generated page.
+            // A more robust solution might involve temporary uploads or different state management.
+            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
+
+        } catch (e: any) {
             console.error("Failed to save data to localStorage:", e);
+            
+            // Attempt to stringify with a replacer to find circular references
+            try {
+                JSON.stringify(allPageData, (key, value) => {
+                    if (key === 'payment' && value && typeof value === 'object') {
+                        // This might be a circular reference from react-hook-form
+                        return undefined;
+                    }
+                    return value;
+                });
+            } catch (circError) {
+                console.error("Circular reference likely culprit:", circError);
+            }
+
             setError("Falha ao salvar os dados da página. Tente novamente.");
             setIsProcessing(false);
             return;
         }
         
-        const result = await createPixPayment(paymentData.payment, allPageData.title, mockPageId);
+        const result = await createPixPayment(data, allPageData.title, mockPageId);
 
         if (result.pixData) {
             setPixData(result.pixData);
