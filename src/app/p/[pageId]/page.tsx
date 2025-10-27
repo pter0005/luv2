@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -227,7 +228,13 @@ export default function GeneratedPage() {
                     
                     {formData.timelineEvents && formData.timelineEvents.length > 0 && (
                         <div className="text-center">
-                            <button onClick={() => setShowTimeline(true)} className="px-6 py-2 rounded-full bg-primary/20 text-primary-foreground hover:bg-primary/40 transition-colors">Nossa Linha do Tempo</button>
+                             <Button
+                                onClick={() => setShowTimeline(true)}
+                                variant="outline"
+                                className="bg-transparent backdrop-blur-sm shadow-lg shadow-primary/50 hover:bg-primary/10"
+                            >
+                                Nossa Linha do Tempo
+                            </Button>
                         </div>
                     )}
 
