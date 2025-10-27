@@ -91,7 +91,7 @@ export async function createPixPayment(payerData: PayerData, pageTitle: string, 
         return { pixData };
     } catch (error: any) {
         console.error("Error creating Mercado Pago PIX payment:", error.cause ?? error.message);
-        const errorMessage = error?.cause?.error?.message || error.message || "Falha ao iniciar o pagamento com PIX.";
+        const errorMessage = error?.cause?.error?.message || "Falha ao iniciar o pagamento com PIX.";
         return { error: errorMessage };
     }
 }

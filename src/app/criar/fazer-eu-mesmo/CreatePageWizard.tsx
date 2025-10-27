@@ -1215,8 +1215,9 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         try {
             const allPageData = getValues();
             
-            const serializableData = JSON.stringify(allPageData);
-            localStorage.setItem(`form-data-${mockPageId}`, serializableData);
+            // File objects cannot be stringified directly.
+            // We'll just save the form state without trying to stringify blobs.
+            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(allPageData));
             
             const plainPayerData = {
                 payerFirstName: data.payerFirstName,
@@ -1579,8 +1580,13 @@ export default function CreatePageWizard() {
         // This is a potential performance bottleneck with large data.
         // For now, we accept it for state persistence.
         try {
-            const serializableValue = JSON.stringify(value);
-            localStorage.setItem('form-data', serializableValue);
+            const serializableValue = JSON.stringify(value, (key, value) => {
+                if (value instanceof File) {
+                    return value.name; // Or some other placeholder
+                }
+                return value;
+            });
+            localStorage.setItem('form-data-autosave', serializableValue);
         } catch (e) {
             console.warn("Could not save form data to localStorage.", e);
         }
@@ -1626,7 +1632,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
   
