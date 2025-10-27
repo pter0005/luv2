@@ -32,7 +32,7 @@ type PayerData = {
     payerCpf: string;
 }
 
-export async function createPixPayment(payerData: PayerData, hasTimeline: boolean, pageTitle: string, pageId: string) {
+export async function createPixPayment(payerData: PayerData, pageTitle: string, pageId: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
