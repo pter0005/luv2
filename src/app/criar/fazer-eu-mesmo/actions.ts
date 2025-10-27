@@ -49,10 +49,7 @@ export async function createPixPayment(payerData: PayerData, hasTimeline: boolea
     });
     const payment = new Payment(client);
 
-    let unit_price = 19.90; // Preço base
-    if (hasTimeline) {
-      unit_price += 10.00; // Custo adicional pela linha do tempo
-    }
+    const unit_price = 19.90; // Preço fixo
     
     const cleanCpf = payerData.payerCpf.replace(/\D/g, '');
 
