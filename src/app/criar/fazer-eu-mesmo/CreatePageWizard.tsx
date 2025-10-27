@@ -464,20 +464,24 @@ const GalleryStep = () => {
   const [previews, setPreviews] = useState<string[]>([]);
 
   useEffect(() => {
-    const generatePreviews = async () => {
-      if (!images || images.length === 0) {
+    if (!images || images.length === 0) {
         setPreviews([]);
         return;
-      }
-      const previewUrls = images.map(file => URL.createObjectURL(file));
-      setPreviews(previewUrls);
-      
-      // Cleanup
-      return () => {
-        previewUrls.forEach(url => URL.revokeObjectURL(url));
-      };
+    }
+
+    const objectUrls = images.map(file => {
+        if (file instanceof File) {
+            return URL.createObjectURL(file);
+        }
+        return null;
+    }).filter(Boolean) as string[];
+    
+    setPreviews(objectUrls);
+
+    // Cleanup
+    return () => {
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
     };
-    generatePreviews();
   }, [images]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -594,15 +598,18 @@ const TimelineStep = () => {
 
     useEffect(() => {
         const newPreviews: Record<string, string> = {};
-        fields.forEach((field, index) => {
+        const urlsToRevoke: string[] = [];
+        fields.forEach((field) => {
             if (field.image instanceof File) {
-                newPreviews[field.id] = URL.createObjectURL(field.image);
+                const url = URL.createObjectURL(field.image);
+                newPreviews[field.id] = url;
+                urlsToRevoke.push(url);
             }
         });
         setPreviews(newPreviews);
 
         return () => {
-            Object.values(newPreviews).forEach(url => URL.revokeObjectURL(url));
+            urlsToRevoke.forEach(url => URL.revokeObjectURL(url));
         };
     }, [fields]);
 
@@ -1089,13 +1096,18 @@ const PuzzleStep = () => {
     const [preview, setPreview] = useState<string | undefined>();
 
     useEffect(() => {
+        let url: string | undefined;
         if (puzzleImageFile instanceof File) {
-            const url = URL.createObjectURL(puzzleImageFile);
+            url = URL.createObjectURL(puzzleImageFile);
             setPreview(url);
-            return () => URL.revokeObjectURL(url);
         } else {
             setPreview(undefined);
         }
+        return () => {
+            if (url) {
+                URL.revokeObjectURL(url);
+            }
+        };
     }, [puzzleImageFile]);
 
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1197,49 +1209,33 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         setError(null);
         setPixData(null);
         
-        const allPageData = getValues();
         const mockPageId = `page-${Date.now()}`;
         
         try {
-            const serializableData = { ...allPageData };
+            const allPageData = getValues();
+            // This is a critical step. JSON.stringify cannot serialize File objects.
+            // This will cause them to become empty objects {} in the stored data,
+            // which will break the final page rendering.
+            const serializableData = JSON.stringify(allPageData);
+            localStorage.setItem(`form-data-${mockPageId}`, serializableData);
 
-            // We can't serialize files directly. For this implementation,
-            // we'll rely on the form state being available on the generated page.
-            // A more robust solution might involve temporary uploads or different state management.
-            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
+            const result = await createPixPayment(data, allPageData.title, mockPageId);
 
-        } catch (e: any) {
-            console.error("Failed to save data to localStorage:", e);
-            
-            // Attempt to stringify with a replacer to find circular references
-            try {
-                JSON.stringify(allPageData, (key, value) => {
-                    if (key === 'payment' && value && typeof value === 'object') {
-                        // This might be a circular reference from react-hook-form
-                        return undefined;
-                    }
-                    return value;
-                });
-            } catch (circError) {
-                console.error("Circular reference likely culprit:", circError);
+            if (result.pixData) {
+                setPixData(result.pixData);
+                setCreatedPageId(mockPageId); 
+                startPolling(result.pixData.paymentId);
+            } else {
+                setError(result.error || 'Não foi possível gerar o pagamento PIX.');
+                localStorage.removeItem(`form-data-${mockPageId}`);
             }
-
-            setError("Falha ao salvar os dados da página. Tente novamente.");
+        } catch (e: any) {
+             console.error("Failed to process payment:", e);
+             setError("Ocorreu um erro ao processar os dados da sua página. Isso geralmente acontece com muitas imagens ou vídeos. Por favor, tente recarregar a página e simplificar um pouco.");
+             localStorage.removeItem(`form-data-${mockPageId}`);
+        } finally {
             setIsProcessing(false);
-            return;
         }
-        
-        const result = await createPixPayment(data, allPageData.title, mockPageId);
-
-        if (result.pixData) {
-            setPixData(result.pixData);
-            setCreatedPageId(mockPageId); 
-            startPolling(result.pixData.paymentId);
-        } else {
-            setError(result.error || 'Não foi possível gerar o pagamento PIX.');
-            localStorage.removeItem(`form-data-${mockPageId}`);
-        }
-        setIsProcessing(false);
     };
 
     const startPolling = (paymentId: number) => {
@@ -1449,14 +1445,14 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
 }
 
 const stepComponents = [
-    <TitleStep />,
-    <MessageStep />,
-    <SpecialDateStep />,
-    <GalleryStep />,
-    <TimelineStep />,
-    <MusicStep />,
-    <BackgroundStep isVisible={false} />,
-    <PuzzleStep />,
+    <TitleStep key="title" />,
+    <MessageStep key="message" />,
+    <SpecialDateStep key="specialDate" />,
+    <GalleryStep key="gallery" />,
+    <TimelineStep key="timeline" />,
+    <MusicStep key="music" />,
+    <BackgroundStep key="background" isVisible={false} />,
+    <PuzzleStep key="puzzle" />,
     <PaymentStep setPaymentComplete={() => {}} setCreatedPageId={() => {}} />,
 ];
 
@@ -1582,7 +1578,14 @@ export default function CreatePageWizard() {
     window.addEventListener('resize', handleResize);
 
     const unsubscribe = methods.watch((value) => {
-        localStorage.setItem('form-data', JSON.stringify(value));
+        // This is a potential performance bottleneck with large data.
+        // For now, we accept it for state persistence.
+        try {
+            const serializableValue = JSON.stringify(value);
+            localStorage.setItem('form-data', serializableValue);
+        } catch (e) {
+            console.warn("Could not save form data to localStorage.", e);
+        }
     });
     return () => {
         unsubscribe.unsubscribe();
@@ -1735,7 +1738,10 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
 
     const galleryPreviews = useMemo(() => {
         if (!formData.galleryImages) return [];
-        return formData.galleryImages.map((file: File) => file instanceof File ? URL.createObjectURL(file) : null).filter(Boolean);
+        return formData.galleryImages.map((file: any) => {
+            if (file instanceof File) return URL.createObjectURL(file);
+            return null;
+        }).filter(Boolean);
     }, [formData.galleryImages]);
 
     const puzzlePreview = useMemo(() => {
@@ -1746,6 +1752,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
     }, [formData.puzzleImage]);
 
     useEffect(() => {
+        // This effect is crucial for cleanup to avoid memory leaks.
         return () => {
             galleryPreviews.forEach((url: string) => URL.revokeObjectURL(url));
             if (puzzlePreview) {
