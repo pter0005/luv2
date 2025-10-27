@@ -1,6 +1,17 @@
 "use client";
 
-import CreatePageWizard from "./CreatePageWizard";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const CreatePageWizard = dynamic(() => import('./CreatePageWizard'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-screen flex items-center justify-center">
+      <Skeleton className="w-full h-full" />
+    </div>
+  ),
+});
+
 
 export default function DoItYourselfPage() {
   return (
