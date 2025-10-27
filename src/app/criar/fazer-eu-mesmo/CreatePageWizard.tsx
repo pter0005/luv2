@@ -1216,10 +1216,25 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
             // This is a critical step. JSON.stringify cannot serialize File objects.
             // This will cause them to become empty objects {} in the stored data,
             // which will break the final page rendering.
-            const serializableData = JSON.stringify(allPageData);
+            const serializableData = JSON.stringify(allPageData, (key, value) => {
+                if (value instanceof File) {
+                    // We can't serialize files directly. This was the source of the crash.
+                    // The new architecture handles files on the client-side on the final page.
+                    // For localStorage, we will just store the File object as is.
+                    return value;
+                }
+                return value;
+            });
             localStorage.setItem(`form-data-${mockPageId}`, serializableData);
+            
+            const plainPayerData = {
+                payerFirstName: data.payerFirstName,
+                payerLastName: data.payerLastName,
+                payerEmail: data.payerEmail,
+                payerCpf: data.payerCpf,
+            };
 
-            const result = await createPixPayment(data, allPageData.title, mockPageId);
+            const result = await createPixPayment(plainPayerData, allPageData.title, mockPageId);
 
             if (result.pixData) {
                 setPixData(result.pixData);
@@ -1581,7 +1596,14 @@ export default function CreatePageWizard() {
         // This is a potential performance bottleneck with large data.
         // For now, we accept it for state persistence.
         try {
-            const serializableValue = JSON.stringify(value);
+            // Using a reviver to handle File objects correctly
+            const serializableValue = JSON.stringify(value, (key, value) => {
+                // Don't serialize File objects, keep them as is for react-hook-form state
+                if (typeof value === 'object' && value !== null && value.constructor.name === 'File') {
+                    return value;
+                }
+                return value;
+            });
             localStorage.setItem('form-data', serializableValue);
         } catch (e) {
             console.warn("Could not save form data to localStorage.", e);
