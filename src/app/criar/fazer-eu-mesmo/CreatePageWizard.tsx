@@ -473,7 +473,8 @@ const GalleryStep = () => {
         if (file instanceof File) {
             return URL.createObjectURL(file);
         }
-        return null;
+        // Handle cases where the item might not be a file (e.g., placeholder string)
+        return null; 
     }).filter(Boolean) as string[];
     
     setPreviews(objectUrls);
@@ -1213,18 +1214,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         
         try {
             const allPageData = getValues();
-            // This is a critical step. JSON.stringify cannot serialize File objects.
-            // This will cause them to become empty objects {} in the stored data,
-            // which will break the final page rendering.
-            const serializableData = JSON.stringify(allPageData, (key, value) => {
-                if (value instanceof File) {
-                    // We can't serialize files directly. This was the source of the crash.
-                    // The new architecture handles files on the client-side on the final page.
-                    // For localStorage, we will just store the File object as is.
-                    return value;
-                }
-                return value;
-            });
+            
+            const serializableData = JSON.stringify(allPageData);
             localStorage.setItem(`form-data-${mockPageId}`, serializableData);
             
             const plainPayerData = {
@@ -1326,7 +1317,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
             ) : error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Erro de Pagamento</AlertTitle>
+                    <AlertTitle>Erro ao Processar</AlertTitle>
                     <AlertDescription>
                         {error}
                     </AlertDescription>
@@ -1564,21 +1555,13 @@ export default function CreatePageWizard() {
 
   useEffect(() => {
     setIsClient(true);
+    // Clear any previous form data to start fresh
+    localStorage.removeItem('form-data');
+
      if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
             initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
     } else {
       console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
-    }
-
-    const savedData = localStorage.getItem('form-data');
-    if (savedData) {
-        try {
-            const parsedData = JSON.parse(savedData);
-            // You need to handle file reconstruction if you save file placeholders
-            methods.reset(parsedData);
-        } catch (e) {
-            console.error("Failed to parse saved form data", e);
-        }
     }
 
     const handleResize = () => {
@@ -1596,14 +1579,7 @@ export default function CreatePageWizard() {
         // This is a potential performance bottleneck with large data.
         // For now, we accept it for state persistence.
         try {
-            // Using a reviver to handle File objects correctly
-            const serializableValue = JSON.stringify(value, (key, value) => {
-                // Don't serialize File objects, keep them as is for react-hook-form state
-                if (typeof value === 'object' && value !== null && value.constructor.name === 'File') {
-                    return value;
-                }
-                return value;
-            });
+            const serializableValue = JSON.stringify(value);
             localStorage.setItem('form-data', serializableValue);
         } catch (e) {
             console.warn("Could not save form data to localStorage.", e);
@@ -1613,7 +1589,8 @@ export default function CreatePageWizard() {
         unsubscribe.unsubscribe();
         window.removeEventListener('resize', handleResize);
     }
-  }, [methods]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const { watch, trigger, getValues, formState } = methods;
@@ -1760,7 +1737,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
 
     const galleryPreviews = useMemo(() => {
         if (!formData.galleryImages) return [];
-        return formData.galleryImages.map((file: any) => {
+        return formData.galleryImages.map((file: File) => {
             if (file instanceof File) return URL.createObjectURL(file);
             return null;
         }).filter(Boolean);
