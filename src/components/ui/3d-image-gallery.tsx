@@ -233,7 +233,6 @@ function FloatingCard({
     <group
       ref={groupRef}
       position={[position.x, position.y, position.z]}
-      onClick={handleClick}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
@@ -245,7 +244,7 @@ function FloatingCard({
         document.body.style.cursor = "auto"
       }}
     >
-      <Plane args={[4.5, 6]}>
+      <Plane args={[6, 8.1]} onClick={handleClick}>
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
       <Html
@@ -259,7 +258,7 @@ function FloatingCard({
         }}
       >
         <div
-          className="w-40 h-56 rounded-lg overflow-hidden shadow-2xl bg-[#1F2121] p-2 select-none flex flex-col"
+          className="w-52 h-72 rounded-lg overflow-hidden shadow-2xl bg-[#1F2121] p-2 select-none flex flex-col"
           style={{
             boxShadow: hovered
               ? "0 25px 50px hsl(var(--primary) / 0.5), 0 0 30px hsl(var(--primary) / 0.3)"
@@ -267,7 +266,7 @@ function FloatingCard({
             border: hovered ? "2px solid hsl(var(--primary) / 0.5)" : "1px solid rgba(255, 255, 255, 0.1)",
           }}
         >
-          <div className="w-full h-40 relative">
+          <div className="w-full h-52 relative">
             <Image
               src={card.imageUrl || "/placeholder.svg"}
               alt={card.alt}
@@ -277,9 +276,9 @@ function FloatingCard({
             />
           </div>
           <div className="mt-1 text-center flex-grow flex flex-col justify-center px-1">
-            <p className="text-white text-xs font-semibold leading-tight line-clamp-2" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>{card.title}</p>
+            <p className="text-white text-sm font-semibold leading-tight line-clamp-3" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>{card.title}</p>
              {card.date && (
-              <p className="text-primary/80 text-[12px] font-bold mt-1 tracking-wide" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>
+              <p className="text-primary/90 text-xs font-bold mt-2 tracking-wide" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>
                 {format(card.date, "dd MMM yyyy", { locale: ptBR })}
               </p>
             )}
@@ -482,6 +481,14 @@ function CardGalaxy() {
 export default function StellarCardGallerySingle({ onClose }: { onClose: () => void }) {
   const { cards } = useCard();
   const { isMobile } = useScreenOrientation();
+  
+  if (!cards || cards.length === 0) {
+      return (
+          <div className="w-full h-screen fixed inset-0 z-50 bg-black flex items-center justify-center text-white">
+              Nenhum momento adicionado.
+          </div>
+      )
+  }
   
   return (
       <div className="w-full h-screen fixed inset-0 z-50 bg-black">
