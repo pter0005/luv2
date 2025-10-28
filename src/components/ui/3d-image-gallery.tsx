@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -243,8 +244,9 @@ function FloatingCard({
         setHovered(false)
         document.body.style.cursor = "auto"
       }}
+      onClick={handleClick}
     >
-      <Plane args={[6, 8.1]} onClick={handleClick}>
+      <Plane args={[6, 8.1]}>
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
       <Html
