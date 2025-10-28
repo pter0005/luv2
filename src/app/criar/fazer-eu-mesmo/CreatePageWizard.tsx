@@ -58,7 +58,7 @@ const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório."),
   payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
   payerEmail: z.string().email("E-mail inválido."),
-  payerCpf: z.string().min(11, "CPF inválido.").max(14, "CPF inválido."),
+  payerCpf: z.string().min(1, "O CPF é obrigatório.").min(11, "CPF inválido.").max(14, "CPF inválido."),
 });
 
 // Define the schema for the entire wizard
@@ -589,24 +589,30 @@ const GalleryStep = () => {
 
 
 const TimelineStep = () => {
-    const { control, getValues, setValue, trigger } = useFormContext<PageData>();
+    const { control, setValue, trigger } = useFormContext<PageData>();
     const { fields, append, remove, update } = useFieldArray({
         control,
         name: "timelineEvents",
     });
-    
+
     const [previews, setPreviews] = useState<Record<string, string>>({});
 
+    // Effect to create and revoke object URLs for previews
     useEffect(() => {
         const newPreviews: Record<string, string> = {};
         const urlsToRevoke: string[] = [];
+
         fields.forEach((field) => {
             if (field.image instanceof File) {
                 const url = URL.createObjectURL(field.image);
                 newPreviews[field.id] = url;
                 urlsToRevoke.push(url);
+            } else if (typeof field.image === 'string' && field.image.startsWith('blob:')) {
+                // If it's already a blob URL, just use it
+                newPreviews[field.id] = field.image;
             }
         });
+
         setPreviews(newPreviews);
 
         return () => {
@@ -614,11 +620,10 @@ const TimelineStep = () => {
         };
     }, [fields]);
 
-    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>, index: number) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const currentEvent = fields[index];
-            update(index, { ...currentEvent, image: file });
+            setValue(`timelineEvents.${index}.image`, file, { shouldDirty: true });
             trigger(`timelineEvents.${index}.image`);
         }
     };
@@ -1195,6 +1200,58 @@ type PixData = {
     qrCode: string;
 }
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+    });
+};
+
+const getSerializablePageData = async (allData: PageData): Promise<any> => {
+    const serializableData = { ...allData };
+
+    // Serialize gallery images
+    if (serializableData.galleryImages) {
+        serializableData.galleryImages = await Promise.all(
+            serializableData.galleryImages.map(async (img) => {
+                if (img instanceof File) {
+                    return await fileToBase64(img);
+                }
+                return img;
+            })
+        );
+    }
+
+    // Serialize timeline event images
+    if (serializableData.timelineEvents) {
+        serializableData.timelineEvents = await Promise.all(
+            serializableData.timelineEvents.map(async (event) => {
+                if (event.image instanceof File) {
+                    return { ...event, image: await fileToBase64(event.image) };
+                }
+                return event;
+            })
+        );
+    }
+
+    // Serialize puzzle image
+    if (serializableData.puzzleImage instanceof File) {
+        serializableData.puzzleImage = await fileToBase64(serializableData.puzzleImage);
+    }
+
+    // Serialize background video
+    if (serializableData.backgroundVideo instanceof File) {
+        serializableData.backgroundVideo = await fileToBase64(serializableData.backgroundVideo);
+    }
+
+    // Audio is already base64 string, so it's fine.
+
+    return serializableData;
+};
+
+
 const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentComplete: (v: boolean) => void, setCreatedPageId: (id: string) => void }) => {
     const { getValues, control, handleSubmit } = useFormContext<PageData>();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -1214,10 +1271,9 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         
         try {
             const allPageData = getValues();
-            
-            // File objects cannot be stringified directly.
-            // We'll just save the form state without trying to stringify blobs.
-            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(allPageData));
+            const serializableData = await getSerializablePageData(allPageData);
+
+            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
             
             const plainPayerData = {
                 payerFirstName: data.payerFirstName,
@@ -1377,11 +1433,15 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                     <FormField
                         control={control}
                         name="payment.payerCpf"
-                        render={({ field }) => (
+                        render={({ field: { onChange, ...restField } }) => (
                             <FormItem>
                                 <FormLabel>CPF</FormLabel>
                                 <FormControl>
-                                    <Input {...field} placeholder="000.000.000-00" />
+                                    <Input 
+                                      {...restField}
+                                      onChange={(e) => onChange(e.target.value)}
+                                      placeholder="000.000.000-00" 
+                                    />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -1659,8 +1719,20 @@ export default function CreatePageWizard() {
     setPuzzleRevealed(true);
   };
   
+  const hasValidTimelineEvents = formData.timelineEvents && formData.timelineEvents.length > 0 && formData.timelineEvents.some(e => e.image);
+
+  const timelineEventsForPreview = useMemo(() => {
+        if (!isClient || !hasValidTimelineEvents) return [];
+        return formData.timelineEvents
+            .filter(event => event.image instanceof File)
+            .map(event => ({
+                ...event,
+                imageUrl: URL.createObjectURL(event.image),
+            }));
+    }, [isClient, hasValidTimelineEvents, formData.timelineEvents]);
+  
   if (showTimeline) {
-      return <Timeline events={formData.timelineEvents} onClose={() => setShowTimeline(false)} />;
+      return <Timeline events={timelineEventsForPreview} onClose={() => setShowTimeline(false)} />;
   }
 
 
@@ -1671,11 +1743,11 @@ export default function CreatePageWizard() {
         <div className="w-full md:sticky md:top-0 md:h-screen p-4 order-1 flex items-center justify-center">
             {/* Mobile: Landscape container */}
             <div className="md:hidden w-full aspect-[16/10] rounded-2xl shadow-2xl bg-background group/preview overflow-hidden relative">
-                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef} onShowTimeline={() => setShowTimeline(true)} />
+                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef} onShowTimeline={() => hasValidTimelineEvents && setShowTimeline(true)} hasValidTimelineEvents={hasValidTimelineEvents}/>
             </div>
             {/* Desktop: Standard container */}
             <div className="hidden md:block w-full h-full rounded-2xl shadow-2xl bg-background group/preview overflow-hidden relative">
-                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef} onShowTimeline={() => setShowTimeline(true)} />
+                 <PreviewContent formData={formData} isClient={isClient} puzzleRevealed={puzzleRevealed} isPuzzleActive={isPuzzleActive} handlePuzzleReveal={handlePuzzleReveal} puzzleDimension={puzzleDimension} cloudsVideoRef={cloudsVideoRef} customVideoRef={customVideoRef} onShowTimeline={() => hasValidTimelineEvents && setShowTimeline(true)} hasValidTimelineEvents={hasValidTimelineEvents}/>
             </div>
         </div>
 
@@ -1739,7 +1811,7 @@ export default function CreatePageWizard() {
 }
 
 
-const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, handlePuzzleReveal, puzzleDimension, cloudsVideoRef, customVideoRef, onShowTimeline }: any) => {
+const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, handlePuzzleReveal, puzzleDimension, cloudsVideoRef, customVideoRef, onShowTimeline, hasValidTimelineEvents }: any) => {
 
     const galleryPreviews = useMemo(() => {
         if (!formData.galleryImages) return [];
@@ -1860,7 +1932,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                 />
                             )}
                             
-                            {formData.timelineEvents && formData.timelineEvents.length > 0 && (
+                            {hasValidTimelineEvents && (
                                 <div className="text-center">
                                     <Button onClick={onShowTimeline}>Nossa Linha do Tempo</Button>
                                 </div>
@@ -1923,3 +1995,5 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
+
+    
