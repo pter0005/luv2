@@ -73,15 +73,19 @@ export default function GeneratedPage() {
     const [showTimeline, setShowTimeline] = useState(false);
     const [puzzleDimension, setPuzzleDimension] = useState(360);
 
+    const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+    const [puzzlePreview, setPuzzlePreview] = useState<string | undefined>();
+    const [timelineEventsWithPreviews, setTimelineEventsWithPreviews] = useState<any[]>([]);
+
     useEffect(() => {
         setIsClient(true);
         if (pageId) {
-            const savedData = localStorage.getItem(pageId);
+            const savedData = localStorage.getItem(`form-data-${pageId}`);
             if (savedData) {
                 try {
                     const parsedData = JSON.parse(savedData);
                     setFormData(parsedData);
-                    if (!parsedData.enablePuzzle || !parsedData.puzzleImage?.preview) {
+                    if (!parsedData.enablePuzzle || !parsedData.puzzleImage) {
                         setPuzzleRevealed(true);
                     }
                 } catch (e) {
@@ -108,6 +112,48 @@ export default function GeneratedPage() {
     }, [pageId]);
 
     useEffect(() => {
+        if (!formData) return;
+
+        // Create puzzle preview
+        if (formData.puzzleImage instanceof File) {
+            const url = URL.createObjectURL(formData.puzzleImage);
+            setPuzzlePreview(url);
+        }
+
+        // Create gallery previews
+        if (formData.galleryImages && formData.galleryImages.length > 0) {
+            const urls = formData.galleryImages
+                .map((file: any) => file instanceof File ? URL.createObjectURL(file) : null)
+                .filter(Boolean);
+            setGalleryPreviews(urls);
+        }
+
+        // Create timeline previews
+        if (formData.timelineEvents && formData.timelineEvents.length > 0) {
+            const eventsWithUrls = formData.timelineEvents.map((event: any) => ({
+                ...event,
+                image: {
+                    ...event.image,
+                    preview: event.image instanceof File ? URL.createObjectURL(event.image) : (event.image?.preview || ''),
+                }
+            }));
+            setTimelineEventsWithPreviews(eventsWithUrls);
+        }
+
+        return () => {
+            if (puzzlePreview) URL.revokeObjectURL(puzzlePreview);
+            galleryPreviews.forEach(url => URL.revokeObjectURL(url));
+            timelineEventsWithPreviews.forEach(event => {
+                if (event.image.preview && event.image.preview.startsWith('blob:')) {
+                    URL.revokeObjectURL(event.image.preview);
+                }
+            });
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData]);
+
+
+    useEffect(() => {
         if (cloudsVideoRef.current) {
             cloudsVideoRef.current.playbackRate = 0.6;
         }
@@ -120,7 +166,7 @@ export default function GeneratedPage() {
     }, [formData?.backgroundVideo]);
 
     const isPuzzleActive = useMemo(() => {
-        return isClient && formData?.enablePuzzle && formData?.puzzleImage?.preview;
+        return isClient && formData?.enablePuzzle && formData?.puzzleImage;
     }, [isClient, formData]);
 
     if (loading) {
@@ -147,7 +193,7 @@ export default function GeneratedPage() {
     }
     
     if (showTimeline) {
-      return <Timeline events={formData.timelineEvents} onClose={() => setShowTimeline(false)} />;
+      return <Timeline events={timelineEventsWithPreviews} onClose={() => setShowTimeline(false)} />;
     }
 
     return (
@@ -172,7 +218,7 @@ export default function GeneratedPage() {
 
             {/* Puzzle Overlay */}
              <AnimatePresence>
-                {isPuzzleActive && !puzzleRevealed && (
+                {isPuzzleActive && !puzzleRevealed && puzzlePreview && (
                     <motion.div
                          initial={{ opacity: 0 }}
                          animate={{ opacity: 1 }}
@@ -188,7 +234,7 @@ export default function GeneratedPage() {
                                 </p>
                             </div>
                             <RealPuzzle
-                                imageSrc={formData.puzzleImage!.preview}
+                                imageSrc={puzzlePreview}
                                 showControls={false}
                                 onReveal={() => setPuzzleRevealed(true)}
                                 dimension={puzzleDimension}
@@ -238,7 +284,7 @@ export default function GeneratedPage() {
                         </div>
                     )}
 
-                    {formData.galleryImages && formData.galleryImages.length > 0 && (
+                    {galleryPreviews.length > 0 && (
                         <div className="w-full max-w-md mx-auto py-8">
                             <Swiper
                                 key={formData.galleryStyle}
@@ -269,10 +315,10 @@ export default function GeneratedPage() {
                                 modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
                                 className="mySwiper"
                             >
-                                {formData.galleryImages.map((img: any, index: number) => (
+                                {galleryPreviews.map((preview: string, index: number) => (
                                     <SwiperSlide key={index} className="bg-transparent">
                                         <div className="relative w-full aspect-square">
-                                            <Image src={img.preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" unoptimized/>
+                                            <Image src={preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" unoptimized/>
                                         </div>
                                     </SwiperSlide>
                                 ))}

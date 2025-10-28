@@ -32,7 +32,7 @@ type PayerData = {
     payerCpf: string;
 }
 
-export async function createPixPayment(payerData: PayerData, hasTimeline: boolean, pageTitle: string, pageId: string) {
+export async function createPixPayment(payerData: PayerData, pageTitle: string, pageId: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
@@ -91,7 +91,7 @@ export async function createPixPayment(payerData: PayerData, hasTimeline: boolea
         return { pixData };
     } catch (error: any) {
         console.error("Error creating Mercado Pago PIX payment:", error.cause ?? error.message);
-        const errorMessage = error?.cause?.error?.message || error.message || "Falha ao iniciar o pagamento com PIX.";
+        const errorMessage = error?.cause?.error?.message || "Falha ao iniciar o pagamento com PIX.";
         return { error: errorMessage };
     }
 }

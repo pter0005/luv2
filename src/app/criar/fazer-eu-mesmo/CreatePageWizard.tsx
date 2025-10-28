@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent } from "react";
+import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -72,10 +72,10 @@ const pageSchema = z.object({
   specialDate: z.date().optional(),
   countdownStyle: z.string().default("Padrão"),
   countdownColor: z.string().default("#FFFFFF"),
-  galleryImages: z.array(z.object({ file: z.any().optional(), preview: z.string() })).default([]),
+  galleryImages: z.array(z.any()).default([]),
   galleryStyle: z.string().default("Cube"),
   timelineEvents: z.array(z.object({
-    image: z.object({ file: z.any().optional(), preview: z.string() }),
+    image: z.any().optional(),
     description: z.string().min(1, "A descrição é obrigatória."),
     date: z.date().optional(),
   })).default([]),
@@ -88,7 +88,7 @@ const pageSchema = z.object({
   heartColor: z.string().default("#8B5CF6"),
   backgroundVideo: z.any().optional(),
   enablePuzzle: z.boolean().default(false),
-  puzzleImage: z.object({ file: z.any().optional(), preview: z.string() }).optional(),
+  puzzleImage: z.any().optional(),
   payment: paymentSchema,
 });
 
@@ -457,35 +457,40 @@ const SpecialDateStep = () => {
     );
 };
 
-const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = error => reject(error);
-    });
-};
 
 const GalleryStep = () => {
   const { control, setValue, getValues } = useFormContext<PageData>();
   const images = useWatch({ control, name: "galleryImages" });
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (!images || images.length === 0) {
+        setPreviews([]);
+        return;
+    }
+
+    const objectUrls = images.map(file => {
+        if (file instanceof File) {
+            return URL.createObjectURL(file);
+        }
+        // Handle cases where the item might not be a file (e.g., placeholder string)
+        return null; 
+    }).filter(Boolean) as string[];
+    
+    setPreviews(objectUrls);
+
+    // Cleanup
+    return () => {
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [images]);
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const filesArray = Array.from(event.target.files);
       const currentImages = getValues("galleryImages") || [];
       const availableSlots = 8 - currentImages.length;
-
-      const newImagesPromises = filesArray.slice(0, availableSlots).map(async (file) => {
-          const base64Preview = await fileToBase64(file);
-          return {
-              file,
-              preview: base64Preview
-          };
-      });
-      
-      const newImages = await Promise.all(newImagesPromises);
-
+      const newImages = filesArray.slice(0, availableSlots);
       setValue("galleryImages", [...currentImages, ...newImages], { shouldValidate: true, shouldDirty: true });
     }
   };
@@ -522,12 +527,12 @@ const GalleryStep = () => {
             />
           </label>
         </FormControl>
-        {images && images.length > 0 && (
+        {previews && previews.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
-            {images.map((image, index) => (
+            {previews.map((preview, index) => (
               <div key={index} className="relative group aspect-square">
                 <Image
-                  src={image.preview}
+                  src={preview}
                   alt={`Pré-visualização da imagem ${index + 1}`}
                   fill
                   className="rounded-md object-cover"
@@ -582,19 +587,38 @@ const GalleryStep = () => {
   );
 };
 
+
 const TimelineStep = () => {
     const { control, getValues, setValue, trigger } = useFormContext<PageData>();
     const { fields, append, remove, update } = useFieldArray({
         control,
         name: "timelineEvents",
     });
+    
+    const [previews, setPreviews] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const newPreviews: Record<string, string> = {};
+        const urlsToRevoke: string[] = [];
+        fields.forEach((field) => {
+            if (field.image instanceof File) {
+                const url = URL.createObjectURL(field.image);
+                newPreviews[field.id] = url;
+                urlsToRevoke.push(url);
+            }
+        });
+        setPreviews(newPreviews);
+
+        return () => {
+            urlsToRevoke.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [fields]);
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const base64Preview = await fileToBase64(file);
             const currentEvent = fields[index];
-            update(index, { ...currentEvent, image: { file, preview: base64Preview } });
+            update(index, { ...currentEvent, image: file });
             trigger(`timelineEvents.${index}.image`);
         }
     };
@@ -607,9 +631,9 @@ const TimelineStep = () => {
                     <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
                          <div className="flex-shrink-0">
                             <FormLabel htmlFor={`timeline-image-${index}`}>
-                                <div className={cn("w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary", field.image?.preview && "border-solid")}>
-                                    {field.image?.preview ? (
-                                        <Image src={field.image.preview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
+                                <div className={cn("w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary", previews[field.id] && "border-solid")}>
+                                    {previews[field.id] ? (
+                                        <Image src={previews[field.id]} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
                                     ) : (
                                         <Upload className="w-6 h-6 text-muted-foreground" />
                                     )}
@@ -681,7 +705,7 @@ const TimelineStep = () => {
                 ))}
             </div>
 
-            <Button type="button" variant="outline" className="w-full" onClick={() => append({ image: { file: null, preview: "" }, description: "", date: new Date() })}>
+            <Button type="button" variant="outline" className="w-full" onClick={() => append({ image: null, description: "", date: new Date() })}>
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Momento
             </Button>
@@ -1069,17 +1093,28 @@ const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
 const PuzzleStep = () => {
     const { control, setValue } = useFormContext<PageData>();
     const enablePuzzle = useWatch({ control, name: "enablePuzzle" });
-    const puzzleImage = useWatch({ control, name: "puzzleImage" });
-    
+    const puzzleImageFile = useWatch({ control, name: "puzzleImage" });
+    const [preview, setPreview] = useState<string | undefined>();
+
+    useEffect(() => {
+        let url: string | undefined;
+        if (puzzleImageFile instanceof File) {
+            url = URL.createObjectURL(puzzleImageFile);
+            setPreview(url);
+        } else {
+            setPreview(undefined);
+        }
+        return () => {
+            if (url) {
+                URL.revokeObjectURL(url);
+            }
+        };
+    }, [puzzleImageFile]);
+
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            const base64Preview = await fileToBase64(file);
-            const newImage = {
-                file,
-                preview: base64Preview
-            };
-            setValue("puzzleImage", newImage, { shouldValidate: true, shouldDirty: true });
+            setValue("puzzleImage", file, { shouldValidate: true, shouldDirty: true });
         }
     };
 
@@ -1109,7 +1144,7 @@ const PuzzleStep = () => {
             {enablePuzzle && (
                  <div className="space-y-2">
                     <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
-                     {!puzzleImage?.preview ? (
+                     {!preview ? (
                         <FormControl>
                         <label
                             htmlFor="puzzle-photo-upload"
@@ -1132,7 +1167,7 @@ const PuzzleStep = () => {
                      ) : (
                         <div className="relative group aspect-video w-full">
                             <Image
-                                src={puzzleImage.preview}
+                                src={preview}
                                 alt="Puzzle preview"
                                 fill
                                 className="rounded-md object-contain"
@@ -1170,33 +1205,44 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (data: PageData) => {
+    const handleFinalizeAndPay = async (data: z.infer<typeof paymentSchema>) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
         
-        const pageData = getValues();
-        // Remove file objects before saving to localStorage
-        const serializablePageData = JSON.parse(JSON.stringify(pageData), (key, value) => {
-            if (key === 'file') return undefined;
-            return value;
-        });
-
         const mockPageId = `page-${Date.now()}`;
         
-        localStorage.setItem(mockPageId, JSON.stringify(serializablePageData));
-        
-        const result = await createPixPayment(pageData.payment, pageData.timelineEvents.length > 0, pageData.title, mockPageId);
+        try {
+            const allPageData = getValues();
+            
+            // File objects cannot be stringified directly.
+            // We'll just save the form state without trying to stringify blobs.
+            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(allPageData));
+            
+            const plainPayerData = {
+                payerFirstName: data.payerFirstName,
+                payerLastName: data.payerLastName,
+                payerEmail: data.payerEmail,
+                payerCpf: data.payerCpf,
+            };
 
-        if (result.pixData) {
-            setPixData(result.pixData);
-            setCreatedPageId(mockPageId); 
-            startPolling(result.pixData.paymentId);
-        } else {
-            setError(result.error || 'Não foi possível gerar o pagamento PIX.');
-            localStorage.removeItem(mockPageId);
+            const result = await createPixPayment(plainPayerData, allPageData.title, mockPageId);
+
+            if (result.pixData) {
+                setPixData(result.pixData);
+                setCreatedPageId(mockPageId); 
+                startPolling(result.pixData.paymentId);
+            } else {
+                setError(result.error || 'Não foi possível gerar o pagamento PIX.');
+                localStorage.removeItem(`form-data-${mockPageId}`);
+            }
+        } catch (e: any) {
+             console.error("Failed to process payment:", e);
+             setError("Ocorreu um erro ao processar os dados da sua página. Isso geralmente acontece com muitas imagens ou vídeos. Por favor, tente recarregar a página e simplificar um pouco.");
+             localStorage.removeItem(`form-data-${mockPageId}`);
+        } finally {
+            setIsProcessing(false);
         }
-        setIsProcessing(false);
     };
 
     const startPolling = (paymentId: number) => {
@@ -1272,7 +1318,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
             ) : error && (
                 <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Erro de Pagamento</AlertTitle>
+                    <AlertTitle>Erro ao Processar</AlertTitle>
                     <AlertDescription>
                         {error}
                     </AlertDescription>
@@ -1414,7 +1460,7 @@ const stepComponents = [
     <MusicStep key="music" />,
     <BackgroundStep key="background" isVisible={false} />,
     <PuzzleStep key="puzzle" />,
-    <PaymentStep key="payment" setPaymentComplete={() => {}} setCreatedPageId={() => {}} />,
+    <PaymentStep setPaymentComplete={() => {}} setCreatedPageId={() => {}} />,
 ];
 
 const CustomAudioPlayer = ({ src }: { src: string }) => {
@@ -1474,28 +1520,6 @@ export default function CreatePageWizard() {
   const [puzzleDimension, setPuzzleDimension] = useState(360);
   const [showTimeline, setShowTimeline] = useState(false);
   
-
-
-  useEffect(() => {
-    setIsClient(true);
-     if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
-            initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
-    } else {
-      console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
-    }
-    const handleResize = () => {
-        const screenWidth = window.innerWidth;
-        if (screenWidth < 640) {
-            setPuzzleDimension(screenWidth * 0.8);
-        } else {
-            setPuzzleDimension(360);
-        }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
     defaultValues: {
@@ -1530,6 +1554,51 @@ export default function CreatePageWizard() {
     },
   });
 
+  useEffect(() => {
+    setIsClient(true);
+    // Clear any previous form data to start fresh
+    localStorage.removeItem('form-data');
+
+     if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
+            initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
+    } else {
+      console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
+    }
+
+    const handleResize = () => {
+        const screenWidth = window.innerWidth;
+        if (screenWidth < 640) {
+            setPuzzleDimension(screenWidth * 0.8);
+        } else {
+            setPuzzleDimension(360);
+        }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    const unsubscribe = methods.watch((value) => {
+        // This is a potential performance bottleneck with large data.
+        // For now, we accept it for state persistence.
+        try {
+            const serializableValue = JSON.stringify(value, (key, value) => {
+                if (value instanceof File) {
+                    return value.name; // Or some other placeholder
+                }
+                return value;
+            });
+            localStorage.setItem('form-data-autosave', serializableValue);
+        } catch (e) {
+            console.warn("Could not save form data to localStorage.", e);
+        }
+    });
+    return () => {
+        unsubscribe.unsubscribe();
+        window.removeEventListener('resize', handleResize);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const { watch, trigger, getValues, formState } = methods;
   const formData = watch();
 
@@ -1563,7 +1632,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
   
@@ -1578,12 +1647,13 @@ export default function CreatePageWizard() {
             StepComponent = <PaymentStep setPaymentComplete={setPaymentComplete} setCreatedPageId={setCreatedPageId} />;
         } else {
             StepComponent = React.cloneElement(stepComponents[currentStep], { 
+                key: currentStepId,
                 isVisible: currentStep === steps.findIndex(s => s.id === 'background') 
             });
         }
     }
 
-  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.preview;
+  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage;
   
   const handlePuzzleReveal = () => {
     setPuzzleRevealed(true);
@@ -1671,6 +1741,31 @@ export default function CreatePageWizard() {
 
 const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, handlePuzzleReveal, puzzleDimension, cloudsVideoRef, customVideoRef, onShowTimeline }: any) => {
 
+    const galleryPreviews = useMemo(() => {
+        if (!formData.galleryImages) return [];
+        return formData.galleryImages.map((file: File) => {
+            if (file instanceof File) return URL.createObjectURL(file);
+            return null;
+        }).filter(Boolean);
+    }, [formData.galleryImages]);
+
+    const puzzlePreview = useMemo(() => {
+        if (formData.puzzleImage instanceof File) {
+            return URL.createObjectURL(formData.puzzleImage);
+        }
+        return null;
+    }, [formData.puzzleImage]);
+
+    useEffect(() => {
+        // This effect is crucial for cleanup to avoid memory leaks.
+        return () => {
+            galleryPreviews.forEach((url: string) => URL.revokeObjectURL(url));
+            if (puzzlePreview) {
+                URL.revokeObjectURL(puzzlePreview);
+            }
+        };
+    }, [galleryPreviews, puzzlePreview]);
+
     return (
         <>
             {/* Background Animations */}
@@ -1693,7 +1788,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
 
             {/* Puzzle Overlay */}
              <AnimatePresence>
-                {isPuzzleActive && !puzzleRevealed && (
+                {isPuzzleActive && !puzzleRevealed && puzzlePreview && (
                     <motion.div
                          initial={{ opacity: 0 }}
                          animate={{ opacity: 1 }}
@@ -1709,7 +1804,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                 </p>
                             </div>
                             <RealPuzzle 
-                                imageSrc={formData.puzzleImage!.preview} 
+                                imageSrc={puzzlePreview} 
                                 showControls={false}
                                 onReveal={handlePuzzleReveal}
                                 dimension={puzzleDimension}
@@ -1759,7 +1854,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
 
                             {formData.specialDate && (
                                 <Countdown 
-                                    targetDate={formData.specialDate.toISOString()} 
+                                    targetDate={new Date(formData.specialDate).toISOString()} 
                                     style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
                                     color={formData.countdownColor}
                                 />
@@ -1771,7 +1866,7 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                 </div>
                             )}
 
-                            {formData.galleryImages && formData.galleryImages.length > 0 && (
+                            {galleryPreviews.length > 0 && (
                             <div className="w-full max-w-xs mx-auto">
                                 
                                 <Swiper
@@ -1803,10 +1898,10 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                     modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
                                     className="mySwiper-small"
                                 >
-                                    {formData.galleryImages.map((img: any, index: number) => (
+                                    {galleryPreviews.map((preview: string, index: number) => (
                                         <SwiperSlide key={index} className="bg-transparent">
                                             <div className="relative w-full aspect-square">
-                                                <Image src={img.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
+                                                <Image src={preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
                                             </div>
                                         </SwiperSlide>
                                     ))}
