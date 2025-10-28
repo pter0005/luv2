@@ -17,11 +17,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Poppins', 'sans-serif'],
-        display: ['Playfair Display', 'serif'],
-        handwriting: ['Dancing Script', 'cursive'],
-        headline: ['Playfair Display', 'serif'],
-        script: ['Dancing Script', 'cursive'],
+        body: ['var(--font-poppins)', 'sans-serif'],
+        display: ['var(--font-playfair-display)', 'serif'],
+        handwriting: ['var(--font-dancing-script)', 'cursive'],
+        headline: ['var(--font-playfair-display)', 'serif'],
+        script: ['var(--font-dancing-script)', 'cursive'],
         code: ['monospace'],
       },
       colors: {

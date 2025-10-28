@@ -11,6 +11,26 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { Poppins, Playfair_Display, Dancing_Script } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-poppins',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-playfair-display',
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-dancing-script',
+});
+
 
 export const metadata: Metadata = {
   title: 'b2gether',
@@ -27,14 +47,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt" className="dark scroll-smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Playfair+Display:wght@700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet" />
-      </head>
       <body
         className={cn(
-          'font-body antialiased overflow-x-hidden bg-background min-h-screen'
+          'font-body antialiased overflow-x-hidden bg-background min-h-screen',
+          poppins.variable,
+          playfairDisplay.variable,
+          dancingScript.variable
         )}
       >
         <div className="relative w-full h-full">

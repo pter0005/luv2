@@ -129,6 +129,12 @@ export default function Home() {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
   const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
 
 
   useEffect(() => {
@@ -152,7 +158,7 @@ export default function Home() {
 
   return (
     <>
-      <section className="relative w-full overflow-hidden flex items-center justify-center min-h-screen pt-28 pb-16 md:pt-36 md:pb-24">
+      <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-screen pt-28 pb-16 md:pt-36 md:pb-24">
         <div className="absolute inset-0 w-full h-full mystic-glow -z-10"></div>
         <div className="container grid md:grid-cols-2 gap-12 items-center">
             <div className="text-center md:text-left">
@@ -180,6 +186,7 @@ export default function Home() {
             </div>
             <motion.div 
                 className="relative w-full h-[60vh] md:h-[70vh] rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
+                style={{ y }}
                 initial={{ opacity: 0, y: 50, rotate: 5 }}
                 animate={{ opacity: 1, y: 0, rotate: 0 }}
                 transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1]}}
