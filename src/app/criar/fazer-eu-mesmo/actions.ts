@@ -5,6 +5,7 @@ import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { initializeFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import type { PageData } from './CreatePageWizard';
 
 /**
@@ -119,6 +120,23 @@ export async function checkPaymentStatus(paymentId: number) {
     }
 }
 
+
+// Helper function to upload a file (as a Base64 string) to Firebase Storage
+const uploadFileToStorage = async (fileString: string, storagePath: string): Promise<string> => {
+    const { firebaseApp } = initializeFirebase();
+    const storage = getStorage(firebaseApp);
+    const storageRef = ref(storage, storagePath);
+
+    try {
+        await uploadString(storageRef, fileString, 'data_url');
+        const downloadURL = await getDownloadURL(storageRef);
+        return downloadURL;
+    } catch (error) {
+        console.error(`Error uploading file to ${storagePath}:`, error);
+        throw error;
+    }
+};
+
 export async function createLovePage(pageData: PageData) {
     try {
         const { firestore } = initializeFirebase();
@@ -126,7 +144,47 @@ export async function createLovePage(pageData: PageData) {
 
         // We remove the payment details before saving to Firestore for security and privacy.
         const { payment, ...lovePageDataToSave } = pageData;
+
+        // Create a temporary ID for storage paths to avoid collisions
+        const tempId = lovePagesCollection.doc().id;
+
+        // Process gallery images
+        if (lovePageDataToSave.galleryImages && lovePageDataToSave.galleryImages.length > 0) {
+            lovePageDataToSave.galleryImages = await Promise.all(
+                lovePageDataToSave.galleryImages.map((image, index) => 
+                    uploadFileToStorage(image, `lovepages/${tempId}/gallery/image_${index}.jpg`)
+                )
+            );
+        }
+
+        // Process timeline events images
+        if (lovePageDataToSave.timelineEvents && lovePageDataToSave.timelineEvents.length > 0) {
+            lovePageDataToSave.timelineEvents = await Promise.all(
+                lovePageDataToSave.timelineEvents.map(async (event, index) => {
+                    if (event.image) {
+                        const imageUrl = await uploadFileToStorage(event.image, `lovepages/${tempId}/timeline/event_${index}.jpg`);
+                        return { ...event, image: imageUrl };
+                    }
+                    return event;
+                })
+            );
+        }
+
+        // Process audio recording
+        if (lovePageDataToSave.audioRecording) {
+            lovePageDataToSave.audioRecording = await uploadFileToStorage(lovePageDataToSave.audioRecording, `lovepages/${tempId}/audio/recording.webm`);
+        }
         
+        // Process puzzle image
+        if (lovePageDataToSave.puzzleImage) {
+            lovePageDataToSave.puzzleImage = await uploadFileToStorage(lovePageDataToSave.puzzleImage, `lovepages/${tempId}/puzzle/puzzle_image.jpg`);
+        }
+
+        // Process background video
+        if (lovePageDataToSave.backgroundVideo) {
+            lovePageDataToSave.backgroundVideo = await uploadFileToStorage(lovePageDataToSave.backgroundVideo, `lovepages/${tempId}/background/background_video.mp4`);
+        }
+
         const docRef = await addDoc(lovePagesCollection, {
             ...lovePageDataToSave,
             createdAt: serverTimestamp(),
