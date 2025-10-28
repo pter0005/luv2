@@ -216,7 +216,6 @@ function FloatingCard({
   useFrame(({ camera }) => {
     if (groupRef.current) {
       groupRef.current.lookAt(camera.position)
-      // Subtle hover effect: move card slightly towards camera
       if (hovered) {
         groupRef.current.position.lerp(vec.set(position.x, position.y, position.z + 1), 0.1)
       } else {
@@ -229,28 +228,26 @@ function FloatingCard({
     e.stopPropagation()
     setSelectedCard(card)
   }
-  const handlePointerOver = (e: any) => {
-    e.stopPropagation()
-    setHovered(true)
-    document.body.style.cursor = "pointer"
-  }
-  const handlePointerOut = (e: any) => {
-    e.stopPropagation()
-    setHovered(false)
-    document.body.style.cursor = "auto"
-  }
 
   return (
-    <group ref={groupRef} position={[position.x, position.y, position.z]}>
-      <Plane
-        args={[4.5, 6]}
-        onClick={handleClick}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-      >
+    <group
+      ref={groupRef}
+      position={[position.x, position.y, position.z]}
+      onClick={handleClick}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        setHovered(true)
+        document.body.style.cursor = "pointer"
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation()
+        setHovered(false)
+        document.body.style.cursor = "auto"
+      }}
+    >
+      <Plane args={[4.5, 6]}>
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
-
       <Html
         transform
         distanceFactor={10}
