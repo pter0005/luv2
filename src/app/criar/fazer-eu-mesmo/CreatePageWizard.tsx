@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -54,11 +54,26 @@ const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
 
 const Timeline = dynamic(() => import('./Timeline'), { ssr: false });
 
+const cpfMask = (value: string) => {
+  if (!value) return ""
+  return value
+    .replace(/\D/g, '')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1')
+}
+
 const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório."),
   payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
   payerEmail: z.string().email("E-mail inválido."),
-  payerCpf: z.string().min(1, "O CPF é obrigatório."),
+  payerCpf: z.string()
+    .min(1, "O CPF é obrigatório.")
+    .refine((cpf) => {
+        const cleaned = cpf.replace(/\D/g, '');
+        return cleaned.length === 11;
+    }, "CPF deve conter 11 dígitos."),
 });
 
 // Define the schema for the entire wizard
@@ -1262,7 +1277,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (data: z.infer<typeof paymentSchema>) => {
+    const handleFinalizeAndPay = async (data: PageData) => {
         setIsProcessing(true);
         setError(null);
         setPixData(null);
@@ -1275,14 +1290,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
             localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
             
-            const plainPayerData = {
-                payerFirstName: data.payerFirstName,
-                payerLastName: data.payerLastName,
-                payerEmail: data.payerEmail,
-                payerCpf: data.payerCpf,
-            };
-
-            const result = await createPixPayment(plainPayerData, allPageData.title, mockPageId);
+            const result = await createPixPayment(data.payment, allPageData.title, mockPageId);
 
             if (result.pixData) {
                 setPixData(result.pixData);
@@ -1372,13 +1380,20 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                     </AlertDescription>
                 </Alert>
             ) : error && (
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Erro ao Processar</AlertTitle>
-                    <AlertDescription>
-                        {error}
-                    </AlertDescription>
-                </Alert>
+                <Card className="bg-destructive/10 border-destructive/50 text-destructive-foreground p-4">
+                    <CardHeader className="p-0 flex flex-row items-center gap-2">
+                         <Terminal className="w-6 h-6 flex-shrink-0" />
+                         <CardTitle className="text-lg">Erro ao Processar Pagamento</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 mt-4">
+                        <p className="font-mono text-sm bg-black/30 p-3 rounded-md overflow-x-auto">
+                            {error}
+                        </p>
+                         <p className="text-xs mt-3 opacity-80">
+                            Este é um erro técnico retornado pela API de pagamento. Se o problema persistir, por favor contate o suporte.
+                        </p>
+                    </CardContent>
+                </Card>
             )}
 
             <Card className="text-left bg-card/80 p-6">
@@ -1433,13 +1448,16 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                     <FormField
                         control={control}
                         name="payment.payerCpf"
-                        render={({ field }) => (
+                        render={({ field: { onChange, ...restField } }) => (
                             <FormItem>
                                 <FormLabel>CPF</FormLabel>
                                 <FormControl>
-                                    <Input 
-                                      {...field}
-                                      placeholder="000.000.000-00" 
+                                    <Input
+                                      {...restField}
+                                      placeholder="000.000.000-00"
+                                      onChange={(e) => {
+                                        onChange(cpfMask(e.target.value))
+                                      }}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -1658,7 +1676,7 @@ export default function CreatePageWizard() {
   }, []);
 
 
-  const { watch, trigger, getValues, formState } = methods;
+  const { watch, trigger, getValues, formState, handleSubmit } = methods;
   const formData = watch();
 
   useEffect(() => {
@@ -1691,7 +1709,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
   
