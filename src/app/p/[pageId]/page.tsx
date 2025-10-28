@@ -114,41 +114,24 @@ export default function GeneratedPage() {
     useEffect(() => {
         if (!formData) return;
 
-        // Create puzzle preview
-        if (formData.puzzleImage instanceof File) {
-            const url = URL.createObjectURL(formData.puzzleImage);
-            setPuzzlePreview(url);
+        // Since files can't be stored in localStorage, data URLs (Base64) are used.
+        // We can use them directly for previews.
+        if (formData.puzzleImage && typeof formData.puzzleImage === 'string') {
+            setPuzzlePreview(formData.puzzleImage);
         }
 
-        // Create gallery previews
         if (formData.galleryImages && formData.galleryImages.length > 0) {
-            const urls = formData.galleryImages
-                .map((file: any) => file instanceof File ? URL.createObjectURL(file) : null)
-                .filter(Boolean);
+            const urls = formData.galleryImages.filter((img: any) => typeof img === 'string');
             setGalleryPreviews(urls);
         }
 
-        // Create timeline previews
         if (formData.timelineEvents && formData.timelineEvents.length > 0) {
             const eventsWithUrls = formData.timelineEvents.map((event: any) => ({
                 ...event,
-                image: {
-                    ...event.image,
-                    preview: event.image instanceof File ? URL.createObjectURL(event.image) : (event.image?.preview || ''),
-                }
+                imageUrl: event.image, // The image is already a Base64 string
             }));
             setTimelineEventsWithPreviews(eventsWithUrls);
         }
-
-        return () => {
-            if (puzzlePreview) URL.revokeObjectURL(puzzlePreview);
-            galleryPreviews.forEach(url => URL.revokeObjectURL(url));
-            timelineEventsWithPreviews.forEach(event => {
-                if (event.image.preview && event.image.preview.startsWith('blob:')) {
-                    URL.revokeObjectURL(event.image.preview);
-                }
-            });
-        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
@@ -272,7 +255,7 @@ export default function GeneratedPage() {
                         />
                     )}
                     
-                    {formData.timelineEvents && formData.timelineEvents.length > 0 && (
+                    {formData.timelineEvents && formData.timelineEvents.length > 0 && timelineEventsWithPreviews.length > 0 && (
                         <div className="text-center">
                              <Button
                                 onClick={() => setShowTimeline(true)}

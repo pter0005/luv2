@@ -68,12 +68,7 @@ const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório."),
   payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
   payerEmail: z.string().email("E-mail inválido."),
-  payerCpf: z.string()
-    .min(1, "O CPF é obrigatório.")
-    .refine((cpf) => {
-        const cleaned = cpf.replace(/\D/g, '');
-        return cleaned.length === 11;
-    }, "CPF deve conter 11 dígitos."),
+  payerCpf: z.string().min(1, "O CPF é obrigatório."),
 });
 
 // Define the schema for the entire wizard
@@ -1224,25 +1219,34 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// This function prepares the data for safe storage in localStorage.
+// It converts any File objects to Base64 strings.
 const getSerializablePageData = async (allData: PageData): Promise<any> => {
-    const serializableData = { ...allData };
+    const serializableData: { [key: string]: any } = { ...allData };
 
-    // Serialize gallery images
-    if (serializableData.galleryImages) {
-        serializableData.galleryImages = await Promise.all(
-            serializableData.galleryImages.map(async (img) => {
-                if (img instanceof File) {
-                    return await fileToBase64(img);
-                }
-                return img;
-            })
-        );
+    for (const key in serializableData) {
+        if (Object.prototype.hasOwnProperty.call(serializableData, key)) {
+            const value = serializableData[key];
+            if (value instanceof File) {
+                serializableData[key] = await fileToBase64(value);
+            } else if (Array.isArray(value)) {
+                 serializableData[key] = await Promise.all(value.map(async (item) => {
+                    if (item instanceof File) {
+                        return await fileToBase64(item);
+                    }
+                    if (item && typeof item === 'object' && 'image' in item && item.image instanceof File) {
+                        return { ...item, image: await fileToBase64(item.image) };
+                    }
+                    return item;
+                }));
+            }
+        }
     }
-
-    // Serialize timeline event images
+    
+    // Specifically handle nested files in timelineEvents
     if (serializableData.timelineEvents) {
         serializableData.timelineEvents = await Promise.all(
-            serializableData.timelineEvents.map(async (event) => {
+            serializableData.timelineEvents.map(async (event: any) => {
                 if (event.image instanceof File) {
                     return { ...event, image: await fileToBase64(event.image) };
                 }
@@ -1250,25 +1254,13 @@ const getSerializablePageData = async (allData: PageData): Promise<any> => {
             })
         );
     }
-
-    // Serialize puzzle image
-    if (serializableData.puzzleImage instanceof File) {
-        serializableData.puzzleImage = await fileToBase64(serializableData.puzzleImage);
-    }
-
-    // Serialize background video
-    if (serializableData.backgroundVideo instanceof File) {
-        serializableData.backgroundVideo = await fileToBase64(serializableData.backgroundVideo);
-    }
-
-    // Audio is already base64 string, so it's fine.
-
+    
     return serializableData;
 };
 
 
 const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentComplete: (v: boolean) => void, setCreatedPageId: (id: string) => void }) => {
-    const { getValues, control, handleSubmit } = useFormContext<PageData>();
+    const { getValues, control } = useFormContext<PageData>();
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pixData, setPixData] = useState<PixData | null>(null);
@@ -1277,20 +1269,28 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
 
     const isPaymentConfigured = !!process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
 
-    const handleFinalizeAndPay = async (data: PageData) => {
+    const handleFinalizeAndPay = async (e: React.FormEvent) => {
+        e.preventDefault();
         setIsProcessing(true);
         setError(null);
         setPixData(null);
         
         const mockPageId = `page-${Date.now()}`;
-        
+        const payerData = getValues("payment");
+
+         if (!payerData.payerCpf || !payerData.payerEmail || !payerData.payerFirstName || !payerData.payerLastName) {
+            setError("Por favor, preencha todos os dados do pagador.");
+            setIsProcessing(false);
+            return;
+        }
+
         try {
             const allPageData = getValues();
             const serializableData = await getSerializablePageData(allPageData);
 
             localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
             
-            const result = await createPixPayment(data.payment, allPageData.title, mockPageId);
+            const result = await createPixPayment(payerData, allPageData.title, mockPageId);
 
             if (result.pixData) {
                 setPixData(result.pixData);
@@ -1317,6 +1317,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                   if (pollingIntervalRef.current) {
                       clearInterval(pollingIntervalRef.current);
                   }
+                  // Clear the creation draft, as it's now completed
+                  localStorage.removeItem('form-data-autosave');
                   setPaymentComplete(true);
               }
           } catch (pollError) {
@@ -1370,7 +1372,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
     }
     
     return (
-        <form onSubmit={handleSubmit(handleFinalizeAndPay)} className="space-y-6">
+        <form onSubmit={handleFinalizeAndPay} className="space-y-6">
             {!isPaymentConfigured ? (
                  <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -1585,6 +1587,19 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
   );
 };
 
+// Helper to convert Base64 back to File object for previews
+const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(',');
+    const mime = arr[0].match(/:(.*?);/)![1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+};
+
 export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isClient, setIsClient] = useState(false);
@@ -1630,17 +1645,48 @@ export default function CreatePageWizard() {
       }
     },
   });
-
+  
   useEffect(() => {
     setIsClient(true);
-    // Clear any previous form data to start fresh
-    localStorage.removeItem('form-data');
+    // Clear any previous page-specific data to start fresh
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('form-data-page-')) {
+            localStorage.removeItem(key);
+        }
+    });
 
-     if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
-            initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
+    if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
+        initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
     } else {
-      console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
+        console.warn("Mercado Pago Public Key not found. Payment step will be disabled.");
     }
+
+    // Load saved data from localStorage
+    const savedDataJSON = localStorage.getItem('form-data-autosave');
+    if (savedDataJSON) {
+        try {
+            const savedData = JSON.parse(savedDataJSON);
+            
+            // Convert date strings back to Date objects
+            if (savedData.specialDate) {
+                savedData.specialDate = new Date(savedData.specialDate);
+            }
+            if (savedData.timelineEvents) {
+                savedData.timelineEvents.forEach((event: any) => {
+                    if (event.date) {
+                        event.date = new Date(event.date);
+                    }
+                });
+            }
+
+            // Restore form values. Files can't be restored, user must re-select them.
+            methods.reset(savedData);
+            
+        } catch (e) {
+            console.error("Could not parse saved form data:", e);
+        }
+    }
+
 
     const handleResize = () => {
         const screenWidth = window.innerWidth;
@@ -1653,15 +1699,18 @@ export default function CreatePageWizard() {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    const unsubscribe = methods.watch((value) => {
-        // This is a potential performance bottleneck with large data.
-        // For now, we accept it for state persistence.
+    const subscription = methods.watch((value) => {
         try {
-            const serializableValue = JSON.stringify(value, (key, value) => {
-                if (value instanceof File) {
-                    return value.name; // Or some other placeholder
+            // We need a way to handle File objects for localStorage
+            const serializableValue = JSON.stringify(value, (key, val) => {
+                if (val instanceof File) {
+                    // We can't store the file itself, so we store a placeholder.
+                    // The user will need to re-upload files on refresh.
+                    // A more advanced implementation could use FileReader to store as Base64,
+                    // but that can be slow and storage-intensive for large files.
+                    return null; 
                 }
-                return value;
+                return val;
             });
             localStorage.setItem('form-data-autosave', serializableValue);
         } catch (e) {
@@ -1669,14 +1718,14 @@ export default function CreatePageWizard() {
         }
     });
     return () => {
-        unsubscribe.unsubscribe();
+        subscription.unsubscribe();
         window.removeEventListener('resize', handleResize);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
-  const { watch, trigger, getValues, formState, handleSubmit } = methods;
+  const { watch, trigger, getValues, formState } = methods;
   const formData = watch();
 
   useEffect(() => {
@@ -1709,7 +1758,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
   
