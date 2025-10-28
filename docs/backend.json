@@ -1,0 +1,192 @@
+{
+  "entities": {
+    "LovePage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LovePage",
+      "type": "object",
+      "description": "Represents a single love declaration page created by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LovePage entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who created this page. (Relationship: User 1:N LovePage)"
+        },
+        "templateId": {
+          "type": "string",
+          "description": "Reference to the Template used for this page, if any. (Relationship: Template 1:N LovePage)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the love page."
+        },
+        "customCss": {
+          "type": "string",
+          "description": "Custom CSS styles applied to the page.",
+          "format": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the love page.  May include text, HTML snippets, or markdown.",
+          "format": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the user-uploaded image associated with the page.",
+          "format": "uri"
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time when the page was created.",
+          "format": "date-time"
+        },
+        "uniqueLink": {
+          "type": "string",
+          "description": "Unique link/URL to access the love page."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "content",
+        "creationDate",
+        "uniqueLink"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Amore Pages application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "Template": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Template",
+      "type": "object",
+      "description": "Represents a pre-designed template that users can choose for their love declaration page.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Template entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the template."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the template."
+        },
+        "previewImageUrl": {
+          "type": "string",
+          "description": "URL of the preview image for the template.",
+          "format": "uri"
+        },
+        "defaultCss": {
+          "type": "string",
+          "description": "Default CSS for the template.",
+          "format": "string"
+        },
+        "defaultContent": {
+          "type": "string",
+          "description": "Default content for the template.",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "previewImageUrl",
+        "defaultCss",
+        "defaultContent"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data.  Path-based ownership is enforced by the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user.  This is typically the Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/love_pages/{lovePageId}",
+        "definition": {
+          "entityName": "LovePage",
+          "schema": {
+            "$ref": "#/backend/entities/LovePage"
+          },
+          "description": "Stores love page data created by a user. Includes denormalized 'userId' for authorization independence.  The `userId` field in the document must match the `userId` in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the love page."
+            },
+            {
+              "name": "lovePageId",
+              "description": "The unique identifier of the love page."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/templates/{templateId}",
+        "definition": {
+          "entityName": "Template",
+          "schema": {
+            "$ref": "#/backend/entities/Template"
+          },
+          "description": "Stores pre-designed templates available for users.  No specific ownership; access can be controlled through application logic.",
+          "params": [
+            {
+              "name": "templateId",
+              "description": "The unique identifier of the template."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability, following the defined core design principles. User data and LovePages are stored in hierarchical paths to leverage Firestore's security rules for ownership. Templates are stored in a top-level collection accessible to all users.\n\n**Authorization Independence:**\n\n*   `LovePages` store the `userId` of the creating user within each document. This denormalization allows security rules to validate ownership of a LovePage based solely on the document's contents and the authenticated user's ID, without requiring `get()` operations to retrieve parent user data. This guarantees authorization independence for `LovePage` creation, updates, and deletes.\n\n**Structural Segregation (Homogeneous Security Posture):**\n\n*   The structure segregates user-specific data (users/{userId}) from shared data (templates).\n*   LovePages are stored within the `/users/{userId}/love_pages/{lovePageId}` path, ensuring that all documents in the `love_pages` subcollection share the same ownership-based security requirements.\n\n**Access Modeling (Standardization and Consistency):**\n\n*   **Path-Based Ownership:**  User data is stored under `/users/{userId}`, and LovePages are stored under `/users/{userId}/love_pages/{lovePageId}`. This enforces clear ownership.\n\n**QAPs (Rules are not Filters):**\n\n*   The structure supports secure `list` operations. Listing LovePages is limited to the owner of the LovePages because they are stored under `/users/{userId}/love_pages`. A user can only list LovePages for which the `userId` matches their authenticated `uid`.  Templates can be listed by anyone, but access to individual templates can be restricted based on the application's logic if needed.\n\n**Invariants:**\n\n*   The structure enforces ownership and allows for easy implementation of timestamp management and data integrity checks within security rules.\n"
+  }
+}
