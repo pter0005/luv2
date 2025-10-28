@@ -58,7 +58,7 @@ const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório."),
   payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
   payerEmail: z.string().email("E-mail inválido."),
-  payerCpf: z.string().min(1, "O CPF é obrigatório.").min(11, "CPF inválido.").max(14, "CPF inválido."),
+  payerCpf: z.string().min(1, "O CPF é obrigatório."),
 });
 
 // Define the schema for the entire wizard
@@ -1433,13 +1433,12 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                     <FormField
                         control={control}
                         name="payment.payerCpf"
-                        render={({ field: { onChange, ...restField } }) => (
+                        render={({ field }) => (
                             <FormItem>
                                 <FormLabel>CPF</FormLabel>
                                 <FormControl>
                                     <Input 
-                                      {...restField}
-                                      onChange={(e) => onChange(e.target.value)}
+                                      {...field}
                                       placeholder="000.000.000-00" 
                                     />
                                 </FormControl>
@@ -1692,7 +1691,7 @@ export default function CreatePageWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
   
