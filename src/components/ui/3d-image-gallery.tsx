@@ -104,22 +104,41 @@ export function useCard() {
   return ctx
 }
 
-export function CardProvider({ children, events }: { children: React.ReactNode, events: any[] }) {
+export const CardProvider = ({ children, events }: { children: React.ReactNode, events: any[] }) => {
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
     const cards = useMemo(() => {
         if (!events) return [];
         return events
-            .filter(event => event.image && event.image.preview)
-            .map((event, index) => ({
-                id: index.toString(),
-                imageUrl: event.image.preview,
-                alt: event.description,
-                title: event.description,
-                date: event.date
-            }));
+            .filter(event => (event.image instanceof File && event.image.size > 0) || (typeof event.image === 'string' && event.image.startsWith('data:image')))
+            .map((event, index) => {
+                let imageUrl = '';
+                if (event.image instanceof File) {
+                    imageUrl = URL.createObjectURL(event.image);
+                } else if (typeof event.image === 'string') {
+                    imageUrl = event.image;
+                }
+                
+                return {
+                    id: event.id || index.toString(),
+                    imageUrl: imageUrl,
+                    alt: event.description,
+                    title: event.description,
+                    date: event.date ? new Date(event.date) : undefined
+                };
+            });
     }, [events]);
 
+    useEffect(() => {
+        // Cleanup object URLs on unmount
+        return () => {
+            cards.forEach(card => {
+                if (card.imageUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(card.imageUrl);
+                }
+            });
+        };
+    }, [cards]);
 
   return (
     <CardContext.Provider value={{ selectedCard, setSelectedCard, cards }}>
@@ -205,9 +224,11 @@ function StarfieldBackground() {
 function FloatingCard({
   card,
   position,
+  isMobile,
 }: {
   card: Card
   position: { x: number; y: number; z: number; rotationX: number; rotationY: number; rotationZ: number }
+  isMobile: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
@@ -230,6 +251,9 @@ function FloatingCard({
     setSelectedCard(card)
   }
 
+  const cardWidth = isMobile ? 4.2 : 6;
+  const cardHeight = isMobile ? 5.67 : 8.1;
+
   return (
     <group
       ref={groupRef}
@@ -244,11 +268,9 @@ function FloatingCard({
         setHovered(false)
         document.body.style.cursor = "auto"
       }}
+      onClick={handleClick}
     >
-      <Plane 
-        args={[6, 8.1]} 
-        onClick={handleClick}
-      >
+      <Plane args={[cardWidth, cardHeight]} >
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
       <Html
@@ -262,7 +284,7 @@ function FloatingCard({
         }}
       >
         <div
-          className="w-52 h-72 rounded-lg overflow-hidden shadow-2xl bg-[#1F2121] p-2 select-none flex flex-col"
+          className={`rounded-lg overflow-hidden shadow-2xl bg-[#1F2121] p-2 select-none flex flex-col ${isMobile ? 'w-36 h-48' : 'w-52 h-72'}`}
           style={{
             boxShadow: hovered
               ? "0 25px 50px hsl(var(--primary) / 0.5), 0 0 30px hsl(var(--primary) / 0.3)"
@@ -270,7 +292,7 @@ function FloatingCard({
             border: hovered ? "2px solid hsl(var(--primary) / 0.5)" : "1px solid rgba(255, 255, 255, 0.1)",
           }}
         >
-          <div className="w-full h-52 relative">
+          <div className="w-full h-full relative">
             <Image
               src={card.imageUrl || "/placeholder.svg"}
               alt={card.alt}
@@ -279,10 +301,10 @@ function FloatingCard({
               unoptimized
             />
           </div>
-          <div className="mt-1 text-center flex-grow flex flex-col justify-center px-1">
-            <p className="text-white text-sm font-semibold leading-tight line-clamp-3" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>{card.title}</p>
+          <div className={`mt-1 text-center flex-grow flex flex-col justify-center ${isMobile ? 'px-0.5' : 'px-1'}`}>
+            <p className={`text-white font-semibold leading-tight line-clamp-3 ${isMobile ? 'text-[10px]' : 'text-sm'}`} style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>{card.title}</p>
              {card.date && (
-              <p className="text-primary/90 text-xs font-bold mt-2 tracking-wide" style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>
+              <p className={`text-primary/90 font-bold mt-1 tracking-wide ${isMobile ? 'text-[9px]' : 'text-xs'}`} style={{ textRendering: 'optimizeLegibility', transform: 'translateZ(0)' }}>
                 {format(card.date, "dd MMM yyyy", { locale: ptBR })}
               </p>
             )}
@@ -467,7 +489,7 @@ function CardGalaxy({ cards, isMobile }: { cards: Card[], isMobile: boolean }) {
       </Sphere>
 
       {cards.map((card, i) => (
-        cardPositions[i] && <FloatingCard key={card.id} card={card} position={cardPositions[i]} />
+        cardPositions[i] && <FloatingCard key={card.id} card={card} position={cardPositions[i]} isMobile={isMobile} />
       ))}
     </>
   )
@@ -477,8 +499,10 @@ function CardGalaxy({ cards, isMobile }: { cards: Card[], isMobile: boolean }) {
    Page/Component Export
    ========================= */
 
-export default function StellarCardGallerySingle({ cards, isMobile, onClose }: { cards: Card[], isMobile: boolean, onClose: () => void }) {
+export default function StellarCardGallerySingle({ cards: allCards, isMobile, onClose }: { cards: Card[], isMobile: boolean, onClose: () => void }) {
   
+  const cards = isMobile ? allCards.slice(0, 10) : allCards;
+
   return (
       <div className="w-full h-screen fixed inset-0 z-50 bg-black">
         <RotateDeviceOverlay />
@@ -502,8 +526,8 @@ export default function StellarCardGallerySingle({ cards, isMobile, onClose }: {
               enableRotate
               minDistance={isMobile ? 15 : 5}
               maxDistance={isMobile ? 50 : 40}
-              autoRotate={isMobile && cards.length > 1}
-              autoRotateSpeed={0.3}
+              autoRotate={cards.length > 1}
+              autoRotateSpeed={isMobile ? 0.3 : 0.15}
               rotateSpeed={isMobile ? 1.2 : 0.5}
               zoomSpeed={isMobile ? 1.5 : 1.2}
               panSpeed={isMobile ? 1.5 : 0.8}
@@ -525,3 +549,5 @@ export default function StellarCardGallerySingle({ cards, isMobile, onClose }: {
       </div>
   )
 }
+
+    

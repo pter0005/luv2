@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from "react"
@@ -23,13 +24,11 @@ function TimelineContent({ onClose }: { onClose: () => void }) {
 
 
 export default function Timeline({ events, onClose }: { events: any[], onClose: () => void }) {
-    if (!events || events.length === 0) {
-        return null;
-    }
-
     return (
         <CardProvider events={events}>
             <TimelineContent onClose={onClose} />
         </CardProvider>
     );
 }
+
+    
