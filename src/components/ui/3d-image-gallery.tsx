@@ -20,7 +20,7 @@ import Image from "next/image"
    Orientation Hook
    ========================= */
 
-function useScreenOrientation() {
+export function useScreenOrientation() {
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [isMobile, setIsMobile] = useState(false);
 
@@ -98,7 +98,7 @@ type CardContextType = {
 
 const CardContext = createContext<CardContextType | undefined>(undefined)
 
-function useCard() {
+export function useCard() {
   const ctx = useContext(CardContext)
   if (!ctx) throw new Error("useCard must be used within CardProvider")
   return ctx
@@ -244,9 +244,11 @@ function FloatingCard({
         setHovered(false)
         document.body.style.cursor = "auto"
       }}
-      onClick={handleClick}
     >
-      <Plane args={[6, 8.1]}>
+      <Plane 
+        args={[6, 8.1]} 
+        onClick={handleClick}
+      >
         <meshBasicMaterial transparent opacity={0} />
       </Plane>
       <Html
@@ -407,10 +409,7 @@ function CardModal() {
    Card Galaxy
    ========================= */
 
-function CardGalaxy() {
-  const { cards } = useCard()
-  const { isMobile } = useScreenOrientation();
-
+function CardGalaxy({ cards, isMobile }: { cards: Card[], isMobile: boolean }) {
   const cardPositions = useMemo(() => {
     const positions: {
         x: number
@@ -423,7 +422,6 @@ function CardGalaxy() {
     const numCards = cards.length;
     if (numCards === 0) return [];
     
-    // Handle the case for a single card to avoid division by zero
     if (numCards === 1) {
         positions.push({ x: 0, y: 0, z: 0, rotationX: 0, rotationY: 0, rotationZ: 0 });
         return positions;
@@ -433,13 +431,12 @@ function CardGalaxy() {
     const baseRadius = isMobile ? 8 : 12;
 
     for (let i = 0; i < numCards; i++) {
-        const y = 1 - (i / (numCards - 1)) * 2 // y goes from 1 to -1
-        const radiusAtY = Math.sqrt(1 - y * y) // radius at y
+        const y = 1 - (i / (numCards - 1)) * 2 
+        const radiusAtY = Math.sqrt(1 - y * y) 
         const theta = (2 * Math.PI * i) / goldenRatio
         const x = Math.cos(theta) * radiusAtY
         const z = Math.sin(theta) * radiusAtY
         
-        // Distribute cards across multiple layers
         const layerRadius = baseRadius + (i % (isMobile ? 2 : 3)) * (isMobile ? 3 : 4);
 
         positions.push({
@@ -480,17 +477,7 @@ function CardGalaxy() {
    Page/Component Export
    ========================= */
 
-export default function StellarCardGallerySingle({ onClose }: { onClose: () => void }) {
-  const { cards } = useCard();
-  const { isMobile } = useScreenOrientation();
-  
-  if (!cards || cards.length === 0) {
-      return (
-          <div className="w-full h-screen fixed inset-0 z-50 bg-black flex items-center justify-center text-white">
-              Nenhum momento adicionado.
-          </div>
-      )
-  }
+export default function StellarCardGallerySingle({ cards, isMobile, onClose }: { cards: Card[], isMobile: boolean, onClose: () => void }) {
   
   return (
       <div className="w-full h-screen fixed inset-0 z-50 bg-black">
@@ -508,7 +495,7 @@ export default function StellarCardGallerySingle({ onClose }: { onClose: () => v
             <ambientLight intensity={0.4} />
             <pointLight position={[10, 10, 10]} intensity={0.6} />
             <pointLight position={[-10, -10, -10]} intensity={0.3} />
-            <CardGalaxy />
+            <CardGalaxy cards={cards} isMobile={isMobile} />
             <OrbitControls
               enablePan
               enableZoom
