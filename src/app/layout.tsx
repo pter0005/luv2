@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Poppins, Playfair_Display, Dancing_Script } from 'next/font/google';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -55,18 +56,20 @@ export default function RootLayout({
           dancingScript.variable
         )}
       >
-        <div className="relative w-full h-full">
-            <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
-                <div className="mystic-fog-1"></div>
-                <div className="mystic-fog-2"></div>
+        <FirebaseClientProvider>
+          <div className="relative w-full h-full">
+              <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+                  <div className="mystic-fog-1"></div>
+                  <div className="mystic-fog-2"></div>
+              </div>
+            <div className="relative z-10 flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-grow">{children}</main>
+              <Footer />
             </div>
-          <div className="relative z-10 flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
           </div>
-        </div>
-        <Toaster />
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );

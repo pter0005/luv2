@@ -19,6 +19,8 @@ import FloatingDots from '@/components/effects/FloatingDots';
 import RealPuzzle from '@/components/puzzle/Puzzle';
 import { Button } from '@/components/ui/button';
 import { Pause, Play } from 'lucide-react';
+import { useDoc, useFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/app/criar/fazer-eu-mesmo/Timeline'), { ssr: false });
@@ -64,8 +66,15 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
 export default function GeneratedPage() {
     const params = useParams();
     const pageId = params.pageId as string;
-    const [formData, setFormData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { firestore } = useFirebase();
+
+    const pageRef = useMemo(() => {
+        if (!firestore || !pageId) return null;
+        return doc(firestore, 'lovepages', pageId);
+    }, [firestore, pageId]);
+
+    const { data: formData, isLoading: loading, error } = useDoc<any>(pageRef);
+    
     const [isClient, setIsClient] = useState(false);
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
@@ -73,28 +82,10 @@ export default function GeneratedPage() {
     const [showTimeline, setShowTimeline] = useState(false);
     const [puzzleDimension, setPuzzleDimension] = useState(360);
 
-    const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
-    const [puzzlePreview, setPuzzlePreview] = useState<string | undefined>();
-    const [timelineEventsWithPreviews, setTimelineEventsWithPreviews] = useState<any[]>([]);
-
     useEffect(() => {
         setIsClient(true);
-        if (pageId) {
-            const savedData = localStorage.getItem(`form-data-${pageId}`);
-            if (savedData) {
-                try {
-                    const parsedData = JSON.parse(savedData);
-                    setFormData(parsedData);
-                    if (!parsedData.enablePuzzle || !parsedData.puzzleImage) {
-                        setPuzzleRevealed(true);
-                    }
-                } catch (e) {
-                    console.error("Failed to parse page data from localStorage", e);
-                }
-            }
-            setLoading(false);
-        } else {
-             setLoading(false);
+        if (formData && (!formData.enablePuzzle || !formData.puzzleImage)) {
+            setPuzzleRevealed(true);
         }
 
         const handleResize = () => {
@@ -109,30 +100,6 @@ export default function GeneratedPage() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
 
-    }, [pageId]);
-
-    useEffect(() => {
-        if (!formData) return;
-
-        // Since files can't be stored in localStorage, data URLs (Base64) are used.
-        // We can use them directly for previews.
-        if (formData.puzzleImage && typeof formData.puzzleImage === 'string') {
-            setPuzzlePreview(formData.puzzleImage);
-        }
-
-        if (formData.galleryImages && formData.galleryImages.length > 0) {
-            const urls = formData.galleryImages.filter((img: any) => typeof img === 'string');
-            setGalleryPreviews(urls);
-        }
-
-        if (formData.timelineEvents && formData.timelineEvents.length > 0) {
-            const eventsWithUrls = formData.timelineEvents.map((event: any) => ({
-                ...event,
-                imageUrl: event.image, // The image is already a Base64 string
-            }));
-            setTimelineEventsWithPreviews(eventsWithUrls);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
 
@@ -151,6 +118,16 @@ export default function GeneratedPage() {
     const isPuzzleActive = useMemo(() => {
         return isClient && formData?.enablePuzzle && formData?.puzzleImage;
     }, [isClient, formData]);
+    
+    const timelineEventsWithPreviews = useMemo(() => {
+      if (!formData?.timelineEvents) return [];
+      return formData.timelineEvents.map((event: any) => ({
+          ...event,
+          imageUrl: event.image, // The image is already a Base64 string
+          date: event.date?.toDate ? event.date.toDate() : new Date(event.date), // Convert timestamp to Date
+      }));
+    }, [formData?.timelineEvents]);
+
 
     if (loading) {
         return (
@@ -164,12 +141,13 @@ export default function GeneratedPage() {
         );
     }
     
-    if (!formData) {
+    if (!formData || error) {
         return (
              <div className="w-screen h-screen flex items-center justify-center bg-background text-foreground">
                 <div className="text-center">
                     <h1 className="text-4xl font-bold">Página não encontrada</h1>
                     <p className="text-muted-foreground mt-2">O link que você acessou pode estar quebrado ou a página foi removida.</p>
+                     {error && <p className="text-destructive text-sm mt-4">{error.message}</p>}
                 </div>
             </div>
         )
@@ -201,7 +179,7 @@ export default function GeneratedPage() {
 
             {/* Puzzle Overlay */}
              <AnimatePresence>
-                {isPuzzleActive && !puzzleRevealed && puzzlePreview && (
+                {isPuzzleActive && !puzzleRevealed && formData.puzzleImage && (
                     <motion.div
                          initial={{ opacity: 0 }}
                          animate={{ opacity: 1 }}
@@ -217,7 +195,7 @@ export default function GeneratedPage() {
                                 </p>
                             </div>
                             <RealPuzzle
-                                imageSrc={puzzlePreview}
+                                imageSrc={formData.puzzleImage}
                                 showControls={false}
                                 onReveal={() => setPuzzleRevealed(true)}
                                 dimension={puzzleDimension}
@@ -249,13 +227,13 @@ export default function GeneratedPage() {
 
                     {formData.specialDate && (
                         <Countdown 
-                            targetDate={new Date(formData.specialDate).toISOString()} 
+                            targetDate={formData.specialDate?.toDate ? formData.specialDate.toDate().toISOString() : new Date(formData.specialDate).toISOString()} 
                             style={formData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
                             color={formData.countdownColor}
                         />
                     )}
                     
-                    {formData.timelineEvents && formData.timelineEvents.length > 0 && timelineEventsWithPreviews.length > 0 && (
+                    {timelineEventsWithPreviews.length > 0 && (
                         <div className="text-center">
                              <Button
                                 onClick={() => setShowTimeline(true)}
@@ -267,7 +245,7 @@ export default function GeneratedPage() {
                         </div>
                     )}
 
-                    {galleryPreviews.length > 0 && (
+                    {formData.galleryImages && formData.galleryImages.length > 0 && (
                         <div className="w-full max-w-md mx-auto py-8">
                             <Swiper
                                 key={formData.galleryStyle}
@@ -298,7 +276,7 @@ export default function GeneratedPage() {
                                 modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
                                 className="mySwiper"
                             >
-                                {galleryPreviews.map((preview: string, index: number) => (
+                                {formData.galleryImages.map((preview: string, index: number) => (
                                     <SwiperSlide key={index} className="bg-transparent">
                                         <div className="relative w-full aspect-square">
                                             <Image src={preview} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" unoptimized/>

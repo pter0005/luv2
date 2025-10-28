@@ -3,6 +3,9 @@
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { initializeFirebase } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { PageData } from './CreatePageWizard';
 
 /**
  * Handles the form submission for AI content suggestions.
@@ -32,7 +35,7 @@ type PayerData = {
     payerCpf: string;
 }
 
-export async function createPixPayment(payerData: PayerData, pageTitle: string, pageId: string) {
+export async function createPixPayment(payerData: PayerData, pageTitle: string) {
     const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
     
     if (!accessToken) {
@@ -70,7 +73,7 @@ export async function createPixPayment(payerData: PayerData, pageTitle: string, 
                     },
                 },
                  notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/mercadopago`,
-                 external_reference: pageId,
+                 // We will set external_reference after creating the doc in Firestore
             },
         });
 
@@ -116,4 +119,22 @@ export async function checkPaymentStatus(paymentId: number) {
     }
 }
 
-    
+export async function createLovePage(pageData: PageData) {
+    try {
+        const { firestore } = initializeFirebase();
+        const lovePagesCollection = collection(firestore, 'lovepages');
+
+        // We remove the payment details before saving to Firestore for security and privacy.
+        const { payment, ...lovePageDataToSave } = pageData;
+        
+        const docRef = await addDoc(lovePagesCollection, {
+            ...lovePageDataToSave,
+            createdAt: serverTimestamp(),
+        });
+
+        return { pageId: docRef.id };
+    } catch (error: any) {
+        console.error("Error creating love page in Firestore:", error);
+        return { error: "Não foi possível salvar os dados da sua página. Por favor, tente novamente." };
+    }
+}

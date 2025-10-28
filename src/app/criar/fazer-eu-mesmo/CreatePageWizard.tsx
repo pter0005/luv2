@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -40,7 +38,7 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
-import { handleSuggestContent, createPixPayment, checkPaymentStatus } from "./actions";
+import { handleSuggestContent, createPixPayment, checkPaymentStatus, createLovePage } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import RealPuzzle from "@/components/puzzle/Puzzle";
 import { initMercadoPago } from '@mercadopago/sdk-react';
@@ -102,7 +100,7 @@ const pageSchema = z.object({
   payment: paymentSchema,
 });
 
-type PageData = z.infer<typeof pageSchema>;
+export type PageData = z.infer<typeof pageSchema>;
 
 const steps = [
   {
@@ -1275,8 +1273,8 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         setError(null);
         setPixData(null);
         
-        const mockPageId = `page-${Date.now()}`;
         const payerData = getValues("payment");
+        const allPageData = getValues();
 
          if (!payerData.payerCpf || !payerData.payerEmail || !payerData.payerFirstName || !payerData.payerLastName) {
             setError("Por favor, preencha todos os dados do pagador.");
@@ -1285,25 +1283,25 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
         }
 
         try {
-            const allPageData = getValues();
             const serializableData = await getSerializablePageData(allPageData);
-
-            localStorage.setItem(`form-data-${mockPageId}`, JSON.stringify(serializableData));
             
-            const result = await createPixPayment(payerData, allPageData.title, mockPageId);
+            const paymentResult = await createPixPayment(payerData, allPageData.title);
 
-            if (result.pixData) {
-                setPixData(result.pixData);
-                setCreatedPageId(mockPageId); 
-                startPolling(result.pixData.paymentId);
+            if (paymentResult.pixData) {
+                setPixData(paymentResult.pixData);
+                const pageCreationResult = await createLovePage(serializableData);
+                 if (pageCreationResult.pageId) {
+                    setCreatedPageId(pageCreationResult.pageId);
+                    startPolling(paymentResult.pixData.paymentId);
+                 } else {
+                     setError(pageCreationResult.error || "Falha ao salvar a página no banco de dados.");
+                 }
             } else {
-                setError(result.error || 'Não foi possível gerar o pagamento PIX.');
-                localStorage.removeItem(`form-data-${mockPageId}`);
+                setError(paymentResult.error || 'Não foi possível gerar o pagamento PIX.');
             }
         } catch (e: any) {
              console.error("Failed to process payment:", e);
              setError("Ocorreu um erro ao processar os dados da sua página. Isso geralmente acontece com muitas imagens ou vídeos. Por favor, tente recarregar a página e simplificar um pouco.");
-             localStorage.removeItem(`form-data-${mockPageId}`);
         } finally {
             setIsProcessing(false);
         }
@@ -1458,7 +1456,7 @@ const PaymentStep = ({ setPaymentComplete, setCreatedPageId }: { setPaymentCompl
                                       {...restField}
                                       placeholder="000.000.000-00"
                                       onChange={(e) => {
-                                        onChange(cpfMask(e.target.value))
+                                        onChange(e.target.value)
                                       }}
                                     />
                                 </FormControl>
@@ -1648,12 +1646,6 @@ export default function CreatePageWizard() {
   
   useEffect(() => {
     setIsClient(true);
-    // Clear any previous page-specific data to start fresh
-    Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('form-data-page-')) {
-            localStorage.removeItem(key);
-        }
-    });
 
     if (process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY) {
         initMercadoPago(process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY, { locale: 'pt-BR' });
@@ -1699,20 +1691,10 @@ export default function CreatePageWizard() {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    const subscription = methods.watch((value) => {
+    const subscription = methods.watch(async (value) => {
         try {
-            // We need a way to handle File objects for localStorage
-            const serializableValue = JSON.stringify(value, (key, val) => {
-                if (val instanceof File) {
-                    // We can't store the file itself, so we store a placeholder.
-                    // The user will need to re-upload files on refresh.
-                    // A more advanced implementation could use FileReader to store as Base64,
-                    // but that can be slow and storage-intensive for large files.
-                    return null; 
-                }
-                return val;
-            });
-            localStorage.setItem('form-data-autosave', serializableValue);
+            const serializableValue = await getSerializablePageData(value as PageData);
+            localStorage.setItem('form-data-autosave', JSON.stringify(serializableValue));
         } catch (e) {
             console.warn("Could not save form data to localStorage.", e);
         }
@@ -2061,5 +2043,3 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
         </>
     )
 }
-
-    
