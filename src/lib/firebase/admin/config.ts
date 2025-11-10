@@ -7,10 +7,9 @@ import fs from 'fs';
 
 let app: App;
 
-const initializeAppOnce = () => {
+const initializeAppOnce = (): App => {
     if (getApps().length > 0) {
-        app = getApps()[0];
-        return;
+        return getApps()[0];
     }
 
     console.log("--- Firebase Admin SDK Initialization ---");
@@ -48,20 +47,25 @@ const initializeAppOnce = () => {
 
     try {
         console.log(`[LOG] Initializing app for project '${serviceAccount.project_id}'...`);
-        app = initializeApp({
+        const newApp = initializeApp({
             credential: cert(serviceAccount),
             storageBucket: `${serviceAccount.project_id}.appspot.com`
         });
         console.log("--- Firebase Admin SDK Initialized Successfully ---");
+        return newApp;
     } catch (e: any) {
         console.error("!!! FATAL ERROR INITIALIZING FIREBASE ADMIN !!!", e);
         throw new Error(`Failed to initialize Firebase Admin: ${e.message}`);
     }
 };
 
-// Ensure initialization is run only once
-initializeAppOnce();
+const getApp = (): App => {
+    if (!app) {
+        app = initializeAppOnce();
+    }
+    return app;
+}
 
 // Export getters for the initialized services
-export const getAdminFirestore = () => getFirestore(app);
-export const getAdminStorage = () => getStorage(app).bucket();
+export const getAdminFirestore = () => getFirestore(getApp());
+export const getAdminStorage = () => getStorage(getApp()).bucket();
