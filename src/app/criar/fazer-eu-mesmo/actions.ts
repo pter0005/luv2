@@ -165,11 +165,7 @@ export async function initiatePayment(payerData: PayerData, pageData: PageData) 
     
     const unit_price = 0.01; // TEST PRICE
     const cleanCpf = payerData.payerCpf.replace(/\D/g, '');
-    const notificationUrl = process.env.NEXT_PUBLIC_SITE_URL
-        ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/mercadopago`
-        : "https://b2gether.love/api/webhook/mercadopago";
         
-    // We generate a new ID that will be used for both the payment and the future love page
     const pageId = firestore.collection('lovepages').doc().id;
 
     try {
@@ -185,8 +181,7 @@ export async function initiatePayment(payerData: PayerData, pageData: PageData) 
                     last_name: payerData.payerLastName,
                     identification: { type: 'CPF', number: cleanCpf },
                 },
-                notification_url: notificationUrl,
-                external_reference: pageId, // Link payment to our generated page ID
+                external_reference: pageId, 
             },
             idempotencyKey: pageId, 
         });
@@ -206,10 +201,10 @@ export async function initiatePayment(payerData: PayerData, pageData: PageData) 
         const paymentRef = firestore.collection('payments').doc(result.id.toString());
         await paymentRef.set({
             status: 'pending',
-            lovePageId: pageId, // Associate the payment with our page ID
+            lovePageId: pageId, 
             createdAt: FieldValue.serverTimestamp(),
             payer_email: payerData.payerEmail,
-            lovePageData: pageData, // Save the entire page data for the webhook to use
+            lovePageData: pageData, 
         });
         console.log(`[ACTION LOG] Payment document saved for paymentId: ${result.id} linked to lovePageId: ${pageId}`);
 
