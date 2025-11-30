@@ -5,7 +5,6 @@ import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import type { PageData, TimelineEvent, FileWithPreview } from './CreatePageWizard';
 import 'dotenv/config';
-import type { FieldValue } from 'firebase-admin/firestore';
 import type { Bucket } from '@google-cloud/storage';
 
 /**
@@ -164,7 +163,7 @@ export async function initiatePayment(payerData: PayerData, pageData: PageData) 
     }
 
     const { getAdminFirestore } = await import('@/lib/firebase/admin/config');
-    const { FieldValue } } from await import('firebase-admin/firestore');
+    const { FieldValue } = await import('firebase-admin/firestore');
     const firestore = getAdminFirestore();
 
     const client = new MercadoPagoConfig({ accessToken });
@@ -287,5 +286,3 @@ export async function checkPaymentStatus(paymentId: string) {
         throw new Error(error.message || 'Falha ao verificar o status do pagamento.');
     }
 }
-
-    

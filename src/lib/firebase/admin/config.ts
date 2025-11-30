@@ -1,15 +1,14 @@
 
 import { initializeApp, getApps, App, cert, ServiceAccount } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
+import { getFirestore as getAdminFirestoreInstance, Firestore } from 'firebase-admin/firestore';
+import { getStorage as getAdminStorageInstance, Storage } from 'firebase-admin/storage';
 import path from 'path';
 import fs from 'fs';
 
 let app: App | null = null;
 
 // This function ensures the Firebase Admin SDK is initialized only once.
-const initializeAppOnce = (): App => {
-    // If already initialized, return the existing instance.
+const initializeAdminApp = (): App => {
     if (getApps().length > 0) {
         return getApps()[0];
     }
@@ -17,7 +16,6 @@ const initializeAppOnce = (): App => {
     console.log("--- [Admin SDK] Initializing... ---");
     let serviceAccount: ServiceAccount;
 
-    // The primary method for production: environment variables.
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
         console.log("[Admin SDK] Found FIREBASE_SERVICE_ACCOUNT environment variable.");
         try {
@@ -28,7 +26,6 @@ const initializeAppOnce = (): App => {
             throw new Error(errorMsg);
         }
     } else {
-        // This is a fallback for local development and should not be used in production.
         console.warn("[Admin SDK] WARNING: FIREBASE_SERVICE_ACCOUNT env var not found. Falling back to local file.");
         const serviceAccountPath = path.resolve(process.cwd(), 'firebase-service-account.json');
         
@@ -42,7 +39,6 @@ const initializeAppOnce = (): App => {
         serviceAccount = JSON.parse(serviceAccountJson);
     }
     
-    // Validate required fields
     if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
         const errorMsg = "CRITICAL FAILURE: Service account is missing required fields (project_id, client_email, private_key).";
         console.error(errorMsg);
@@ -64,14 +60,13 @@ const initializeAppOnce = (): App => {
 };
 
 // Lazy getter for the app instance.
-// This prevents initialization from running at module-load time (which breaks Next.js build).
 const getApp = (): App => {
     if (!app) {
-        app = initializeAppOnce();
+        app = initializeAdminApp();
     }
     return app;
 }
 
 // Export getters for the services. These will trigger initialization on their first use.
-export const getAdminFirestore = () => getFirestore(getApp());
-export const getAdminStorage = () => getStorage(getApp()).bucket();
+export const getAdminFirestore = () => getAdminFirestoreInstance(getApp());
+export const getAdminStorage = () => getAdminStorageInstance(getApp()).bucket();
