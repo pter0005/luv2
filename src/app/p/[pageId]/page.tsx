@@ -180,7 +180,7 @@ export default function GeneratedPage() {
                     </video>
                 )}
                 {isClient && formData.backgroundAnimation === 'custom-video' && formData.backgroundVideo && (
-                <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                <video key={formData.backgroundVideo} ref={customVideoRef} autoPlay loop muted playsInline src={formData.backgroundVideo} className="absolute inset-0 w-full h-full object-cover">
                 </video>
                 )}
             </div>

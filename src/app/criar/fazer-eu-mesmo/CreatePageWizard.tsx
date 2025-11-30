@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -39,7 +40,7 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
-import { handleSuggestContent, initiatePayment, checkPaymentStatus } from "./actions";
+import { handleSuggestContent, initiatePayment } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import RealPuzzle from "@/components/puzzle/Puzzle";
 import { initMercadoPago } from '@mercadopago/sdk-react';
@@ -56,7 +57,7 @@ const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   loading: () => <div className="w-full h-48 flex items-center justify-center bg-zinc-800/50 rounded-lg"><Loader2 className="animate-spin text-primary" /></div>
 });
 
-const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
+const Timeline = dynamic(() => import('./Timeline'), { ssr: false });
 
 const cpfMask = (value: string) => {
     if (!value) return "";
@@ -1375,7 +1376,6 @@ const PaymentStep = ({ setPixData, setPageId, setPaymentComplete, pageId }: {
 
 const WaitingForPaymentStep = ({ pixData, pageId, setPaymentComplete }: { pixData: PixData, pageId: string | null, setPaymentComplete: (v: boolean) => void }) => {
     const { toast } = useToast();
-    const [isChecking, setIsChecking] = useState(false);
     const { firestore } = useFirebase();
 
     const lovePageRef = useMemoFirebase(() => {
@@ -1399,26 +1399,6 @@ const WaitingForPaymentStep = ({ pixData, pageId, setPaymentComplete }: { pixDat
         });
     }
 
-    const handleCheckPayment = async () => {
-        if (!pixData?.paymentId || isChecking) return;
-
-        setIsChecking(true);
-        try {
-            const result = await checkPaymentStatus(String(pixData.paymentId));
-            if (result.status === 'approved') {
-                toast({ title: 'Pagamento Aprovado!', description: 'Sua página está sendo liberada.' });
-                // The useDoc hook will handle setting paymentComplete
-            } else {
-                toast({ variant: 'default', title: 'Pagamento Pendente', description: 'A confirmação do pagamento ainda não foi recebida. Tente novamente em alguns segundos.' });
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Erro ao Verificar', description: error.message || 'Não foi possível verificar o status do pagamento.' });
-        } finally {
-            setIsChecking(false);
-        }
-    };
-
-
     return (
         <div className="flex flex-col items-center text-center gap-6">
             <div className="p-4 bg-primary/10 rounded-full border-2 border-primary/30">
@@ -1439,12 +1419,8 @@ const WaitingForPaymentStep = ({ pixData, pageId, setPaymentComplete }: { pixDat
                     </Button>
                 </div>
             </Card>
-
-            <Button onClick={handleCheckPayment} disabled={isChecking} className="w-full max-w-xs mt-4" size="lg">
-                {isChecking ? <Loader2 className="animate-spin" /> : 'Já fiz o pagamento'}
-            </Button>
              <p className="text-xs text-muted-foreground max-w-xs">
-                Após pagar, sua página será liberada automaticamente. Se preferir, pode clicar no botão acima para verificar.
+                Após pagar, sua página será liberada automaticamente. Se o pagamento não for confirmado, você não será cobrado e poderá tentar novamente mais tarde.
             </p>
         </div>
     );

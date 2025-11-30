@@ -463,14 +463,24 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
    Page/Component Export
    ========================= */
 
-export default function StellarCardGallerySingle({ events: allCards, onClose }: { events: Card[], onClose: () => void }) {
+export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
+  const [isClient, setIsClient] = useState(false);
   
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const { isMobile } = useScreenOrientation();
 
   const cards = useMemo(() => {
+      if (!isClient) return []; // Don't render cards on server
       const limit = isMobile ? 15 : 25;
-      return allCards.slice(0, limit);
-  }, [allCards, isMobile]);
+      return events.slice(0, limit);
+  }, [events, isMobile, isClient]);
+  
+  if (!isClient) {
+      return null;
+  }
   
   if (cards.length === 0) {
       return (
