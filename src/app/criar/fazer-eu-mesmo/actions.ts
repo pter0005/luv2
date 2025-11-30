@@ -1,11 +1,12 @@
+
 'use server';
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
-import { FieldValue } from 'firebase-admin/firestore';
 import type { PageData, TimelineEvent, FileWithPreview } from './CreatePageWizard';
 import 'dotenv/config';
+import type { FieldValue } from 'firebase-admin/firestore';
+import type { Bucket } from '@google-cloud/storage';
 
 /**
  * Handles the form submission for AI content suggestions.
@@ -35,7 +36,7 @@ type PayerData = {
     payerCpf: string;
 }
 
-const uploadFileToStorage = async (storage: any, fileSource: File | string | undefined | null, storagePath: string): Promise<string | null> => {
+const uploadFileToStorage = async (storage: Bucket, fileSource: File | string | undefined | null, storagePath: string): Promise<string | null> => {
     if (!fileSource) return null;
     
     const fileRef = storage.file(storagePath);
@@ -78,6 +79,9 @@ const uploadFileToStorage = async (storage: any, fileSource: File | string | und
 export async function createLovePage(pageData: PageData, pageId: string) {
     console.log(`--- [ACTION] Creating Love Page with ID: ${pageId} ---`);
     try {
+        const { getAdminFirestore, getAdminStorage } = await import('@/lib/firebase/admin/config');
+        const { FieldValue } = await import('firebase-admin/firestore');
+        
         const firestore = getAdminFirestore();
         const storage = getAdminStorage();
         
@@ -159,7 +163,10 @@ export async function initiatePayment(payerData: PayerData, pageData: PageData) 
         return { error: 'A configuração de pagamento não está disponível no momento.' };
     }
 
+    const { getAdminFirestore } = await import('@/lib/firebase/admin/config');
+    const { FieldValue } } from await import('firebase-admin/firestore');
     const firestore = getAdminFirestore();
+
     const client = new MercadoPagoConfig({ accessToken });
     const payment = new Payment(client);
     
@@ -236,7 +243,10 @@ export async function checkPaymentStatus(paymentId: string) {
         console.log(`[ACTION LOG] Mercado Pago status for ${paymentId} is '${paymentInfo.status}'.`);
 
         if (paymentInfo.status === 'approved') {
+            const { getAdminFirestore } = await import('@/lib/firebase/admin/config');
+            const { FieldValue } = await import('firebase-admin/firestore');
             const firestore = getAdminFirestore();
+
             const paymentRef = firestore.collection('payments').doc(paymentId);
             const paymentDoc = await paymentRef.get();
 
@@ -277,3 +287,5 @@ export async function checkPaymentStatus(paymentId: string) {
         throw new Error(error.message || 'Falha ao verificar o status do pagamento.');
     }
 }
+
+    
