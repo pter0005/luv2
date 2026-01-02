@@ -213,7 +213,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="container flex min-h-screen items-center justify-center py-12">
+    <div className="container flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Acesse sua Conta</CardTitle>
@@ -303,5 +303,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-
-    

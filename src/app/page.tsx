@@ -222,7 +222,7 @@ export default function Home() {
                 </Link>
             </div>
             <motion.div 
-                className="relative w-full h-[70vh] md:h-[70vh] rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
+                className="relative w-full h-[60vh] md:h-[70vh] rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
                 style={{ y }}
                 initial={{ opacity: 0, y: 50, rotate: 5 }}
                 animate={{ opacity: 1, y: 0, rotate: 0 }}

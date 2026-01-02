@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera } from "lucide-react";
+import { ArrowLeft, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -41,10 +41,6 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import FallingHearts from "@/components/effects/FallingHearts";
-import StarrySky from "@/components/effects/StarrySky";
-import MysticVortex from "@/components/effects/MysticVortex";
-import FloatingDots from "@/components/effects/FloatingDots";
 import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -54,6 +50,9 @@ import { fileToBase64, compressImage } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useStorage } from "@/firebase";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import PreviewContent from "./PreviewContent";
 
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
@@ -1247,8 +1246,6 @@ const WizardInternal = () => {
   const [puzzleDimension, setPuzzleDimension] = useState(360);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
 
-  const cloudsVideoRef = useRef<HTMLVideoElement>(null);
-  const customVideoRef = useRef<HTMLVideoElement>(null);
   const [activeUploads, setActiveUploads] = useState(0);
 
 
@@ -1401,18 +1398,6 @@ const WizardInternal = () => {
   // --- END AUTOSAVE LOGIC ---
 
 
-  useEffect(() => {
-    if (cloudsVideoRef.current) {
-      cloudsVideoRef.current.playbackRate = 0.6;
-    }
-  }, [formData.backgroundAnimation]);
-
-  const backgroundVideoPreview = useMemo(() => {
-      if (formData.backgroundVideo?.url && typeof formData.backgroundVideo.url === 'string') {
-          return formData.backgroundVideo.url;
-      }
-  }, [isClient, formData.backgroundVideo]);
-
   const handleNext = async () => {
     if (activeUploads > 0) {
         toast({
@@ -1547,18 +1532,12 @@ const WizardInternal = () => {
       <form onSubmit={(e) => e.preventDefault()}>
         <div className="grid md:grid-cols-2 gap-8 min-h-[calc(100vh_-_10rem)]">
           {/* Coluna da Esquerda: Preview */}
-          <div className="h-full w-full md:sticky top-24 flex items-center justify-center p-4">
-            <PreviewContent 
+          <div className="hidden md:flex h-full w-full md:sticky top-24 items-center justify-center p-4">
+             <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
                 onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
-                isPuzzleActive={isPuzzleActive}
-                puzzleRevealed={puzzleRevealed}
-                handlePuzzleReveal={() => setPuzzleRevealed(true)}
-                puzzleDimension={puzzleDimension}
-                cloudsVideoRef={cloudsVideoRef}
-                customVideoRef={customVideoRef}
             />
           </div>
 
@@ -1578,6 +1557,29 @@ const WizardInternal = () => {
                 <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
                 <p className="text-muted-foreground">{steps[currentStep].description}</p>
             </div>
+             {/* Mobile Preview Button */}
+            <div className="md:hidden sticky top-24 z-30">
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full shadow-lg">
+                           <Eye className="mr-2 h-4 w-4" /> Ver Preview
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] h-[80vh] flex flex-col p-2">
+                        <DialogHeader className="p-2 pb-0">
+                           <DialogTitle>Preview da Página</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-grow overflow-hidden">
+                           <PreviewContent 
+                                formData={formData} 
+                                isClient={isClient}
+                                onShowTimeline={() => setShowTimelinePreview(true)}
+                                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
             <div className="min-h-[400px]">
                 {StepComponent}
             </div>
@@ -1588,20 +1590,9 @@ const WizardInternal = () => {
   );
 }
 
+
 // Componente de Preview em formato de Browser
-const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, handlePuzzleReveal, puzzleDimension, cloudsVideoRef, customVideoRef, onShowTimeline, hasValidTimelineEvents }: any) => {
-    
-    const puzzlePreviewUrl = useMemo(() => {
-        return formData.puzzleImage?.url || null;
-    }, [formData.puzzleImage]);
-
-    const backgroundVideoPreview = useMemo(() => {
-        if (formData.backgroundVideo?.url && typeof formData.backgroundVideo.url === 'string') {
-            return formData.backgroundVideo.url;
-        }
-        return null;
-    }, [formData.backgroundVideo]);
-
+const OldPreviewContent = ({ formData, isClient, onShowTimeline, hasValidTimelineEvents }: any) => {
     return (
         <div className="w-full h-full max-w-2xl aspect-[16/10] bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
             {/* Background Animations */}
@@ -1611,49 +1602,10 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                 {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
                 {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
                 {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
-                {isClient && formData.backgroundAnimation === 'clouds' && (
-                    <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                        <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
-                    </video>
-                )}
-                {isClient && formData.backgroundAnimation === 'custom-video' && backgroundVideoPreview && (
-                <video key={backgroundVideoPreview} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                    <source src={backgroundVideoPreview} type={backgroundVideoPreview.startsWith('data:video/webm') ? 'video/webm' : 'video/mp4'} />
-                </video>
-                )}
             </div>
 
-            {/* Puzzle Overlay */}
-             <AnimatePresence>
-                {isPuzzleActive && !puzzleRevealed && puzzlePreviewUrl && (
-                    <motion.div
-                         initial={{ opacity: 0 }}
-                         animate={{ opacity: 1 }}
-                         exit={{ opacity: 0 }}
-                         transition={{ duration: 0.5 }}
-                         className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center p-8 bg-black/80 backdrop-blur-sm"
-                    >
-                        <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8">
-                            <div>
-                                <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2">Um enigma para você...</h2>
-                                <p className="text-muted-foreground text-sm md:text-base">
-                                    Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
-                                </p>
-                            </div>
-                            <RealPuzzle 
-                                imageSrc={puzzlePreviewUrl} 
-                                showControls={false}
-                                onReveal={handlePuzzleReveal}
-                                dimension={puzzleDimension}
-                            />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            
-
             {/* Main Content */}
-            <div className={cn("relative z-10 w-full h-full flex flex-col", isPuzzleActive && !puzzleRevealed && "blur-sm pointer-events-none")}>
+            <div className={cn("relative z-10 w-full h-full flex flex-col")}>
                 {/* Browser Chrome */}
                 <div className="bg-zinc-800 rounded-t-lg p-2 flex items-center gap-1.5 border-b border-zinc-700 shrink-0">
                     <div className="flex items-center gap-1.5">
@@ -1687,15 +1639,6 @@ const PreviewContent = ({ formData, isClient, puzzleRevealed, isPuzzleActive, ha
                                 {formData.message || 'Sua mensagem de amor...'}
                             </p>
                             </div>
-                            
-
-                            {formData.specialDate && (
-                                <Countdown 
-                                    targetDate={new Date(formData.specialDate).toISOString()} 
-                                    style={formData.countdownStyle as "Padrão" | "Simples"}
-                                    color={formData.countdownColor}
-                                />
-                            )}
                             
                             {hasValidTimelineEvents && (
                                 <div className="text-center">

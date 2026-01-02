@@ -128,7 +128,7 @@ export default function Header() {
             height={180}
             className={cn(
               "transition-all duration-300",
-              isScrolled ? "w-40 h-40" : "w-48 h-48 md:w-56 md:h-56"
+              isScrolled ? "w-36 h-36" : "w-48 h-48 md:w-56 md:h-56"
             )}
             data-ai-hint="logo"
           />
