@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Pasta Temporária: O usuário SÓ mexe no que é DELE
+    // O {userId} no match cria uma variável que a gente compara com o request.auth.uid
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Pastas Finais: Leitura pública, escrita bloqueada (Admin SDK faz o serviço)
+    match /gallery-images/{allPaths=**} { allow read: if true; allow write: if false; }
+    match /timeline-images/{allPaths=**} { allow read: if true; allow write: if false; }
+    match /puzzle-images/{allPaths=**} { allow read: if true; allow write: if false; }
+    match /background-videos/{allPaths=**} { allow read: if true; allow write: if false; }
+    match /audio-recordings/{allPaths=**} { allow read: if true; allow write: if false; }
+  }
+}

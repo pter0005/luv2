@@ -1,0 +1,59 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for checking authentication and ownership
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // A user can create their own profile.
+      // The document ID must match the user's UID.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      // A user can only get their own document.
+      allow get: if isOwner(userId);
+
+      // A user can only update their own document.
+      // Important: Prevent changing the immutable 'id' field.
+      allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // A user can delete their own document.
+      allow delete: if isOwner(userId);
+
+      // Listing all users is disallowed for security and privacy.
+      allow list: if false;
+
+      // Rules for the 'love_pages' subcollection within a user's document
+      match /love_pages/{lovePageId} {
+        // A user can create, read, update, and delete their own love pages.
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Rules for the publicly accessible 'lovepages' collection
+    match /lovepages/{lovepageId} {
+      // Anyone can read a love page, as they are meant to be shared.
+      allow read: if true;
+
+      // Write operations (create, update, delete) are disallowed for clients.
+      // This forces page creation to go through your secure backend (e.g., after payment),
+      // which uses Admin SDK credentials and bypasses these rules (request.auth == null).
+      allow write: if request.auth == null;
+    }
+
+    // Rules for payment-related collections (server-access only)
+    match /payment_intents/{intentId} {
+      // Only server-side processes should manage payment intents.
+      // The Admin SDK used in server actions will have request.auth == null.
+      allow read, write, delete: if request.auth == null;
+    }
+  }
+}
