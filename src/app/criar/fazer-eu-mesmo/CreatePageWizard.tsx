@@ -48,11 +48,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSearchParams } from 'next/navigation'
 import { fileToBase64, compressImage } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
-import { useUser, useStorage } from "@/firebase";
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import PreviewContent from "./PreviewContent";
+import { useUser, useFirebase } from "@/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
@@ -89,8 +86,7 @@ const paymentSchema = z.object({
 });
 
 export const fileWithPreviewSchema = z.object({
-    url: z.string().url({ message: "URL de pré-visualização inválida." }),
-    path: z.string(),
+    preview: z.string().url({ message: "URL de pré-visualização inválida." }),
 });
 export type FileWithPreview = z.infer<typeof fileWithPreviewSchema>;
 
@@ -127,7 +123,7 @@ const pageSchema = z.object({
   artistName: z.string().optional(),
   backgroundAnimation: z.string().default("none"),
   heartColor: z.string().default("#8B5CF6"),
-  backgroundVideo: fileWithPreviewSchema.optional(),
+  backgroundVideo: z.string().optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
   payment: paymentSchema.optional(),
@@ -364,76 +360,61 @@ const SpecialDateStep = () => {
     );
 };
 
+// Helper function to upload a file to Firebase Storage
+const uploadFileToStorage = async (storage: any, userId: string, file: Blob, path: string): Promise<string> => {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}-${(file as File).name}`;
+    const fileRef = storageRef(storage, `${path}/${userId}/${fileName}`);
 
-const GalleryStep = ({ uploadFile }: { uploadFile: (file: File, path: string) => Promise<{ downloadURL: string, fullPath: string } | null> }) => {
+    await uploadBytes(fileRef, file);
+    const downloadURL = await getDownloadURL(fileRef);
+    return downloadURL;
+};
+
+const GalleryStep = () => {
     const { control, formState: { errors } } = useFormContext<PageData>();
-    const { fields, append, remove, update } = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control,
         name: "galleryImages",
     });
-
-    const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
     const { user } = useUser();
-    
-    // Track upload progress for each image being uploaded
+    const { storage } = useFirebase();
+    const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
+    const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && user) {
-            const availableSlots = MAX_GALLERY_IMAGES - fields.length;
-            if (availableSlots <= 0) return;
+        if (!event.target.files || !user || !storage) return;
 
-            const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        const availableSlots = MAX_GALLERY_IMAGES - fields.length;
+        if (availableSlots <= 0) return;
 
-            // Add placeholders immediately
-            const newFields = filesArray.map(file => {
-                const tempId = `placeholder-${Date.now()}-${Math.random()}`;
-                append({ url: '', path: tempId }); // Append placeholder
-                return { file, tempId, placeholderIndex: fields.length + filesArray.indexOf(file) };
+        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        toast({ title: 'Enviando imagens...', description: 'Aguarde um momento.' });
+
+        try {
+            const uploadPromises = filesArray.map(async file => {
+                const compressedFile = await compressImage(file); // Returns a Blob
+                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'gallery-images');
+                return { preview: downloadURL };
             });
 
-            await Promise.all(
-              newFields.map(async ({file, tempId, placeholderIndex}) => {
-                const { id: toastId, update: updateToast } = toast({
-                    title: `Enviando ${file.name}...`,
-                    description: <Progress value={0} className="w-full" />,
-                    duration: Infinity,
-                });
-                try {
-                    const compressedFile = await compressImage(file) as File;
-                    const path = `temp/${user.uid}/gallery/${Date.now()}_${file.name}`;
-                    const result = await uploadFile(compressedFile, path);
-                    
-                    if (result) {
-                        update(placeholderIndex, { url: result.downloadURL, path: result.fullPath });
-                        updateToast({
-                            title: 'Envio Concluído!',
-                            description: `${file.name} foi salvo.`,
-                            duration: 3000
-                        });
-                    } else {
-                         throw new Error("Upload failed");
-                    }
-                } catch (error) {
-                    console.error("Upload error:", error);
-                    updateToast({
-                        variant: 'destructive',
-                        title: 'Falha no Envio',
-                        description: `Não foi possível enviar ${file.name}.`,
-                        duration: 5000
-                    });
-                    const fieldToRemove = fields.findIndex(f => f.path === tempId);
-                    if(fieldToRemove !== -1) remove(fieldToRemove);
-                }
-              })
-            );
+            const newImageObjects = await Promise.all(uploadPromises);
+            append(newImageObjects);
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas à galeria.' });
+        } catch (error) {
+            console.error("Error uploading files:", error);
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar as imagens.' });
+        } finally {
+            setIsUploading(false);
         }
-    }
+    };
+
 
     const removeImage = (index: number) => {
         remove(index);
-        // Here you would also add logic to delete the image from Firebase Storage
     };
     
     
@@ -447,11 +428,15 @@ const GalleryStep = ({ uploadFile }: { uploadFile: (file: File, path: string) =>
                         htmlFor="photo-upload"
                         className={cn(
                             "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
-                            isLimitReached && "cursor-not-allowed opacity-50"
+                            (isLimitReached || isUploading) && "cursor-not-allowed opacity-50"
                         )}
                     >
-                        <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                        <p className="font-semibold">Clique para adicionar fotos</p>
+                        {isUploading ? (
+                            <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                        ) : (
+                            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                        )}
+                        <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
                         <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
                         <input
                             id="photo-upload"
@@ -460,7 +445,7 @@ const GalleryStep = ({ uploadFile }: { uploadFile: (file: File, path: string) =>
                             accept="image/*"
                             className="hidden"
                             onChange={handleFileChange}
-                            disabled={isLimitReached}
+                            disabled={isLimitReached || isUploading}
                         />
                     </label>
                 </FormControl>
@@ -472,7 +457,7 @@ const GalleryStep = ({ uploadFile }: { uploadFile: (file: File, path: string) =>
                         {fields.map((field, index) => (
                             <div key={field.id} className="relative group aspect-square">
                                 <Image
-                                    src={(field as any).url || 'https://via.placeholder.com/150'}
+                                    src={(field as any).preview || 'https://via.placeholder.com/150'}
                                     alt={`Pré-visualização da imagem ${index + 1}`}
                                     fill
                                     className="rounded-md object-cover"
@@ -495,39 +480,47 @@ const GalleryStep = ({ uploadFile }: { uploadFile: (file: File, path: string) =>
     );
 };
 
-const TimelineStep = ({ uploadFile }: { uploadFile: (file: File, path: string) => Promise<{ downloadURL: string, fullPath: string } | null> }) => {
+const TimelineStep = () => {
     const { control, trigger, formState: { errors } } = useFormContext<PageData>();
     const { fields, append: appendTimeline, remove, update } = useFieldArray({
         control,
         name: "timelineEvents",
     });
+
     const { user } = useUser();
+    const { storage } = useFirebase();
+    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+    const { toast } = useToast();
+
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
-        if (event.target.files && event.target.files[0] && user) {
+        if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
+            setUploadingIndex(index);
+            toast({ title: "Enviando imagem...", description: "Aguarde um momento."});
+
             try {
-                const compressedFile = await compressImage(file, 800, 0.7) as File;
-                const path = `temp/${user.uid}/timeline/${Date.now()}_${file.name}`;
-                const result = await uploadFile(compressedFile, path);
-                
-                if (result) {
-                    const currentEvent = fields[index];
-                    update(index, { ...currentEvent, image: { url: result.downloadURL, path: result.fullPath } });
-                    trigger(`timelineEvents.${index}.image`);
-                } else {
-                    throw new Error("Upload failed");
-                }
+                const compressedFile = await compressImage(file, 800, 0.7); // Returns a Blob
+                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'timeline-images');
+
+                const newImageObject = { preview: downloadURL };
+                const currentEvent = fields[index];
+                update(index, { ...currentEvent, image: newImageObject });
+                trigger(`timelineEvents.${index}.image`);
+                toast({ title: "Imagem enviada!", description: "A imagem do momento foi atualizada." });
             } catch (error) {
-                console.error("Timeline image upload error:", error);
+                console.error("Error uploading timeline image:", error);
+                toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar a imagem.' });
+            } finally {
+                setUploadingIndex(null);
             }
         }
     };
 
+
     const handleRemove = (index: number) => {
         remove(index);
-        // Here you would also add logic to delete the image from Firebase Storage
     }
 
     const handleAddNewMoment = () => {
@@ -544,25 +537,27 @@ const TimelineStep = ({ uploadFile }: { uploadFile: (file: File, path: string) =
             <p className="text-sm text-muted-foreground">Adicione momentos importantes. Cada momento terá uma imagem, data e uma breve descrição.</p>
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.map((field, index) => {
-                    const imagePreview = (field as any).image && (field as any).image.url;
+                    const imagePreview = (field as any).image && (field as any).image.preview;
 
                     return (
                         <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
-                            <div className="flex-shrink-0">
+                             <div className="flex-shrink-0">
                                 <FormLabel htmlFor={`timeline-image-${index}`}>
                                     <div className={cn(
-                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary",
-                                        imagePreview && "border-solid"
+                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary relative",
+                                        imagePreview && "border-solid",
+                                        uploadingIndex === index && "opacity-50 cursor-not-allowed"
                                     )}>
                                         {imagePreview ? (
                                             <Image src={imagePreview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
                                         ) : (
                                             <Upload className="w-6 h-6 text-muted-foreground" />
                                         )}
+                                        {uploadingIndex === index && <Loader2 className="absolute w-6 h-6 text-primary animate-spin" />}
                                     </div>
                                 </FormLabel>
                                 <FormControl>
-                                    <Input id={`timeline-image-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, index)} />
+                                    <Input id={`timeline-image-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, index)} disabled={uploadingIndex === index} />
                                 </FormControl>
                             </div>
                             <div className="flex-grow space-y-2">
@@ -896,30 +891,15 @@ const animationOptions = [
     { id: "clouds", name: "Nuvens" },
 ];
 
-const BackgroundStep = ({ isVisible, uploadFile }: { isVisible: boolean, uploadFile: (file: File, path: string) => Promise<{ downloadURL: string, fullPath: string } | null> }) => {
+const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const backgroundAnimation = watch("backgroundAnimation");
     const titleColor = watch("titleColor");
-    const customVideoInputRef = useRef<HTMLInputElement>(null);
     const [isClient, setIsClient] = useState(false);
-    const { user } = useUser();
 
     useEffect(() => {
         setIsClient(true);
     }, []);
-
-    const handleVideoFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-      if (event.target.files && event.target.files[0] && user) {
-        const file = event.target.files[0];
-        const path = `temp/${user.uid}/backgrounds/${Date.now()}_${file.name}`;
-        const result = await uploadFile(file, path);
-
-        if (result) {
-            setValue("backgroundVideo", { url: result.downloadURL, path: result.fullPath }, { shouldValidate: true, shouldDirty: true });
-            setValue("backgroundAnimation", "custom-video", { shouldValidate: true, shouldDirty: true });
-        }
-      }
-    };
 
     return (
         <div className="space-y-8">
@@ -931,15 +911,7 @@ const BackgroundStep = ({ isVisible, uploadFile }: { isVisible: boolean, uploadF
                         <FormLabel>Escolha a Animação</FormLabel>
                         <FormControl>
                             <RadioGroup
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    if (value !== 'custom-video') {
-                                        setValue('backgroundVideo', undefined);
-                                        if (customVideoInputRef.current) {
-                                            customVideoInputRef.current.value = '';
-                                        }
-                                    }
-                                }}
+                                onValueChange={field.onChange}
                                 defaultValue={field.value}
                                 className="grid grid-cols-2 gap-4"
                             >
@@ -1004,47 +976,48 @@ const BackgroundStep = ({ isVisible, uploadFile }: { isVisible: boolean, uploadF
                     )}
                 />
             )}
-            <div className="pt-6 border-t border-border/50 text-center">
-              <p className="text-sm text-muted-foreground mb-3">Não gostou de nenhum? Anexe o seu agora mesmo!</p>
-              <label htmlFor="video-upload" className={cn(buttonVariants({ variant: "outline" }), "cursor-pointer")}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Anexar Vídeo
-                  <input id="video-upload" ref={customVideoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoFileChange} />
-              </label>
-            </div>
         </div>
     );
 };
 
-const PuzzleStep = ({ uploadFile }: { uploadFile: (file: File, path: string) => Promise<{ downloadURL: string, fullPath: string } | null> }) => {
+const PuzzleStep = () => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
+
     const { user } = useUser();
-    
+    const { storage } = useFirebase();
+    const { toast } = useToast();
+    const [isUploading, setIsUploading] = useState(false);
+
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0] && user) {
+        if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
+            setIsUploading(true);
+            toast({ title: 'Enviando imagem do quebra-cabeça...' });
+
             try {
-                const compressedFile = await compressImage(file) as File;
-                const path = `temp/${user.uid}/puzzles/${Date.now()}_${file.name}`;
-                const result = await uploadFile(compressedFile, path);
-                if (result) {
-                    setValue("puzzleImage", { url: result.downloadURL, path: result.fullPath }, { shouldValidate: true, shouldDirty: true });
-                }
+                const compressedFile = await compressImage(file);
+                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'puzzle-images');
+                const newImageObject: FileWithPreview = { preview: downloadURL };
+                setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
+                toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
             } catch (error) {
-                console.error("Puzzle image upload error:", error);
+                console.error("Error uploading puzzle image:", error);
+                toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar a imagem.' });
+            } finally {
+                setIsUploading(false);
             }
         }
     };
 
+
     const removePuzzleImage = () => {
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
-        // Here you would also add logic to delete the image from Firebase Storage
     };
 
     const puzzlePreviewUrl = useMemo(() => {
-        return puzzleImage?.url || null;
+        return puzzleImage?.preview || null;
     }, [puzzleImage]);
     
     return (
@@ -1074,18 +1047,24 @@ const PuzzleStep = ({ uploadFile }: { uploadFile: (file: File, path: string) => 
                         <label
                             htmlFor="puzzle-photo-upload"
                             className={cn(
-                            "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block"
+                                "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                isUploading && "cursor-not-allowed opacity-50"
                             )}
                         >
-                            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                            <p className="font-semibold">Clique para adicionar uma foto</p>
+                            {isUploading ? (
+                                <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                            ) : (
+                                <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                            )}
+                            <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar uma foto'}</p>
                             <p className="text-xs text-muted-foreground">A imagem que será transformada em quebra-cabeça</p>
                             <input
-                            id="puzzle-photo-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handlePuzzleImageChange}
+                                id="puzzle-photo-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handlePuzzleImageChange}
+                                disabled={isUploading}
                             />
                         </label>
                         </FormControl>
@@ -1235,7 +1214,6 @@ const WizardInternal = () => {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
-  const storage = useStorage();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
@@ -1245,8 +1223,6 @@ const WizardInternal = () => {
 
   const [puzzleDimension, setPuzzleDimension] = useState(360);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-
-  const [activeUploads, setActiveUploads] = useState(0);
 
 
   const methods = useForm<PageData>({
@@ -1262,54 +1238,6 @@ const WizardInternal = () => {
   
   const { watch, trigger, formState, setValue, getValues } = methods;
   const formData = watch();
-
-  const uploadFile = useCallback((file: File, path: string): Promise<{ downloadURL: string, fullPath: string } | null> => {
-    return new Promise((resolve, reject) => {
-        setActiveUploads(prev => prev + 1);
-        if (!storage) {
-            toast({ variant: "destructive", title: "Erro de Conexão", description: "O serviço de armazenamento não está disponível." });
-            setActiveUploads(prev => prev - 1);
-            return reject(new Error("Storage service not available."));
-        }
-
-        const fileRef = storageRef(storage, path);
-        const uploadTask = uploadBytesResumable(fileRef, file);
-        
-        const { id: toastId, update: updateToast } = toast({
-            title: `Enviando ${file.name}...`,
-            description: <Progress value={0} className="w-full" />,
-            duration: Infinity,
-        });
-
-        uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                updateToast({ description: <Progress value={progress} className="w-full" /> });
-            },
-            (error) => {
-                console.error("Upload error:", error);
-                updateToast({
-                    variant: "destructive",
-                    title: "Falha no Envio",
-                    description: `Não foi possível enviar: ${file.name}`,
-                    duration: 5000
-                });
-                setActiveUploads(prev => prev - 1);
-                reject(error);
-            },
-            async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                updateToast({
-                    title: "Envio Concluído!",
-                    description: `${file.name} foi salvo com sucesso.`,
-                    duration: 3000
-                });
-                setActiveUploads(prev => prev - 1);
-                resolve({ downloadURL, fullPath: uploadTask.snapshot.ref.fullPath });
-            }
-        );
-    });
-}, [storage, toast]);
 
 
   const restoreFromLocalStorage = useCallback(() => {
@@ -1356,7 +1284,7 @@ const WizardInternal = () => {
 
   // --- AUTOSAVE LOGIC ---
   const handleAutosave = useCallback(async (data: PageData) => {
-    if (!user || isUserLoading || activeUploads > 0) return; // Don't save if no user, still loading, or uploading
+    if (!user || isUserLoading) return; // Don't save if no user or still loading
     
     try {
         const currentData = { ...data, userId: user.uid };
@@ -1376,7 +1304,7 @@ const WizardInternal = () => {
     } catch (e) {
         console.error("Error during autosave:", e);
     }
-  }, [user, isUserLoading, setValue, activeUploads]);
+  }, [user, isUserLoading, setValue]);
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -1399,14 +1327,6 @@ const WizardInternal = () => {
 
 
   const handleNext = async () => {
-    if (activeUploads > 0) {
-        toast({
-            variant: "destructive",
-            title: "Upload em andamento",
-            description: "Por favor, aguarde o término do envio dos arquivos antes de prosseguir.",
-        });
-        return;
-    }
     await handleAutosave(getValues());
     const ok = await trigger(steps[currentStep].fields as any);
     if (ok) setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
@@ -1433,10 +1353,10 @@ const WizardInternal = () => {
   const timelineEventsForDisplay = useMemo(() => {
     if (!formData.timelineEvents) return [];
     return formData.timelineEvents
-        .filter(event => event.image?.url)
+        .filter(event => event.image?.preview)
         .map(event => ({
             id: event.id || Math.random().toString(),
-            imageUrl: event.image!.url,
+            imageUrl: event.image!.preview,
             alt: event.description || 'Timeline image',
             title: event.description || '',
             date: event.date ? new Date(event.date) : undefined,
@@ -1514,18 +1434,10 @@ const WizardInternal = () => {
       }
   } else {
       const Comp = stepComponents[currentStep];
-      if (typeof Comp === 'function') {
-        const props = {
-            isVisible: currentStepId === 'background',
-            uploadFile: uploadFile
-        };
-        StepComponent = <Comp {...props} />;
-      } else {
-          StepComponent = Comp
-      }
+      StepComponent = <Comp isVisible={currentStepId === 'background'} />;
   }
 
-  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.url;
+  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.preview;
 
   return (
     <FormProvider {...methods}>
@@ -1549,9 +1461,7 @@ const WizardInternal = () => {
                     <span className="text-xs text-muted-foreground">Passo {currentStep + 1} de {steps.length}</span>
                     <Progress value={(currentStep + 1) / steps.length * 100} className="w-full" />
                 </div>
-                <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1 || activeUploads > 0}>
-                    {activeUploads > 0 ? <Loader2 className="animate-spin" /> : <ChevronRight />}
-                </Button>
+                <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
             </div>
             <div className="space-y-2">
                 <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
@@ -1681,7 +1591,7 @@ const OldPreviewContent = ({ formData, isClient, onShowTimeline, hasValidTimelin
                                     {formData.galleryImages.map((image: any, index: number) => (
                                         <SwiperSlide key={index} className="bg-transparent">
                                             <div className="relative w-full aspect-square">
-                                                <Image src={image.url} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
+                                                <Image src={image.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
                                             </div>
                                         </SwiperSlide>
                                     ))}
@@ -1804,5 +1714,11 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
   };
 
 export default function CreatePageWizard() {
-  return <React.Suspense><WizardInternal /></React.Suspense>;
+  return (
+    <React.Suspense>
+      <WizardInternal />
+    </React.Suspense>
+  )
 }
+
+    

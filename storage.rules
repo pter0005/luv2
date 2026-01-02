@@ -1,0 +1,21 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper function to check ownership based on the path
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow users to read, write, and delete files within their own user-specific directory.
+    // The path is structured as 'gallery-images/{userId}/{fileName}', etc.
+    match /{imageType}/{userId}/{fileName} {
+      allow read: if true; // Allow public read for displaying images
+      allow write: if isOwner(userId);
+    }
+  }
+}
+
+    

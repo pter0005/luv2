@@ -32,7 +32,7 @@ export const base64ToFile = (base64: string, filename: string): File => {
 };
 
 // Helper to compress and resize an image file
-export const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promise<Blob> => {
+export const compressImage = (file: File, maxWidth = 1080, quality = 0.7): Promise<Blob> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -82,5 +82,7 @@ export const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promis
         reader.onerror = (error) => reject(error);
     });
 };
+
+    
 
     

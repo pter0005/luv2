@@ -3,124 +3,37 @@
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
 import type { PageData, FileWithPreview } from './CreatePageWizard';
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
+import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { z } from 'zod';
 import { Timestamp } from 'firebase-admin/firestore';
 import "dotenv/config";
 import { randomUUID } from 'crypto';
 
-// --- HELPER FUNCTIONS FOR FILE MOVEMENT ---
 
 /**
- * Moves a single file in Firebase Storage from a temporary path to a permanent one.
- * @param fileData The file object containing the temporary path.
- * @param permanentFolder The destination folder (e.g., `users/{userId}/gallery-images`).
- * @returns A promise that resolves to the new public URL of the moved file.
- */
-const moveStorageFile = async (fileData: FileWithPreview, permanentFolder: string): Promise<{ url: string, path: string }> => {
-    if (!fileData || !fileData.path) {
-        console.warn("moveStorageFile called with invalid fileData, skipping.");
-        return { url: fileData?.url || '', path: fileData?.path || '' };
-    }
-
-    const sourcePath = fileData.path;
-    // Skip if it's not a temp file
-    if (!sourcePath.startsWith('temp/')) {
-        return { url: fileData.url, path: sourcePath }; 
-    }
-
-    const bucket = getAdminStorage();
-    const fileName = sourcePath.split('/').pop();
-    if (!fileName) {
-        throw new Error(`Could not extract file name from path: ${sourcePath}`);
-    }
-
-    const destinationPath = `${permanentFolder}/${fileName}`;
-
-    try {
-        const sourceFile = bucket.file(sourcePath);
-        const [exists] = await sourceFile.exists();
-        
-        if (!exists) {
-            console.warn(`Source file not found during move: ${sourcePath}. It might have been moved already.`);
-            const destFile = bucket.file(destinationPath);
-            const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(destinationPath)}?alt=media`;
-            return { url: publicUrl, path: destinationPath };
-        }
-
-        await sourceFile.move(destinationPath);
-        const newFile = bucket.file(destinationPath);
-        const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(destinationPath)}?alt=media`;
-        return { url: publicUrl, path: destinationPath };
-    } catch (error: any) {
-        console.error(`Failed to move file from ${sourcePath} to ${destinationPath}:`, error);
-        throw error;
-    }
-};
-
-/**
- * Sanitizes page data and moves associated files from temporary to permanent storage.
+ * Sanitizes the final page data before saving it to the permanent 'lovepages' collection.
+ * This primarily involves converting complex objects (like Dates) to Firestore-compatible types.
  * @param pageData The full page data from the payment intent.
- * @param permanentPageId The newly generated ID for the permanent love page.
- * @returns The sanitized page data with permanent file URLs.
+ * @returns The sanitized page data ready for Firestore.
  */
-async function processAndFinalizePageData(pageData: Partial<PageData>, permanentPageId: string): Promise<any> {
-    const { payment, aiPrompt, intentId, userId, ...lovePageDataToSave } = pageData;
-    
-    if (!userId) throw new Error("User ID is missing.");
+function sanitizePageDataForFirestore(pageData: Partial<PageData>): any {
+    const { payment, aiPrompt, intentId, ...lovePageDataToSave } = pageData;
+    const sanitizedData: any = JSON.parse(JSON.stringify(lovePageDataToSave));
 
-    let finalData = JSON.parse(JSON.stringify(lovePageDataToSave));
-    const permanentPathPrefix = `users/${userId}/lovepages/${permanentPageId}`;
+    // URLs from Storage are now just strings, so no need to process gallery, timeline, puzzle images.
 
-    // Move gallery images and update URLs
-    if (finalData.galleryImages && finalData.galleryImages.length > 0) {
-        finalData.galleryImages = await Promise.all(
-            finalData.galleryImages.map((file: FileWithPreview) => moveStorageFile(file, `${permanentPathPrefix}/gallery`))
-        );
+    if (sanitizedData.timelineEvents) {
+        sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((event: any) => {
+            const sanitizedEvent = { ...event };
+            if (sanitizedEvent.date) sanitizedEvent.date = Timestamp.fromDate(new Date(sanitizedEvent.date));
+            return sanitizedEvent;
+        });
     }
+    if (sanitizedData.specialDate) sanitizedData.specialDate = Timestamp.fromDate(new Date(sanitizedData.specialDate));
 
-    // Move timeline images and update URLs
-    if (finalData.timelineEvents && finalData.timelineEvents.length > 0) {
-        finalData.timelineEvents = await Promise.all(
-            finalData.timelineEvents.map(async (event: any) => {
-                const newImage = event.image ? await moveStorageFile(event.image, `${permanentPathPrefix}/timeline`) : undefined;
-                return {
-                    ...event,
-                    image: newImage,
-                    date: event.date ? Timestamp.fromDate(new Date(event.date)) : undefined,
-                }
-            })
-        );
-    }
-    
-    // Move puzzle image and update URL
-    if (finalData.puzzleImage) {
-        finalData.puzzleImage = await moveStorageFile(finalData.puzzleImage, `${permanentPathPrefix}/puzzle`);
-    }
-    
-    // Move background video and update URL
-    if (finalData.backgroundVideo) {
-        finalData.backgroundVideo = await moveStorageFile(finalData.backgroundVideo, `${permanentPathPrefix}/background`);
-    }
-
-    // Move audio recording and update URL
-    if (finalData.audioRecording && finalData.audioRecording.startsWith('data:audio')) {
-        // This is a base64 string, needs to be uploaded first
-        const audioBuffer = Buffer.from(finalData.audioRecording.split(',')[1], 'base64');
-        const audioPath = `${permanentPathPrefix}/audio/${Date.now()}.webm`;
-        const file = getAdminStorage().file(audioPath);
-        await file.save(audioBuffer, { contentType: 'audio/webm' });
-        finalData.audioRecording = file.publicUrl();
-    }
-
-
-    if (finalData.specialDate) {
-        finalData.specialDate = Timestamp.fromDate(new Date(finalData.specialDate));
-    }
-    finalData.createdAt = Timestamp.now();
-
-    return finalData;
+    sanitizedData.createdAt = Timestamp.now();
+    return sanitizedData;
 }
 
 
@@ -299,11 +212,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
             const pageDataFromIntent = data?.fullPageData;
             if (!pageDataFromIntent) throw new Error('fullPageData não encontrado no intent.');
             
+            const finalPageData = sanitizePageDataForFirestore(pageDataFromIntent);
+            
             const newPageId = firestore.collection('lovepages').doc().id;
             finalPageId = newPageId;
-            
-            // CRITICAL STEP: Process temp files to permanent storage and get final data structure
-            const finalPageData = await processAndFinalizePageData(pageDataFromIntent, newPageId);
             
             const publicPageRef = firestore.collection('lovepages').doc(newPageId);
             const userLovePageRef = firestore.collection('users').doc(data.userId).collection('love_pages').doc(newPageId);
@@ -365,3 +277,5 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         return { error: `Erro: ${error.message}` };
     }
 }
+
+    
