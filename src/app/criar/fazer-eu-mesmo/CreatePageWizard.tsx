@@ -50,6 +50,9 @@ import { fileToBase64, compressImage } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase } from "@/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import PreviewContent from "./PreviewContent";
 
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
@@ -69,7 +72,7 @@ const cpfMask = (value: string) => {
     if (!value) return "";
     value = value.replace(/\D/g, "");
     value = value.replace(/(\d{3})(\d)/, "$1.$2");
-    value = value.replace(/(\d{3})(\d)/, "$1.$2");
+    value = value.replace(/(\d{3})/, "$1.$2");
     value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     return value.slice(0, 14);
 };
@@ -86,7 +89,8 @@ const paymentSchema = z.object({
 });
 
 export const fileWithPreviewSchema = z.object({
-    preview: z.string().url({ message: "URL de pré-visualização inválida." }),
+    url: z.string().url({ message: "URL de pré-visualização inválida." }),
+    path: z.string(),
 });
 export type FileWithPreview = z.infer<typeof fileWithPreviewSchema>;
 
@@ -123,7 +127,7 @@ const pageSchema = z.object({
   artistName: z.string().optional(),
   backgroundAnimation: z.string().default("none"),
   heartColor: z.string().default("#8B5CF6"),
-  backgroundVideo: z.string().optional(),
+  backgroundVideo: fileWithPreviewSchema.optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
   payment: paymentSchema.optional(),
@@ -361,14 +365,14 @@ const SpecialDateStep = () => {
 };
 
 // Helper function to upload a file to Firebase Storage
-const uploadFileToStorage = async (storage: any, userId: string, file: Blob, path: string): Promise<string> => {
+const uploadFile = async (storage: any, userId: string, file: Blob, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
     const timestamp = Date.now();
     const fileName = `${timestamp}-${(file as File).name}`;
-    const fileRef = storageRef(storage, `${path}/${userId}/${fileName}`);
+    const fileRef = storageRef(storage, `temp/${userId}/${path}/${fileName}`);
 
     await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
-    return downloadURL;
+    return { downloadURL, fullPath: fileRef.fullPath };
 };
 
 const GalleryStep = () => {
@@ -392,13 +396,12 @@ const GalleryStep = () => {
 
         const filesArray = Array.from(event.target.files).slice(0, availableSlots);
         setIsUploading(true);
-        toast({ title: 'Enviando imagens...', description: 'Aguarde um momento.' });
-
+        
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file); // Returns a Blob
-                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'gallery-images');
-                return { preview: downloadURL };
+                const compressedFile = await compressImage(file);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
+                return { url: downloadURL, path: fullPath };
             });
 
             const newImageObjects = await Promise.all(uploadPromises);
@@ -457,7 +460,7 @@ const GalleryStep = () => {
                         {fields.map((field, index) => (
                             <div key={field.id} className="relative group aspect-square">
                                 <Image
-                                    src={(field as any).preview || 'https://via.placeholder.com/150'}
+                                    src={(field as any).url || 'https://via.placeholder.com/150'}
                                     alt={`Pré-visualização da imagem ${index + 1}`}
                                     fill
                                     className="rounded-md object-cover"
@@ -498,13 +501,12 @@ const TimelineStep = () => {
         if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
             setUploadingIndex(index);
-            toast({ title: "Enviando imagem...", description: "Aguarde um momento."});
-
+            
             try {
-                const compressedFile = await compressImage(file, 800, 0.7); // Returns a Blob
-                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'timeline-images');
+                const compressedFile = await compressImage(file, 800, 0.7);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
 
-                const newImageObject = { preview: downloadURL };
+                const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
                 trigger(`timelineEvents.${index}.image`);
@@ -537,7 +539,7 @@ const TimelineStep = () => {
             <p className="text-sm text-muted-foreground">Adicione momentos importantes. Cada momento terá uma imagem, data e uma breve descrição.</p>
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.map((field, index) => {
-                    const imagePreview = (field as any).image && (field as any).image.preview;
+                    const imagePreview = (field as any).image && (field as any).image.url;
 
                     return (
                         <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
@@ -994,12 +996,11 @@ const PuzzleStep = () => {
         if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
             setIsUploading(true);
-            toast({ title: 'Enviando imagem do quebra-cabeça...' });
-
+            
             try {
                 const compressedFile = await compressImage(file);
-                const downloadURL = await uploadFileToStorage(storage, user.uid, compressedFile, 'puzzle-images');
-                const newImageObject: FileWithPreview = { preview: downloadURL };
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'puzzle-images');
+                const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
             } catch (error) {
@@ -1017,7 +1018,7 @@ const PuzzleStep = () => {
     };
 
     const puzzlePreviewUrl = useMemo(() => {
-        return puzzleImage?.preview || null;
+        return puzzleImage?.url || null;
     }, [puzzleImage]);
     
     return (
@@ -1353,10 +1354,10 @@ const WizardInternal = () => {
   const timelineEventsForDisplay = useMemo(() => {
     if (!formData.timelineEvents) return [];
     return formData.timelineEvents
-        .filter(event => event.image?.preview)
+        .filter(event => event.image?.url)
         .map(event => ({
             id: event.id || Math.random().toString(),
-            imageUrl: event.image!.preview,
+            imageUrl: event.image!.url,
             alt: event.description || 'Timeline image',
             title: event.description || '',
             date: event.date ? new Date(event.date) : undefined,
@@ -1437,7 +1438,7 @@ const WizardInternal = () => {
       StepComponent = <Comp isVisible={currentStepId === 'background'} />;
   }
 
-  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.preview;
+  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.url;
 
   return (
     <FormProvider {...methods}>
@@ -1501,118 +1502,6 @@ const WizardInternal = () => {
 }
 
 
-// Componente de Preview em formato de Browser
-const OldPreviewContent = ({ formData, isClient, onShowTimeline, hasValidTimelineEvents }: any) => {
-    return (
-        <div className="w-full h-full max-w-2xl aspect-[16/10] bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
-            {/* Background Animations */}
-            <div className="absolute inset-0 w-full h-full z-0">
-                {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
-                {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
-                {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
-                {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
-                {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
-            </div>
-
-            {/* Main Content */}
-            <div className={cn("relative z-10 w-full h-full flex flex-col")}>
-                {/* Browser Chrome */}
-                <div className="bg-zinc-800 rounded-t-lg p-2 flex items-center gap-1.5 border-b border-zinc-700 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    </div>
-                    <div className="flex-grow bg-zinc-700 rounded-sm px-2 py-1 text-xs text-zinc-400 text-center truncate">
-                        https://b2gether.com/p/pagina
-                    </div>
-                </div>
-
-                {/* Page Content */}
-                <div className="flex-grow rounded-b-lg overflow-hidden relative">
-                     <div className="w-full h-full flex flex-col relative overflow-y-auto z-20 browser-scrollbar">
-                        <div className="w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-16">
-                            <div className="relative z-10 space-y-6 text-center">
-                            <h1
-                                className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
-                                style={{ color: formData.titleColor }}
-                            >
-                                {formData.title || 'Seu Título Aqui'}
-                            </h1>
-                            <p className={cn(
-                                "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
-                                formData.messageFontSize,
-                                formData.messageFormatting?.includes("bold") && "font-bold",
-                                formData.messageFormatting?.includes("italic") && "italic",
-                                formData.messageFormatting?.includes("strikethrough") && "line-through"
-                            )}>
-                                {formData.message || 'Sua mensagem de amor...'}
-                            </p>
-                            </div>
-                            
-                            {hasValidTimelineEvents && (
-                                <div className="text-center">
-                                    <Button onClick={onShowTimeline}><View className="mr-2 h-4 w-4" />Nossa Linha do Tempo</Button>
-                                </div>
-                            )}
-
-                            {formData.galleryImages.length > 0 && (
-                            <div className="w-full max-w-xs mx-auto">
-                                
-                                <Swiper
-                                    key={formData.galleryStyle}
-                                    effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
-                                    grabCursor={true}
-                                    centeredSlides={formData.galleryStyle === 'Coverflow'}
-                                    slidesPerView={'auto'}
-                                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                                    coverflowEffect={{
-                                        rotate: 50,
-                                        stretch: 0,
-                                        depth: 100,
-                                        modifier: 1,
-                                        slideShadows: true,
-                                    }}
-                                    cardsEffect={{
-                                        perSlideRotate: 2,
-                                        perSlideOffset: 8,
-                                        slideShadows: true,
-                                    }}
-                                    cubeEffect={{
-                                        shadow: true,
-                                        slideShadows: true,
-                                        shadowOffset: 20,
-                                        shadowScale: 0.94,
-                                    }}
-                                    pagination={{ clickable: true }}
-                                    modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
-                                    className="mySwiper-small"
-                                >
-                                    {formData.galleryImages.map((image: any, index: number) => (
-                                        <SwiperSlide key={index} className="bg-transparent">
-                                            <div className="relative w-full aspect-square">
-                                                <Image src={image.preview} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" unoptimized />
-                                            </div>
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
-                            </div>
-                            )}
-                            
-                            {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
-                            <YoutubePlayer url={formData.youtubeUrl} />
-                            )}
-
-                            {isClient && formData.musicOption === 'record' && formData.audioRecording && (
-                            <CustomAudioPlayer src={formData.audioRecording} />
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-};
 
 
 const ImageLimitWarning = ({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
