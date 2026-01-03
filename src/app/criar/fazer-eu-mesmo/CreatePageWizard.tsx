@@ -46,7 +46,7 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSearchParams } from 'next/navigation'
-import { fileToBase64 } from "@/lib/image-utils";
+import { fileToBase64, compressImage } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase } from "@/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -369,10 +369,9 @@ const SpecialDateStep = () => {
 };
 
 // Helper function to upload a file to Firebase Storage
-const uploadFile = async (storage: any, userId: string, file: File | Blob, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
+const uploadFile = async (storage: any, userId: string, file: File, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
     const timestamp = Date.now();
-    // Ensure file has a name, provide a default if not (e.g. for blobs)
-    const fileName = `${timestamp}-${(file as File).name || 'upload'}`;
+    const fileName = `${timestamp}-${file.name || 'upload'}`;
     const fileRef = storageRef(storage, `temp/${userId}/${path}/${fileName}`);
 
     await uploadBytes(fileRef, file);
@@ -405,7 +404,6 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                // We send the original file for the temporary preview
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
@@ -422,6 +420,11 @@ const GalleryStep = () => {
     };
 
     const removeImage = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
         remove(index);
     };
     
@@ -541,9 +544,7 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                // Upload original quality for preview
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
-
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
@@ -560,6 +561,11 @@ const TimelineStep = () => {
 
 
     const handleRemove = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('image' in imageToRemove && (imageToRemove as any).image?.path && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).image.path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
         remove(index);
     }
 
@@ -1036,7 +1042,6 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                // Upload original quality for preview
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
@@ -1052,6 +1057,11 @@ const PuzzleStep = () => {
 
 
     const removePuzzleImage = () => {
+        const imageToRemove = getValues("puzzleImage");
+        if (imageToRemove?.path && storage) {
+            const imageRef = storageRef(storage, imageToRemove.path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
     };
 
@@ -1381,6 +1391,11 @@ const WizardInternal = () => {
   const handleNext = async () => {
     const ok = await trigger(steps[currentStep].fields as any);
     if (!ok) return;
+
+    // Special handling: force save before going to payment step
+    if (steps[currentStep + 1]?.id === 'payment') {
+        await handleAutosave(getValues());
+    }
     
     setCurrentStep(Math.min(currentStep + 1, steps.length - 1));
   };
@@ -1660,3 +1675,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
