@@ -46,10 +46,10 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSearchParams } from 'next/navigation'
-import { fileToBase64, compressImage } from "@/lib/image-utils";
+import { fileToBase64 } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase } from "@/firebase";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import PreviewContent from "./PreviewContent";
@@ -57,7 +57,6 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
-
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   ssr: false,
@@ -72,14 +71,15 @@ const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
-const cpfMask = (value: string) => {
-    if (!value) return "";
-    value = value.replace(/\D/g, "");
-    value = value.replace(/(\d{3})(\d)/, "$1.$2");
-    value = value.replace(/(\d{3})/, "$1.$2");
-    value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    return value.slice(0, 14);
+const cpfMask = (v: string) => {
+    v = v.replace(/\D/g, ""); // Remove tudo o que não é dígito
+    v = v.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca um ponto entre o terceiro e o quarto dígitos
+    v = v.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca um ponto entre o terceiro e o quarto dígitos
+                                         // de novo (para o segundo bloco de números)
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); // Coloca um hífen entre o terceiro e o quarto dígitos
+    return v.slice(0, 14); // Limita o tamanho
 };
+
 
 const MAX_GALLERY_IMAGES = 5;
 const MAX_TIMELINE_IMAGES = 20;
@@ -1381,15 +1381,8 @@ const WizardInternal = () => {
   const handleNext = async () => {
     const ok = await trigger(steps[currentStep].fields as any);
     if (!ok) return;
-
-    const nextStepIndex = currentStep + 1;
-    // If the next step is the payment step, force a save first.
-    if (steps[nextStepIndex]?.id === 'payment') {
-        // Trigger a manual save and wait for it to complete.
-        await handleAutosave(getValues());
-    }
     
-    setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
+    setCurrentStep(Math.min(currentStep + 1, steps.length - 1));
   };
   
   const handleBack = async () => {
@@ -1503,7 +1496,7 @@ const WizardInternal = () => {
       <form onSubmit={(e) => e.preventDefault()}>
         <div className="grid md:grid-cols-2 gap-8 min-h-[calc(100vh_-_10rem)]">
           {/* Coluna da Esquerda: Preview */}
-          <div className="hidden md:flex h-full w-full md:sticky top-24 items-center justify-center p-4">
+          <div className="hidden md:flex relative h-full w-full md:sticky top-24 items-center justify-center p-4">
              <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
