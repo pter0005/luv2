@@ -373,12 +373,13 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, path:
     const timestamp = Date.now();
     // Ensure file has a name, provide a default if not (e.g. for blobs)
     const fileName = `${timestamp}-${(file as File).name || 'upload'}`;
-    const fileRef = storageRef(storage, `${path}/${userId}/${fileName}`);
+    const fileRef = storageRef(storage, `temp/${userId}/${path}/${fileName}`);
 
     await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
     return { downloadURL, fullPath: fileRef.fullPath };
 };
+
 
 const GalleryStep = () => {
     const { control, formState: { errors } } = useFormContext<PageData>();
@@ -404,8 +405,8 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/gallery-images');
+                // We send the original file for the temporary preview
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -444,7 +445,7 @@ const GalleryStep = () => {
                             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                         )}
                         <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade Máxima para Preview)</p>
                         <input
                             id="photo-upload"
                             type="file"
@@ -482,7 +483,6 @@ const GalleryStep = () => {
                 )}
             </div>
 
-            {/* AQUI ESTÁ A PARTE QUE ESTAVA FALTANDO PARA O CLIENTE ESCOLHER O ESTILO */}
             <div className="space-y-4 pt-6 border-t">
                 <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
                 <FormField
@@ -541,8 +541,8 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const compressedFile = await compressImage(file, 800, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/timeline-images');
+                // Upload original quality for preview
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
 
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
@@ -1036,8 +1036,8 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/puzzle-images');
+                // Upload original quality for preview
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
@@ -1204,7 +1204,12 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
 
         const currentIntentId = getValues("intentId");
         if (!currentIntentId) {
-            setError({ message: 'Não foi possível encontrar o rascunho salvo. Por favor, volte e tente novamente.' });
+            setError({ 
+                message: 'Falha ao iniciar pagamento: o rascunho automático não foi encontrado.',
+                details: {
+                    log: "[CMD_LOG] > Erro Crítico: 'intentId' está nulo ao tentar gerar PIX. O salvamento automático pode ter falhado ou não foi concluído antes da ação de pagamento. Verifique a conexão e o status do salvamento no console."
+                }
+            });
             return;
         }
 
@@ -1240,7 +1245,14 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                     {isProcessing ? <Loader2 className="animate-spin" /> : "Pagar com PIX R$ 24,99"}
                 </Button>
             </form>
-            {error && <Alert variant="destructive" className="mt-4"><AlertTitle>Erro!</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert>}
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof error.details === 'string' && <AlertDescription>{error.details}</AlertDescription>}
+                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                </Alert>
+            )}
         </div>
     );
 };
@@ -1368,7 +1380,16 @@ const WizardInternal = () => {
 
   const handleNext = async () => {
     const ok = await trigger(steps[currentStep].fields as any);
-    if (ok) setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
+    if (!ok) return;
+
+    const nextStepIndex = currentStep + 1;
+    // If the next step is the payment step, force a save first.
+    if (steps[nextStepIndex]?.id === 'payment') {
+        // Trigger a manual save and wait for it to complete.
+        await handleAutosave(getValues());
+    }
+    
+    setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
   };
   
   const handleBack = async () => {
@@ -1646,7 +1667,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-
-    
-    
