@@ -369,9 +369,9 @@ const SpecialDateStep = () => {
 };
 
 // Helper function to upload a file to Firebase Storage
-const uploadFile = async (storage: any, userId: string, file: File, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
+const uploadFile = async (storage: any, userId: string, file: File | Blob, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
     const timestamp = Date.now();
-    const fileName = `${timestamp}-${file.name || 'upload'}`;
+    const fileName = `${timestamp}-${(file instanceof File) ? file.name : 'upload.jpg'}`;
     const fileRef = storageRef(storage, `temp/${userId}/${path}/${fileName}`);
 
     await uploadBytes(fileRef, file);
@@ -404,7 +404,8 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -448,7 +449,7 @@ const GalleryStep = () => {
                             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                         )}
                         <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade Máxima para Preview)</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Otimizadas para a web)</p>
                         <input
                             id="photo-upload"
                             type="file"
@@ -544,7 +545,8 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
+                const compressedFile = await compressImage(file, 1024, 0.8);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
@@ -1042,7 +1044,8 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
+                const compressedFile = await compressImage(file);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
