@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -17,74 +17,54 @@ import { Button } from '@/components/ui/button';
 import { Pause, Play, View, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Imports dinâmicos
-const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), {
-  ssr: false,
-  loading: () => <Skeleton className="aspect-video w-full" />,
-});
+const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
-const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center p-12 bg-white/5 rounded-xl border border-white/10">
-      <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
-      <p className="text-sm text-white/50">Carregando desafio...</p>
-    </div>
-  )
-});
+const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-  
   const cloudsVideoRef = useRef<HTMLVideoElement>(null);
 
-  // 1. Só ativa o puzzle se ele estiver habilitado E tiver imagem
   const hasPuzzle = pageData.enablePuzzle && pageData.puzzleImage?.url;
 
   useEffect(() => {
     setIsClient(true);
-    // Se não tem puzzle, já revela a página de cara
-    if (!hasPuzzle) {
-      setPuzzleRevealed(true);
-    }
+    if (!hasPuzzle) setPuzzleRevealed(true);
   }, [hasPuzzle]);
+
+  const handleReveal = useCallback(() => {
+    console.log("REVELAR CLICADO!");
+    setPuzzleRevealed(true);
+  }, []);
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!pageData.timelineEvents) return [];
     return pageData.timelineEvents
-      .filter((event: any) => event && event.image?.url)
-      .map((event: any) => ({
-        id: event.id || Math.random().toString(),
-        imageUrl: event.image.url,
-        alt: event.description || "Timeline Image",
-        title: event.description,
-        date: event.date ? new Date(event.date) : new Date(),
-      }));
+        .filter((event: any) => event && event.image?.url)
+        .map((event: any) => ({
+            id: event.id || Math.random().toString(),
+            imageUrl: event.image.url,
+            alt: event.description || "Timeline Image",
+            title: event.description,
+            date: event.date ? new Date(event.date) : new Date(),
+        }));
   }, [pageData.timelineEvents]);
 
-  // Função disparada quando o quebra-cabeça é resolvido
-  const handleReveal = () => {
-    console.log("Revelando surpresa...");
-    setPuzzleRevealed(true);
-  };
-
-  if (showTimeline && timelineEventsForDisplay.length > 0) {
+  if (showTimeline) {
     return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />;
   }
 
-  // Previne erros de hidratação (SSR)
   if (!isClient) return null;
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden">
       
-      {/* CAMADA 1: Efeitos de Fundo (Sempre visíveis) */}
+      {/* CAMADA 1: FUNDO */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
         {pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
         {pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
-        {pageData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
         {pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
         {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
         {pageData.backgroundAnimation === 'clouds' && (
@@ -94,101 +74,79 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </div>
 
-      {/* CAMADA 2: Conteúdo Principal (A página em si) */}
+      {/* CAMADA 2: CONTEÚDO (Onde estava o erro de opacidade) */}
       <motion.div 
-        className={cn(
-            "relative z-10 w-full min-h-screen flex flex-col items-center",
-            !puzzleRevealed && hasPuzzle && "bg-black/30 backdrop-blur-lg" // Fundo borrado permanente
-        )}
-        initial={{ opacity: hasPuzzle ? 0 : 1, scale: hasPuzzle ? 0.9 : 1 }}
+        className="relative z-10 w-full min-h-screen"
+        initial={false}
         animate={{ 
-            opacity: puzzleRevealed ? 1 : (hasPuzzle ? 0 : 1),
-            scale: puzzleRevealed ? 1 : (hasPuzzle ? 0.9 : 1),
+          // Ajustamos para 0.4 de opacidade para você ver o fundo desfocado
+          opacity: puzzleRevealed ? 1 : 0.4, 
+          scale: puzzleRevealed ? 1 : 0.95,
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)'
         }}
-        transition={{ duration: 1, ease: "easeOut", delay: hasPuzzle ? 0.5 : 0 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+        style={{ 
+          pointerEvents: puzzleRevealed ? 'auto' : 'none' 
+        }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-12 md:gap-y-20 relative z-20">
-          {/* Título e Mensagem */}
-          <div className="space-y-6 text-center pt-16">
-            <h1 className="text-4xl sm:text-6xl font-handwriting" style={{ color: pageData.titleColor }}>
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20">
+          <div className="space-y-6 text-center pt-20">
+            <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
               {pageData.title}
             </h1>
-            <p className={cn(
-              "text-white/80 whitespace-pre-wrap break-words max-w-2xl mx-auto text-lg",
-              pageData.messageFontSize,
-              pageData.messageFormatting?.includes("bold") && "font-bold",
-              pageData.messageFormatting?.includes("italic") && "italic"
-            )}>
+            <p className={cn("text-white/80 whitespace-pre-wrap text-lg max-w-2xl mx-auto", pageData.messageFontSize)}>
               {pageData.message}
             </p>
           </div>
 
-          {/* Contador */}
           {pageData.specialDate && (
-            <Countdown
-              targetDate={pageData.specialDate}
-              style={pageData.countdownStyle as any}
-              color={pageData.countdownColor}
-            />
+            <Countdown targetDate={pageData.specialDate} style={pageData.countdownStyle} color={pageData.countdownColor} />
           )}
 
-          {/* Botão da Timeline */}
-          {timelineEventsForDisplay.length > 0 && (
-            <Button onClick={() => setShowTimeline(true)} variant="secondary" className="backdrop-blur-md bg-white/10 border border-white/20">
-              <View className="mr-2 h-4 w-4" /> Nossa Linha do Tempo
-            </Button>
-          )}
+           {timelineEventsForDisplay.length > 0 && (
+                <Button onClick={() => setShowTimeline(true)} variant="secondary" className="backdrop-blur-md bg-white/10 border border-white/20">
+                    <View className="mr-2 h-4 w-4" /> Nossa Linha do Tempo
+                </Button>
+           )}
 
-          {/* Galeria Swiper */}
           {pageData.galleryImages?.length > 0 && (
-            <div className="w-full max-w-md mx-auto">
+            <div className="w-full max-w-md">
               <Swiper
                 key={pageData.galleryStyle}
                 effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
-                grabCursor={true}
-                centeredSlides={pageData.galleryStyle === 'Coverflow'}
-                slidesPerView={'auto'}
-                autoplay={{ delay: 3000 }}
-                modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
+                grabCursor modules={[EffectCoverflow, Pagination, Autoplay, EffectCards, EffectFlip, EffectCube]}
                 pagination={{ clickable: true }}
-                className="rounded-2xl overflow-hidden"
+                className="rounded-3xl shadow-2xl"
               >
                 {pageData.galleryImages.map((img: any, i: number) => (
-                  <SwiperSlide key={i}>
-                    <div className="relative aspect-square">
-                      <Image src={img.url} alt="foto" fill className="object-cover" unoptimized />
-                    </div>
-                  </SwiperSlide>
+                  <SwiperSlide key={i}><div className="relative aspect-square"><Image src={img.url} alt="foto" fill className="object-cover" unoptimized /></div></SwiperSlide>
                 ))}
               </Swiper>
             </div>
           )}
-
-          {/* Música/Áudio */}
-          {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
-          {pageData.musicOption === 'record' && pageData.audioRecording && <CustomAudioPlayer src={pageData.audioRecording} />}
         </div>
       </motion.div>
 
-      {/* CAMADA 3: O QUEBRA-CABEÇA (Senta por cima de tudo) */}
+      {/* CAMADA 3: PUZZLE OVERLAY */}
       <AnimatePresence>
         {!puzzleRevealed && hasPuzzle && (
           <motion.div
+            key="puzzle-screen"
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.5 } }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60"
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
           >
             <div className="w-full max-w-lg space-y-6">
-              <div className="text-center space-y-2">
+              <div className="text-center">
                 <h2 className="text-3xl font-bold text-white font-headline">Um enigma para você...</h2>
-                <p className="text-white/60">Resolva o desafio para abrir seu presente.</p>
+                <p className="text-white/60">Resolva para ver a surpresa.</p>
               </div>
-
               <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
                   imageSrc={pageData.puzzleImage.url}
                   showControls={false}
-                  onReveal={handleReveal}
+                  onReveal={handleReveal} // O FILHO CHAMA ESSA FUNÇÃO
                 />
               </div>
             </div>
