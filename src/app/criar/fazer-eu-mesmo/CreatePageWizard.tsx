@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -405,8 +406,7 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -450,7 +450,7 @@ const GalleryStep = () => {
                             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                         )}
                         <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Otimizadas para a web)</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade original)</p>
                         <input
                             id="photo-upload"
                             type="file"
@@ -546,8 +546,7 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const compressedFile = await compressImage(file, 1024, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
@@ -1045,8 +1044,7 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const compressedFile = await compressImage(file);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'puzzle-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
@@ -1266,16 +1264,19 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
 
     return (
         <div className="space-y-6">
-            <Card className="p-6">
+            <Card>
                 <CardHeader>
                     <CardTitle>Dados do Pagador</CardTitle>
+                    <CardDescription>Essas informações são necessárias para gerar o QR Code do PIX.</CardDescription>
                 </CardHeader>
-                <div className="space-y-4">
-                     <FormField control={control} name="payment.payerFirstName" render={({ field }) => <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                     <FormField control={control} name="payment.payerLastName" render={({ field }) => <FormItem><FormLabel>Sobrenome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                <CardContent className="space-y-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={control} name="payment.payerFirstName" render={({ field }) => <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField control={control} name="payment.payerLastName" render={({ field }) => <FormItem><FormLabel>Sobrenome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                     </div>
                      <FormField control={control} name="payment.payerEmail" render={({ field }) => <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input {...field} type="email" /></FormControl><FormMessage /></FormItem>} />
                      <FormField control={control} name="payment.payerCpf" render={({ field: { onChange, ...rest } }) => <FormItem><FormLabel>CPF</FormLabel><FormControl><Input {...rest} onChange={e => onChange(cpfMask(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
-                </div>
+                </CardContent>
             </Card>
 
             <Button 
@@ -1285,7 +1286,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                 disabled={isProcessing}
                 onClick={handleGeneratePix}
             >
-                {isProcessing ? <Loader2 className="animate-spin" /> : "Pagar com PIX R$ 24,99"}
+                {isProcessing ? <Loader2 className="animate-spin" /> : "Finalizar e Pagar com PIX R$ 24,99"}
             </Button>
             
             {error && (
@@ -1705,3 +1706,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
