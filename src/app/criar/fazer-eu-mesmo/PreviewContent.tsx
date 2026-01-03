@@ -60,6 +60,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
                  <RealPuzzle
                     imageSrc={formData.puzzleImage?.url}
                     showControls={false}
+                    onReveal={() => {}} // Add a dummy onReveal to satisfy the component
                  />
              </div>
         );

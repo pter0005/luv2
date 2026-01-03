@@ -38,7 +38,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   
   // Puzzle State
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-  const [puzzleDimension, setPuzzleDimension] = useState(360);
   
   const puzzleImageUrl = pageData.puzzleImage?.url;
   const isPuzzleActive = useMemo(() => {
@@ -51,15 +50,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     if (!isPuzzleActive) {
       setPuzzleRevealed(true);
     }
-
-    const handleResize = () => {
-      const screenWidth = window.innerWidth;
-      setPuzzleDimension(screenWidth < 640 ? screenWidth * 0.8 : 450);
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [isPuzzleActive]);
 
   useEffect(() => {
@@ -136,7 +126,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 imageSrc={puzzleImageUrl}
                 showControls={false}
                 onReveal={() => setPuzzleRevealed(true)}
-                dimension={puzzleDimension}
               />
             </div>
           </motion.div>
