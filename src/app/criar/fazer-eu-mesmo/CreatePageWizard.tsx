@@ -53,6 +53,10 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'fire
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import PreviewContent from "./PreviewContent";
+import FallingHearts from "@/components/effects/FallingHearts";
+import StarrySky from "@/components/effects/StarrySky";
+import MysticVortex from "@/components/effects/MysticVortex";
+import FloatingDots from "@/components/effects/FloatingDots";
 
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
@@ -1609,5 +1613,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
