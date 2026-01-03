@@ -126,7 +126,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
                                 
                                 <Swiper
                                     key={formData.galleryStyle}
-                                    effect={formData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                                    effect={(formData.galleryStyle || 'Cube').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
                                     grabCursor={true}
                                     centeredSlides={formData.galleryStyle === 'Coverflow'}
                                     slidesPerView={'auto'}
