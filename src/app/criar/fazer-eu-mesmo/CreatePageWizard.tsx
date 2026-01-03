@@ -406,7 +406,8 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
