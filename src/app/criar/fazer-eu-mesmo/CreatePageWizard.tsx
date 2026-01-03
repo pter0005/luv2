@@ -1038,22 +1038,7 @@ const PuzzleStep = () => {
     const { storage } = useFirebase();
     const { toast } = useToast();
     const [isUploading, setIsUploading] = useState(false);
-    const [previewDimension, setPreviewDimension] = useState(300);
-
-    useEffect(() => {
-        const handleResize = () => {
-            const screenWidth = window.innerWidth;
-            if (screenWidth < 640) {
-                setPreviewDimension(screenWidth * 0.7);
-            } else {
-                setPreviewDimension(300);
-            }
-        };
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
+    
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
@@ -1087,10 +1072,6 @@ const PuzzleStep = () => {
             toast({ title: 'Imagem removida.' });
         }
     };
-
-    const puzzlePreviewUrl = useMemo(() => {
-        return puzzleImage?.url || null;
-    }, [puzzleImage]);
     
     return (
         <div className="space-y-8">
@@ -1114,7 +1095,7 @@ const PuzzleStep = () => {
             {enablePuzzle && (
                  <div className="space-y-4">
                     <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
-                     {!puzzlePreviewUrl ? (
+                     {!puzzleImage?.url ? (
                         <FormControl>
                         <label
                             htmlFor="puzzle-photo-upload"
@@ -1142,12 +1123,12 @@ const PuzzleStep = () => {
                         </FormControl>
                      ) : (
                         <div className="w-full flex flex-col items-center gap-6">
-                            <h3 className="text-lg font-semibold text-center">Preview do Quebra-Cabeça</h3>
-                             <RealPuzzle
-                                imageSrc={puzzlePreviewUrl}
-                                showControls={false}
-                                dimension={previewDimension}
-                             />
+                             <div className="w-full max-w-[300px] mx-auto">
+                                <RealPuzzle
+                                    imageSrc={puzzleImage.url}
+                                    showControls={true}
+                                />
+                             </div>
                              <Button
                                  type="button"
                                  variant="destructive"
@@ -1226,12 +1207,12 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     const handleGeneratePix = async () => {
         setError(null);
         setPixData(null);
-        
+    
         if (!isValid) {
-            toast({ 
-                variant: 'destructive', 
-                title: 'Ops!', 
-                description: 'Preencha o Nome, E-mail e CPF corretamente.' 
+            toast({
+                variant: 'destructive',
+                title: 'Ops!',
+                description: 'Preencha o Nome, E-mail e CPF corretamente.'
             });
             return;
         }
@@ -1259,8 +1240,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
                     setPixData({ 
                         qrCode: paymentResult.qrCode, 
-                        qrCodeBase64: paymentResult.qrCodeBase64!, 
-                        paymentId: paymentResult.paymentId! 
+                        qrCodeBase64: paymentResult.qrCodeBase64, 
+                        paymentId: paymentResult.paymentId
                     });
                     startPolling(currentIntentId);
                 }
@@ -1323,10 +1304,6 @@ const WizardInternal = () => {
   const [intentId, setIntentId] = useState<string | null>(null);
   const [isManualVerificationLoading, setManualVerificationLoading] = useState(false);
 
-  const [puzzleDimension, setPuzzleDimension] = useState(360);
-  const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-
-
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
     mode: 'onChange',
@@ -1370,18 +1347,6 @@ const WizardInternal = () => {
         methods.reset(); // Resets to default values
     } else {
         restoreFromLocalStorage();
-    }
-
-    const handleResize = () => {
-        const screenWidth = window.innerWidth;
-        if (screenWidth < 640) setPuzzleDimension(screenWidth * 0.8);
-        else setPuzzleDimension(360);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-        window.removeEventListener('resize', handleResize);
     }
   }, [searchParams, methods, restoreFromLocalStorage]);
 
@@ -1555,8 +1520,8 @@ const WizardInternal = () => {
       const Comp = stepComponents[currentStep];
       StepComponent = <Comp isVisible={currentStepId === 'background'} />;
   }
-
-  const isPuzzleActive = isClient && formData.enablePuzzle && formData.puzzleImage?.url;
+  
+  const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
 
   return (
     <FormProvider {...methods}>
@@ -1568,6 +1533,7 @@ const WizardInternal = () => {
                 isClient={isClient}
                 onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                showPuzzlePreview={showPuzzlePreview}
             />
           </div>
 
@@ -1603,6 +1569,7 @@ const WizardInternal = () => {
                                 isClient={isClient}
                                 onShowTimeline={() => setShowTimelinePreview(true)}
                                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                                showPuzzlePreview={showPuzzlePreview}
                             />
                         </div>
                     </DialogContent>

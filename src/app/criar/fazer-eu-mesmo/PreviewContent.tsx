@@ -16,6 +16,8 @@ import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
 
+const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
+
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   ssr: false,
@@ -32,9 +34,10 @@ type PreviewContentProps = {
     isClient: boolean;
     onShowTimeline: () => void;
     hasValidTimelineEvents: boolean;
+    showPuzzlePreview: boolean;
 };
 
-export default function PreviewContent({ formData, isClient, onShowTimeline, hasValidTimelineEvents }: PreviewContentProps) {
+export default function PreviewContent({ formData, isClient, onShowTimeline, hasValidTimelineEvents, showPuzzlePreview }: PreviewContentProps) {
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -50,6 +53,17 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
           cloudsVideoRef.current.playbackRate = 0.6;
         }
     }, [formData.backgroundAnimation]);
+    
+    if (showPuzzlePreview) {
+        return (
+             <div className="relative w-full h-full max-w-md aspect-square flex items-center justify-center">
+                 <RealPuzzle
+                    imageSrc={formData.puzzleImage?.url}
+                    showControls={false}
+                 />
+             </div>
+        );
+    }
 
     return (
         <div className="relative w-full h-full max-w-2xl sm:aspect-video bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
@@ -179,5 +193,3 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
         </div>
     )
 }
-
-    
