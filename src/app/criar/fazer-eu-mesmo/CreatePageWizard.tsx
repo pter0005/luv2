@@ -1510,11 +1510,14 @@ const WizardInternal = () => {
                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
                   <div className="p-4 bg-white rounded-lg border">
-                      <Image 
-                        src={`data:image/jpeg;base64,${pixData.qrCodeBase64}`}
+                      <Image
+                        src={pixData.qrCodeBase64.startsWith('data:') 
+                          ? pixData.qrCodeBase64 
+                          : `data:image/png;base64,${pixData.qrCodeBase64}`}
                         alt="PIX QR Code"
                         width={256}
                         height={256}
+                        unoptimized
                       />
                   </div>
                   <Button onClick={handleCopyPix} className="w-full max-w-xs">
