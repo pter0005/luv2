@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -17,7 +16,6 @@ import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, View, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { FileWithPreview } from '@/app/criar/fazer-eu-mesmo/CreatePageWizard';
 
 // Imports dinâmicos
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), {
@@ -27,36 +25,31 @@ const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePl
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { 
   ssr: false,
-  loading: () => <div className="flex flex-col items-center justify-center p-12 bg-card/20 rounded-xl"><Loader2 className="animate-spin" /><p>Carregando enigma...</p></div>
+  loading: () => (
+    <div className="flex flex-col items-center justify-center p-12 bg-white/5 rounded-xl border border-white/10">
+      <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+      <p className="text-sm text-white/50">Carregando desafio...</p>
+    </div>
+  )
 });
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const cloudsVideoRef = useRef<HTMLVideoElement>(null);
-  const customVideoRef = useRef<HTMLVideoElement>(null);
-  
-  // Controle do Puzzle
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   
-  const puzzleImageUrl = pageData.puzzleImage?.url;
-  const isPuzzleActive = useMemo(() => {
-    return isClient && pageData.enablePuzzle && !!puzzleImageUrl;
-  }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
+  const cloudsVideoRef = useRef<HTMLVideoElement>(null);
+
+  // 1. Só ativa o puzzle se ele estiver habilitado E tiver imagem
+  const hasPuzzle = pageData.enablePuzzle && pageData.puzzleImage?.url;
 
   useEffect(() => {
     setIsClient(true);
-    // Se o puzzle não estiver ativo, revela a página imediatamente
-    if (isClient && (!pageData.enablePuzzle || !puzzleImageUrl)) {
+    // Se não tem puzzle, já revela a página de cara
+    if (!hasPuzzle) {
       setPuzzleRevealed(true);
     }
-  }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
-
-  useEffect(() => {
-    if (cloudsVideoRef.current) {
-      cloudsVideoRef.current.playbackRate = 0.6;
-    }
-  }, [pageData.backgroundAnimation]);
+  }, [hasPuzzle]);
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!pageData.timelineEvents) return [];
@@ -71,98 +64,100 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       }));
   }, [pageData.timelineEvents]);
 
+  // Função disparada quando o quebra-cabeça é resolvido
+  const handleReveal = () => {
+    console.log("Revelando surpresa...");
+    setPuzzleRevealed(true);
+  };
+
   if (showTimeline && timelineEventsForDisplay.length > 0) {
     return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />;
   }
 
+  // Previne erros de hidratação (SSR)
+  if (!isClient) return null;
+
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden">
       
-      {/* 1. Camada de Fundo (Sempre visível) */}
-      <div className="absolute inset-0 w-full h-full z-0">
-        {isClient && pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
-        {isClient && pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
-        {isClient && pageData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
-        {isClient && pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
-        {isClient && pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
-        {isClient && pageData.backgroundAnimation === 'clouds' && (
-          <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-60">
+      {/* CAMADA 1: Efeitos de Fundo (Sempre visíveis) */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
+        {pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
+        {pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
+        {pageData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
+        {pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+        {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
+        {pageData.backgroundAnimation === 'clouds' && (
+          <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-40">
             <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
           </video>
         )}
       </div>
 
-      {/* 2. Conteúdo Principal (O que fica desfocado no fundo) */}
+      {/* CAMADA 2: Conteúdo Principal (A página em si) */}
       <motion.div 
-        className="relative z-10 w-full min-h-screen"
-        initial={false}
+        className="relative z-10 w-full min-h-screen flex flex-col items-center"
+        initial={hasPuzzle ? { filter: 'blur(15px)', opacity: 0.5, scale: 0.95 } : { filter: 'blur(0px)', opacity: 1, scale: 1 }}
         animate={{ 
-          filter: puzzleRevealed ? 'blur(0px)' : 'blur(12px)',
-          scale: puzzleRevealed ? 1 : 1.05,
-          opacity: 1
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
+          opacity: puzzleRevealed ? 1 : 0.5,
+          scale: puzzleRevealed ? 1 : 0.95
         }}
-        transition={{ duration: 1.2, ease: "easeInOut" }}
+        transition={{ duration: 1, ease: "easeOut" }}
         style={{ 
-          pointerEvents: puzzleRevealed ? 'auto' : 'none',
-          userSelect: puzzleRevealed ? 'auto' : 'none'
+          pointerEvents: puzzleRevealed ? 'auto' : 'none', // SÓ CLICA SE TIVER REVELADO
         }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center gap-y-16 md:gap-y-24 relative z-20">
-          <div className="space-y-6 text-center pt-16 md:pt-24">
-            <h1
-              className="text-4xl sm:text-5xl md:text-6xl font-handwriting break-words"
-              style={{ color: pageData.titleColor }}
-            >
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-12 md:gap-y-20 relative z-20">
+          {/* Título e Mensagem */}
+          <div className="space-y-6 text-center pt-16">
+            <h1 className="text-4xl sm:text-6xl font-handwriting" style={{ color: pageData.titleColor }}>
               {pageData.title}
             </h1>
             <p className={cn(
-              "text-white/80 whitespace-pre-wrap break-words max-w-2xl mx-auto text-base sm:text-lg",
+              "text-white/80 whitespace-pre-wrap break-words max-w-2xl mx-auto text-lg",
               pageData.messageFontSize,
               pageData.messageFormatting?.includes("bold") && "font-bold",
-              pageData.messageFormatting?.includes("italic") && "italic",
-              pageData.messageFormatting?.includes("strikethrough") && "line-through"
+              pageData.messageFormatting?.includes("italic") && "italic"
             )}>
               {pageData.message}
             </p>
           </div>
 
+          {/* Contador */}
           {pageData.specialDate && (
             <Countdown
               targetDate={pageData.specialDate}
-              style={pageData.countdownStyle as "Padrão" | "Simples"}
+              style={pageData.countdownStyle as any}
               color={pageData.countdownColor}
             />
           )}
 
+          {/* Botão da Timeline */}
           {timelineEventsForDisplay.length > 0 && (
-            <Button onClick={() => setShowTimeline(true)} variant="secondary" className="shadow-lg backdrop-blur-sm bg-white/10">
+            <Button onClick={() => setShowTimeline(true)} variant="secondary" className="backdrop-blur-md bg-white/10 border border-white/20">
               <View className="mr-2 h-4 w-4" /> Nossa Linha do Tempo
             </Button>
           )}
 
+          {/* Galeria Swiper */}
           {pageData.galleryImages?.length > 0 && (
-            <div className="w-full max-w-sm sm:max-w-md mx-auto overflow-visible">
+            <div className="w-full max-w-md mx-auto">
               <Swiper
                 key={pageData.galleryStyle}
                 effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
                 grabCursor={true}
                 centeredSlides={pageData.galleryStyle === 'Coverflow'}
                 slidesPerView={'auto'}
-                autoplay={{ delay: 3500, disableOnInteraction: false }}
+                autoplay={{ delay: 3000 }}
                 modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
                 pagination={{ clickable: true }}
-                className="mySwiper"
+                className="rounded-2xl overflow-hidden"
               >
-                {pageData.galleryImages.map((image: FileWithPreview, index: number) => (
-                  <SwiperSlide key={index} className="bg-transparent">
-                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                      <Image 
-                        src={image.url} 
-                        alt={`Galeria ${index + 1}`} 
-                        fill 
-                        className="object-cover" 
-                        unoptimized 
-                      />
+                {pageData.galleryImages.map((img: any, i: number) => (
+                  <SwiperSlide key={i}>
+                    <div className="relative aspect-square">
+                      <Image src={img.url} alt="foto" fill className="object-cover" unoptimized />
                     </div>
                   </SwiperSlide>
                 ))}
@@ -170,49 +165,32 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
 
-          {isClient && pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
-            <YoutubePlayer url={pageData.youtubeUrl} />
-          )}
-
-          {isClient && pageData.musicOption === 'record' && pageData.audioRecording && (
-            <CustomAudioPlayer src={pageData.audioRecording} />
-          )}
+          {/* Música/Áudio */}
+          {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
+          {pageData.musicOption === 'record' && pageData.audioRecording && <CustomAudioPlayer src={pageData.audioRecording} />}
         </div>
       </motion.div>
 
-      {/* 3. Overlay do Puzzle (Senta em cima de tudo, z-40) */}
+      {/* CAMADA 3: O QUEBRA-CABEÇA (Senta por cima de tudo) */}
       <AnimatePresence>
-        {isPuzzleActive && !puzzleRevealed && (
+        {!puzzleRevealed && hasPuzzle && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ 
-              opacity: 0, 
-              scale: 1.1,
-              filter: "blur(20px)" 
-            }}
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
             transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-40 flex flex-col items-center justify-center text-center p-6 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
           >
-            <div className="w-full max-w-lg mx-auto space-y-8">
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-3 text-white drop-shadow-lg">
-                  Um enigma para você...
-                </h2>
-                <p className="text-white/70 text-base md:text-lg max-w-xs mx-auto">
-                  Resolva o quebra-cabeça para revelar a sua <span className="text-primary font-bold">surpresa</span>.
-                </p>
-              </motion.div>
+            <div className="w-full max-w-lg space-y-6">
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-bold text-white font-headline">Um enigma para você...</h2>
+                <p className="text-white/60">Resolva o desafio para abrir seu presente.</p>
+              </div>
 
-              <div className="relative p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+              <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
-                  imageSrc={puzzleImageUrl}
+                  imageSrc={pageData.puzzleImage.url}
                   showControls={false}
-                  onReveal={() => setPuzzleRevealed(true)}
+                  onReveal={handleReveal}
                 />
               </div>
             </div>
@@ -223,25 +201,22 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   );
 }
 
-// Player de áudio customizado continua igual...
 function CustomAudioPlayer({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const togglePlayPause = () => {
+  const toggle = () => {
     if (audioRef.current) {
       isPlaying ? audioRef.current.pause() : audioRef.current.play();
       setIsPlaying(!isPlaying);
     }
   };
   return (
-    <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
+    <div className="flex items-center gap-4 p-4 rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
       <audio ref={audioRef} src={src} onEnded={() => setIsPlaying(false)} className="hidden" />
-      <Button onClick={togglePlayPause} size="icon" variant="ghost" className="rounded-full h-12 w-12 bg-primary hover:bg-primary/80 text-white">
-        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+      <Button onClick={toggle} size="icon" className="rounded-full bg-primary h-12 w-12 text-white">
+        {isPlaying ? <Pause /> : <Play className="ml-1" />}
       </Button>
-      <span className="text-sm font-medium text-white">Mensagem de Voz</span>
+      <span className="text-white font-medium">Ouvir Mensagem</span>
     </div>
   );
 }
-
-    
