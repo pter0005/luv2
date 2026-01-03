@@ -1027,7 +1027,7 @@ const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
 };
 
 const PuzzleStep = () => {
-    const { control, setValue, watch } = useFormContext<PageData>();
+    const { control, setValue, watch, getValues } = useFormContext<PageData>();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
 
@@ -1201,8 +1201,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
         };
     }, []);
 
-    const handleGeneratePix = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleGeneratePix = async () => {
         setError(null);
         setPixData(null);
         
@@ -1217,7 +1216,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
             setError({ 
                 message: 'Falha ao iniciar pagamento: o rascunho automático não foi encontrado.',
                 details: {
-                    log: "[CMD_LOG] > Erro Crítico: 'intentId' está nulo ao tentar gerar PIX. O salvamento automático pode ter falhado ou não foi concluído antes da ação de pagamento. Verifique a conexão e o status do salvamento no console."
+                    log: "[PRO_TIP] > O sistema ainda não salvou seu rascunho no banco. Aguarde 2 segundos e tente novamente."
                 }
             });
             return;
@@ -1250,16 +1249,21 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                      <FormField control={control} name="payment.payerCpf" render={({ field: { onChange, ...rest } }) => <FormItem><FormLabel>CPF</FormLabel><FormControl><Input {...rest} onChange={e => onChange(cpfMask(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
                 </div>
             </Card>
-            <form onSubmit={handleGeneratePix}>
-                <Button type="submit" size="lg" className="w-full" disabled={isProcessing}>
-                    {isProcessing ? <Loader2 className="animate-spin" /> : "Pagar com PIX R$ 24,99"}
-                </Button>
-            </form>
+
+            <Button 
+                type="button" 
+                size="lg" 
+                className="w-full" 
+                disabled={isProcessing}
+                onClick={handleGeneratePix}
+            >
+                {isProcessing ? <Loader2 className="animate-spin" /> : "Pagar com PIX R$ 24,99"}
+            </Button>
+            
             {error && (
                 <Alert variant="destructive" className="mt-4">
                     <Terminal className="h-4 w-4" />
                     <AlertTitle>{error.message}</AlertTitle>
-                    {typeof error.details === 'string' && <AlertDescription>{error.details}</AlertDescription>}
                     {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                 </Alert>
             )}
@@ -1675,5 +1679,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
