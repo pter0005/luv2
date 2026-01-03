@@ -73,11 +73,13 @@ const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
 const cpfMask = (v: string) => {
-    v = v.replace(/\D/g, ""); // Remove tudo que não é dígito
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d)/, "$1.$2");
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    return v.slice(0, 14); // Garante o tamanho máximo 000.000.000-00
+    v = v.replace(/\D/g, ""); // Remove tudo que não é número
+    if (v.length > 11) v = v.slice(0, 11); // Limita aos 11 dígitos do CPF
+    
+    return v
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 };
 
 
@@ -1160,8 +1162,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
     setIntentId: (id: string) => void;
 }) => {
-    const { getValues, control } = useFormContext<PageData>();
-    const { isValid } = useFormState({ control });
+    const { getValues, control, formState: { isValid } } = useFormContext<PageData>();
     const [isProcessing, startTransition] = useTransition();
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
@@ -1210,8 +1211,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
         if (!isValid) {
             toast({ 
                 variant: 'destructive', 
-                title: 'Campos Incompletos', 
-                description: 'Verifique se o nome, e-mail e CPF estão preenchidos corretamente.' 
+                title: 'Ops!', 
+                description: 'Preencha o Nome, E-mail e CPF corretamente.' 
             });
             return;
         }
@@ -1705,8 +1706,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-
-    
-
-    

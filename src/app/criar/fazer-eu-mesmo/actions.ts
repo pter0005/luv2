@@ -76,7 +76,7 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         
         const dataToSave = {
             fullPageData: serializablePageData,
-            payment: payment || {}, // Save payment info at the top level
+            payment: payment || {},
             userId: userId,
             updatedAt: Timestamp.now(),
             expireAt: Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)), // Expires in 30 minutes
@@ -119,12 +119,12 @@ export async function processPixPayment(intentId: string) {
         if (!intentDoc.exists) throw new Error('Dados do pedido não encontrados.');
 
         const intentData = intentDoc.data();
-        const payerData = intentData?.payment; // Corrected path to payment data
+        const payerData = intentData?.payment;
         
         const validation = PayerDataSchema.safeParse(payerData);
         if (!validation.success) {
             console.error("Payer data validation failed:", validation.error);
-            return { error: "Dados do pagador inválidos ou incompletos." };
+            return { error: "Dados do pagador incompletos no banco. Tente atualizar a página." };
         }
 
         const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
@@ -151,13 +151,13 @@ export async function processPixPayment(intentId: string) {
         const result = await payment.create({ body });
         
         if (result && result.id && result.point_of_interaction?.transaction_data) {
-            const { qr_code, qr_code_base_64 } = result.point_of_interaction.transaction_data;
+            const { qr_code, qr_code_base64 } = result.point_of_interaction.transaction_data;
             
             await intentDocRef.update({ paymentId: result.id.toString() });
             
             return {
                 qrCode: qr_code,
-                qrCodeBase64: qr_code_base_64,
+                qrCodeBase64: qr_code_base64,
                 paymentId: result.id.toString(),
             };
         } else {
@@ -281,5 +281,3 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         return { error: `Erro: ${error.message}` };
     }
 }
-
-    
