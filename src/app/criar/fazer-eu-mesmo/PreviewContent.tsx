@@ -52,7 +52,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
     }, [formData.backgroundAnimation]);
 
     return (
-        <div className="relative w-full h-full max-w-2xl aspect-[9/16] sm:aspect-video bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
+        <div className="relative w-full h-full max-w-2xl sm:aspect-video bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
             {/* Background Animations */}
             <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
                 {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
@@ -123,7 +123,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
                             )}
 
                             {formData.galleryImages.length > 0 && (
-                            <div className="w-full max-w-xs mx-auto">
+                            <div className="w-full max-w-sm mx-auto">
                                 
                                 <Swiper
                                     key={formData.galleryStyle}
@@ -179,3 +179,5 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
         </div>
     )
 }
+
+    

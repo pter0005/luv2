@@ -179,7 +179,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             <div className="w-full max-w-sm sm:max-w-md mx-auto">
               <Swiper
                 key={pageData.galleryStyle}
-                effect={pageData.galleryStyle.toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                effect={(pageData.galleryStyle || 'Cube').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
                 grabCursor={true}
                 centeredSlides={pageData.galleryStyle === 'Coverflow'}
                 slidesPerView={'auto'}
@@ -267,3 +267,5 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
     </div>
   );
 };
+
+    
