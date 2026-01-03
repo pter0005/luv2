@@ -74,10 +74,11 @@ const Puzzle = ({
   }, [initialImageSrc, shufflePieces]);
   
   useEffect(() => {
+    // Quando o quebra-cabeça é completo, chama a função onReveal
     if (isComplete && onReveal) {
       const timer = setTimeout(() => {
         onReveal();
-      }, 500); // Meio segundo de delay para o usuário ver que completou
+      }, 500); // Um pequeno delay para o usuário ver que completou
       return () => clearTimeout(timer);
     }
   }, [isComplete, onReveal]);

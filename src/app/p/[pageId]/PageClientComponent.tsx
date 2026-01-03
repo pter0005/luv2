@@ -60,7 +60,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   if (!isClient) return null;
 
   return (
-    <div className="min-h-screen w-full bg-background relative overflow-hidden">
+    <div className="min-h-screen w-full bg-background relative">
       
       {/* CAMADA 1: FUNDO */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
@@ -80,9 +80,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         className="relative z-10 w-full min-h-screen"
         initial={false}
         animate={{ 
-          opacity: 1, 
-          scale: puzzleRevealed ? 1 : 0.95,
-          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)'
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
+          scale: puzzleRevealed ? 1 : 0.95
         }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
         style={{ 
