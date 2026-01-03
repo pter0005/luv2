@@ -419,15 +419,14 @@ const GalleryStep = () => {
         }
     };
 
-
     const removeImage = (index: number) => {
         remove(index);
     };
     
-    
     return (
         <div className="space-y-8">
             <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType="fotos na galeria" />
+            
             <div className="space-y-2">
                 <FormLabel>Suas Fotos para a galeria</FormLabel>
                 <FormControl>
@@ -456,9 +455,7 @@ const GalleryStep = () => {
                         />
                     </label>
                 </FormControl>
-                {errors.galleryImages?.root && (
-                    <p className="text-sm font-medium text-destructive">{errors.galleryImages.root.message}</p>
-                )}
+                
                 {fields && fields.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
                         {fields.map((field, index) => (
@@ -482,6 +479,42 @@ const GalleryStep = () => {
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* AQUI ESTÁ A PARTE QUE ESTAVA FALTANDO PARA O CLIENTE ESCOLHER O ESTILO */}
+            <div className="space-y-4 pt-6 border-t">
+                <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
+                <FormField
+                    control={control}
+                    name="galleryStyle"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
+                                        <div key={style}>
+                                            <RadioGroupItem value={style} id={`style-${style}`} className="sr-only" />
+                                            <Label
+                                                htmlFor={`style-${style}`}
+                                                className={cn(
+                                                    "flex items-center justify-center rounded-md border-2 p-4 cursor-pointer hover:bg-accent transition-all",
+                                                    field.value === style ? "border-primary bg-primary/5" : "border-muted"
+                                                )}
+                                            >
+                                                {style}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
         </div>
     );
@@ -1614,3 +1647,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
