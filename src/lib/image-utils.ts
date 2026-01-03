@@ -32,7 +32,7 @@ export const base64ToFile = (base64: string, filename: string): File => {
 };
 
 // Helper to compress and resize an image file
-export const compressImage = (file: File, maxWidth = 1280, quality = 0.85): Promise<Blob> => {
+export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.7): Promise<Blob> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -49,15 +49,16 @@ export const compressImage = (file: File, maxWidth = 1280, quality = 0.85): Prom
 
                 let { width, height } = img;
 
+                // Adjust dimensions while maintaining aspect ratio
                 if (width > height) {
-                    if (width > maxWidth) {
-                        height = Math.round((height * maxWidth) / width);
-                        width = maxWidth;
+                    if (width > maxWidthOrHeight) {
+                        height = Math.round((height * maxWidthOrHeight) / width);
+                        width = maxWidthOrHeight;
                     }
                 } else {
-                    if (height > maxWidth) { // Use maxWidth for height as well for portrait images
-                        width = Math.round((width * maxWidth) / height);
-                        height = maxWidth;
+                    if (height > maxWidthOrHeight) {
+                        width = Math.round((width * maxWidthOrHeight) / height);
+                        height = maxWidthOrHeight;
                     }
                 }
 
@@ -82,9 +83,3 @@ export const compressImage = (file: File, maxWidth = 1280, quality = 0.85): Prom
         reader.onerror = (error) => reject(error);
     });
 };
-
-    
-
-    
-
-    

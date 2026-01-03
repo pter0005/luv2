@@ -134,9 +134,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
       {/* Main Content */}
       <motion.div 
-        className={cn("min-h-screen w-full transition-all duration-700 ease-in-out", !puzzleRevealed && "pointer-events-none")}
-        animate={{ filter: puzzleRevealed ? 'blur(0px)' : 'blur(8px)', scale: puzzleRevealed ? 1 : 1.05 }}
-        transition={{ duration: 0.7 }}
+        className={cn("min-h-screen w-full", !puzzleRevealed && "pointer-events-none")}
+        animate={{ 
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(8px)', 
+          scale: puzzleRevealed ? 1 : 1.05 
+        }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
       >
         <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center gap-y-16 md:gap-y-24 relative z-10">
           <div className="space-y-6 text-center pt-16 md:pt-24">
