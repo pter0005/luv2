@@ -1290,7 +1290,6 @@ const WizardInternal = () => {
   const [intentId, setIntentId] = useState<string | null>(null);
   const [isManualVerificationLoading, setManualVerificationLoading] = useState(false);
   
-  // FIX: Estado de revelação do puzzle no PREVIEW
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
   const methods = useForm<PageData>({
@@ -1309,7 +1308,6 @@ const WizardInternal = () => {
   const { watch, trigger, formState, setValue, getValues } = methods;
   const formData = watch();
 
-  // FIX: Resetar o puzzle do preview ao mudar de passo
   useEffect(() => {
     setPreviewPuzzleRevealed(false);
   }, [currentStep]);
