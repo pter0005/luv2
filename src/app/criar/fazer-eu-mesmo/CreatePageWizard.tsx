@@ -403,8 +403,8 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
+                // Upload original file directly
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -540,8 +540,8 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
+                 // Upload original file directly
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
 
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
@@ -1035,8 +1035,7 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'puzzle-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
