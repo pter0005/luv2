@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ const GRID_SIZE = 3;
 type Piece = {
   id: number;
   originalIndex: number;
-  style: React.CSSProperties;
 };
 
 type PuzzleProps = {
@@ -30,7 +28,7 @@ const Puzzle = ({
 }: PuzzleProps) => {
   const [dimension, setDimension] = useState(initialDimension);
   const [imageSrc, setImageSrc] = useState(
-    initialImageSrc || `https://picsum.photos/seed/puzzle/${dimension}/${dimension}`
+    initialImageSrc || `https://picsum.photos/seed/puzzle/${initialDimension}/${initialDimension}`
   );
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isComplete, setIsComplete] = useState(false);
@@ -40,7 +38,11 @@ const Puzzle = ({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDimension(initialDimension);
+    // Ajusta a dimensão com base no pai, mas limitado pela prop
+    if (containerRef.current) {
+        const parentWidth = containerRef.current.offsetWidth;
+        setDimension(Math.min(parentWidth, initialDimension));
+    }
   }, [initialDimension]);
 
   const pieceSize = dimension / GRID_SIZE;
@@ -65,18 +67,9 @@ const Puzzle = ({
       if (!src) return;
       const newPieces: Piece[] = [];
       for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-        const row = Math.floor(i / GRID_SIZE);
-        const col = i % GRID_SIZE;
         newPieces.push({
           id: i,
           originalIndex: i,
-          style: {
-            backgroundImage: `url(${src})`,
-            backgroundSize: `${dimension}px ${dimension}px`,
-            backgroundPosition: `-${col * pieceSize}px -${row * pieceSize}px`,
-            width: `${pieceSize}px`,
-            height: `${pieceSize}px`,
-          },
         });
       }
       setPieces(shufflePieces(newPieces));
@@ -84,20 +77,19 @@ const Puzzle = ({
       setIsRevealed(false);
       setSelectedPieceIndex(null);
     },
-    [pieceSize, shufflePieces, dimension]
+    [shufflePieces]
   );
 
   useEffect(() => {
     const newSrc = initialImageSrc || `https://picsum.photos/seed/puzzle/${dimension}/${dimension}`;
     const img = new window.Image();
-    img.crossOrigin = "Anonymous"; // Handle CORS for canvas operations if needed
+    img.crossOrigin = "Anonymous";
     img.src = newSrc;
     img.onload = () => {
         setImageSrc(newSrc);
         createAndShufflePieces(newSrc);
     }
     img.onerror = () => {
-        // Fallback if the image fails to load
         const fallbackSrc = `https://picsum.photos/seed/error/${dimension}/${dimension}`;
         setImageSrc(fallbackSrc);
         createAndShufflePieces(fallbackSrc);
@@ -131,19 +123,14 @@ const Puzzle = ({
     if (isComplete || isRevealed) return;
 
     if (selectedPieceIndex === null) {
-      // First click: select the piece
       setSelectedPieceIndex(clickedIndex);
     } else {
-      // Second click: swap pieces
       if(selectedPieceIndex !== clickedIndex) {
         const newPieces = [...pieces];
-        // The actual swap
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
-        
         setPieces(newPieces);
         checkCompletion(newPieces);
       }
-      // Reset selection after the move
       setSelectedPieceIndex(null);
     }
   };
@@ -198,33 +185,38 @@ const Puzzle = ({
         </AnimatePresence>
 
         <motion.div
-          className="grid gap-1 bg-card/10 p-1 rounded-lg shadow-2xl"
+          className="grid gap-1 bg-card/10 p-1 rounded-lg shadow-2xl touch-none"
           style={{
             gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
             width: `${dimension}px`,
             height: `${dimension}px`,
           }}
         >
-          {pieces.map((piece, index) => (
-            <motion.div
-              key={piece.id}
-              layout
-              onClick={() => handlePieceClick(index)}
-              className={cn(
-                "relative rounded-md overflow-hidden transition-all duration-300 ring-2",
-                !isComplete && "cursor-pointer",
-                selectedPieceIndex === index ? "ring-primary shadow-2xl shadow-primary/50" : "ring-transparent"
-              )}
-              style={{ width: pieceSize, height: pieceSize }}
-              animate={{ scale: selectedPieceIndex === index ? 1.05 : 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            >
-              <div
-                className="w-full h-full bg-no-repeat bg-cover"
-                style={piece.style}
+          {pieces.map((piece, index) => {
+            const row = Math.floor(piece.originalIndex / GRID_SIZE);
+            const col = piece.originalIndex % GRID_SIZE;
+            return (
+              <motion.div
+                key={piece.id}
+                layout
+                onClick={() => handlePieceClick(index)}
+                className={cn(
+                  "relative rounded-md overflow-hidden transition-all duration-300 ring-2",
+                  !isComplete && "cursor-pointer",
+                  selectedPieceIndex === index ? "ring-primary shadow-2xl shadow-primary/50 z-10" : "ring-transparent"
+                )}
+                style={{ 
+                    width: pieceSize, 
+                    height: pieceSize,
+                    backgroundImage: `url(${imageSrc})`,
+                    backgroundSize: `${dimension}px ${dimension}px`,
+                    backgroundPosition: `-${col * pieceSize}px -${row * pieceSize}px`,
+                }}
+                animate={{ scale: selectedPieceIndex === index ? 1.08 : 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
               />
-            </motion.div>
-          ))}
+            )
+          })}
         </motion.div>
       </div>
 
