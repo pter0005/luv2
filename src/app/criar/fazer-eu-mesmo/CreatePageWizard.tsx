@@ -547,7 +547,8 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
