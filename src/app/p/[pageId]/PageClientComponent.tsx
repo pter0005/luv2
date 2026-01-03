@@ -24,16 +24,18 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-  const cloudsVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Verifica se o puzzle deve existir
   const hasPuzzle = pageData.enablePuzzle && pageData.puzzleImage?.url;
 
   useEffect(() => {
     setIsClient(true);
+    // Se não tiver puzzle configurado, revela a página na hora
     if (!hasPuzzle) setPuzzleRevealed(true);
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
+    console.log("REVELAR ACIONADO!"); // Verifique isso no F12
     setPuzzleRevealed(true);
   }, []);
 
@@ -44,8 +46,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   if (!isClient) return null;
 
   return (
-    // REMOVIDO OVERFLOW-HIDDEN PARA A MÁGICA ACONTECER
-    <div className="min-h-screen w-full bg-background relative overflow-visible">
+    <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
       {/* CAMADA 1: FUNDO ANIMADO */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
@@ -55,22 +56,20 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
       </div>
 
-      {/* CAMADA 2: CONTEÚDO (O CARRO DENTRO DA GARAGEM) */}
-      <motion.div 
+      {/* CAMADA 2: CONTEÚDO PRINCIPAL */}
+      <motion.main 
         className="relative z-10 w-full min-h-screen"
-        initial={false}
         animate={{ 
-          // Ajustamos para 0.6 de opacidade para você ver o fundo desfocado
-          opacity: puzzleRevealed ? 1 : 0.6, 
-          scale: puzzleRevealed ? 1 : 0.96,
-          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)'
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
+          opacity: puzzleRevealed ? 1 : 0.5,
+          scale: puzzleRevealed ? 1 : 0.97
         }}
-        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{ 
-          pointerEvents: puzzleRevealed ? 'auto' : 'none' 
-        }}
+        transition={{ duration: 1.2, ease: "circOut" }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20">
+        <div className={cn(
+            "w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20 transition-all",
+            !puzzleRevealed && "pointer-events-none select-none"
+        )}>
           <div className="space-y-6 text-center pt-20">
             <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
               {pageData.title}
@@ -99,29 +98,30 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </Swiper>
             </div>
           )}
+
+          {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
         </div>
-      </motion.div>
+      </motion.main>
 
       {/* CAMADA 3: PUZZLE OVERLAY */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {!puzzleRevealed && hasPuzzle && (
           <motion.div
-            key="puzzle-overlay"
+            key="puzzle-screen"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
-            transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
+            transition={{ duration: 0.6 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-sm"
           >
             <div className="w-full max-w-lg space-y-6">
               <div className="text-center">
-                <h2 className="text-3xl font-bold text-white font-headline drop-shadow-xl">Um enigma para você...</h2>
-                <p className="text-white/70">Monte a foto para abrir sua surpresa.</p>
+                <h2 className="text-3xl font-bold text-white font-headline">Um enigma para você...</h2>
+                <p className="text-white/70">Encaixe as peças para ver a surpresa.</p>
               </div>
               <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
                   imageSrc={pageData.puzzleImage.url}
-                  showControls={false}
-                  onReveal={handleReveal}
+                  onReveal={handleReveal} 
                 />
               </div>
             </div>
