@@ -38,7 +38,7 @@
         "heartColor": { "type": "string", "description": "Color for falling hearts animation" },
         "backgroundVideo": { "$ref": "#/entities/FileWithPreview" },
         "enablePuzzle": { "type": "boolean", "description": "Whether the interactive puzzle is enabled" },
-        "puzzleImage": { "$ref": "#/entities/FileWithPreview" },
+        "puzzleImage": { "type": "string", "description": "Base64 encoded string of the puzzle image." },
         "createdAt": {
             "type": "object",
             "description": "Firestore server timestamp of when the page was created."

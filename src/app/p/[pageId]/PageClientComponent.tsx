@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -27,7 +27,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [isClient, setIsClient] = useState(false);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
 
-  const hasPuzzle = useMemo(() => pageData.enablePuzzle && pageData.puzzleImage?.url, [pageData]);
+  const hasPuzzle = useMemo(() => pageData.enablePuzzle && pageData.puzzleImage, [pageData]);
 
   useEffect(() => {
     setIsClient(true);
@@ -59,7 +59,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }
 
   if (!isClient) {
-    return null; // Evita renderização no servidor que pode causar piscar
+    return null; 
   }
 
   return (
@@ -76,15 +76,13 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       {/* CAMADA 2: CONTEÚDO PRINCIPAL (A PÁGINA) */}
       <motion.div 
         className="relative z-10 w-full min-h-screen"
-        initial={false} // Evita animação no carregamento inicial
         animate={{ 
           filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
-          scale: puzzleRevealed ? 1 : 0.95,
+          opacity: puzzleRevealed ? 1 : 0.6,
+          scale: puzzleRevealed ? 1 : 0.96,
         }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          // Deixa o fundo visível mas não-interativo enquanto o puzzle está ativo
-          opacity: hasPuzzle ? (puzzleRevealed ? 1 : 0.7) : 1,
+        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+        style={{ 
           pointerEvents: puzzleRevealed ? 'auto' : 'none',
         }}
       >
@@ -134,11 +132,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {!puzzleRevealed && hasPuzzle && (
           <motion.div
             key="puzzle-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
             transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
           >
             <div className="w-full max-w-lg space-y-6 text-center">
               <div>
@@ -147,7 +144,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </div>
               <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
-                  imageSrc={pageData.puzzleImage.url}
+                  imageSrc={pageData.puzzleImage}
                   onReveal={handleReveal}
                 />
               </div>

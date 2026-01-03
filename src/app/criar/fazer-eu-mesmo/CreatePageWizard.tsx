@@ -134,7 +134,7 @@ const pageSchema = z.object({
   heartColor: z.string().default("#8B5CF6"),
   backgroundVideo: fileWithPreviewSchema.optional(),
   enablePuzzle: z.boolean().default(false),
-  puzzleImage: fileWithPreviewSchema.optional(),
+  puzzleImage: z.string().optional(),
   payment: paymentSchema.optional(),
 });
 
@@ -1030,47 +1030,33 @@ const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
 };
 
 const PuzzleStep = () => {
-    const { control, setValue, watch, getValues } = useFormContext<PageData>();
+    const { control, setValue, watch } = useFormContext<PageData>();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
-
-    const { user } = useUser();
-    const { storage } = useFirebase();
+    const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const [isUploading, setIsUploading] = useState(false);
-    
+
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0] && user && storage) {
+        if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
-            setIsUploading(true);
-            
+            setIsProcessing(true);
             try {
-                // Remove old image before uploading a new one
-                removePuzzleImage(false); // Don't show toast on remove
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
-                const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
-                setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
-                toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
+                const compressedBlob = await compressImage(file, 800, 0.7);
+                const base64String = await fileToBase64(compressedBlob);
+                setValue("puzzleImage", base64String, { shouldValidate: true, shouldDirty: true });
+                toast({ title: 'Imagem processada!', description: 'A imagem para o quebra-cabeça foi definida.' });
             } catch (error) {
-                console.error("Error uploading puzzle image:", error);
-                toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar a imagem.' });
+                console.error("Error processing puzzle image:", error);
+                toast({ variant: 'destructive', title: 'Erro ao Processar', description: 'Não foi possível usar esta imagem.' });
             } finally {
-                setIsUploading(false);
+                setIsProcessing(false);
             }
         }
     };
-
-
-    const removePuzzleImage = (showToast = true) => {
-        const imageToRemove = getValues("puzzleImage");
-        if (imageToRemove?.path && storage) {
-            const imageRef = storageRef(storage, imageToRemove.path);
-            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
-        }
+    
+    const removePuzzleImage = () => {
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
-        if (showToast) {
-            toast({ title: 'Imagem removida.' });
-        }
+        toast({ title: 'Imagem removida.' });
     };
     
     return (
@@ -1095,29 +1081,29 @@ const PuzzleStep = () => {
             {enablePuzzle && (
                  <div className="space-y-4">
                     <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
-                     {!puzzleImage?.url ? (
+                     {!puzzleImage ? (
                         <FormControl>
                         <label
                             htmlFor="puzzle-photo-upload"
                             className={cn(
                                 "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
-                                isUploading && "cursor-not-allowed opacity-50"
+                                isProcessing && "cursor-not-allowed opacity-50"
                             )}
                         >
-                            {isUploading ? (
+                            {isProcessing ? (
                                 <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
                             ) : (
                                 <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                             )}
-                            <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar uma foto'}</p>
-                            <p className="text-xs text-muted-foreground">A imagem que será transformada em quebra-cabeça</p>
+                            <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
+                            <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
                             <input
                                 id="puzzle-photo-upload"
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
                                 onChange={handlePuzzleImageChange}
-                                disabled={isUploading}
+                                disabled={isProcessing}
                             />
                         </label>
                         </FormControl>
@@ -1125,7 +1111,7 @@ const PuzzleStep = () => {
                         <div className="w-full flex flex-col items-center gap-6">
                              <div className="w-full max-w-[300px] mx-auto">
                                 <RealPuzzle
-                                    imageSrc={puzzleImage.url}
+                                    imageSrc={puzzleImage}
                                     showControls={true}
                                     onReveal={() => {}}
                                 />
@@ -1133,7 +1119,7 @@ const PuzzleStep = () => {
                              <Button
                                  type="button"
                                  variant="destructive"
-                                 onClick={() => removePuzzleImage()}
+                                 onClick={removePuzzleImage}
                                  size="sm"
                              >
                                  <X className="mr-2 h-4 w-4" />
@@ -1522,7 +1508,7 @@ const WizardInternal = () => {
       StepComponent = <Comp isVisible={currentStepId === 'background'} />;
   }
   
-  const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+  const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage;
 
   return (
     <FormProvider {...methods}>
