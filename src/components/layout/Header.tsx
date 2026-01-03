@@ -39,14 +39,20 @@ export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === "headerLogo")?.imageUrl || "";
   const { user, isUserLoading } = useUser();
 
   const handleSignOut = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/login');
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      
+      // Em vez de router.push, vamos usar o window.location
+      // Isso garante que o estado do Firebase seja limpo e a página recarregada
+      window.location.href = '/login'; 
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
   };
 
   useEffect(() => {
