@@ -57,7 +57,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       </div>
 
       {/* CAMADA 2: CONTEÚDO PRINCIPAL (VISÍVEL E DESFOCADO) */}
-      <motion.div 
+      <motion.main 
         className="relative z-10 w-full min-h-screen"
         initial={false}
         animate={{ 
@@ -100,7 +100,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
         </div>
-      </motion.div>
+      </motion.main>
 
       {/* CAMADA 3: PUZZLE OVERLAY (SÓ SUMIRÁ QUANDO RESOLVIDO) */}
       <AnimatePresence>

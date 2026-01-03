@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
@@ -112,7 +111,11 @@ export default function PreviewContent({
                         }}
                         transition={{ duration: 1.2, ease: "circOut" }}
                      >
-                        <div className={cn("w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-16", !previewPuzzleRevealed && "pointer-events-none select-none")}>
+                        <div className={cn(
+                            "w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-16", 
+                            !previewPuzzleRevealed && "pointer-events-none select-none",
+                            "relative z-10" // GARANTE QUE O CONTEÚDO FIQUE NA FRENTE DAS ANIMAÇÕES
+                        )}>
                             <div className="relative z-10 space-y-6 text-center">
                                 <h1
                                     className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
@@ -227,5 +230,3 @@ export default function PreviewContent({
         </div>
     )
 }
-
-    
