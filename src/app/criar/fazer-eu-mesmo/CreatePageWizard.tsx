@@ -1113,7 +1113,6 @@ const PuzzleStep = () => {
                                 <RealPuzzle
                                     imageSrc={puzzleImage}
                                     showControls={true}
-                                    onReveal={() => {}}
                                 />
                              </div>
                              <Button
@@ -1290,6 +1289,9 @@ const WizardInternal = () => {
   const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
   const [intentId, setIntentId] = useState<string | null>(null);
   const [isManualVerificationLoading, setManualVerificationLoading] = useState(false);
+  
+  // FIX: Estado de revelação do puzzle no PREVIEW
+  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
@@ -1307,6 +1309,10 @@ const WizardInternal = () => {
   const { watch, trigger, formState, setValue, getValues } = methods;
   const formData = watch();
 
+  // FIX: Resetar o puzzle do preview ao mudar de passo
+  useEffect(() => {
+    setPreviewPuzzleRevealed(false);
+  }, [currentStep]);
 
   const restoreFromLocalStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -1521,6 +1527,8 @@ const WizardInternal = () => {
                 onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                 showPuzzlePreview={showPuzzlePreview}
+                previewPuzzleRevealed={previewPuzzleRevealed}
+                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
             />
           </div>
 
@@ -1557,6 +1565,8 @@ const WizardInternal = () => {
                                 onShowTimeline={() => setShowTimelinePreview(true)}
                                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                                 showPuzzlePreview={showPuzzlePreview}
+                                previewPuzzleRevealed={previewPuzzleRevealed}
+                                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
                             />
                         </div>
                     </DialogContent>
@@ -1679,3 +1689,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    

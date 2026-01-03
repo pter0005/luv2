@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { View } from 'lucide-react';
+import { View, Eye } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from 'next/dynamic';
@@ -15,9 +15,9 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
-
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   ssr: false,
@@ -35,9 +35,19 @@ type PreviewContentProps = {
     onShowTimeline: () => void;
     hasValidTimelineEvents: boolean;
     showPuzzlePreview: boolean;
+    previewPuzzleRevealed: boolean;
+    setPreviewPuzzleRevealed: (revealed: boolean) => void;
 };
 
-export default function PreviewContent({ formData, isClient, onShowTimeline, hasValidTimelineEvents, showPuzzlePreview }: PreviewContentProps) {
+export default function PreviewContent({
+    formData,
+    isClient,
+    onShowTimeline,
+    hasValidTimelineEvents,
+    showPuzzlePreview,
+    previewPuzzleRevealed,
+    setPreviewPuzzleRevealed
+}: PreviewContentProps) {
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -53,31 +63,13 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
           cloudsVideoRef.current.playbackRate = 0.6;
         }
     }, [formData.backgroundAnimation]);
-    
-    if (showPuzzlePreview) {
-        return (
-             <div className="relative w-full h-full flex items-center justify-center p-4 bg-black rounded-xl">
-                 <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8 text-center">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2 text-white">Um enigma para você...</h2>
-                        <p className="text-muted-foreground text-sm md:text-base">
-                        Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
-                        </p>
-                    </div>
-                    <RealPuzzle
-                        imageSrc={formData.puzzleImage?.url}
-                        showControls={false}
-                        onReveal={() => {}} // Dummy function for preview
-                    />
-                 </div>
-             </div>
-        );
-    }
+
+    const puzzleImageSrc = formData.puzzleImage;
 
     return (
         <div className="relative w-full h-full max-w-2xl sm:aspect-video bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
             {/* Background Animations */}
-            <div className="absolute inset-0 w-full h-full z-0 overflow-hidden">
+            <div className="absolute inset-0 w-full h-full z-0 overflow-hidden pointer-events-none">
                 {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
                 {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
                 {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
@@ -111,24 +103,32 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
 
                 {/* Page Content */}
                 <div className="flex-grow rounded-b-lg overflow-hidden relative">
-                     <div className="w-full h-full flex flex-col relative overflow-y-auto z-20 browser-scrollbar">
-                        <div className="w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-16">
+                     <motion.div 
+                        className="w-full h-full flex flex-col relative overflow-y-auto z-20 browser-scrollbar"
+                        animate={{
+                            filter: previewPuzzleRevealed ? 'blur(0px)' : 'blur(15px)',
+                            opacity: previewPuzzleRevealed ? 1 : 0.5,
+                            scale: previewPuzzleRevealed ? 1 : 0.97
+                        }}
+                        transition={{ duration: 1.2, ease: "circOut" }}
+                     >
+                        <div className={cn("w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-16", !previewPuzzleRevealed && "pointer-events-none select-none")}>
                             <div className="relative z-10 space-y-6 text-center">
-                            <h1
-                                className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
-                                style={{ color: formData.titleColor }}
-                            >
-                                {formData.title || 'Seu Título Aqui'}
-                            </h1>
-                            <p className={cn(
-                                "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
-                                formData.messageFontSize,
-                                formData.messageFormatting?.includes("bold") && "font-bold",
-                                formData.messageFormatting?.includes("italic") && "italic",
-                                formData.messageFormatting?.includes("strikethrough") && "line-through"
-                            )}>
-                                {formData.message || 'Sua mensagem de amor...'}
-                            </p>
+                                <h1
+                                    className="text-3xl md:text-4xl font-handwriting break-words pt-8 md:pt-12"
+                                    style={{ color: formData.titleColor }}
+                                >
+                                    {formData.title || 'Seu Título Aqui'}
+                                </h1>
+                                <p className={cn(
+                                    "text-white/80 whitespace-pre-wrap break-words text-sm md:text-base",
+                                    formData.messageFontSize,
+                                    formData.messageFormatting?.includes("bold") && "font-bold",
+                                    formData.messageFormatting?.includes("italic") && "italic",
+                                    formData.messageFormatting?.includes("strikethrough") && "line-through"
+                                )}>
+                                    {formData.message || 'Sua mensagem de amor...'}
+                                </p>
                             </div>
                             
                             {formData.specialDate && (
@@ -196,9 +196,36 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
                             <CustomAudioPlayer src={formData.audioRecording} />
                             )}
                         </div>
-                    </div>
+                    </motion.div>
+                    
+                    <AnimatePresence mode="wait">
+                        {showPuzzlePreview && !previewPuzzleRevealed && puzzleImageSrc && (
+                            <motion.div
+                                key="preview-puzzle-screen"
+                                initial={{ opacity: 1 }}
+                                exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
+                                transition={{ duration: 0.6 }}
+                                className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-sm"
+                            >
+                                <div className="w-full max-w-lg space-y-6">
+                                    <div className="text-center">
+                                        <h2 className="text-xl font-bold text-white font-headline">Preview do Quebra-Cabeça</h2>
+                                        <p className="text-white/70 text-sm">Monte para testar a revelação.</p>
+                                    </div>
+                                    <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+                                        <RealPuzzle
+                                            imageSrc={puzzleImageSrc}
+                                            onReveal={() => setPreviewPuzzleRevealed(true)}
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </div>
     )
 }
+
+    
