@@ -31,11 +31,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle) setPuzzleRevealed(true);
+    if (!hasPuzzle) {
+      setPuzzleRevealed(true);
+    }
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
-    console.log("REVELAR CLICADO!");
     setPuzzleRevealed(true);
   }, []);
 
@@ -74,13 +75,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </div>
 
-      {/* CAMADA 2: CONTEÚDO (Onde estava o erro de opacidade) */}
+      {/* CAMADA 2: CONTEÚDO */}
       <motion.div 
         className="relative z-10 w-full min-h-screen"
         initial={false}
         animate={{ 
-          // Ajustamos para 0.4 de opacidade para você ver o fundo desfocado
-          opacity: puzzleRevealed ? 1 : 0.4, 
+          opacity: 1, 
           scale: puzzleRevealed ? 1 : 0.95,
           filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)'
         }}
@@ -146,7 +146,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 <RealPuzzle
                   imageSrc={pageData.puzzleImage.url}
                   showControls={false}
-                  onReveal={handleReveal} // O FILHO CHAMA ESSA FUNÇÃO
+                  onReveal={handleReveal}
                 />
               </div>
             </div>

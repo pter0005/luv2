@@ -29,11 +29,10 @@ const Puzzle = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
-  const [isComplete, setIsComplete] = useState(false); // ESTADO QUE FALTAVA
+  const [isComplete, setIsComplete] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Monitora o tamanho real da tela
   useEffect(() => {
     if (!containerRef.current) return;
     const updateWidth = () => {
@@ -47,7 +46,6 @@ const Puzzle = ({
     return () => window.removeEventListener("resize", updateWidth);
   }, [maxDimension]);
 
-  // 2. Função para embaralhar
   const shufflePieces = useCallback((array: Piece[]) => {
     let newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -60,7 +58,6 @@ const Puzzle = ({
     return newArray;
   }, []);
 
-  // 3. Inicializa o quebra-cabeça
   useEffect(() => {
     const initialPieces: Piece[] = [];
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
@@ -75,9 +72,19 @@ const Puzzle = ({
       img.onload = () => setImageLoaded(true);
     }
   }, [initialImageSrc, shufflePieces]);
+  
+  useEffect(() => {
+    if (isComplete && onReveal) {
+      const timer = setTimeout(() => {
+        onReveal();
+      }, 500); // Meio segundo de delay para o usuário ver que completou
+      return () => clearTimeout(timer);
+    }
+  }, [isComplete, onReveal]);
+
 
   const handlePieceClick = (clickedIndex: number) => {
-    if (!imageLoaded || isComplete) return; // TRAVA CLIQUES SE JÁ GANHOU
+    if (!imageLoaded || isComplete) return;
 
     if (selectedPieceIndex === null) {
       setSelectedPieceIndex(clickedIndex);
@@ -87,20 +94,13 @@ const Puzzle = ({
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
         setPieces(newPieces);
         
-        // Verifica se resolveu
         const solved = newPieces.every((p, i) => p.originalIndex === i);
         if (solved) {
-          setIsComplete(true); // MARCA COMO COMPLETO
+          setIsComplete(true);
         }
       }
       setSelectedPieceIndex(null);
     }
-  };
-
-  // FUNÇÃO MESTRE: DISPARA O SINAL PARA O PAI
-  const handleFinalReveal = () => {
-    console.log("PUZZLE: Enviando sinal de revelação...");
-    if (onReveal) onReveal();
   };
 
   return (
@@ -109,7 +109,6 @@ const Puzzle = ({
         className="w-full aspect-square relative touch-none select-none"
         style={{ maxWidth: maxDimension }}
       >
-        {/* Camada de Carregamento */}
         {!imageLoaded && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-900 rounded-xl">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
@@ -117,32 +116,9 @@ const Puzzle = ({
           </div>
         )}
 
-        {/* TELA DE SUCESSO (Aparece quando monta tudo) */}
-        <AnimatePresence>
-          {isComplete && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl p-6 text-center border-2 border-primary/50"
-            >
-              <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-2">Desafio Concluído!</h3>
-              <p className="text-white/70 mb-6 text-sm">Agora você pode ver o que eu preparei para você.</p>
-              <Button 
-                onClick={handleFinalReveal} 
-                size="lg" 
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-lg animate-bounce"
-              >
-                <Eye className="mr-2" /> Revelar Surpresa
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* O GRID DO JOGO */}
         <div 
           className={cn(
-            "grid gap-1 w-full h-full p-1 bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden",
+            "grid gap-1 w-full h-full p-1 bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden transition-opacity duration-500",
             isComplete && "opacity-40"
           )}
           style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
@@ -172,6 +148,20 @@ const Puzzle = ({
             );
           })}
         </div>
+        
+        <AnimatePresence>
+            {isComplete && (
+                 <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="absolute inset-0 z-30 flex items-center justify-center"
+                 >
+                    <CheckCircle className="w-24 h-24 text-green-500/80 drop-shadow-[0_0_15px_rgba(50,255,50,0.5)]" />
+                 </motion.div>
+            )}
+        </AnimatePresence>
+
       </div>
     </div>
   );
