@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Shuffle, CheckCircle, Loader2 } from "lucide-react";
+import { Shuffle, CheckCircle, Loader2, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,7 @@ const Puzzle = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
+  const [isComplete, setIsComplete] = useState(false); // ESTADO QUE FALTAVA
   
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +60,7 @@ const Puzzle = ({
     return newArray;
   }, []);
 
-  // 3. Inicializa o quebra-cabeça e carrega a imagem
+  // 3. Inicializa o quebra-cabeça
   useEffect(() => {
     const initialPieces: Piece[] = [];
     for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
@@ -68,21 +69,15 @@ const Puzzle = ({
     setPieces(shufflePieces(initialPieces));
     
     if (initialImageSrc) {
-      setImageLoaded(false); // Reseta o estado de carregamento
+      setImageLoaded(false);
       const img = new window.Image();
       img.src = initialImageSrc;
       img.onload = () => setImageLoaded(true);
-      img.onerror = () => {
-          console.error("Falha ao carregar imagem do quebra-cabeça");
-          setImageLoaded(false); // Mantém como não carregado em caso de erro
-      }
-    } else {
-        setImageLoaded(false);
     }
   }, [initialImageSrc, shufflePieces]);
 
   const handlePieceClick = (clickedIndex: number) => {
-    if (!imageLoaded) return;
+    if (!imageLoaded || isComplete) return; // TRAVA CLIQUES SE JÁ GANHOU
 
     if (selectedPieceIndex === null) {
       setSelectedPieceIndex(clickedIndex);
@@ -92,17 +87,20 @@ const Puzzle = ({
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
         setPieces(newPieces);
         
-        // Verifica a solução e chama o onReveal AUTOMATICAMENTE
+        // Verifica se resolveu
         const solved = newPieces.every((p, i) => p.originalIndex === i);
-        if (solved && onReveal) {
-          // Pequeno delay para o usuário ver a última peça se encaixando
-          setTimeout(() => {
-            onReveal();
-          }, 300);
+        if (solved) {
+          setIsComplete(true); // MARCA COMO COMPLETO
         }
       }
       setSelectedPieceIndex(null);
     }
+  };
+
+  // FUNÇÃO MESTRE: DISPARA O SINAL PARA O PAI
+  const handleFinalReveal = () => {
+    console.log("PUZZLE: Enviando sinal de revelação...");
+    if (onReveal) onReveal();
   };
 
   return (
@@ -113,21 +111,45 @@ const Puzzle = ({
       >
         {/* Camada de Carregamento */}
         {!imageLoaded && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card/20 backdrop-blur-md rounded-xl border border-white/10">
-            <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
-            <p className="text-xs text-muted-foreground">Preparando desafio...</p>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-900 rounded-xl">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+            <p className="text-xs text-white/50">Carregando foto...</p>
           </div>
         )}
 
-        {/* O GRID */}
+        {/* TELA DE SUCESSO (Aparece quando monta tudo) */}
+        <AnimatePresence>
+          {isComplete && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-xl p-6 text-center border-2 border-primary/50"
+            >
+              <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+              <h3 className="text-2xl font-bold text-white mb-2">Desafio Concluído!</h3>
+              <p className="text-white/70 mb-6 text-sm">Agora você pode ver o que eu preparei para você.</p>
+              <Button 
+                onClick={handleFinalReveal} 
+                size="lg" 
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-6 text-lg animate-bounce"
+              >
+                <Eye className="mr-2" /> Revelar Surpresa
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* O GRID DO JOGO */}
         <div 
-          className="grid gap-1 w-full h-full p-1 bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden"
+          className={cn(
+            "grid gap-1 w-full h-full p-1 bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden",
+            isComplete && "opacity-40"
+          )}
           style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
         >
           {pieces.map((piece, index) => {
             const row = Math.floor(piece.originalIndex / GRID_SIZE);
             const col = piece.originalIndex % GRID_SIZE;
-            
             const posX = (col / (GRID_SIZE - 1)) * 100;
             const posY = (row / (GRID_SIZE - 1)) * 100;
 
