@@ -149,7 +149,7 @@ function StarfieldBackground() {
       positions[i * 3 + 2] = (Math.random() - 0.5) * 2000
     }
     starsGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3))
-    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, sizeAttenuation: true })
+    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: isMobile ? 0.5 : 0.7, sizeAttenuation: true })
     const stars = new THREE.Points(starsGeometry, starsMaterial)
     scene.add(stars)
 
@@ -489,7 +489,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
         <Canvas
           dpr={[1, 1.5]}
-          camera={{ position: [0, 0, isMobile ? 40 : 35], fov: isMobile ? 75 : 60 }}
+          camera={{ position: [0, 0, isMobile ? 40 : 35], fov: isMobile ? 75 : 60, near: 0.1, far: 200 }}
           className="absolute inset-0 z-10"
           onCreated={({ gl }) => {
             gl.domElement.style.pointerEvents = "auto"
@@ -505,11 +505,11 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
               enableZoom
               enableRotate
               minDistance={isMobile ? 15 : 10}
-              maxDistance={isMobile ? 50 : 45}
+              maxDistance={isMobile ? 60 : 50}
               autoRotate={events.length > 1}
               autoRotateSpeed={isMobile ? 0.3 : 0.15}
               rotateSpeed={isMobile ? 0.8 : 0.5}
-              zoomSpeed={isMobile ? 1.2 : 1.2}
+              zoomSpeed={isMobile ? 1.0 : 1.0}
               panSpeed={isMobile ? 1.0 : 0.8}
               target={[0, 0, 0]}
             />
