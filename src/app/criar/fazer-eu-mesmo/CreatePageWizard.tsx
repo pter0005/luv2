@@ -72,12 +72,13 @@ const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
 const cpfMask = (v: string) => {
-    v = v.replace(/\D/g, ""); // Remove tudo o que não é dígito
-    v = v.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca um ponto entre o terceiro e o quarto dígitos
-    v = v.replace(/(\d{3})(\d)/, "$1.$2"); // Coloca um ponto entre o terceiro e o quarto dígitos
-                                         // de novo (para o segundo bloco de números)
-    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2"); // Coloca um hífen entre o terceiro e o quarto dígitos
-    return v.slice(0, 14); // Limita o tamanho
+    v = v.replace(/\D/g, ""); // Remove tudo que não é dígito
+    if (v.length <= 11) {
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    return v.slice(0, 14); // Garante o tamanho máximo 000.000.000-00
 };
 
 
@@ -404,7 +405,7 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.85);
+                const compressedFile = await compressImage(file);
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
@@ -545,7 +546,7 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                const compressedFile = await compressImage(file, 1024, 0.8);
+                const compressedFile = await compressImage(file, 1024, 0.85);
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline-images');
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
@@ -1205,36 +1206,60 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     }, []);
 
     const handleGeneratePix = async () => {
+        console.log("Iniciando processo de PIX..."); // DEBUG
         setError(null);
         setPixData(null);
         
+        // 1. Valida os campos antes de tentar pagar
         const isFormValid = await trigger("payment");
+        console.log("Formulário válido:", isFormValid); // DEBUG
+    
         if (!isFormValid) {
-            toast({ variant: 'destructive', title: 'Campos Inválidos', description: 'Por favor, corrija os erros no formulário do pagador.' });
+            toast({ 
+                variant: 'destructive', 
+                title: 'Campos Incompletos', 
+                description: 'Verifique se o nome, e-mail e CPF estão preenchidos corretamente.' 
+            });
             return;
         }
-
+    
+        // 2. Busca o ID do rascunho
         const currentIntentId = getValues("intentId");
+        console.log("Intent ID encontrado:", currentIntentId); // DEBUG
+    
         if (!currentIntentId) {
             setError({ 
-                message: 'Falha ao iniciar pagamento: o rascunho automático não foi encontrado.',
+                message: 'Aguarde o salvamento...',
                 details: {
-                    log: "[PRO_TIP] > O sistema ainda não salvou seu rascunho no banco. Aguarde 2 segundos e tente novamente."
+                    log: "[SISTEMA] > O rascunho automático ainda está sendo processado. Aguarde 3 segundos e tente clicar novamente."
                 }
             });
             return;
         }
-
+    
         setIntentId(currentIntentId);
         
+        // 3. Chama o Mercado Pago
         startTransition(async () => {
-            const paymentResult = await processPixPayment(currentIntentId);
-            
-            if (paymentResult.error) {
-                setError({ message: paymentResult.error, details: paymentResult.details || {} });
-            } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
-                setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
-                startPolling(currentIntentId);
+            try {
+                console.log("Chamando processPixPayment no servidor..."); // DEBUG
+                const paymentResult = await processPixPayment(currentIntentId);
+                
+                if (paymentResult.error) {
+                    console.error("Erro no servidor:", paymentResult.error); // DEBUG
+                    setError({ message: paymentResult.error, details: paymentResult.details || {} });
+                } else if (paymentResult.qrCode) {
+                    console.log("PIX Gerado com sucesso!"); // DEBUG
+                    setPixData({ 
+                        qrCode: paymentResult.qrCode, 
+                        qrCodeBase64: paymentResult.qrCodeBase64!, 
+                        paymentId: paymentResult.paymentId! 
+                    });
+                    startPolling(currentIntentId);
+                }
+            } catch (err) {
+                console.error("Erro catastrófico:", err); // DEBUG
+                setError({ message: "Erro ao conectar com o serviço de pagamento." });
             }
         });
     };
@@ -1399,8 +1424,8 @@ const WizardInternal = () => {
     const ok = await trigger(steps[currentStep].fields as any);
     if (!ok) return;
 
-    // Special handling: force save before going to payment step
     if (steps[currentStep + 1]?.id === 'payment') {
+        toast({ title: "Salvando rascunho...", description: "Preparando check-out seguro." });
         await handleAutosave(getValues());
     }
     
@@ -1515,8 +1540,7 @@ const WizardInternal = () => {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <div className="grid md:grid-cols-2 gap-8 min-h-[calc(100vh_-_10rem)]">
+      <div className="grid md:grid-cols-2 gap-8 min-h-[calc(100vh_-_10rem)]">
           {/* Coluna da Esquerda: Preview */}
           <div className="hidden md:flex relative h-full w-full md:sticky top-24 items-center justify-center p-4">
              <PreviewContent 
@@ -1569,7 +1593,6 @@ const WizardInternal = () => {
             </div>
           </div>
         </div>
-      </form>
     </FormProvider>
   );
 }
