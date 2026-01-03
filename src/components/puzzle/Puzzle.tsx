@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -202,3 +203,5 @@ const Puzzle = ({
 };
 
 export default Puzzle;
+
+    
