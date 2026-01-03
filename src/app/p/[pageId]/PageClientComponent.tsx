@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -14,7 +15,8 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { Pause, Play, View, Loader2 } from 'lucide-react';
+import { View } from 'lucide-react';
+import CustomAudioPlayer from '@/app/criar/fazer-eu-mesmo/CustomAudioPlayer';
 
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
@@ -25,28 +27,43 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [isClient, setIsClient] = useState(false);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
 
-  // Verifica se o puzzle deve existir
-  const hasPuzzle = pageData.enablePuzzle && pageData.puzzleImage?.url;
+  const hasPuzzle = useMemo(() => pageData.enablePuzzle && pageData.puzzleImage?.url, [pageData]);
 
   useEffect(() => {
     setIsClient(true);
-    // Se não tiver puzzle configurado, revela a página na hora
-    if (!hasPuzzle) setPuzzleRevealed(true);
+    if (!hasPuzzle) {
+      setPuzzleRevealed(true);
+    }
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
-    console.log("REVELAR ACIONADO!"); // Verifique isso no F12
     setPuzzleRevealed(true);
   }, []);
+  
+  const timelineEvents = useMemo(() => {
+    if (!pageData.timelineEvents) return [];
+    return pageData.timelineEvents
+      .filter((event: any) => event && event.image?.url)
+      .map((event: any) => ({
+        id: event.id || Math.random().toString(),
+        imageUrl: event.image.url,
+        alt: event.description || "Timeline Image",
+        title: event.description,
+        date: event.date ? new Date(event.date) : new Date(),
+      }));
+  }, [pageData.timelineEvents]);
+
 
   if (showTimeline) {
-    return <Timeline events={pageData.timelineEvents} onClose={() => setShowTimeline(false)} />;
+    return <Timeline events={timelineEvents} onClose={() => setShowTimeline(false)} />;
   }
 
-  if (!isClient) return null;
+  if (!isClient) {
+    return null; // Evita renderização no servidor que pode causar piscar
+  }
 
   return (
-    <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-background relative">
       
       {/* CAMADA 1: FUNDO ANIMADO */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
@@ -56,72 +73,82 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
       </div>
 
-      {/* CAMADA 2: CONTEÚDO PRINCIPAL */}
-      <motion.main 
+      {/* CAMADA 2: CONTEÚDO PRINCIPAL (A PÁGINA) */}
+      <motion.div 
         className="relative z-10 w-full min-h-screen"
+        initial={false} // Evita animação no carregamento inicial
         animate={{ 
           filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
-          opacity: puzzleRevealed ? 1 : 0.5,
-          scale: puzzleRevealed ? 1 : 0.97
+          scale: puzzleRevealed ? 1 : 0.95,
         }}
-        transition={{ duration: 1.2, ease: "circOut" }}
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          // Deixa o fundo visível mas não-interativo enquanto o puzzle está ativo
+          opacity: hasPuzzle ? (puzzleRevealed ? 1 : 0.7) : 1,
+          pointerEvents: puzzleRevealed ? 'auto' : 'none',
+        }}
       >
-        <div className={cn(
-            "w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20 transition-all",
-            !puzzleRevealed && "pointer-events-none select-none"
-        )}>
-          <div className="space-y-6 text-center pt-20">
-            <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
-              {pageData.title}
-            </h1>
-            <p className={cn("text-white/80 whitespace-pre-wrap text-lg max-w-2xl mx-auto", pageData.messageFontSize)}>
-              {pageData.message}
-            </p>
-          </div>
-
-          {pageData.specialDate && (
-            <Countdown targetDate={pageData.specialDate} style={pageData.countdownStyle} color={pageData.countdownColor} />
-          )}
-
-          {pageData.galleryImages?.length > 0 && (
-            <div className="w-full max-w-md">
-              <Swiper
-                key={pageData.galleryStyle}
-                effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
-                grabCursor modules={[EffectCoverflow, Pagination, Autoplay, EffectCards, EffectFlip, EffectCube]}
-                pagination={{ clickable: true }}
-                className="rounded-3xl shadow-2xl"
-              >
-                {pageData.galleryImages.map((img: any, i: number) => (
-                  <SwiperSlide key={i}><div className="relative aspect-square"><Image src={img.url} alt="foto" fill className="object-cover" unoptimized /></div></SwiperSlide>
-                ))}
-              </Swiper>
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20">
+            <div className="space-y-6 text-center pt-20">
+                <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
+                {pageData.title}
+                </h1>
+                <p className={cn("text-white/80 whitespace-pre-wrap text-lg max-w-2xl mx-auto", pageData.messageFontSize)}>
+                {pageData.message}
+                </p>
             </div>
-          )}
 
-          {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
+            {pageData.specialDate && (
+                <Countdown targetDate={pageData.specialDate} style={pageData.countdownStyle} color={pageData.countdownColor} />
+            )}
+
+            {timelineEvents.length > 0 && (
+                <Button onClick={() => setShowTimeline(true)}>
+                    <View className="mr-2 h-4 w-4"/> Ver Nossa Linha do Tempo
+                </Button>
+            )}
+
+            {pageData.galleryImages?.length > 0 && (
+                <div className="w-full max-w-md">
+                <Swiper
+                    key={pageData.galleryStyle}
+                    effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
+                    grabCursor modules={[EffectCoverflow, Pagination, Autoplay, EffectCards, EffectFlip, EffectCube]}
+                    pagination={{ clickable: true }}
+                    className="rounded-3xl shadow-2xl"
+                >
+                    {pageData.galleryImages.map((img: any, i: number) => (
+                    <SwiperSlide key={i}><div className="relative aspect-square"><Image src={img.url} alt="foto" fill className="object-cover" unoptimized /></div></SwiperSlide>
+                    ))}
+                </Swiper>
+                </div>
+            )}
+            
+            {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
+            {pageData.musicOption === 'record' && pageData.audioRecording && <CustomAudioPlayer src={pageData.audioRecording} />}
         </div>
-      </motion.main>
+      </motion.div>
 
-      {/* CAMADA 3: PUZZLE OVERLAY */}
-      <AnimatePresence mode="wait">
+      {/* CAMADA 3: PUZZLE OVERLAY (SÓ APARECE SE PRECISO) */}
+      <AnimatePresence>
         {!puzzleRevealed && hasPuzzle && (
           <motion.div
-            key="puzzle-screen"
-            initial={{ opacity: 1 }}
+            key="puzzle-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
-            transition={{ duration: 0.6 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/50 backdrop-blur-sm"
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
           >
-            <div className="w-full max-w-lg space-y-6">
-              <div className="text-center">
-                <h2 className="text-3xl font-bold text-white font-headline">Um enigma para você...</h2>
-                <p className="text-white/70">Encaixe as peças para ver a surpresa.</p>
+            <div className="w-full max-w-lg space-y-6 text-center">
+              <div>
+                <h2 className="text-3xl font-bold text-white font-headline drop-shadow-xl">Um enigma para você...</h2>
+                <p className="text-white/70">Monte a foto para abrir sua surpresa.</p>
               </div>
               <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
                   imageSrc={pageData.puzzleImage.url}
-                  onReveal={handleReveal} 
+                  onReveal={handleReveal}
                 />
               </div>
             </div>
