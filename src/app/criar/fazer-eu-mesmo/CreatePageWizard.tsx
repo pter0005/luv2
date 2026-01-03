@@ -404,8 +404,8 @@ const GalleryStep = () => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                // Upload original file directly
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/gallery-images');
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -541,8 +541,8 @@ const TimelineStep = () => {
             setUploadingIndex(index);
             
             try {
-                 // Upload original file directly
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/timeline-images');
+                const compressedFile = await compressImage(file, 800, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/timeline-images');
 
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
@@ -1036,7 +1036,8 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/puzzle-images');
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'temp/puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
@@ -1647,4 +1648,5 @@ export default function CreatePageWizard() {
 }
 
 
+    
     
