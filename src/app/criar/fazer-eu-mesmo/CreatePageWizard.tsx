@@ -369,10 +369,11 @@ const SpecialDateStep = () => {
 };
 
 // Helper function to upload a file to Firebase Storage
-const uploadFile = async (storage: any, userId: string, file: Blob, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
+const uploadFile = async (storage: any, userId: string, file: File | Blob, path: string): Promise<{ downloadURL: string; fullPath: string }> => {
     const timestamp = Date.now();
-    const fileName = `${timestamp}-${(file as File).name}`;
-    const fileRef = storageRef(storage, `temp/${userId}/${path}/${fileName}`);
+    // Ensure file has a name, provide a default if not (e.g. for blobs)
+    const fileName = `${timestamp}-${(file as File).name || 'upload'}`;
+    const fileRef = storageRef(storage, `${path}/${userId}/${fileName}`);
 
     await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
@@ -404,7 +405,7 @@ const GalleryStep = () => {
         try {
             const uploadPromises = filesArray.map(async file => {
                 // Upload original file directly
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'gallery-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/gallery-images');
                 return { url: downloadURL, path: fullPath };
             });
 
@@ -541,7 +542,7 @@ const TimelineStep = () => {
             
             try {
                  // Upload original file directly
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'timeline-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/timeline-images');
 
                 const newImageObject = { url: downloadURL, path: fullPath };
                 const currentEvent = fields[index];
@@ -1035,7 +1036,7 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
+                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'temp/puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
                 toast({ title: 'Imagem enviada!', description: 'A imagem para o quebra-cabeça foi definida.' });
@@ -1365,13 +1366,11 @@ const WizardInternal = () => {
 
 
   const handleNext = async () => {
-    await handleAutosave(getValues());
     const ok = await trigger(steps[currentStep].fields as any);
     if (ok) setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
   };
   
   const handleBack = async () => {
-      await handleAutosave(getValues());
       setCurrentStep(s => Math.max(0, s - 1))
   };
   
