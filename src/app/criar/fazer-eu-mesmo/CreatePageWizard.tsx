@@ -1234,7 +1234,8 @@ const WizardInternal = () => {
     resolver: zodResolver(pageSchema),
     defaultValues: { 
         title: "Seu Título Aqui", 
-        backgroundAnimation: "none", 
+        backgroundAnimation: "none",
+        galleryStyle: "Cube",
         galleryImages: [], 
         timelineEvents: [],
         payment: { payerCpf: "", payerEmail: "", payerFirstName: "", payerLastName: "" }
