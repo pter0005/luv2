@@ -96,17 +96,16 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
       {/* CAMADA 2: Conteúdo Principal (A página em si) */}
       <motion.div 
-        className="relative z-10 w-full min-h-screen flex flex-col items-center"
-        initial={hasPuzzle ? { filter: 'blur(15px)', opacity: 0.5, scale: 0.95 } : { filter: 'blur(0px)', opacity: 1, scale: 1 }}
+        className={cn(
+            "relative z-10 w-full min-h-screen flex flex-col items-center",
+            !puzzleRevealed && hasPuzzle && "bg-black/30 backdrop-blur-lg" // Fundo borrado permanente
+        )}
+        initial={{ opacity: hasPuzzle ? 0 : 1, scale: hasPuzzle ? 0.9 : 1 }}
         animate={{ 
-          filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
-          opacity: puzzleRevealed ? 1 : 0.5,
-          scale: puzzleRevealed ? 1 : 0.95
+            opacity: puzzleRevealed ? 1 : (hasPuzzle ? 0 : 1),
+            scale: puzzleRevealed ? 1 : (hasPuzzle ? 0.9 : 1),
         }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        style={{ 
-          pointerEvents: puzzleRevealed ? 'auto' : 'none', // SÓ CLICA SE TIVER REVELADO
-        }}
+        transition={{ duration: 1, ease: "easeOut", delay: hasPuzzle ? 0.5 : 0 }}
       >
         <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-12 md:gap-y-20 relative z-20">
           {/* Título e Mensagem */}
@@ -176,9 +175,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {!puzzleRevealed && hasPuzzle && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
-            transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.5 } }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/60"
           >
             <div className="w-full max-w-lg space-y-6">
               <div className="text-center space-y-2">
