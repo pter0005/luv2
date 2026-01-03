@@ -15,6 +15,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
+import PreviewContent from "./PreviewContent";
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   ssr: false,
@@ -51,7 +52,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
     }, [formData.backgroundAnimation]);
 
     return (
-        <div className="w-full h-full max-w-2xl aspect-[9/16] sm:aspect-[16/10] bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
+        <div className="relative w-full h-full max-w-2xl aspect-[9/16] sm:aspect-video bg-card rounded-xl border border-border/50 shadow-2xl shadow-primary/10 flex flex-col overflow-hidden">
             {/* Background Animations */}
             <div className="absolute inset-0 w-full h-full z-0">
                 {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={formData.heartColor} />}
