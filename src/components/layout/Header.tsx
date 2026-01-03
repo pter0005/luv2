@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase";
 import { getAuth, signOut } from "firebase/auth";
@@ -39,12 +39,14 @@ export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === "headerLogo")?.imageUrl || "";
   const { user, isUserLoading } = useUser();
 
   const handleSignOut = async () => {
     const auth = getAuth();
     await signOut(auth);
+    router.push('/login');
   };
 
   useEffect(() => {
