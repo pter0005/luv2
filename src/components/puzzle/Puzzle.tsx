@@ -37,16 +37,21 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
     setPieces(shufflePieces(initialPieces));
     
     if (imageSrc) {
+      setImageLoaded(false); // Reset on new image
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => setImageLoaded(true);
+    } else {
+      // If no image, ensure it's not loaded and not complete
+      setImageLoaded(false);
+      setIsComplete(false);
     }
   }, [imageSrc, shufflePieces]);
 
   // REVELAÇÃO AUTOMÁTICA
   useEffect(() => {
+    // Only reveal if it's complete AND the reveal function is provided
     if (isComplete && onReveal) {
-      console.log("PUZZLE: Sucesso! Chamando onReveal em 1.2s...");
       const timer = setTimeout(() => {
         onReveal(); 
       }, 1200);
@@ -65,7 +70,8 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
         setPieces(newPieces);
         
-        if (newPieces.every((p, i) => p.originalIndex === i)) {
+        // A LÓGICA DE CONCLUSÃO AGORA SÓ ATIVA SE TIVER IMAGEM E AS PEÇAS ESTIVEREM CORRETAS
+        if (imageSrc && newPieces.every((p, i) => p.originalIndex === i)) {
           setIsComplete(true);
         }
       }
@@ -76,6 +82,7 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
   return (
     <div className="w-full flex flex-col items-center" ref={containerRef}>
       <div className="w-full aspect-square relative touch-none select-none" style={{ maxWidth: maxDimension }}>
+        {/* Mostra um loader ou um placeholder se não tiver imagem */}
         {!imageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 rounded-xl">
                 <Loader2 className="animate-spin text-primary" />
