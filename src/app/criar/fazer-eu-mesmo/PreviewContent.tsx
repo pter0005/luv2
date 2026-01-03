@@ -56,12 +56,20 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
     
     if (showPuzzlePreview) {
         return (
-             <div className="relative w-full h-full max-w-md aspect-square flex items-center justify-center">
-                 <RealPuzzle
-                    imageSrc={formData.puzzleImage?.url}
-                    showControls={false}
-                    onReveal={() => {}} // Add a dummy onReveal to satisfy the component
-                 />
+             <div className="relative w-full h-full flex items-center justify-center p-4 bg-black rounded-xl">
+                 <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8 text-center">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2 text-white">Um enigma para você...</h2>
+                        <p className="text-muted-foreground text-sm md:text-base">
+                        Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
+                        </p>
+                    </div>
+                    <RealPuzzle
+                        imageSrc={formData.puzzleImage?.url}
+                        showControls={false}
+                        onReveal={() => {}} // Dummy function for preview
+                    />
+                 </div>
              </div>
         );
     }
@@ -166,7 +174,7 @@ export default function PreviewContent({ formData, isClient, onShowTimeline, has
                                         shadowScale: 0.94,
                                     }}
                                     pagination={{ clickable: true }}
-                                    modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
+                                    modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
                                     className="mySwiper-small"
                                 >
                                     {formData.galleryImages.map((image: any, index: number) => (

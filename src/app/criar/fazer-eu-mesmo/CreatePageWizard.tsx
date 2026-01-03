@@ -1127,6 +1127,7 @@ const PuzzleStep = () => {
                                 <RealPuzzle
                                     imageSrc={puzzleImage.url}
                                     showControls={true}
+                                    onReveal={() => {}}
                                 />
                              </div>
                              <Button
@@ -1482,22 +1483,22 @@ const WizardInternal = () => {
                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
                   <div className="p-4 bg-white rounded-lg border">
-                      {pixData.qrCodeBase64 ? (
-                          <Image 
-                              src={pixData.qrCodeBase64.startsWith('data:') 
-                                  ? pixData.qrCodeBase64 
-                                  : `data:image/png;base64,${pixData.qrCodeBase64}`}
-                              alt="PIX QR Code"
-                              width={256}
-                              height={256}
-                              unoptimized
-                          />
-                      ) : (
-                          <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
-                              <Loader2 className="animate-spin mb-2" />
-                              <p className="text-xs">Gerando imagem...</p>
-                          </div>
-                      )}
+                    {pixData.qrCodeBase64 ? (
+                        <Image 
+                            src={pixData.qrCodeBase64.startsWith('data:') 
+                                ? pixData.qrCodeBase64 
+                                : `data:image/png;base64,${pixData.qrCodeBase64}`}
+                            alt="PIX QR Code"
+                            width={256}
+                            height={256}
+                            unoptimized
+                        />
+                    ) : (
+                        <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                            <Loader2 className="animate-spin mb-2" />
+                            <p className="text-xs">Gerando imagem...</p>
+                        </div>
+                    )}
                   </div>
                   <Button onClick={handleCopyPix} className="w-full max-w-xs">
                     <Copy className="mr-2 h-4 w-4" />
@@ -1692,5 +1693,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
