@@ -17,107 +17,103 @@ type PuzzleProps = {
   imageSrc?: string;
   showControls?: boolean;
   onReveal?: () => void;
-  dimension?: number;
+  maxDimension?: number;
 };
 
 const Puzzle = ({
   imageSrc: initialImageSrc,
   showControls = true,
   onReveal,
-  dimension: initialDimension = 450,
+  maxDimension = 450,
 }: PuzzleProps) => {
-  const [dimension, setDimension] = useState(initialDimension);
-  const [imageSrc, setImageSrc] = useState(
-    initialImageSrc || `https://picsum.photos/seed/puzzle/${initialDimension}/${initialDimension}`
-  );
+  const [containerWidth, setContainerWidth] = useState(maxDimension);
+  const [imageSrc, setImageSrc] = useState(initialImageSrc || "");
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Ajusta a dimensão com base no pai, mas limitado pela prop
-    if (containerRef.current) {
-        const parentWidth = containerRef.current.offsetWidth;
-        setDimension(Math.min(parentWidth, initialDimension));
-    }
-  }, [initialDimension]);
+    if (!containerRef.current) return;
 
-  const pieceSize = dimension / GRID_SIZE;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const width = entry.contentRect.width;
+        if (width > 0) setContainerWidth(width);
+      }
+    });
 
-  const shufflePieces = useCallback((array: Piece[]) => {
-    let currentIndex = array.length, randomIndex;
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-    }
-    // Ensure it's not already solved
-    const isSolved = array.every((p, i) => p.originalIndex === i);
-    if(isSolved && array.length > 1) {
-        return shufflePieces([...array]);
-    }
-    return array;
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
 
-  const createAndShufflePieces = useCallback(
-    (src: string) => {
-      if (!src) return;
-      const newPieces: Piece[] = [];
-      for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-        newPieces.push({
-          id: i,
-          originalIndex: i,
-        });
-      }
-      setPieces(shufflePieces(newPieces));
-      setIsComplete(false);
-      setIsRevealed(false);
-      setSelectedPieceIndex(null);
-    },
-    [shufflePieces]
-  );
+  const pieceSize = containerWidth / GRID_SIZE;
+
+  const shufflePieces = useCallback((array: Piece[]) => {
+    let newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    if (newArray.every((p, i) => p.originalIndex === i)) {
+      return shufflePieces(newArray);
+    }
+    return newArray;
+  }, []);
+
+  const initPuzzle = useCallback((src: string) => {
+    if (!src) return;
+    const newPieces: Piece[] = [];
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      newPieces.push({ id: i, originalIndex: i });
+    }
+    setPieces(shufflePieces(newPieces));
+    setIsComplete(false);
+    setIsRevealed(false);
+    setSelectedPieceIndex(null);
+  }, [shufflePieces]);
 
   useEffect(() => {
-    const newSrc = initialImageSrc || `https://picsum.photos/seed/puzzle/${dimension}/${dimension}`;
-    const img = new window.Image();
-    img.crossOrigin = "Anonymous";
-    img.src = newSrc;
-    img.onload = () => {
-        setImageSrc(newSrc);
-        createAndShufflePieces(newSrc);
+    // Only initialize or update if the initialImageSrc is valid
+    if (initialImageSrc) {
+      const img = new window.Image();
+      img.crossOrigin = "Anonymous";
+      img.src = initialImageSrc;
+      img.onload = () => {
+        setImageSrc(initialImageSrc);
+        initPuzzle(initialImageSrc);
+      };
+      img.onerror = () => {
+        // Handle potential image loading errors if necessary,
+        // but don't default to a placeholder.
+        console.error("Failed to load puzzle image:", initialImageSrc);
+      };
+    } else {
+        // If no image is provided (especially on initial load with controls),
+        // we can set a default or leave it blank.
+        const defaultSrc = `https://picsum.photos/seed/love/600/600`;
+        if (showControls) {
+            setImageSrc(defaultSrc);
+            initPuzzle(defaultSrc);
+        }
     }
-    img.onerror = () => {
-        const fallbackSrc = `https://picsum.photos/seed/error/${dimension}/${dimension}`;
-        setImageSrc(fallbackSrc);
-        createAndShufflePieces(fallbackSrc);
-    }
-  }, [initialImageSrc, dimension, createAndShufflePieces]);
+  }, [initialImageSrc, initPuzzle, showControls]);
 
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result) {
-          const newSrc = event.target.result as string;
-          setImageSrc(newSrc);
-          createAndShufflePieces(newSrc);
-        }
+        const newSrc = event.target?.result as string;
+        setImageSrc(newSrc);
+        initPuzzle(newSrc);
       };
       reader.readAsDataURL(e.target.files[0]);
     }
   };
-
-  const checkCompletion = useCallback((currentPieces: Piece[]) => {
-    if (currentPieces.length === 0) return;
-    const isSolved = currentPieces.every((p, i) => p.originalIndex === i);
-    if (isSolved) {
-      setIsComplete(true);
-    }
-  }, []);
 
   const handlePieceClick = (clickedIndex: number) => {
     if (isComplete || isRevealed) return;
@@ -125,118 +121,80 @@ const Puzzle = ({
     if (selectedPieceIndex === null) {
       setSelectedPieceIndex(clickedIndex);
     } else {
-      if(selectedPieceIndex !== clickedIndex) {
+      if (selectedPieceIndex !== clickedIndex) {
         const newPieces = [...pieces];
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
         setPieces(newPieces);
-        checkCompletion(newPieces);
+        
+        const solved = newPieces.every((p, i) => p.originalIndex === i);
+        if (solved) setIsComplete(true);
       }
       setSelectedPieceIndex(null);
     }
   };
 
-  const handleReset = () => {
-    createAndShufflePieces(imageSrc);
-  };
-  
-  const handleRevealClick = () => {
-      setIsRevealed(true);
-      if(onReveal) {
-          setTimeout(onReveal, 300);
-      }
-  }
-
-  if (isRevealed && !showControls) {
-      return null;
-  }
-
   return (
-    <div className="flex flex-col items-center gap-4 w-full" ref={containerRef}>
+    <div className="flex flex-col items-center gap-4 w-full max-w-full px-2" ref={containerRef}>
       <div 
-        className="w-full aspect-square bg-transparent rounded-lg relative flex items-center justify-center"
-        style={{ maxWidth: dimension }}
+        className="w-full aspect-square relative touch-none select-none"
+        style={{ maxWidth: maxDimension }}
       >
         <AnimatePresence>
-          {isComplete && !isRevealed &&(
+          {isComplete && !isRevealed && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-20 rounded-lg"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 rounded-xl p-4 text-center"
             >
               <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
-              <p className="text-3xl font-bold text-white mb-2 font-headline drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                Parabéns!
-              </p>
-              <p className="text-lg text-primary-foreground/80 mb-6 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                Você montou o quebra-cabeça!
-              </p>
-              {showControls ? (
-                <Button onClick={handleReset} className="pointer-events-auto">
-                  Jogar Novamente
-                </Button>
-              ) : (
-                <Button onClick={handleRevealClick} className="pointer-events-auto relative z-10" size="lg">
-                    Revelar Surpresa
-                </Button>
-              )}
+              <h3 className="text-2xl font-bold text-white mb-2">Incrível!</h3>
+              <p className="text-white/80 mb-6">Você completou o desafio.</p>
+              <Button onClick={() => onReveal ? onReveal() : setIsRevealed(true)} size="lg" className="w-full sm:w-auto">
+                Revelar Surpresa
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.div
-          className="grid gap-1 bg-card/10 p-1 rounded-lg shadow-2xl touch-none"
-          style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
-            width: `${dimension}px`,
-            height: `${dimension}px`,
-          }}
+        <div 
+          className="grid gap-1 w-full h-full p-1 bg-card/20 backdrop-blur-sm border border-white/10 rounded-xl"
+          style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
         >
           {pieces.map((piece, index) => {
             const row = Math.floor(piece.originalIndex / GRID_SIZE);
             const col = piece.originalIndex % GRID_SIZE;
+            
             return (
               <motion.div
                 key={piece.id}
                 layout
                 onClick={() => handlePieceClick(index)}
                 className={cn(
-                  "relative rounded-md overflow-hidden transition-all duration-300 ring-2",
-                  !isComplete && "cursor-pointer",
-                  selectedPieceIndex === index ? "ring-primary shadow-2xl shadow-primary/50 z-10" : "ring-transparent"
+                  "relative rounded-lg overflow-hidden cursor-pointer active:scale-95 transition-transform",
+                  selectedPieceIndex === index ? "ring-4 ring-primary z-10 shadow-2xl scale-105" : "ring-1 ring-white/20"
                 )}
-                style={{ 
-                    width: pieceSize, 
-                    height: pieceSize,
-                    backgroundImage: `url(${imageSrc})`,
-                    backgroundSize: `${dimension}px ${dimension}px`,
-                    backgroundPosition: `-${col * pieceSize}px -${row * pieceSize}px`,
+                style={{
+                  aspectRatio: "1/1",
+                  backgroundImage: `url(${imageSrc})`,
+                  backgroundSize: `${containerWidth}px ${containerWidth}px`,
+                  backgroundPosition: `-${col * (containerWidth / GRID_SIZE)}px -${row * (containerWidth / GRID_SIZE)}px`,
                 }}
-                animate={{ scale: selectedPieceIndex === index ? 1.08 : 1 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                whileTap={{ scale: 0.95 }}
               />
-            )
+            );
           })}
-        </motion.div>
+        </div>
       </div>
 
       {showControls && (
-        <div className="flex items-center gap-4 mt-4">
-          <Button onClick={() => fileInputRef.current?.click()} variant="outline">
-            <Upload className="mr-2" />
-            Enviar sua Foto
+        <div className="flex flex-wrap justify-center gap-2 mt-2 w-full">
+          <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="bg-background/50">
+            <Upload className="w-4 h-4 mr-2" /> Foto Personalizada
           </Button>
-          <Input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-          <Button onClick={handleReset} variant="ghost">
-            <Shuffle className="mr-2" />
-            Embaralhar
+          <Button onClick={() => initPuzzle(imageSrc)} variant="ghost" size="sm">
+            <Shuffle className="w-4 h-4 mr-2" /> Embaralhar
           </Button>
+          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
         </div>
       )}
     </div>
