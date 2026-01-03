@@ -15,55 +15,48 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { Pause, Play, View } from 'lucide-react';
+import { Pause, Play, View, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { FileWithPreview } from '@/app/criar/fazer-eu-mesmo/CreatePageWizard';
 
-// Dynamically import client-side components
+// Imports dinâmicos
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), {
   ssr: false,
   loading: () => <Skeleton className="aspect-video w-full" />,
 });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
-const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
+const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { 
+  ssr: false,
+  loading: () => <div className="flex flex-col items-center justify-center p-12 bg-card/20 rounded-xl"><Loader2 className="animate-spin" /><p>Carregando enigma...</p></div>
+});
 
-// =================================================================
-// Main Client Component
-// =================================================================
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const cloudsVideoRef = useRef<HTMLVideoElement>(null);
   const customVideoRef = useRef<HTMLVideoElement>(null);
   
-  // Puzzle State
+  // Controle do Puzzle
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   
   const puzzleImageUrl = pageData.puzzleImage?.url;
   const isPuzzleActive = useMemo(() => {
-    return isClient && pageData.enablePuzzle && puzzleImageUrl;
+    return isClient && pageData.enablePuzzle && !!puzzleImageUrl;
   }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
 
   useEffect(() => {
     setIsClient(true);
-    // If puzzle is not enabled, consider it "revealed" from the start
-    if (!isPuzzleActive) {
+    // Se o puzzle não estiver ativo, revela a página imediatamente
+    if (isClient && (!pageData.enablePuzzle || !puzzleImageUrl)) {
       setPuzzleRevealed(true);
     }
-  }, [isPuzzleActive]);
+  }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
 
   useEffect(() => {
     if (cloudsVideoRef.current) {
       cloudsVideoRef.current.playbackRate = 0.6;
     }
   }, [pageData.backgroundAnimation]);
-
-  const backgroundVideoUrl = pageData.backgroundVideo?.url;
-  useEffect(() => {
-    if (customVideoRef.current && backgroundVideoUrl) {
-      customVideoRef.current.src = backgroundVideoUrl;
-    }
-  }, [backgroundVideoUrl]);
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!pageData.timelineEvents) return [];
@@ -78,15 +71,14 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       }));
   }, [pageData.timelineEvents]);
 
-  const hasTimeline = timelineEventsForDisplay.length > 0;
-
-  if (showTimeline && hasTimeline) {
+  if (showTimeline && timelineEventsForDisplay.length > 0) {
     return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />;
   }
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-hidden">
-      {/* Background Layer */}
+      
+      {/* 1. Camada de Fundo (Sempre visível) */}
       <div className="absolute inset-0 w-full h-full z-0">
         {isClient && pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
         {isClient && pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
@@ -94,55 +86,28 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {isClient && pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
         {isClient && pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
         {isClient && pageData.backgroundAnimation === 'clouds' && (
-          <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+          <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-60">
             <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
-          </video>
-        )}
-        {isClient && pageData.backgroundAnimation === 'custom-video' && backgroundVideoUrl && (
-          <video key={backgroundVideoUrl} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-            <source src={backgroundVideoUrl} type="video/mp4" />
           </video>
         )}
       </div>
 
-      {/* Puzzle Overlay */}
-      <AnimatePresence>
-        {isPuzzleActive && !puzzleRevealed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 z-40 flex flex-col items-center justify-center text-center p-8 bg-black/80 backdrop-blur-sm"
-          >
-            <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4 md:gap-8">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold font-headline mb-2 text-white">Um enigma para você...</h2>
-                <p className="text-muted-foreground text-sm md:text-base">
-                  Resolva o quebra-cabeça para revelar a <span className="text-primary font-semibold">surpresa</span>.
-                </p>
-              </div>
-              <RealPuzzle
-                imageSrc={puzzleImageUrl}
-                showControls={false}
-                onReveal={() => setPuzzleRevealed(true)}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content */}
+      {/* 2. Conteúdo Principal (O que fica desfocado no fundo) */}
       <motion.div 
-        className="min-h-screen w-full"
+        className="relative z-10 w-full min-h-screen"
+        initial={false}
         animate={{ 
-          filter: puzzleRevealed ? 'blur(0px)' : 'blur(8px)', 
-          scale: puzzleRevealed ? 1 : 1.05 
+          filter: puzzleRevealed ? 'blur(0px)' : 'blur(12px)',
+          scale: puzzleRevealed ? 1 : 1.05,
+          opacity: 1
         }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-        style={{ pointerEvents: puzzleRevealed ? 'auto' : 'none' }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+        style={{ 
+          pointerEvents: puzzleRevealed ? 'auto' : 'none',
+          userSelect: puzzleRevealed ? 'auto' : 'none'
+        }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center gap-y-16 md:gap-y-24 relative z-10">
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center gap-y-16 md:gap-y-24 relative z-20">
           <div className="space-y-6 text-center pt-16 md:pt-24">
             <h1
               className="text-4xl sm:text-5xl md:text-6xl font-handwriting break-words"
@@ -169,45 +134,35 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             />
           )}
 
-          {hasTimeline && (
-            <Button onClick={() => setShowTimeline(true)}><View className="mr-2 h-4 w-4" /> Nossa Linha do Tempo</Button>
+          {timelineEventsForDisplay.length > 0 && (
+            <Button onClick={() => setShowTimeline(true)} variant="secondary" className="shadow-lg backdrop-blur-sm bg-white/10">
+              <View className="mr-2 h-4 w-4" /> Nossa Linha do Tempo
+            </Button>
           )}
 
-          {pageData.galleryImages && pageData.galleryImages.length > 0 && (
-            <div className="w-full max-w-sm sm:max-w-md mx-auto">
+          {pageData.galleryImages?.length > 0 && (
+            <div className="w-full max-w-sm sm:max-w-md mx-auto overflow-visible">
               <Swiper
                 key={pageData.galleryStyle}
-                effect={(pageData.galleryStyle || 'Cube').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+                effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
                 grabCursor={true}
                 centeredSlides={pageData.galleryStyle === 'Coverflow'}
                 slidesPerView={'auto'}
-                autoplay={{ delay: 3000, disableOnInteraction: false }}
-                coverflowEffect={{
-                  rotate: 50,
-                  stretch: 0,
-                  depth: 100,
-                  modifier: 1,
-                  slideShadows: true,
-                }}
-                cardsEffect={{
-                  perSlideRotate: 2,
-                  perSlideOffset: 8,
-                  slideShadows: true,
-                }}
-                cubeEffect={{
-                  shadow: true,
-                  slideShadows: true,
-                  shadowOffset: 20,
-                  shadowScale: 0.94,
-                }}
-                pagination={{ clickable: true }}
+                autoplay={{ delay: 3500, disableOnInteraction: false }}
                 modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
+                pagination={{ clickable: true }}
                 className="mySwiper"
               >
                 {pageData.galleryImages.map((image: FileWithPreview, index: number) => (
                   <SwiperSlide key={index} className="bg-transparent">
-                    <div className="relative w-full aspect-square">
-                      <Image src={image.url} alt={`Imagem da galeria ${index + 1}`} layout="fill" className="object-cover rounded-lg shadow-2xl" unoptimized loading="lazy" />
+                    <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                      <Image 
+                        src={image.url} 
+                        alt={`Galeria ${index + 1}`} 
+                        fill 
+                        className="object-cover" 
+                        unoptimized 
+                      />
                     </div>
                   </SwiperSlide>
                 ))}
@@ -224,44 +179,69 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           )}
         </div>
       </motion.div>
+
+      {/* 3. Overlay do Puzzle (Senta em cima de tudo, z-40) */}
+      <AnimatePresence>
+        {isPuzzleActive && !puzzleRevealed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ 
+              opacity: 0, 
+              scale: 1.1,
+              filter: "blur(20px)" 
+            }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-40 flex flex-col items-center justify-center text-center p-6 bg-black/40 backdrop-blur-sm"
+          >
+            <div className="w-full max-w-lg mx-auto space-y-8">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <h2 className="text-3xl md:text-4xl font-bold font-headline mb-3 text-white drop-shadow-lg">
+                  Um enigma para você...
+                </h2>
+                <p className="text-white/70 text-base md:text-lg max-w-xs mx-auto">
+                  Resolva o quebra-cabeça para revelar a sua <span className="text-primary font-bold">surpresa</span>.
+                </p>
+              </motion.div>
+
+              <div className="relative p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+                <RealPuzzle
+                  imageSrc={puzzleImageUrl}
+                  showControls={false}
+                  onReveal={() => setPuzzleRevealed(true)}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-};
+}
 
-
-const CustomAudioPlayer = ({ src }: { src: string }) => {
+// Player de áudio customizado continua igual...
+function CustomAudioPlayer({ src }: { src: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-
   const togglePlayPause = () => {
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
+      isPlaying ? audioRef.current.pause() : audioRef.current.play();
       setIsPlaying(!isPlaying);
     }
   };
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      const handleEnded = () => setIsPlaying(false);
-      audio.addEventListener('ended', handleEnded);
-      return () => {
-        audio.removeEventListener('ended', handleEnded);
-      };
-    }
-  }, []);
-
   return (
-    <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
-      <audio ref={audioRef} src={src} className="hidden" />
-      <Button onClick={togglePlayPause} size="icon" variant="ghost" className="text-primary-foreground bg-primary/80 hover:bg-primary">
-        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+    <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
+      <audio ref={audioRef} src={src} onEnded={() => setIsPlaying(false)} className="hidden" />
+      <Button onClick={togglePlayPause} size="icon" variant="ghost" className="rounded-full h-12 w-12 bg-primary hover:bg-primary/80 text-white">
+        {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
       </Button>
-      <p className="text-sm text-primary-foreground font-semibold">Sua mensagem de voz</p>
+      <span className="text-sm font-medium text-white">Mensagem de Voz</span>
     </div>
   );
-};
+}
+
+    
