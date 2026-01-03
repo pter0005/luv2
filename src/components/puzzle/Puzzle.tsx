@@ -54,8 +54,8 @@ const Puzzle = ({
     }
     // Ensure it's not already solved
     const isSolved = array.every((p, i) => p.originalIndex === i);
-    if(isSolved) {
-        return shufflePieces(array);
+    if(isSolved && array.length > 1) {
+        return shufflePieces([...array]);
     }
     return array;
   }, []);
@@ -90,10 +90,17 @@ const Puzzle = ({
   useEffect(() => {
     const newSrc = initialImageSrc || `https://picsum.photos/seed/puzzle/${dimension}/${dimension}`;
     const img = new window.Image();
+    img.crossOrigin = "Anonymous"; // Handle CORS for canvas operations if needed
     img.src = newSrc;
     img.onload = () => {
         setImageSrc(newSrc);
         createAndShufflePieces(newSrc);
+    }
+    img.onerror = () => {
+        // Fallback if the image fails to load
+        const fallbackSrc = `https://picsum.photos/seed/error/${dimension}/${dimension}`;
+        setImageSrc(fallbackSrc);
+        createAndShufflePieces(fallbackSrc);
     }
   }, [initialImageSrc, dimension, createAndShufflePieces]);
 
@@ -124,15 +131,19 @@ const Puzzle = ({
     if (isComplete || isRevealed) return;
 
     if (selectedPieceIndex === null) {
+      // First click: select the piece
       setSelectedPieceIndex(clickedIndex);
     } else {
+      // Second click: swap pieces
       if(selectedPieceIndex !== clickedIndex) {
         const newPieces = [...pieces];
+        // The actual swap
         [newPieces[selectedPieceIndex], newPieces[clickedIndex]] = [newPieces[clickedIndex], newPieces[selectedPieceIndex]];
         
         setPieces(newPieces);
         checkCompletion(newPieces);
       }
+      // Reset selection after the move
       setSelectedPieceIndex(null);
     }
   };
