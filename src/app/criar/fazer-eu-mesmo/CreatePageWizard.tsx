@@ -1112,7 +1112,6 @@ const PuzzleStep = () => {
                              <div className="w-full max-w-[300px] mx-auto">
                                 <RealPuzzle
                                     imageSrc={puzzleImage}
-                                    showControls={true}
                                 />
                              </div>
                              <Button
@@ -1305,11 +1304,17 @@ const WizardInternal = () => {
     }
   });
   
-  const { watch, trigger, formState, setValue, getValues } = methods;
+  const { watch, trigger, setValue, getValues } = methods;
   const formData = watch();
 
   useEffect(() => {
-    setPreviewPuzzleRevealed(false);
+    // A cada mudança de passo, se não estivermos no passo do puzzle,
+    // o puzzle do preview deve ser considerado "não revelado".
+    // Isso garante que se o usuário voltar para a etapa do puzzle,
+    // ele possa testar a revelação novamente.
+    if (steps[currentStep]?.id !== 'puzzle') {
+        setPreviewPuzzleRevealed(false);
+    }
   }, [currentStep]);
 
   const restoreFromLocalStorage = useCallback(() => {
