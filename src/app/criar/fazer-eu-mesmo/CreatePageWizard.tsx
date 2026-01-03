@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
-import { useForm, FormProvider, useWatch, useFormContext, useFieldArray } from "react-hook-form";
+import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -74,11 +74,9 @@ const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr
 
 const cpfMask = (v: string) => {
     v = v.replace(/\D/g, ""); // Remove tudo que não é dígito
-    if (v.length <= 11) {
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    }
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     return v.slice(0, 14); // Garante o tamanho máximo 000.000.000-00
 };
 
@@ -1162,8 +1160,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
     setIntentId: (id: string) => void;
 }) => {
-    const { getValues, control, trigger, setValue } = useFormContext<PageData>();
-    const { user } = useUser();
+    const { getValues, control } = useFormContext<PageData>();
+    const { isValid } = useFormState({ control });
     const [isProcessing, startTransition] = useTransition();
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
@@ -1206,15 +1204,10 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     }, []);
 
     const handleGeneratePix = async () => {
-        console.log("Iniciando processo de PIX..."); // DEBUG
         setError(null);
         setPixData(null);
         
-        // 1. Valida os campos antes de tentar pagar
-        const isFormValid = await trigger("payment");
-        console.log("Formulário válido:", isFormValid); // DEBUG
-    
-        if (!isFormValid) {
+        if (!isValid) {
             toast({ 
                 variant: 'destructive', 
                 title: 'Campos Incompletos', 
@@ -1223,9 +1216,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
             return;
         }
     
-        // 2. Busca o ID do rascunho
         const currentIntentId = getValues("intentId");
-        console.log("Intent ID encontrado:", currentIntentId); // DEBUG
     
         if (!currentIntentId) {
             setError({ 
@@ -1239,17 +1230,13 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     
         setIntentId(currentIntentId);
         
-        // 3. Chama o Mercado Pago
         startTransition(async () => {
             try {
-                console.log("Chamando processPixPayment no servidor..."); // DEBUG
                 const paymentResult = await processPixPayment(currentIntentId);
                 
                 if (paymentResult.error) {
-                    console.error("Erro no servidor:", paymentResult.error); // DEBUG
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
-                    console.log("PIX Gerado com sucesso!"); // DEBUG
                     setPixData({ 
                         qrCode: paymentResult.qrCode, 
                         qrCodeBase64: paymentResult.qrCodeBase64!, 
@@ -1258,7 +1245,6 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                     startPolling(currentIntentId);
                 }
             } catch (err) {
-                console.error("Erro catastrófico:", err); // DEBUG
                 setError({ message: "Erro ao conectar com o serviço de pagamento." });
             }
         });
@@ -1323,6 +1309,7 @@ const WizardInternal = () => {
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
+    mode: 'onChange',
     defaultValues: { 
         title: "Seu Título Aqui", 
         backgroundAnimation: "none",
@@ -1719,5 +1706,7 @@ export default function CreatePageWizard() {
   )
 }
 
+
+    
 
     

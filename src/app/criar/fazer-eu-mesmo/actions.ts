@@ -64,7 +64,7 @@ export async function handleSuggestContent(formData: FormData) {
  * This is the core of the autosave functionality.
  */
 export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
-    const { userId, intentId } = fullPageData;
+    const { userId, intentId, payment, ...restOfPageData } = fullPageData;
 
     if (!userId) return { error: 'Usuário não autenticado.' };
 
@@ -72,10 +72,11 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         const firestore = getAdminFirestore();
         const paymentIntentsRef = firestore.collection('payment_intents');
         
-        const serializablePageData = JSON.parse(JSON.stringify(fullPageData));
+        const serializablePageData = JSON.parse(JSON.stringify(restOfPageData));
         
         const dataToSave = {
             fullPageData: serializablePageData,
+            payment: payment || {}, // Save payment info at the top level
             userId: userId,
             updatedAt: Timestamp.now(),
             expireAt: Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)), // Expires in 30 minutes
@@ -118,10 +119,13 @@ export async function processPixPayment(intentId: string) {
         if (!intentDoc.exists) throw new Error('Dados do pedido não encontrados.');
 
         const intentData = intentDoc.data();
-        const payerData = intentData?.fullPageData?.payment;
+        const payerData = intentData?.payment; // Corrected path to payment data
         
         const validation = PayerDataSchema.safeParse(payerData);
-        if (!validation.success) return { error: "Dados do pagador inválidos." };
+        if (!validation.success) {
+            console.error("Payer data validation failed:", validation.error);
+            return { error: "Dados do pagador inválidos ou incompletos." };
+        }
 
         const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
         const payment = new Payment(client);
