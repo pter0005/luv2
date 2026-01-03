@@ -2,8 +2,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Upload, Shuffle, CheckCircle } from "lucide-react";
+import { Upload, Shuffle, CheckCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +27,7 @@ const Puzzle = ({
   maxDimension = 450,
 }: PuzzleProps) => {
   const [containerWidth, setContainerWidth] = useState(maxDimension);
-  const [imageSrc, setImageSrc] = useState(initialImageSrc || "");
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -37,22 +36,21 @@ const Puzzle = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 1. Monitora o tamanho real da tela (Essencial para celular)
   useEffect(() => {
     if (!containerRef.current) return;
-
-    const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const width = entry.contentRect.width;
-        if (width > 0) setContainerWidth(width);
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        setContainerWidth(width > 0 ? width : maxDimension);
       }
-    });
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [maxDimension]);
 
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const pieceSize = containerWidth / GRID_SIZE;
-
+  // 2. Função para embaralhar (Garante que nunca comece resolvido)
   const shufflePieces = useCallback((array: Piece[]) => {
     let newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -65,59 +63,23 @@ const Puzzle = ({
     return newArray;
   }, []);
 
-  const initPuzzle = useCallback((src: string) => {
-    if (!src) return;
-    const newPieces: Piece[] = [];
-    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-      newPieces.push({ id: i, originalIndex: i });
-    }
-    setPieces(shufflePieces(newPieces));
-    setIsComplete(false);
-    setIsRevealed(false);
-    setSelectedPieceIndex(null);
-  }, [shufflePieces]);
-
+  // 3. Inicializa o quebra-cabeça SEMPRE, mesmo sem imagem ainda
   useEffect(() => {
-    // Only initialize or update if the initialImageSrc is valid
+    const initialPieces: Piece[] = [];
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      initialPieces.push({ id: i, originalIndex: i });
+    }
+    setPieces(shufflePieces(initialPieces));
+    
     if (initialImageSrc) {
       const img = new window.Image();
-      img.crossOrigin = "Anonymous";
       img.src = initialImageSrc;
-      img.onload = () => {
-        setImageSrc(initialImageSrc);
-        initPuzzle(initialImageSrc);
-      };
-      img.onerror = () => {
-        // Handle potential image loading errors if necessary,
-        // but don't default to a placeholder.
-        console.error("Failed to load puzzle image:", initialImageSrc);
-      };
-    } else {
-        // If no image is provided (especially on initial load with controls),
-        // we can set a default or leave it blank.
-        const defaultSrc = `https://picsum.photos/seed/love/600/600`;
-        if (showControls) {
-            setImageSrc(defaultSrc);
-            initPuzzle(defaultSrc);
-        }
+      img.onload = () => setImageLoaded(true);
     }
-  }, [initialImageSrc, initPuzzle, showControls]);
-
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newSrc = event.target?.result as string;
-        setImageSrc(newSrc);
-        initPuzzle(newSrc);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
+  }, [initialImageSrc, shufflePieces]);
 
   const handlePieceClick = (clickedIndex: number) => {
-    if (isComplete || isRevealed) return;
+    if (isComplete || isRevealed || !imageLoaded) return;
 
     if (selectedPieceIndex === null) {
       setSelectedPieceIndex(clickedIndex);
@@ -135,73 +97,70 @@ const Puzzle = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-full px-2" ref={containerRef}>
+    <div className="flex flex-col items-center gap-4 w-full max-w-full" ref={containerRef}>
       <div 
         className="w-full aspect-square relative touch-none select-none"
         style={{ maxWidth: maxDimension }}
       >
+        {/* Camada de Carregamento */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card/20 backdrop-blur-md rounded-xl border border-white/10">
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
+            <p className="text-xs text-muted-foreground">Preparando desafio...</p>
+          </div>
+        )}
+
         <AnimatePresence>
           {isComplete && !isRevealed && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-30 rounded-xl p-4 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-30 rounded-xl p-4 text-center"
             >
               <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-2">Incrível!</h3>
-              <p className="text-white/80 mb-6">Você completou o desafio.</p>
-              <Button onClick={() => onReveal ? onReveal() : setIsRevealed(true)} size="lg" className="w-full sm:w-auto">
+              <h3 className="text-2xl font-bold text-white mb-2 font-headline">Desafio Concluído!</h3>
+              <Button onClick={() => onReveal ? onReveal() : setIsRevealed(true)} size="lg" className="mt-4 shadow-xl">
                 Revelar Surpresa
               </Button>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* O GRID - Agora com cálculo dinâmico fixo */}
         <div 
-          className="grid gap-1 w-full h-full p-1 bg-card/20 backdrop-blur-sm border border-white/10 rounded-xl"
+          className="grid gap-1 w-full h-full p-1 bg-zinc-900/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden"
           style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
         >
           {pieces.map((piece, index) => {
             const row = Math.floor(piece.originalIndex / GRID_SIZE);
             const col = piece.originalIndex % GRID_SIZE;
             
+            // Cálculo da posição do fundo em porcentagem (melhor para responsividade)
+            const posX = (col / (GRID_SIZE - 1)) * 100;
+            const posY = (row / (GRID_SIZE - 1)) * 100;
+
             return (
               <motion.div
                 key={piece.id}
                 layout
                 onClick={() => handlePieceClick(index)}
                 className={cn(
-                  "relative rounded-lg overflow-hidden cursor-pointer active:scale-95 transition-transform",
-                  selectedPieceIndex === index ? "ring-4 ring-primary z-10 shadow-2xl scale-105" : "ring-1 ring-white/20"
+                  "relative rounded-sm cursor-pointer transition-all duration-200",
+                  selectedPieceIndex === index ? "ring-4 ring-primary z-20 scale-105 shadow-2xl" : "ring-1 ring-white/5"
                 )}
                 style={{
-                  aspectRatio: "1/1",
-                  backgroundImage: `url(${imageSrc})`,
-                  backgroundSize: `${containerWidth}px ${containerWidth}px`,
-                  backgroundPosition: `-${col * (containerWidth / GRID_SIZE)}px -${row * (containerWidth / GRID_SIZE)}px`,
+                  backgroundImage: imageLoaded ? `url(${initialImageSrc})` : 'none',
+                  backgroundSize: `${GRID_SIZE * 100}%`,
+                  backgroundPosition: `${posX}% ${posY}%`,
+                  backgroundColor: '#18181b' // Cor de fundo caso a imagem falhe
                 }}
-                whileTap={{ scale: 0.95 }}
               />
             );
           })}
         </div>
       </div>
-
-      {showControls && (
-        <div className="flex flex-wrap justify-center gap-2 mt-2 w-full">
-          <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm" className="bg-background/50">
-            <Upload className="w-4 h-4 mr-2" /> Foto Personalizada
-          </Button>
-          <Button onClick={() => initPuzzle(imageSrc)} variant="ghost" size="sm">
-            <Shuffle className="w-4 h-4 mr-2" /> Embaralhar
-          </Button>
-          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-        </div>
-      )}
     </div>
   );
 };
 
 export default Puzzle;
-
-    
