@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -1039,6 +1038,21 @@ const PuzzleStep = () => {
     const { storage } = useFirebase();
     const { toast } = useToast();
     const [isUploading, setIsUploading] = useState(false);
+    const [previewDimension, setPreviewDimension] = useState(300);
+
+    useEffect(() => {
+        const handleResize = () => {
+            const screenWidth = window.innerWidth;
+            if (screenWidth < 640) {
+                setPreviewDimension(screenWidth * 0.7);
+            } else {
+                setPreviewDimension(300);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0] && user && storage) {
@@ -1046,6 +1060,8 @@ const PuzzleStep = () => {
             setIsUploading(true);
             
             try {
+                // Remove old image before uploading a new one
+                removePuzzleImage(false); // Don't show toast on remove
                 const { downloadURL, fullPath } = await uploadFile(storage, user.uid, file, 'puzzle-images');
                 const newImageObject: FileWithPreview = { url: downloadURL, path: fullPath };
                 setValue("puzzleImage", newImageObject, { shouldValidate: true, shouldDirty: true });
@@ -1060,13 +1076,16 @@ const PuzzleStep = () => {
     };
 
 
-    const removePuzzleImage = () => {
+    const removePuzzleImage = (showToast = true) => {
         const imageToRemove = getValues("puzzleImage");
         if (imageToRemove?.path && storage) {
             const imageRef = storageRef(storage, imageToRemove.path);
             deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
         }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
+        if (showToast) {
+            toast({ title: 'Imagem removida.' });
+        }
     };
 
     const puzzlePreviewUrl = useMemo(() => {
@@ -1093,7 +1112,7 @@ const PuzzleStep = () => {
                 )}
             />
             {enablePuzzle && (
-                 <div className="space-y-2">
+                 <div className="space-y-4">
                     <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
                      {!puzzlePreviewUrl ? (
                         <FormControl>
@@ -1122,22 +1141,22 @@ const PuzzleStep = () => {
                         </label>
                         </FormControl>
                      ) : (
-                        <div className="relative group aspect-video w-full">
-                            <Image
-                                src={puzzlePreviewUrl}
-                                alt="Puzzle preview"
-                                fill
-                                className="rounded-md object-contain"
-                                unoptimized
-                            />
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-0 z-10"
-                                onClick={removePuzzleImage}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
+                        <div className="w-full flex flex-col items-center gap-6">
+                            <h3 className="text-lg font-semibold text-center">Preview do Quebra-Cabeça</h3>
+                             <RealPuzzle
+                                imageSrc={puzzlePreviewUrl}
+                                showControls={false}
+                                dimension={previewDimension}
+                             />
+                             <Button
+                                 type="button"
+                                 variant="destructive"
+                                 onClick={() => removePuzzleImage()}
+                                 size="sm"
+                             >
+                                 <X className="mr-2 h-4 w-4" />
+                                 Remover Imagem
+                             </Button>
                         </div>
                      )}
                 </div>

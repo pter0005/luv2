@@ -14,48 +14,53 @@ import FallingHearts from '@/components/effects/FallingHearts';
 import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
-import RealPuzzle from '@/components/puzzle/Puzzle';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, View } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { FileWithPreview } from '@/app/criar/fazer-eu-mesmo/CreatePageWizard';
 
-// These components use client-side hooks, so they are dynamically imported.
+// Dynamically import client-side components
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), {
   ssr: false,
   loading: () => <Skeleton className="aspect-video w-full" />,
 });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
+const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 
 // =================================================================
-// Client Component: Renders the actual page UI
+// Main Client Component
 // =================================================================
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const cloudsVideoRef = useRef<HTMLVideoElement>(null);
   const customVideoRef = useRef<HTMLVideoElement>(null);
+  
+  // Puzzle State
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [puzzleDimension, setPuzzleDimension] = useState(360);
+  
+  const puzzleImageUrl = pageData.puzzleImage?.url;
+  const isPuzzleActive = useMemo(() => {
+    return isClient && pageData.enablePuzzle && puzzleImageUrl;
+  }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
 
   useEffect(() => {
     setIsClient(true);
-    if (!pageData.enablePuzzle || !pageData.puzzleImage) {
+    // If puzzle is not enabled, consider it "revealed" from the start
+    if (!isPuzzleActive) {
       setPuzzleRevealed(true);
     }
 
     const handleResize = () => {
       const screenWidth = window.innerWidth;
-      if (screenWidth < 640) {
-        setPuzzleDimension(screenWidth * 0.8);
-      } else {
-        setPuzzleDimension(450);
-      }
+      setPuzzleDimension(screenWidth < 640 ? screenWidth * 0.8 : 450);
     };
+    
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [pageData]);
+  }, [isPuzzleActive]);
 
   useEffect(() => {
     if (cloudsVideoRef.current) {
@@ -69,11 +74,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       customVideoRef.current.src = backgroundVideoUrl;
     }
   }, [backgroundVideoUrl]);
-
-  const puzzleImageUrl = pageData.puzzleImage?.url;
-  const isPuzzleActive = useMemo(() => {
-    return isClient && pageData.enablePuzzle && puzzleImageUrl;
-  }, [isClient, pageData.enablePuzzle, puzzleImageUrl]);
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!pageData.timelineEvents) return [];
@@ -117,7 +117,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
       {/* Puzzle Overlay */}
       <AnimatePresence>
-        {isPuzzleActive && !puzzleRevealed && puzzleImageUrl && (
+        {isPuzzleActive && !puzzleRevealed && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -143,7 +143,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </AnimatePresence>
 
-      <div className={cn("min-h-screen w-full transition-all duration-500", isPuzzleActive && !puzzleRevealed && "blur-md scale-105 pointer-events-none")}>
+      {/* Main Content */}
+      <motion.div 
+        className={cn("min-h-screen w-full transition-all duration-700 ease-in-out", !puzzleRevealed && "blur-md scale-105 pointer-events-none")}
+        animate={{ filter: puzzleRevealed ? 'blur(0px)' : 'blur(8px)', scale: puzzleRevealed ? 1 : 1.05 }}
+        transition={{ duration: 0.7 }}
+      >
         <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center justify-center gap-y-16 md:gap-y-24 relative z-10">
           <div className="space-y-6 text-center pt-16 md:pt-24">
             <h1
@@ -166,7 +171,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           {pageData.specialDate && (
             <Countdown
               targetDate={pageData.specialDate}
-              style={pageData.countdownStyle as "Padrão" | "Clássico" | "Simples"}
+              style={pageData.countdownStyle as "Padrão" | "Simples"}
               color={pageData.countdownColor}
             />
           )}
@@ -203,7 +208,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   shadowScale: 0.94,
                 }}
                 pagination={{ clickable: true }}
-                modules={[EffectCoverflow, EffectCards, EffectFlip, EffectCube, Pagination, Autoplay]}
+                modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
                 className="mySwiper"
               >
                 {pageData.galleryImages.map((image: FileWithPreview, index: number) => (
@@ -225,7 +230,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             <CustomAudioPlayer src={pageData.audioRecording} />
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -267,5 +272,3 @@ const CustomAudioPlayer = ({ src }: { src: string }) => {
     </div>
   );
 };
-
-    
