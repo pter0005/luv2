@@ -134,7 +134,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
       {/* Main Content */}
       <motion.div 
-        className={cn("min-h-screen w-full transition-all duration-700 ease-in-out", !puzzleRevealed && "blur-md scale-105 pointer-events-none")}
+        className={cn("min-h-screen w-full transition-all duration-700 ease-in-out", !puzzleRevealed && "pointer-events-none")}
         animate={{ filter: puzzleRevealed ? 'blur(0px)' : 'blur(8px)', scale: puzzleRevealed ? 1 : 1.05 }}
         transition={{ duration: 0.7 }}
       >
