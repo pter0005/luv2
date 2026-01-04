@@ -21,16 +21,22 @@ function sanitizePageDataForFirestore(pageData: Partial<PageData>): any {
     const { payment, aiPrompt, intentId, ...lovePageDataToSave } = pageData;
     const sanitizedData: any = JSON.parse(JSON.stringify(lovePageDataToSave));
 
-    // URLs from Storage are now just strings, so no need to process gallery, timeline, puzzle images.
-
     if (sanitizedData.timelineEvents) {
         sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((event: any) => {
-            const sanitizedEvent = { ...event };
-            if (sanitizedEvent.date) sanitizedEvent.date = Timestamp.fromDate(new Date(sanitizedEvent.date));
-            return sanitizedEvent;
+            // Keep the image object, only convert the date
+            if (event.date) {
+                return {
+                    ...event,
+                    date: Timestamp.fromDate(new Date(event.date))
+                };
+            }
+            return event;
         });
     }
-    if (sanitizedData.specialDate) sanitizedData.specialDate = Timestamp.fromDate(new Date(sanitizedData.specialDate));
+
+    if (sanitizedData.specialDate) {
+        sanitizedData.specialDate = Timestamp.fromDate(new Date(sanitizedData.specialDate));
+    }
 
     sanitizedData.createdAt = Timestamp.now();
     return sanitizedData;

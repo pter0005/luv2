@@ -19,6 +19,8 @@ import { Pause, Play, View } from 'lucide-react';
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
+const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
+
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
@@ -29,9 +31,26 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   // CORREÇÃO AQUI: puzzleImage agora é a própria string Base64
   const hasPuzzle = pageData.enablePuzzle && !!pageData.puzzleImage;
 
+  const timelineEventsForDisplay = useMemo(() => {
+    if (!pageData.timelineEvents) return [];
+    return pageData.timelineEvents
+      .filter((event: any) => event.image?.url)
+      .map((event: any) => ({
+        id: event.id || Math.random().toString(),
+        imageUrl: event.image!.url,
+        alt: event.description || 'Timeline image',
+        title: event.description || '',
+        date: event.date ? new Date(event.date) : undefined,
+      }));
+  }, [pageData.timelineEvents]);
+  
+  const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
+
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle) setPuzzleRevealed(true);
+    if (!hasPuzzle) {
+      setPuzzleRevealed(true);
+    }
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
@@ -40,7 +59,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, []);
 
   if (showTimeline) {
-    return <Timeline events={pageData.timelineEvents} onClose={() => setShowTimeline(false)} />;
+    return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />;
   }
 
   if (!isClient) return null;
@@ -84,21 +103,37 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             <Countdown targetDate={pageData.specialDate} style={pageData.countdownStyle} color={pageData.countdownColor} />
           )}
 
+          {hasValidTimelineEvents && (
+            <div className="text-center">
+                <Button onClick={() => setShowTimeline(true)}><View className="mr-2 h-4 w-4" />Nossa Linha do Tempo</Button>
+            </div>
+          )}
+
           {pageData.galleryImages?.length > 0 && (
             <div className="w-full max-w-md">
               <Swiper
                 key={pageData.galleryStyle}
                 effect={(pageData.galleryStyle || 'Cube').toLowerCase() as any}
-                grabCursor modules={[EffectCoverflow, Pagination, Autoplay, EffectCards, EffectFlip, EffectCube]}
+                grabCursor
+                autoplay={{ delay: 3000, disableOnInteraction: false }}
+                modules={[EffectCoverflow, Pagination, Autoplay, EffectCards, EffectFlip, EffectCube]}
                 pagination={{ clickable: true }}
-                className="rounded-3xl shadow-2xl"
+                className="mySwiper rounded-3xl"
               >
                 {pageData.galleryImages.map((img: any, i: number) => (
-                  <SwiperSlide key={i}><div className="relative aspect-square"><Image src={img.url} alt="foto" fill className="object-cover" unoptimized /></div></SwiperSlide>
+                  <SwiperSlide key={i} className='bg-transparent'>
+                    <div className="relative aspect-square">
+                        <Image src={img.url} alt="foto" fill className="object-cover" unoptimized />
+                    </div>
+                  </SwiperSlide>
                 ))}
               </Swiper>
             </div>
           )}
+
+          {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
+          {pageData.musicOption === 'record' && pageData.audioRecording && <CustomAudioPlayer src={pageData.audioRecording} />}
+
         </div>
       </motion.main>
 
