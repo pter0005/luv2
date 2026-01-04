@@ -442,19 +442,6 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
   return (
     <>
-      <Sphere args={[2, 16, 16]} position={[0, 0, 0]}>
-        <mesh visible={false} />
-      </Sphere>
-      <Sphere args={[12, 16, 16]} position={[0, 0, 0]}>
-         <mesh visible={false} />
-      </Sphere>
-      <Sphere args={[16, 16, 16]} position={[0, 0, 0]}>
-         <mesh visible={false} />
-      </Sphere>
-      <Sphere args={[20, 16, 16]} position={[0, 0, 0]}>
-         <mesh visible={false} />
-      </Sphere>
-
       {cards.map((card, i) => (
         cardPositions[i] && <FloatingCard key={card.id} card={card} position={cardPositions[i]} isMobile={isMobile} />
       ))}
