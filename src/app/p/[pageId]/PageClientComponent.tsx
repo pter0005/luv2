@@ -40,7 +40,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         imageUrl: event.image!.url,
         alt: event.description || 'Timeline image',
         title: event.description || '',
-        date: event.date ? new Date(event.date) : undefined,
+        date: event.date ? new Date(event.date.seconds * 1000) : undefined,
       }));
   }, [pageData.timelineEvents]);
   
@@ -94,13 +94,13 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
               {pageData.title}
             </h1>
-            <p className={cn("text-white/80 whitespace-pre-wrap text-lg max-w-2xl mx-auto", pageData.messageFontSize)}>
+            <p className={cn("text-white/80 whitespace-pre-wrap text-lg max-w-2xl mx-auto", pageData.messageFontSize, pageData.messageFormatting?.includes("bold") && "font-bold", pageData.messageFormatting?.includes("italic") && "italic", pageData.messageFormatting?.includes("strikethrough") && "line-through")}>
               {pageData.message}
             </p>
           </div>
 
           {pageData.specialDate && (
-            <Countdown targetDate={pageData.specialDate} style={pageData.countdownStyle} color={pageData.countdownColor} />
+            <Countdown targetDate={new Date(pageData.specialDate.seconds * 1000).toISOString()} style={pageData.countdownStyle} color={pageData.countdownColor} />
           )}
 
           {hasValidTimelineEvents && (
@@ -132,6 +132,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           )}
 
           {pageData.musicOption === 'youtube' && pageData.youtubeUrl && <YoutubePlayer url={pageData.youtubeUrl} />}
+          
           {pageData.musicOption === 'record' && pageData.audioRecording && <CustomAudioPlayer src={pageData.audioRecording} />}
 
         </div>
