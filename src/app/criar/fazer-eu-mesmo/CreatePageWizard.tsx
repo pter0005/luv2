@@ -1390,9 +1390,9 @@ const WizardInternal = () => {
     const ok = await trigger(steps[currentStep].fields as any);
     if (!ok) return;
 
-    if (steps[currentStep + 1]?.id === 'payment') {
+    if (steps[currentStep + 1]?.id === 'payment' && user) {
         toast({ title: "Salvando rascunho...", description: "Preparando check-out seguro." });
-        await handleAutosave(getValues());
+        await handleAutosave({ ...getValues(), userId: user.uid });
     }
     
     setCurrentStep(Math.min(currentStep + 1, steps.length - 1));
@@ -1516,65 +1516,56 @@ const WizardInternal = () => {
 
   return (
     <FormProvider {...methods}>
-      <div className="grid md:grid-cols-2 gap-8 min-h-[calc(100vh_-_10rem)]">
-          {/* Coluna da Esquerda: Preview */}
-          <div className="hidden md:flex relative h-full w-full md:sticky top-24 items-center justify-center p-4">
-             <PreviewContent 
-                formData={formData} 
-                isClient={isClient}
-                onShowTimeline={() => setShowTimelinePreview(true)}
-                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
-                showPuzzlePreview={showPuzzlePreview}
-                previewPuzzleRevealed={previewPuzzleRevealed}
-                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-            />
+      <div className="flex flex-col md:grid md:grid-cols-2 min-h-screen">
+          {/* Desktop Preview: Fixo na Esquerda */}
+          <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
+              <PreviewContent 
+                  formData={formData} 
+                  isClient={isClient}
+                  onShowTimeline={() => setShowTimelinePreview(true)}
+                  hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                  showPuzzlePreview={showPuzzlePreview}
+                  previewPuzzleRevealed={previewPuzzleRevealed}
+                  setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+              />
           </div>
 
-          {/* Coluna da Direita: Wizard */}
-          <div className="p-6 md:p-12 space-y-8">
-            <div className="flex justify-between items-center">
-                <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
-                <div className="flex-grow flex flex-col items-center gap-2 mx-4">
-                    <span className="text-xs text-muted-foreground">Passo {currentStep + 1} de {steps.length}</span>
-                    <Progress value={(currentStep + 1) / steps.length * 100} className="w-full" />
-                </div>
-                <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
-            </div>
-            <div className="space-y-2">
-                <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
-                <p className="text-muted-foreground">{steps[currentStep].description}</p>
-            </div>
-             {/* Mobile Preview Button */}
-            <div className="md:hidden sticky top-24 z-30">
-                <Dialog>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" className="w-full shadow-lg">
-                           <Eye className="mr-2 h-4 w-4" /> Ver Preview
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-[95vw] h-[80vh] flex flex-col p-2">
-                        <DialogHeader className="p-2 pb-0">
-                           <DialogTitle>Preview da Página</DialogTitle>
-                        </DialogHeader>
-                        <div className="flex-grow overflow-hidden">
-                           <PreviewContent 
-                                formData={formData} 
-                                isClient={isClient}
-                                onShowTimeline={() => setShowTimelinePreview(true)}
-                                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
-                                showPuzzlePreview={showPuzzlePreview}
-                                previewPuzzleRevealed={previewPuzzleRevealed}
-                                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <div className="min-h-[400px]">
-                {StepComponent}
-            </div>
+          {/* Wizard Content */}
+          <div className="flex flex-col md:pb-8">
+              <div className="p-6 md:p-12 space-y-8 flex-grow">
+                  <div className="flex justify-between items-center">
+                      <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
+                      <div className="flex-grow flex flex-col items-center gap-2 mx-4">
+                          <span className="text-xs text-muted-foreground">Passo {currentStep + 1} de {steps.length}</span>
+                          <Progress value={(currentStep + 1) / steps.length * 100} className="w-full" />
+                      </div>
+                      <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
+                  </div>
+                  <div className="space-y-2">
+                      <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
+                      <p className="text-muted-foreground">{steps[currentStep].description}</p>
+                  </div>
+                  <div className="min-h-[400px]">
+                      {StepComponent}
+                  </div>
+              </div>
           </div>
-        </div>
+          
+          {/* Mobile Preview: Fixo na parte de baixo */}
+          <div className="md:hidden sticky bottom-0 left-0 w-full z-30 h-1/2 bg-background/80 backdrop-blur-lg border-t-2 border-primary/50 p-2 flex items-center justify-center">
+               <div className="w-full h-full">
+                  <PreviewContent 
+                      formData={formData} 
+                      isClient={isClient}
+                      onShowTimeline={() => setShowTimelinePreview(true)}
+                      hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                      showPuzzlePreview={showPuzzlePreview}
+                      previewPuzzleRevealed={previewPuzzleRevealed}
+                      setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                  />
+               </div>
+          </div>
+      </div>
     </FormProvider>
   );
 }
@@ -1650,3 +1641,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
