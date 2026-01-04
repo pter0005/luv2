@@ -8,7 +8,7 @@ import { Loader2, Heart, PlusCircle, View, Copy, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { collection, query, where } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -66,8 +66,8 @@ export default function MinhasPaginasPage() {
   const firestore = useFirestore();
 
   // 1. Criar a consulta (query) para buscar as páginas do usuário
-  const pagesQuery = useMemo(() => {
-    if (!user) return null;
+  const pagesQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
     // Buscamos na coleção 'lovepages' onde o campo 'userId' é igual ao ID do usuário logado.
     return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
   }, [user, firestore]);
