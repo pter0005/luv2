@@ -10,7 +10,7 @@ import {
   OrbitControls,
   Html,
   Plane,
-  Sphere,
+  Stars,
 } from "@react-three/drei"
 import { Download, Heart, X } from "lucide-react"
 import { format } from "date-fns"
@@ -117,76 +117,6 @@ function RotateDeviceOverlay() {
 
 
 /* =========================
-   Starfield Background
-   ========================= */
-
-function StarfieldBackground() {
-  const mountRef = useRef<HTMLDivElement>(null)
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mountRef.current || !isClient) return
-
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.setClearColor(0x000000, 1)
-    mountRef.current.appendChild(renderer.domElement)
-
-    const starsGeometry = new THREE.BufferGeometry()
-    const isMobile = window.innerWidth < 768;
-    const starCount = isMobile ? 500 : 1500;
-    
-    const positions = new Float32Array(starCount * 3)
-    for (let i = 0; i < starCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 2000
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 2000
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 2000
-    }
-    starsGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3))
-    const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: isMobile ? 0.5 : 0.7, sizeAttenuation: true })
-    const stars = new THREE.Points(starsGeometry, starsMaterial)
-    scene.add(stars)
-
-    camera.position.z = 10
-
-    let animationId = 0
-    const animate = () => {
-      animationId = requestAnimationFrame(animate)
-      stars.rotation.y += 0.0001
-      stars.rotation.x += 0.00005
-      renderer.render(scene, camera)
-    }
-    animate()
-
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight
-      camera.updateProjectionMatrix()
-      renderer.setSize(window.innerWidth, window.innerHeight)
-    }
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      window.removeEventListener("resize", handleResize)
-      cancelAnimationFrame(animationId)
-      if (mountRef.current && renderer.domElement) {
-        mountRef.current.removeChild(renderer.domElement)
-      }
-      renderer.dispose()
-      starsGeometry.dispose()
-      starsMaterial.dispose()
-    }
-  }, [isClient])
-
-  return <div ref={mountRef} className="fixed top-0 left-0 w-full h-full z-0 bg-black" />
-}
-
-/* =========================
    Floating Card
    ========================= */
 
@@ -242,11 +172,11 @@ function FloatingCard({
       onPointerOut={handlePointerOut}
     >
       <Plane args={[imageSize.width, imageSize.height]}>
-        <meshBasicMaterial transparent opacity={0} />
+        <mesh visible={false} />
       </Plane>
       <Html
         transform
-        distanceFactor={8}
+        distanceFactor={6}
         position={[0, 0, 0.01]}
         style={{
           transition: "all 0.3s ease",
@@ -472,17 +402,18 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     <CardProvider events={events}>
       <div className="w-full h-screen fixed inset-0 z-50 bg-black">
         <RotateDeviceOverlay />
-        <StarfieldBackground />
-
+        
         <Canvas
           dpr={[1, 1.2]}
-          camera={{ position: [0, 0, isMobile ? 40 : 35], fov: isMobile ? 75 : 60, near: 0.1, far: 200 }}
+          camera={{ position: [0, 0, isMobile ? 40 : 35], fov: isMobile ? 75 : 60, near: 1, far: 200 }}
           className="absolute inset-0 z-10"
           onCreated={({ gl }) => {
             gl.domElement.style.pointerEvents = "auto"
           }}
         >
           <Suspense fallback={null}>
+            <color attach="background" args={['#000000']} />
+            <Stars radius={100} depth={50} count={isMobile ? 1000 : 3000} factor={4} saturation={0} fade speed={1} />
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={0.8} />
             <pointLight position={[-10, -10, -10]} intensity={0.4} />
