@@ -1147,7 +1147,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
     setIntentId: (id: string) => void;
 }) => {
-    const { getValues, control, formState: { isValid } } = useFormContext<PageData>();
+    const { getValues, control, formState: { isValid }, trigger } = useFormContext<PageData>();
     const [isProcessing, startTransition] = useTransition();
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
@@ -1193,7 +1193,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
         setError(null);
         setPixData(null);
     
-        if (!isValid) {
+        const isPayerDataValid = await trigger("payment");
+        if (!isPayerDataValid) {
             toast({
                 variant: 'destructive',
                 title: 'Ops!',
@@ -1202,23 +1203,19 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
             return;
         }
     
-        const currentIntentId = getValues("intentId");
-    
-        if (!currentIntentId) {
-            setError({ 
-                message: 'Aguarde o salvamento...',
-                details: {
-                    log: "[SISTEMA] > O rascunho automático ainda está sendo processado. Aguarde 3 segundos e tente clicar novamente."
-                }
-            });
-            return;
-        }
-    
-        setIntentId(currentIntentId);
-        
         startTransition(async () => {
             try {
-                const paymentResult = await processPixPayment(currentIntentId);
+                // Ensure the latest data is saved before processing payment
+                const fullData = getValues();
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+
+                if (saveResult.error || !saveResult.intentId) {
+                    setError({ message: saveResult.error || "Não foi possível salvar o rascunho antes do pagamento."});
+                    return;
+                }
+                
+                setIntentId(saveResult.intentId);
+                const paymentResult = await processPixPayment(saveResult.intentId);
                 
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
@@ -1228,7 +1225,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
                         qrCodeBase64: paymentResult.qrCodeBase64, 
                         paymentId: paymentResult.paymentId
                     });
-                    startPolling(currentIntentId);
+                    startPolling(saveResult.intentId);
                 }
             } catch (err) {
                 setError({ message: "Erro ao conectar com o serviço de pagamento." });
@@ -1306,16 +1303,6 @@ const WizardInternal = () => {
   
   const { watch, trigger, setValue, getValues } = methods;
   const formData = watch();
-
-  useEffect(() => {
-    // A cada mudança de passo, se não estivermos no passo do puzzle,
-    // o puzzle do preview deve ser considerado "não revelado".
-    // Isso garante que se o usuário voltar para a etapa do puzzle,
-    // ele possa testar a revelação novamente.
-    if (steps[currentStep]?.id !== 'puzzle') {
-        setPreviewPuzzleRevealed(false);
-    }
-  }, [currentStep]);
 
   const restoreFromLocalStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -1692,5 +1679,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
