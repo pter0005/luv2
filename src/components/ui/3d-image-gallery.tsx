@@ -140,7 +140,7 @@ function StarfieldBackground() {
 
     const starsGeometry = new THREE.BufferGeometry()
     const isMobile = window.innerWidth < 768;
-    const starCount = isMobile ? 1000 : 3000;
+    const starCount = isMobile ? 500 : 1500;
     
     const positions = new Float32Array(starCount * 3)
     for (let i = 0; i < starCount; i++) {
@@ -204,7 +204,7 @@ function FloatingCard({
   const { setSelectedCard } = useCard()
   
   const imageSize = useMemo(() => {
-    const cardWidth = isMobile ? 6.5 : 7.5;
+    const cardWidth = isMobile ? 10 : 12;
     const cardHeight = cardWidth / (3 / 4.5);
     return { width: cardWidth, height: cardHeight };
   }, [isMobile]);
@@ -246,7 +246,7 @@ function FloatingCard({
       </Plane>
       <Html
         transform
-        distanceFactor={10}
+        distanceFactor={8}
         position={[0, 0, 0.01]}
         style={{
           transition: "all 0.3s ease",
@@ -442,17 +442,17 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
   return (
     <>
-      <Sphere args={[2, isMobile ? 16 : 32, isMobile ? 16 : 32]} position={[0, 0, 0]}>
-        <meshStandardMaterial color="#1a1a2e" transparent opacity={0} wireframe />
+      <Sphere args={[2, 16, 16]} position={[0, 0, 0]}>
+        <mesh visible={false} />
       </Sphere>
-      <Sphere args={[12, isMobile ? 16 : 32, isMobile ? 16 : 32]} position={[0, 0, 0]}>
-        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0} wireframe />
+      <Sphere args={[12, 16, 16]} position={[0, 0, 0]}>
+         <mesh visible={false} />
       </Sphere>
-      <Sphere args={[16, isMobile ? 16 : 32, isMobile ? 16 : 32]} position={[0, 0, 0]}>
-        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0} wireframe />
+      <Sphere args={[16, 16, 16]} position={[0, 0, 0]}>
+         <mesh visible={false} />
       </Sphere>
-      <Sphere args={[20, isMobile ? 16 : 32, isMobile ? 16 : 32]} position={[0, 0, 0]}>
-        <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0} wireframe />
+      <Sphere args={[20, 16, 16]} position={[0, 0, 0]}>
+         <mesh visible={false} />
       </Sphere>
 
       {cards.map((card, i) => (
@@ -488,7 +488,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
         <StarfieldBackground />
 
         <Canvas
-          dpr={[1, 1.5]}
+          dpr={[1, 1.2]}
           camera={{ position: [0, 0, isMobile ? 40 : 35], fov: isMobile ? 75 : 60, near: 0.1, far: 200 }}
           className="absolute inset-0 z-10"
           onCreated={({ gl }) => {
@@ -501,13 +501,15 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
             <pointLight position={[-10, -10, -10]} intensity={0.4} />
             <CardGalaxy isMobile={isMobile} />
             <OrbitControls
+              enableDamping={true}
+              dampingFactor={0.05}
               enablePan
               enableZoom
               enableRotate
               minDistance={isMobile ? 15 : 10}
               maxDistance={isMobile ? 60 : 50}
               autoRotate={events.length > 1}
-              autoRotateSpeed={isMobile ? 0.3 : 0.15}
+              autoRotateSpeed={isMobile ? 0.2 : 0.15}
               rotateSpeed={isMobile ? 0.8 : 0.5}
               zoomSpeed={isMobile ? 1.0 : 1.0}
               panSpeed={isMobile ? 1.0 : 0.8}
