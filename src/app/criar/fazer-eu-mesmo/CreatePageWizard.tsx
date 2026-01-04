@@ -57,6 +57,7 @@ import FallingHearts from "@/components/effects/FallingHearts";
 import StarrySky from "@/components/effects/StarrySky";
 import MysticVortex from "@/components/effects/MysticVortex";
 import FloatingDots from "@/components/effects/FloatingDots";
+import CustomAudioPlayer from "./CustomAudioPlayer";
 
 const YoutubePlayer = dynamic(() => import('./YoutubePlayer'), {
   ssr: false,
@@ -1148,6 +1149,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
     setIntentId: (id: string) => void;
 }) => {
     const { getValues, control, formState: { isValid }, trigger } = useFormContext<PageData>();
+    const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
@@ -1202,11 +1204,17 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId }: {
             });
             return;
         }
+
+        if (!user) {
+            setError({ message: "Sessão de usuário inválida. Por favor, faça login novamente." });
+            return;
+        }
     
         startTransition(async () => {
             try {
-                // Ensure the latest data is saved before processing payment
-                const fullData = getValues();
+                // Get the latest form data and explicitly add the user ID
+                const fullData = { ...getValues(), userId: user.uid };
+                
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
 
                 if (saveResult.error || !saveResult.intentId) {
@@ -1634,43 +1642,6 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
         </div>
     );
 };
-
-const CustomAudioPlayer = ({ src }: { src: string }) => {
-    const audioRef = useRef<HTMLAudioElement>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-  
-    const togglePlayPause = () => {
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.pause();
-        } else {
-          audioRef.current.play();
-        }
-        setIsPlaying(!isPlaying);
-      }
-    };
-  
-    useEffect(() => {
-      const audio = audioRef.current;
-      if (audio) {
-        const handleEnded = () => setIsPlaying(false);
-        audio.addEventListener('ended', handleEnded);
-        return () => {
-          audio.removeEventListener('ended', handleEnded);
-        };
-      }
-    }, []);
-  
-    return (
-      <div className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
-        <audio ref={audioRef} src={src} className="hidden" />
-        <Button onClick={togglePlayPause} size="icon" variant="ghost" className="text-primary-foreground bg-primary/80 hover:bg-primary">
-          {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-        </Button>
-        <p className="text-sm text-primary-foreground font-semibold">Sua mensagem de voz</p>
-      </div>
-    );
-  };
 
 export default function CreatePageWizard() {
   return (
