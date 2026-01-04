@@ -1,3 +1,6 @@
+
+'use client';
+
 import type { Metadata } from 'next';
 import './globals.css';
 import 'swiper/css';
@@ -7,6 +10,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Poppins, Playfair_Display, Dancing_Script } from 'next/font/google';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { usePathname } from 'next/navigation';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -29,22 +33,31 @@ const dancingScript = Dancing_Script({
   display: 'swap',
 });
 
-
-export const metadata: Metadata = {
-  title: 'b2gether',
-  description: 'Declare seu amor de forma única',
-  icons: {
-    icon: 'https://imgur.com/UoVzjfJ.png',
-  }
-};
+// Metadata can't be dynamically generated in a client component,
+// but we can define the static parts here.
+// export const metadata: Metadata = {
+//   title: 'b2gether',
+//   description: 'Declare seu amor de forma única',
+//   icons: {
+//     icon: 'https://imgur.com/UoVzjfJ.png',
+//   }
+// };
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isLovePage = pathname.startsWith('/p/');
+
   return (
     <html lang="pt" className="dark scroll-smooth">
+       <head>
+        <title>b2gether</title>
+        <meta name="description" content="Declare seu amor de forma única" />
+        <link rel="icon" href="https://imgur.com/UoVzjfJ.png" />
+      </head>
       <body
         className={cn(
           'font-body antialiased overflow-x-hidden bg-background min-h-screen',
@@ -60,7 +73,7 @@ export default function RootLayout({
                   <div className="mystic-fog-2"></div>
               </div>
             <div className="relative z-10 flex flex-col min-h-screen">
-              <Header />
+              {!isLovePage && <Header />}
               <main className="flex-grow">{children}</main>
               <Footer />
             </div>

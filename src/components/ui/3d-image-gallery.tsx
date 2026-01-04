@@ -204,7 +204,7 @@ function FloatingCard({
   const { setSelectedCard } = useCard()
   
   const imageSize = useMemo(() => {
-    const cardWidth = isMobile ? 5.8 : 6.5;
+    const cardWidth = isMobile ? 6.5 : 7.5;
     const cardHeight = cardWidth / (3 / 4.5);
     return { width: cardWidth, height: cardHeight };
   }, [isMobile]);

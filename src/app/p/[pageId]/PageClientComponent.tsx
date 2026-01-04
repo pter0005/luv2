@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -15,6 +16,7 @@ import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
 import { Pause, Play, View } from 'lucide-react';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const YoutubePlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
@@ -27,8 +29,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [isClient, setIsClient] = useState(false);
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const cloudsVideoRef = useRef<HTMLVideoElement>(null);
+  const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'headerLogo')?.imageUrl || '';
 
-  // CORREÇÃO AQUI: puzzleImage agora é a própria string Base64
   const hasPuzzle = pageData.enablePuzzle && !!pageData.puzzleImage;
 
   const timelineEventsForDisplay = useMemo(() => {
@@ -54,7 +56,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
-    console.log("REVELAÇÃO AUTORIZADA PELO PUZZLE!");
     setPuzzleRevealed(true);
   }, []);
 
@@ -66,6 +67,19 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   return (
     <div className="min-h-screen w-full bg-background relative">
+      
+      {/* CAMADA 0: CABEÇALHO MINIMALISTA */}
+      <header className="absolute top-0 left-0 w-full z-20 flex justify-center py-4">
+        {headerLogoUrl && (
+          <Image
+            src={headerLogoUrl}
+            alt="b2gether Logo"
+            width={120}
+            height={120}
+            className="w-24 h-24 md:w-32 md:h-32"
+          />
+        )}
+      </header>
       
       {/* CAMADA 1: FUNDO ANIMADO */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
@@ -89,8 +103,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           pointerEvents: puzzleRevealed ? 'auto' : 'none' 
         }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20">
-          <div className="space-y-6 text-center pt-20">
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20 pt-32 md:pt-40">
+          <div className="space-y-6 text-center">
             <h1 className="text-5xl md:text-7xl font-handwriting" style={{ color: pageData.titleColor }}>
               {pageData.title}
             </h1>
@@ -102,7 +116,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           {pageData.specialDate && (
             <Countdown targetDate={new Date(pageData.specialDate.seconds * 1000).toISOString()} style={pageData.countdownStyle} color={pageData.countdownColor} />
           )}
-
+          
           {hasValidTimelineEvents && (
             <div className="text-center">
                 <Button onClick={() => setShowTimeline(true)}><View className="mr-2 h-4 w-4" />Nossa Linha do Tempo</Button>
@@ -155,7 +169,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </div>
               <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                 <RealPuzzle
-                  imageSrc={pageData.puzzleImage} // PASSANDO A STRING BASE64 DIRETO
+                  imageSrc={pageData.puzzleImage}
                   onReveal={handleReveal}
                 />
               </div>
