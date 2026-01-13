@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -81,9 +80,14 @@ function FloatingCard({
   isMobile: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
+  const occludeRef = useRef<THREE.Mesh>(null) // NOVO REF PARA OCLUSÃO
   
   const baseScale = isMobile ? 1.5 : 1.6;
   const cardWidthPx = isMobile ? 150 : 220;
+  
+  // Cálculo preciso para o tamanho do Plane bater com o tamanho visual do HTML no distanceFactor 8
+  const planeWidth = (cardWidthPx / 100) * 0.82 
+  const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
     if (groupRef.current) {
@@ -91,13 +95,13 @@ function FloatingCard({
     }
   })
 
-    const dateObj = useMemo(() => {
-        if (!card.date) return null;
-        if (card.date instanceof Date) return card.date;
-        const seconds = (card.date as any)._seconds || (card.date as any).seconds;
-        if (seconds) return new Date(seconds * 1000);
-        return null;
-    }, [card.date]);
+  const dateObj = useMemo(() => {
+      if (!card.date) return null;
+      if (card.date instanceof Date) return card.date;
+      const seconds = (card.date as any)._seconds || (card.date as any).seconds;
+      if (seconds) return new Date(seconds * 1000);
+      return null;
+  }, [card.date]);
 
   return (
     <group
@@ -105,28 +109,33 @@ function FloatingCard({
       position={[position.x, position.y, position.z]}
       scale={baseScale}
     >
-      {/* MESH FANTASMA: Resolve o bug de imagens de trás aparecendo na frente */}
-      <mesh visible={true}>
-         <planeGeometry args={[cardWidthPx / 100 * (isMobile ? 0.6 : 0.8), cardWidthPx / 100]} />
-         <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
+      {/* 
+          MESH DE PROFUNDIDADE (Depth Mask) 
+          colorWrite={false} faz a mágica: o objeto é "sólido" pro motor, mas invisível pro olho.
+      */}
+      <mesh ref={occludeRef}>
+         <planeGeometry args={[planeWidth, planeHeight]} />
+         <meshBasicMaterial colorWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
       <Html
         transform
-        occlude="blending" 
+        occlude={[occludeRef]} // Oclusão baseada explicitamente na malha acima
         distanceFactor={8} 
         position={[0, 0, 0]}
-        zIndexRange={[100, 0]} // Importante para o sorting
+        zIndexRange={[100000, 0]} // Range gigante garante que CSS saiba quem está na frente
         style={{ pointerEvents: 'none' }} 
       >
         <div
           className="relative flex flex-col text-center select-none rounded-xl overflow-hidden shadow-2xl"
           style={{
             width: `${cardWidthPx}px`,
-            // Oculta o fundo da div container, pois a imagem e o gradiente cobrem tudo
+            // Oculta fundo para mostrar só o contorno arredondado
             background: 'transparent',
-            // Sombras para ajudar a separar um card do outro visualmente
             boxShadow: '0 8px 32px -8px rgba(0,0,0,0.8)',
+            // Força renderização em GPU
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden', 
           }}
         >
             <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
@@ -141,17 +150,13 @@ function FloatingCard({
                     priority={false}
                 />
                 
-                {/* --- ÁREA DE TEXTO ESTILIZADA --- */}
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4 px-3">
-                    
-                    {/* Título (Discreto) */}
                     {card.title && (
                         <p className="text-white/80 font-medium text-[10px] uppercase tracking-wider mb-2 line-clamp-1 drop-shadow-md">
                         {card.title}
                         </p>
                     )}
                     
-                    {/* Data (Destaque Roxo Neon) */}
                     {dateObj && (
                         <div className="flex items-center justify-center gap-3">
                             <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-purple-500"></div>
