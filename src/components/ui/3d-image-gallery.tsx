@@ -67,7 +67,7 @@ function useIsMobile() {
 }
 
 /* =========================
-   Floating Card (CORRIGIDO)
+   Floating Card (FINAL / STABLE)
    ========================= */
 function FloatingCard({
   card,
@@ -84,8 +84,8 @@ function FloatingCard({
   const baseScale = isMobile ? 1.5 : 1.6;
   const cardWidthPx = isMobile ? 150 : 220;
   
-  // FIX 1: Aumentamos um pouco a área de colisão (1.1) para cobrir sombras CSS
-  const planeWidth = (cardWidthPx / 90) * 1.1 
+  // Ajuste matemático fino para o Plane cobrir exatamente o HTML sem vazar
+  const planeWidth = (cardWidthPx / 100) * 1.2
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
@@ -109,16 +109,20 @@ function FloatingCard({
       scale={baseScale}
     >
       {/* 
-          DEPTH MASK:
-          Removemos o renderOrder={-1} para ele respeitar a ordem real de profundidade.
-          Mantivemos colorWrite=false para ser invisível.
+          DEPTH MASK SUPER SÓLIDO
+          - colorWrite={false}: Invisível
+          - depthWrite={true}: Escreve na profundidade
+          - blending={NoBlending}: Otimiza renderização e evita transparência acidental
+          - transparent={false}: Força tratamento de objeto sólido
       */}
       <mesh ref={occludeRef}>
          <planeGeometry args={[planeWidth, planeHeight]} />
          <meshBasicMaterial 
-            colorWrite={false} 
-            depthWrite={true} 
-            side={THREE.DoubleSide} 
+            colorWrite={false}
+            depthWrite={true}
+            transparent={false}
+            blending={THREE.NoBlending}
+            side={THREE.DoubleSide}
          />
       </mesh>
 
@@ -126,21 +130,23 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        // FIX 2: Offset Z de 0.05 para garantir que o HTML fique sempre "colado" 
-        // mas à frente da sua própria máscara de profundidade
-        position={[0, 0, 0.05]}
-        zIndexRange={[100000, 0]}
-        style={{ pointerEvents: 'none' }} 
+        position={[0, 0, 0.08]} // Offset aumentado levemente para evitar flicker
+        zIndexRange={[500, 0]} // Range normalizado para evitar bugs de browser
+        style={{ 
+            pointerEvents: 'none',
+            transformStyle: 'preserve-3d', // Ajuda no renderizador do Chrome mobile
+        }} 
       >
         <div
           className="relative flex flex-col text-center select-none rounded-xl overflow-hidden shadow-2xl"
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            // Sombras ajustadas para ficarem contidas na oclusão visualmente
-            boxShadow: isMobile ? '0 4px 16px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.8)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', 
             backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden', 
+            WebkitBackfaceVisibility: 'hidden',
+            // Força aceleração de hardware no elemento
+            transform: 'translateZ(0)',
           }}
         >
             <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
@@ -178,6 +184,7 @@ function FloatingCard({
     </group>
   )
 }
+
 
 /* =========================
    Card Galaxy
