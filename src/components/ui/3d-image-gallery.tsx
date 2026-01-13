@@ -84,10 +84,8 @@ function FloatingCard({
   const baseScale = isMobile ? 1.5 : 1.6;
   const cardWidthPx = isMobile ? 150 : 220;
   
-  // FIX: Ajuste do tamanho da geometria para ser ligeiramente MAIOR que o visual HTML.
-  // Antes estava 0.82 (pequeno), agora 1.05 garante que cubra tudo.
-  // A divisão por 90 é um valor aproximado para converter pixels em units do Threejs nesse FOV.
-  const planeWidth = (cardWidthPx / 90) * 1.05 
+  // FIX 1: Aumentamos um pouco a área de colisão (1.1) para cobrir sombras CSS
+  const planeWidth = (cardWidthPx / 90) * 1.1 
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
@@ -111,17 +109,15 @@ function FloatingCard({
       scale={baseScale}
     >
       {/* 
-          DEPTH MASK SÓLIDO:
-          1. renderOrder negativo garante que escreva no buffer cedo.
-          2. colorWrite=false: invisível aos olhos.
-          3. depthWrite=true: bloqueia objetos atrás.
+          DEPTH MASK:
+          Removemos o renderOrder={-1} para ele respeitar a ordem real de profundidade.
+          Mantivemos colorWrite=false para ser invisível.
       */}
-      <mesh ref={occludeRef} renderOrder={-1}>
+      <mesh ref={occludeRef}>
          <planeGeometry args={[planeWidth, planeHeight]} />
          <meshBasicMaterial 
             colorWrite={false} 
             depthWrite={true} 
-            depthTest={true} 
             side={THREE.DoubleSide} 
          />
       </mesh>
@@ -130,9 +126,10 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0]}
-        // FIX: Range gigantesco para o CSS saber priorizar quem está na frente (cm)
-        zIndexRange={[100000, 0]} 
+        // FIX 2: Offset Z de 0.05 para garantir que o HTML fique sempre "colado" 
+        // mas à frente da sua própria máscara de profundidade
+        position={[0, 0, 0.05]}
+        zIndexRange={[100000, 0]}
         style={{ pointerEvents: 'none' }} 
       >
         <div
@@ -140,8 +137,8 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.8)',
-            // CSS FIX: Ajuda o navegador a entender o recorte 3D
+            // Sombras ajustadas para ficarem contidas na oclusão visualmente
+            boxShadow: isMobile ? '0 4px 16px rgba(0,0,0,0.8)' : '0 8px 32px rgba(0,0,0,0.8)',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden', 
           }}
