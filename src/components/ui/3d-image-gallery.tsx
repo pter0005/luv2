@@ -36,7 +36,6 @@ function useCard() {
 }
 
 function CardProvider({ children, events }: { children: React.ReactNode, events: Card[] }) {
-  // Removido setSelectedCard, pois não há mais modal
   const value = useMemo(() => ({ cards: events }), [events]);
   return (
     <CardContext.Provider value={value}>
@@ -68,7 +67,7 @@ function useIsMobile() {
 }
 
 /* =========================
-   Floating Card (APENAS VISUAL / SEM INTERAÇÃO)
+   Floating Card (CORRIGIDO)
    ========================= */
 function FloatingCard({
   card,
@@ -80,13 +79,15 @@ function FloatingCard({
   isMobile: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const occludeRef = useRef<THREE.Mesh>(null) // NOVO REF PARA OCLUSÃO
+  const occludeRef = useRef<THREE.Mesh>(null) 
   
   const baseScale = isMobile ? 1.5 : 1.6;
   const cardWidthPx = isMobile ? 150 : 220;
   
-  // Cálculo preciso para o tamanho do Plane bater com o tamanho visual do HTML no distanceFactor 8
-  const planeWidth = (cardWidthPx / 100) * 0.82 
+  // FIX: Ajuste do tamanho da geometria para ser ligeiramente MAIOR que o visual HTML.
+  // Antes estava 0.82 (pequeno), agora 1.05 garante que cubra tudo.
+  // A divisão por 90 é um valor aproximado para converter pixels em units do Threejs nesse FOV.
+  const planeWidth = (cardWidthPx / 90) * 1.05 
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
@@ -110,30 +111,37 @@ function FloatingCard({
       scale={baseScale}
     >
       {/* 
-          MESH DE PROFUNDIDADE (Depth Mask) 
-          colorWrite={false} faz a mágica: o objeto é "sólido" pro motor, mas invisível pro olho.
+          DEPTH MASK SÓLIDO:
+          1. renderOrder negativo garante que escreva no buffer cedo.
+          2. colorWrite=false: invisível aos olhos.
+          3. depthWrite=true: bloqueia objetos atrás.
       */}
-      <mesh ref={occludeRef}>
+      <mesh ref={occludeRef} renderOrder={-1}>
          <planeGeometry args={[planeWidth, planeHeight]} />
-         <meshBasicMaterial colorWrite={false} side={THREE.DoubleSide} />
+         <meshBasicMaterial 
+            colorWrite={false} 
+            depthWrite={true} 
+            depthTest={true} 
+            side={THREE.DoubleSide} 
+         />
       </mesh>
 
       <Html
         transform
-        occlude={[occludeRef]} // Oclusão baseada explicitamente na malha acima
+        occlude={[occludeRef]}
         distanceFactor={8} 
         position={[0, 0, 0]}
-        zIndexRange={[100000, 0]} // Range gigante garante que CSS saiba quem está na frente
+        // FIX: Range gigantesco para o CSS saber priorizar quem está na frente (cm)
+        zIndexRange={[100000, 0]} 
         style={{ pointerEvents: 'none' }} 
       >
         <div
           className="relative flex flex-col text-center select-none rounded-xl overflow-hidden shadow-2xl"
           style={{
             width: `${cardWidthPx}px`,
-            // Oculta fundo para mostrar só o contorno arredondado
             background: 'transparent',
             boxShadow: '0 8px 32px -8px rgba(0,0,0,0.8)',
-            // Força renderização em GPU
+            // CSS FIX: Ajuda o navegador a entender o recorte 3D
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden', 
           }}
@@ -175,7 +183,7 @@ function FloatingCard({
 }
 
 /* =========================
-   Card Galaxy (Matemática Pura - Rápido)
+   Card Galaxy
    ========================= */
 function CardGalaxy({ isMobile }: { isMobile: boolean }) {
   const { cards } = useCard()
@@ -194,7 +202,6 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
         const y = 1 - (i / (numCards - 1)) * 2; 
         const r = Math.sqrt(1 - y * y);
         const theta = phi * i;
-        // const jitter = (Math.random() - 0.5) * 0.5;
 
         positions.push({
             x: Math.cos(theta) * r * radius,
@@ -215,13 +222,12 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 }
 
 /* =========================
-   Scene (Ambiente Leve)
+   Scene
    ========================= */
 function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
     const { camera } = useThree();
 
     useEffect(() => {
-        // FOV maior e câmera mais perto dão sensação de imersão melhor no mobile
         const targetZ = isMobile ? 32 : 38;
         const targetFov = isMobile ? 75 : 60; 
         
@@ -259,7 +265,7 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
                 enableZoom={true}
                 zoomSpeed={0.8}
                 rotateSpeed={0.6}
-                minDistance={5}  // Permite chegar bem perto para ver a foto (já que não tem clique)
+                minDistance={5} 
                 maxDistance={60}
                 autoRotate={events.length > 2 && !isMobile} 
                 autoRotateSpeed={0.5}
@@ -273,7 +279,6 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
    ========================= */
 const TimelineUI = ({ onClose }: { onClose: () => void }) => (
     <>
-        {/* Gradiente superior apenas para legibilidade do texto */}
         <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none h-24">
             <div className="text-white pointer-events-none pl-2">
                 <h1 className="text-lg font-bold drop-shadow-lg">Nossa Galáxia</h1>
@@ -282,7 +287,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
             <button 
                 onClick={onClose} 
                 className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg active:scale-90 transition-transform"
-                style={{ touchAction: 'manipulation' }} // Otimiza resposta ao toque
+                style={{ touchAction: 'manipulation' }}
             >
                 <X className="w-6 h-6" />
             </button>
@@ -311,7 +316,6 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
         }>
             <Canvas
               dpr={dpr}
-              // Alpha: false é mais rápido, já que o background cobre tudo
               gl={{ antialias: false, powerPreference: 'high-performance', alpha: false }}
               className="absolute inset-0 z-10 block"
             >
