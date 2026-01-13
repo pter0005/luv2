@@ -21,6 +21,7 @@ import {
   Play,
   Calendar,
   ChevronLeft,
+  TestTube2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +34,7 @@ import { ScrollFloat } from '@/components/ui/scroll-float';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import FeaturesCarousel from '@/components/layout/FeaturesCarousel';
+import { PlanFeature } from '@/components/layout/PlanFeature';
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
@@ -99,17 +101,6 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
         </section>
     );
 };
-
-const PlanFeature = ({ text, included = true }: { text: string; included?: boolean }) => (
-    <li className="flex items-center gap-3">
-        {included ? (
-            <CheckCircle className="w-5 h-5 text-primary" />
-        ) : (
-            <XCircle className="w-5 h-5 text-muted-foreground/50" />
-        )}
-        <span className={cn(!included && "text-muted-foreground/80 line-through")}>{text}</span>
-    </li>
-);
 
 
 export default function Home() {
@@ -195,7 +186,7 @@ export default function Home() {
                     experiência exclusiva, criada para celebrar momentos que merecem ser
                     eternos.
                 </p>
-                <Link href="/login?redirect=/criar?plan=avancado">
+                <Link href="/login?redirect=/criar">
                     <Button
                     size="lg"
                     className="group relative w-full sm:w-auto shadow-[0_0_20px_0px] shadow-primary/50"
@@ -328,7 +319,7 @@ export default function Home() {
       <AnimatedSection id="planos" className="section-padding">
         <div className="container max-w-5xl">
             <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Escolha o Plano Perfeito</h2>
+                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Escolha seu plano para testar</h2>
                 <p className="mt-4 text-base text-muted-foreground">Temos a opção ideal para eternizar seu momento, com a flexibilidade que você precisa.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -338,38 +329,36 @@ export default function Home() {
                         <Star className="w-4 h-4" /> RECOMENDADO
                     </div>
                     <h3 className="text-2xl font-bold text-primary">Plano Avançado</h3>
-                    <p className="text-muted-foreground text-sm mb-6">Este plano é vitalício, não precisa renovar.</p>
-                    <p className="text-5xl font-bold mb-1">R$ 24,99</p>
-                    <p className="text-muted-foreground text-sm mb-8">/uma vez</p>
+                    <p className="text-muted-foreground text-sm mb-8">Todos os recursos liberados.</p>
                     <ul className="space-y-4 mb-10 flex-grow">
-                        <PlanFeature text="Contador em tempo real" />
-                        <PlanFeature text="Galeria de fotos (até 3)" />
+                        <PlanFeature text="Galeria de fotos (até 6)" />
                         <PlanFeature text="Música de fundo" />
-                        <PlanFeature text="Animações Exclusivas" />
-                        <PlanFeature text="1 Quebra-cabeça Interativo" />
-                        <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" />
+                        <PlanFeature text="Quebra-cabeça Interativo" />
+                        <PlanFeature text="Linha do Tempo 3D (até 25 momentos)" />
                     </ul>
                     <Button asChild size="lg" className="w-full mt-auto">
-                        <Link href="/login?redirect=/criar/fazer-eu-mesmo?plan=avancado">Criar Página</Link>
+                        <Link href="/login?redirect=/criar?plan=avancado&new=true">
+                            <TestTube2 className="mr-2" />
+                            Testar Plano Avançado
+                        </Link>
                     </Button>
                 </div>
                 
                 {/* Plano Básico */}
                 <div className="bg-card/80 backdrop-blur-sm border border-border p-8 rounded-2xl flex flex-col">
                     <h3 className="text-2xl font-bold">Plano Básico</h3>
-                    <p className="text-muted-foreground text-sm mb-6">Uma opção mais simples para começar.</p>
-                    <p className="text-5xl font-bold mb-1">R$ 14,99</p>
-                    <p className="text-muted-foreground text-sm mb-8">/uma vez</p>
+                    <p className="text-muted-foreground text-sm mb-8">Uma opção mais simples para começar.</p>
                     <ul className="space-y-4 mb-10 flex-grow">
-                        <PlanFeature text="Contador em tempo real" />
-                        <PlanFeature text="Galeria de fotos (até 3)" />
-                        <PlanFeature text="Música de fundo" />
-                        <PlanFeature text="1 Animação Exclusiva" />
+                        <PlanFeature text="Galeria de fotos (até 2)" />
+                         <PlanFeature text="Linha do Tempo 3D (até 5 momentos)" />
+                        <PlanFeature text="Música de fundo" included={false} />
                         <PlanFeature text="Quebra-cabeça Interativo" included={false}/>
-                        <PlanFeature text="Linha do Tempo 3D" included={false} />
                     </ul>
                      <Button asChild size="lg" className="w-full mt-auto" variant="secondary">
-                        <Link href="/login?redirect=/criar/fazer-eu-mesmo?plan=basico">Criar Página</Link>
+                        <Link href="/login?redirect=/criar?plan=basico&new=true">
+                             <TestTube2 className="mr-2" />
+                            Testar Plano Básico
+                        </Link>
                     </Button>
                 </div>
             </div>
@@ -378,5 +367,3 @@ export default function Home() {
     </>
   );
 }
-
-    

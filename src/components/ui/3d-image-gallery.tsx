@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -81,7 +82,6 @@ function FloatingCard({
 }) {
   const groupRef = useRef<THREE.Group>(null)
   
-  // Escala levemente ajustada para leitura visual
   const baseScale = isMobile ? 1.5 : 1.6;
   const cardWidthPx = isMobile ? 150 : 220;
 
@@ -105,31 +105,31 @@ function FloatingCard({
       position={[position.x, position.y, position.z]}
       scale={baseScale}
     >
+      {/* MESH FANTASMA: Resolve o bug de imagens de trás aparecendo na frente */}
+      <mesh visible={true}>
+         <planeGeometry args={[cardWidthPx / 100 * (isMobile ? 0.6 : 0.8), cardWidthPx / 100]} />
+         <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
+      </mesh>
+
       <Html
         transform
         occlude="blending" 
         distanceFactor={8} 
         position={[0, 0, 0]}
-        zIndexRange={[100, 0]}
-        // pointerEvents='none' no wrapper permite clicar através dele
+        zIndexRange={[100, 0]} // Importante para o sorting
         style={{ pointerEvents: 'none' }} 
       >
         <div
-          className={`
-            relative flex flex-col text-center select-none overflow-hidden rounded-md
-            pointer-events-none  // IMPORTANTE: Isso permite girar a câmera tocando em cima do card
-          `}
+          className="relative flex flex-col text-center select-none rounded-xl overflow-hidden shadow-2xl"
           style={{
             width: `${cardWidthPx}px`,
-            backgroundColor: isMobile ? "rgba(18, 18, 18, 0.95)" : "rgba(10, 10, 10, 0.7)",
-            backdropFilter: isMobile ? "none" : "blur(6px)", 
-            WebkitBackdropFilter: isMobile ? "none" : "blur(6px)",
-            willChange: 'transform',
-            boxShadow: isMobile ? "0 2px 4px rgba(0,0,0,0.8)" : "0 4px 10px rgba(0,0,0,0.6)",
-            border: "1px solid rgba(255,255,255,0.15)",
+            // Oculta o fundo da div container, pois a imagem e o gradiente cobrem tudo
+            background: 'transparent',
+            // Sombras para ajudar a separar um card do outro visualmente
+            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.8)',
           }}
         >
-            <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden">
+            <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
                 <Image
                     src={card.imageUrl}
                     alt={card.alt}
@@ -137,26 +137,28 @@ function FloatingCard({
                     className="object-cover"
                     unoptimized={false}
                     sizes="(max-width: 768px) 150px, 250px"
-                    quality={70} 
+                    quality={75}
                     priority={false}
-                    loading="lazy"
                 />
-                 <div className="absolute bottom-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-8 pb-3 px-3 rounded-b-md">
-                    {/* Título mais sutil */}
+                
+                {/* --- ÁREA DE TEXTO ESTILIZADA --- */}
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4 px-3">
+                    
+                    {/* Título (Discreto) */}
                     {card.title && (
-                        <p className="text-white/90 font-medium text-xs leading-tight mb-1 line-clamp-1 drop-shadow-md">
+                        <p className="text-white/80 font-medium text-[10px] uppercase tracking-wider mb-2 line-clamp-1 drop-shadow-md">
                         {card.title}
                         </p>
                     )}
                     
-                    {/* Data em destaque, Roxa e Estilosa */}
+                    {/* Data (Destaque Roxo Neon) */}
                     {dateObj && (
-                        <div className="flex items-center justify-center gap-2 mt-1">
-                            <div className="h-[1px] w-4 bg-purple-500/50"></div>
-                            <p className="text-purple-400 font-bold text-sm tracking-wide font-sans drop-shadow-sm">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-purple-500"></div>
+                            <p className="text-purple-400 font-bold text-base font-sans drop-shadow-sm leading-none whitespace-nowrap">
                                 {format(dateObj, "dd MMM yyyy", { locale: ptBR })}
                             </p>
-                            <div className="h-[1px] w-4 bg-purple-500/50"></div>
+                            <div className="h-[1px] w-6 bg-gradient-to-l from-transparent to-purple-500"></div>
                         </div>
                     )}
                 </div>

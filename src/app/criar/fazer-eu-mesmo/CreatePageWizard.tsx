@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -80,8 +81,10 @@ const cpfMask = (v: string) => {
 };
 
 
-const MAX_GALLERY_IMAGES = 3;
-const MAX_TIMELINE_IMAGES = 20;
+const MAX_GALLERY_IMAGES_BASICO = 2;
+const MAX_GALLERY_IMAGES_AVANCADO = 6;
+const MAX_TIMELINE_IMAGES_BASICO = 5;
+const MAX_TIMELINE_IMAGES_AVANCADO = 25;
 
 
 const paymentSchema = z.object({
@@ -120,9 +123,9 @@ const pageSchema = z.object({
   specialDate: z.date().optional(),
   countdownStyle: z.string().default("Padrão"),
   countdownColor: z.string().default("#FFFFFF"),
-  galleryImages: z.array(fileWithPreviewSchema).max(MAX_GALLERY_IMAGES, `Máximo ${MAX_GALLERY_IMAGES} fotos.`).default([]),
+  galleryImages: z.array(fileWithPreviewSchema).default([]),
   galleryStyle: z.string().default("Cube"),
-  timelineEvents: z.array(timelineEventSchema).max(MAX_TIMELINE_IMAGES, `Máximo ${MAX_TIMELINE_IMAGES} momentos.`).default([]),
+  timelineEvents: z.array(timelineEventSchema).default([]),
   musicOption: z.string().default("none"),
   youtubeUrl: z.string().optional().or(z.literal('')),
   audioRecording: fileWithPreviewSchema.optional(),
@@ -142,9 +145,9 @@ const steps = [
   { id: "title", title: "Título da página", description: "Escreva o título dedicatório. Ex: João & Maria.", fields: ["title", "titleColor"] },
   { id: "message", title: "Sua Mensagem de Amor", description: "Escreva a mensagem principal.", fields: ["message", "messageFontSize", "messageFormatting"] },
   { id: "specialDate", title: "Data Especial", description: "Informe a data que simboliza o início de tudo.", fields: ["specialDate", "countdownStyle", "countdownColor"] },
-  { id: "gallery", title: "Galeria de Fotos", description: `Adicione até ${MAX_GALLERY_IMAGES} fotos.`, fields: ["galleryImages", "galleryStyle"] },
-  { id: "timeline", title: "Linha do Tempo 3D", description: `Até ${MAX_TIMELINE_IMAGES} momentos flutuantes.`, requiredPlan: 'avancado' },
-  { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+  { id: "gallery", title: "Galeria de Fotos", description: "Adicione as fotos que marcaram a história de vocês.", fields: ["galleryImages", "galleryStyle"] },
+  { id: "timeline", title: "Linha do Tempo 3D", description: "Momentos flutuantes para uma viagem nostálgica.", requiredPlan: 'avancado' },
+  { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
   { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
   { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
   { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment"] },
@@ -153,7 +156,7 @@ const steps = [
 const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
     const { watch } = useFormContext<PageData>();
     const plan = watch('plan');
-    const isLocked = requiredPlan && plan !== plan;
+    const isLocked = requiredPlan && plan !== requiredPlan;
 
     if (isLocked) {
         return (
@@ -362,7 +365,8 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
 
 
 const GalleryStep = () => {
-    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { control, formState: { errors }, watch } = useFormContext<PageData>();
+    const plan = watch('plan');
     const { fields, append, remove } = useFieldArray({
         control,
         name: "galleryImages",
@@ -371,7 +375,8 @@ const GalleryStep = () => {
     const { storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-
+    
+    const MAX_GALLERY_IMAGES = plan === 'avancado' ? MAX_GALLERY_IMAGES_AVANCADO : MAX_GALLERY_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -517,7 +522,8 @@ const GalleryStep = () => {
 };
 
 const TimelineStep = () => {
-    const { control, trigger, formState: { errors } } = useFormContext<PageData>();
+    const { control, trigger, formState: { errors }, watch } = useFormContext<PageData>();
+    const plan = watch('plan');
     const { fields, append: appendTimeline, remove, update } = useFieldArray({
         control,
         name: "timelineEvents",
@@ -528,6 +534,7 @@ const TimelineStep = () => {
     const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
     const { toast } = useToast();
 
+    const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
@@ -1479,6 +1486,7 @@ const WizardInternal = () => {
         galleryImages: [], 
         timelineEvents: [],
         enablePuzzle: plan === 'avancado',
+        musicOption: plan === 'basico' ? 'none' : 'none',
         payment: { payerCpf: "", payerEmail: "", payerFirstName: "", payerLastName: "" }
     }
   });
@@ -1784,3 +1792,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
