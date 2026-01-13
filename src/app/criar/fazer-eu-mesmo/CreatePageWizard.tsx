@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -84,7 +83,7 @@ const cpfMask = (v: string) => {
 const MAX_GALLERY_IMAGES_BASICO = 2;
 const MAX_GALLERY_IMAGES_AVANCADO = 6;
 const MAX_TIMELINE_IMAGES_BASICO = 5;
-const MAX_TIMELINE_IMAGES_AVANCADO = 25;
+const MAX_TIMELINE_IMAGES_AVANCADO = 20;
 
 
 const paymentSchema = z.object({
@@ -156,7 +155,7 @@ const steps = [
 const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
     const { watch } = useFormContext<PageData>();
     const plan = watch('plan');
-    const isLocked = requiredPlan && plan !== requiredPlan;
+    const isLocked = requiredPlan && plan !== plan;
 
     if (isLocked) {
         return (
@@ -1793,4 +1792,3 @@ export default function CreatePageWizard() {
   )
 }
 
-    

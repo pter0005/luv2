@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -86,7 +85,7 @@ export default function CreatePage() {
                         <PlanFeature text="Galeria de fotos (até 6)" />
                         <PlanFeature text="Música de fundo" />
                         <PlanFeature text="Quebra-cabeça Interativo" />
-                        <PlanFeature text="Linha do Tempo 3D (até 25 momentos)" />
+                        <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" />
                     </ul>
                     <Button onClick={() => handleStartNew('avancado')} size="lg" className="w-full mt-auto">
                         <TestTube2 className="mr-2" />
@@ -130,3 +129,4 @@ export default function CreatePage() {
       </div>
   );
 }
+

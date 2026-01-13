@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -334,7 +333,7 @@ export default function Home() {
                         <PlanFeature text="Galeria de fotos (até 6)" />
                         <PlanFeature text="Música de fundo" />
                         <PlanFeature text="Quebra-cabeça Interativo" />
-                        <PlanFeature text="Linha do Tempo 3D (até 25 momentos)" />
+                        <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" />
                     </ul>
                     <Button asChild size="lg" className="w-full mt-auto">
                         <Link href="/login?redirect=/criar?plan=avancado&new=true">
@@ -367,3 +366,4 @@ export default function Home() {
     </>
   );
 }
+
