@@ -145,7 +145,7 @@ const steps = [
   { id: "message", title: "Sua Mensagem de Amor", description: "Escreva a mensagem principal.", fields: ["message", "messageFontSize", "messageFormatting"] },
   { id: "specialDate", title: "Data Especial", description: "Informe a data que simboliza o início de tudo.", fields: ["specialDate", "countdownStyle", "countdownColor"] },
   { id: "gallery", title: "Galeria de Fotos", description: "Adicione as fotos que marcaram a história de vocês.", fields: ["galleryImages", "galleryStyle"] },
-  { id: "timeline", title: "Linha do Tempo 3D", description: "Momentos flutuantes para uma viagem nostálgica.", requiredPlan: 'avancado' },
+  { id: "timeline", title: "Linha do Tempo 3D", description: "Momentos flutuantes para uma viagem nostálgica.", fields: ["timelineEvents"], requiredPlan: 'avancado' },
   { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
   { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
   { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
@@ -1791,4 +1791,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
