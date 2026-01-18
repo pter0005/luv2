@@ -137,14 +137,6 @@ const pageSchema = z.object({
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
   payment: paymentSchema.optional(),
-}).refine(data => {
-    if (data.enablePuzzle && !data.puzzleImage?.url) {
-        return false;
-    }
-    return true;
-}, {
-    message: "É necessário enviar uma imagem para o quebra-cabeça ou desativar a opção.",
-    path: ["puzzleImage"],
 });
 
 
@@ -159,7 +151,7 @@ const steps = [
   { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
   { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
   { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment", "puzzleImage"] },
+  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment"] },
 ];
 
 const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
@@ -1593,15 +1585,31 @@ const WizardInternal = () => {
 
 
   const handleNext = async () => {
+    // 1. Lógica de segurança para o Puzzle (Manual check para evitar bug de UI)
+    const currentStepId = steps[currentStep].id;
+    const currentData = getValues();
+    
+    if (currentStepId === 'puzzle' && currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+        toast({
+            variant: "destructive",
+            title: "Imagem Obrigatória",
+            description: "Para ativar o quebra-cabeça, você precisa enviar uma imagem."
+        });
+        return; // Bloqueia o avanço
+    }
+
+    // 2. Continua o fluxo normal...
     const fieldsToValidate = steps[currentStep].fields || [];
     console.log("Validando campos:", fieldsToValidate);
     
     const ok = await trigger(fieldsToValidate as any);
     
     if (!ok) {
+        // Mostra o erro exato para o usuário saber o que falta
         const errors = methods.formState.errors;
         console.error("Erros de validação:", errors);
         
+        // Se houver erro no Puzzle (comum de acontecer se ativou mas não subiu foto)
         if (errors.puzzleImage) {
              toast({ variant: "destructive", title: "Erro no Puzzle", description: "Envie uma imagem para o quebra-cabeça ou desative a opção." });
         } else {
