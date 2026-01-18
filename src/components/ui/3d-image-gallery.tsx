@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -82,7 +81,7 @@ function FloatingCard({
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null) 
   
-  const baseScale = isMobile ? 1.5 : 1.6;
+  const baseScale = isMobile ? 1.6 : 1.8;
   const cardWidthPx = isMobile ? 150 : 220;
   
   // Ajuste matemático fino para o Plane cobrir exatamente o HTML sem vazar
@@ -163,11 +162,9 @@ function FloatingCard({
                 />
                 
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4 px-3">
-                    {card.title && (
-                        <p className="text-white/90 font-medium text-sm leading-snug drop-shadow-md mb-2 [text-wrap:balance]">
-                           {card.title}
-                        </p>
-                    )}
+                    <p className="text-white/90 font-medium text-sm leading-snug drop-shadow-md mb-2 [text-wrap:balance]">
+                       {card.title}
+                    </p>
                     
                     {dateObj && (
                         <div className="flex items-center justify-center gap-3">
@@ -199,7 +196,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    const radius = isMobile ? 14 : 20;
+    const radius = isMobile ? 9 : 12;
     const yFactor = isMobile ? 1.3 : 1; 
 
     for (let i = 0; i < numCards; i++) {
