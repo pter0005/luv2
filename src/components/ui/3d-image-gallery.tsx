@@ -301,9 +301,17 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   useEffect(() => {
     setMounted(true);
+    // Trava HARDCORE do body
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed'; // Impede o site de fundo de mexer 1 pixel
+    document.body.style.width = '100%';
+    document.documentElement.style.overflow = 'hidden'; // HTML tag tb
+    
     return () => {
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.documentElement.style.overflow = '';
     };
   }, []);
 
@@ -311,11 +319,21 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   return createPortal(
     <motion.div 
-      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] touch-none overscroll-none left-0 top-0 m-0 p-0 block"
+      className="fixed inset-0 z-[99999] bg-[#020202] m-0 p-0 touch-none block"
+      style={{ 
+          height: '100dvh', // Dynamic viewport para mobile moderno
+          width: '100vw',
+          overscrollBehavior: 'none',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
+      }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3 }}
     >
       <CardProvider events={events}>
         <Suspense fallback={
