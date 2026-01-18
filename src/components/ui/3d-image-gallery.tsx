@@ -81,7 +81,7 @@ function FloatingCard({
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null) 
   
-  const baseScale = isMobile ? 1.6 : 1.8;
+  const baseScale = isMobile ? 1.44 : 1.62;
   const cardWidthPx = isMobile ? 150 : 220;
   
   // Ajuste matemático fino para o Plane cobrir exatamente o HTML sem vazar
