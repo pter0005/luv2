@@ -303,7 +303,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
 
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
-  const dpr = isMobile ? 1.25 : [1, 1.5];
+  const dpr = 1;
   
   if (events.length === 0) return null;
 
