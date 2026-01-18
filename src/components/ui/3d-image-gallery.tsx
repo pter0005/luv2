@@ -199,7 +199,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    const radius = isMobile ? 24 : 35;
+    const radius = isMobile ? 14 : 20;
     const yFactor = isMobile ? 1.3 : 1; 
 
     for (let i = 0; i < numCards; i++) {
@@ -331,5 +331,3 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     </div>
   )
 }
-
-    
