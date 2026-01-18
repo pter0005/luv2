@@ -36,15 +36,15 @@ export default function YoutubePlayer({
   volume = 0.45
 }: YoutubePlayerProps) {
   const [hasWindow, setHasWindow] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(autoplay);
   const [isReady, setIsReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
 
   const thumbnailUrl = getYoutubeThumbnail(url);
   const finalCoverImage = coverImage || thumbnailUrl || "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000";
-
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -53,10 +53,29 @@ export default function YoutubePlayer({
   }, []);
 
   useEffect(() => {
-    if(autoplay && isReady) {
-        setIsPlaying(true);
+    if (autoplay && isReady) {
+      setIsMuted(true);
+      setIsPlaying(true);
     }
   }, [autoplay, isReady]);
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+    if (isMuted) {
+      setTimeout(() => {
+        setIsMuted(false);
+      }, 150);
+    }
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+  
+  const handleManualPlayPause = () => {
+    setIsMuted(false);
+    setIsPlaying(!isPlaying);
+  };
 
   const formatTime = (seconds: number) => {
     if (isNaN(seconds) || seconds < 0) return '0:00';
@@ -79,10 +98,11 @@ export default function YoutubePlayer({
             ref={playerRef}
             url={url}
             playing={isPlaying}
-            volume={volume}
+            volume={isMuted ? 0 : volume}
+            muted={isMuted}
             onReady={() => setIsReady(true)}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            onPlay={handlePlay}
+            onPause={handlePause}
             onDuration={setDuration}
             onProgress={(state) => setProgress(state.played)}
             width="0%"
@@ -98,10 +118,8 @@ export default function YoutubePlayer({
             />
         </div>}
 
-        {/* Capa do Álbum (Coração do Design) */}
         <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-inner">
             <Image src={finalCoverImage} alt={songName || "Capa da música"} fill className="object-cover" unoptimized/>
-            {/* Efeito de Overlay de Brilho */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
 
@@ -110,7 +128,6 @@ export default function YoutubePlayer({
               <h3 className="text-white text-xl font-bold truncate">{songName || "Carregando..."}</h3>
               <p className="text-zinc-400 font-medium truncate">{artistName || "Aguarde..."}</p>
             </div>
-            {/* O CORAÇÃO QUE PULSA */}
             <motion.div 
             animate={isPlaying ? { scale: [1, 1.2, 1] } : {}}
             transition={{ repeat: Infinity, duration: 0.8 }}
@@ -119,7 +136,6 @@ export default function YoutubePlayer({
             </motion.div>
         </div>
 
-        {/* Progress Bar Fina */}
         <div className="px-1 space-y-1">
             <Slider 
                 value={[progress * 100]} 
@@ -138,11 +154,10 @@ export default function YoutubePlayer({
             </div>
         </div>
 
-        {/* Controles Estilo Spotify */}
         <div className="flex items-center justify-around px-2">
             <Shuffle className="w-5 h-5 text-zinc-500 cursor-pointer hover:text-white" />
             <SkipBack className="w-7 h-7 text-zinc-400 cursor-pointer hover:text-white" />
-            <Button onClick={() => setIsPlaying(!isPlaying)} className="bg-white rounded-full w-16 h-16 flex items-center justify-center hover:scale-105 transition active:scale-95 shadow-xl">
+            <Button onClick={handleManualPlayPause} className="bg-white rounded-full w-16 h-16 flex items-center justify-center hover:scale-105 transition active:scale-95 shadow-xl">
             {isPlaying ? <Pause className="text-black w-8 h-8 fill-black" /> : <Play className="text-black w-8 h-8 fill-black ml-1" />}
             </Button>
             <SkipForward className="w-7 h-7 text-zinc-400 cursor-pointer hover:text-white" />
