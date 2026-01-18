@@ -81,7 +81,7 @@ function FloatingCard({
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null) 
   
-  const baseScale = isMobile ? 1.44 : 1.62;
+  const baseScale = isMobile ? 1.35 : 1.44;
   const cardWidthPx = isMobile ? 150 : 220;
   
   // Ajuste matemático fino para o Plane cobrir exatamente o HTML sem vazar
@@ -196,7 +196,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    const radius = isMobile ? 9 : 12;
+    const radius = isMobile ? 11 : 14;
     const yFactor = isMobile ? 1.3 : 1; 
 
     for (let i = 0; i < numCards; i++) {
