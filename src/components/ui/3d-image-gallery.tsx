@@ -82,7 +82,7 @@ function FloatingCard({
   const occludeRef = useRef<THREE.Mesh>(null) 
   
   // Escala levemente ajustada para performance de render
-  const baseScale = isMobile ? 1.35 : 1.44;
+  const baseScale = isMobile ? 1.215 : 1.296;
   const cardWidthPx = isMobile ? 150 : 220;
   
   // Cálculo preciso para oclusão
@@ -168,9 +168,11 @@ function FloatingCard({
                    Removemos backdrop-blur pesado e simplificamos o render de fonte.
                 */}
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-10 pb-3 px-3">
-                    <p className={`text-white/95 font-medium text-xs leading-snug drop-shadow-sm mb-1 line-clamp-2 ${!isMobile ? '[text-wrap:balance]' : ''}`}>
-                       {card.title}
-                    </p>
+                    {card.title && (
+                        <p className="text-white/90 font-medium text-sm leading-snug drop-shadow-md mb-2 line-clamp-2">
+                           {card.title}
+                        </p>
+                    )}
                     
                     {dateObj && (
                         <div className="flex items-center justify-center gap-2 mt-1">
@@ -203,7 +205,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
     // Mantemos o raio maior para não embolar
-    const radius = isMobile ? 11 : 16; 
+    const radius = isMobile ? 9 : 13; 
     const yFactor = isMobile ? 1.4 : 1.2; 
 
     for (let i = 0; i < numCards; i++) {
