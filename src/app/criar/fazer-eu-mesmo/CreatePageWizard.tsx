@@ -1585,41 +1585,33 @@ const WizardInternal = () => {
 
 
   const handleNext = async () => {
-    // 1. Lógica de segurança para o Puzzle (Manual check para evitar bug de UI)
     const currentStepId = steps[currentStep].id;
-    const currentData = getValues();
     
-    if (currentStepId === 'puzzle' && currentData.enablePuzzle && !currentData.puzzleImage?.url) {
-        toast({
-            variant: "destructive",
-            title: "Imagem Obrigatória",
-            description: "Para ativar o quebra-cabeça, você precisa enviar uma imagem."
-        });
-        return; // Bloqueia o avanço
-    }
-
-    // 2. Continua o fluxo normal...
-    const fieldsToValidate = steps[currentStep].fields || [];
-    console.log("Validando campos:", fieldsToValidate);
-    
-    const ok = await trigger(fieldsToValidate as any);
-    
-    if (!ok) {
-        // Mostra o erro exato para o usuário saber o que falta
-        const errors = methods.formState.errors;
-        console.error("Erros de validação:", errors);
-        
-        // Se houver erro no Puzzle (comum de acontecer se ativou mas não subiu foto)
-        if (errors.puzzleImage) {
-             toast({ variant: "destructive", title: "Erro no Puzzle", description: "Envie uma imagem para o quebra-cabeça ou desative a opção." });
-        } else {
-             toast({ variant: "destructive", title: "Campos obrigatórios", description: "Verifique se preencheu tudo corretamente antes de avançar." });
+    // Manual validation for puzzle step
+    if (currentStepId === 'puzzle') {
+        const currentData = getValues();
+        if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+            toast({
+                variant: "destructive",
+                title: "Imagem Obrigatória",
+                description: "Para ativar o quebra-cabeça, você precisa enviar uma imagem."
+            });
+            return; // Block advancement
         }
-        return;
+    } else {
+        // Standard validation for all other steps
+        const fieldsToValidate = steps[currentStep].fields || [];
+        const ok = await trigger(fieldsToValidate as any);
+        if (!ok) {
+            const errors = methods.formState.errors;
+            console.error("Erros de validação:", errors);
+            toast({ variant: "destructive", title: "Campos obrigatórios", description: "Verifique se preencheu tudo corretamente antes de avançar." });
+            return;
+        }
     }
 
+    // If validation passes, proceed to the next step
     let nextStepIndex = currentStep + 1;
-    // Pula passos desabilitados
     while(nextStepIndex < steps.length && steps[nextStepIndex].requiredPlan && plan !== steps[nextStepIndex].requiredPlan) {
         nextStepIndex++;
     }
@@ -1822,5 +1814,7 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
 
     

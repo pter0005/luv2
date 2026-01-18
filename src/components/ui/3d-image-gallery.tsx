@@ -331,3 +331,5 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     </div>
   )
 }
+
+    
