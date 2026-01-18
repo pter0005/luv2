@@ -10,6 +10,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { createPortal } from "react-dom"
 
 /* =========================
    Types & Context
@@ -65,9 +66,9 @@ function FloatingCard({
   const occludeRef = useRef<THREE.Mesh>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   
-  // Escala e Dimensões
   const baseScale = isMobile ? 1.25 : 1.44;
   const cardWidthPx = isMobile ? 140 : 220; 
+  
   const planeWidth = (cardWidthPx / 100) * 1.2
   const planeHeight = planeWidth / (3/4)
 
@@ -84,22 +85,17 @@ function FloatingCard({
   }, [card.date]);
 
   return (
-    <group
-      ref={groupRef}
-      position={[position.x, position.y, position.z]}
-      scale={baseScale}
-    >
+    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={baseScale}>
       {/* 
-         MÁSCARA DE OCLUSÃO (Parede Invisível)
-         Força o WebGL a escrever no DepthBuffer antes de desenhar o HTML.
+         FIX: Usar BoxGeometry (com espessura 0.1) em vez de PlaneGeometry. 
+         Isso cria um volume 3D real que bloqueia o fundo com mais precisão.
       */}
       <mesh ref={occludeRef}>
-         <planeGeometry args={[planeWidth, planeHeight]} />
+         <boxGeometry args={[planeWidth, planeHeight, 0.2]} />
          <meshBasicMaterial 
-            colorWrite={false} // Invisível aos olhos
-            depthWrite={true}  // Sólido para a física
-            blending={THREE.NoBlending}
-            side={THREE.DoubleSide}
+            colorWrite={false}
+            depthWrite={true}
+            side={THREE.DoubleSide} // Garante bloqueio dos dois lados
          />
       </mesh>
 
@@ -107,14 +103,12 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        // FIX Z-FIGHTING: Offset aumentado para 0.15 (afasta o html da malha de corte)
-        position={[0, 0, 0.15]} 
+        position={[0, 0, 0.11]} // Levemente à frente da "caixa" invisível
         zIndexRange={[100, 0]} 
         style={{ 
             pointerEvents: 'none',
             transformStyle: 'preserve-3d', 
-            // willChange otimiza o render no Chrome Android
-            willChange: 'transform, opacity', 
+            willChange: 'transform',
         }} 
       >
         <div
@@ -122,9 +116,10 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            // Sombras desativadas no mobile para 60FPS garantido
+            // TRUQUE 60FPS: No mobile, troquei Shadow Pesada por Borda Sutil. 
+            // Shadow com blur radius alto mata performance. Borda é grátis pra GPU.
             boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', 
-            border: isMobile ? '1px solid rgba(255,255,255,0.15)' : 'none',
+            border: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'translateZ(0)', 
@@ -137,10 +132,6 @@ function FloatingCard({
                   </div>
                 )}
                 
-                {/* 
-                    FIX IMAGENS DEMORADAS: priority={true}
-                    Isso manda o navegador baixar TODAS as texturas agora, não só quando aparecem na tela.
-                */}
                 <Image
                     src={card.imageUrl}
                     alt={card.alt}
@@ -193,7 +184,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    // Raio Compacto: 8 (bem perto) no mobile
+    // Raio Compacto: 8
     const radius = isMobile ? 8 : 12; 
     const yFactor = isMobile ? 1.6 : 1.2; 
 
@@ -305,25 +296,21 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
   const dpr = 1;
-  
-  // Efeito para travar o scroll da página de fundo (CORREÇÃO DE UX)
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     document.body.style.overflow = 'hidden';
-    // Opcional: tentar travar o scroll em iOS com position fixed se necessário, mas overflow costuma resolver no React
     return () => {
       document.body.style.overflow = '';
     };
   }, []);
 
-  if (events.length === 0) return null;
+  if (!mounted || events.length === 0) return null;
 
-  return (
-    // FIX DE IMERSÃO: 
-    // - z-[9999]: Garante topo absoluto.
-    // - touch-none: Navegador ignora gestos de swipe do browser (avançar/voltar página).
-    // - overscroll-none: Impede o efeito elástico do iOS no fundo.
+  return createPortal(
     <motion.div 
-      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] overflow-hidden touch-none overscroll-none"
+      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] touch-none overscroll-none left-0 top-0 m-0 p-0 block"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -353,6 +340,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
         </Suspense>
         <TimelineUI onClose={onClose} />
       </CardProvider>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
