@@ -203,7 +203,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
     // Mantemos o raio maior para não embolar
-    const radius = isMobile ? 22 : 32; 
+    const radius = isMobile ? 11 : 16; 
     const yFactor = isMobile ? 1.4 : 1.2; 
 
     for (let i = 0; i < numCards; i++) {
