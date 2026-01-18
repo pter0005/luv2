@@ -12,7 +12,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 /* =========================
-   Types
+   Types & Context
    ========================= */
 type Card = {
   id: string
@@ -22,14 +22,7 @@ type Card = {
   date?: Date | { seconds: number, _seconds?: number }
 }
 
-/* =========================
-   Card Context
-   ========================= */
-type CardContextType = {
-  cards: Card[]
-}
-
-const CardContext = createContext<CardContextType | undefined>(undefined)
+const CardContext = createContext<{ cards: Card[] } | undefined>(undefined)
 
 function useCard() {
   const ctx = useContext(CardContext)
@@ -39,63 +32,47 @@ function useCard() {
 
 function CardProvider({ children, events }: { children: React.ReactNode, events: Card[] }) {
   const value = useMemo(() => ({ cards: events }), [events]);
-  return (
-    <CardContext.Provider value={value}>
-      {children}
-    </CardContext.Provider>
-  )
+  return <CardContext.Provider value={value}>{children}</CardContext.Provider>
 }
 
 /* =========================
-   Mobile Detection
+   Hooks
    ========================= */
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
         check();
-        let timeoutId: NodeJS.Timeout;
-        const handleResize = () => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(check, 100);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timeoutId);
-        }
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
     }, []);
     return isMobile;
 }
 
 /* =========================
-   Floating Card (ULTRA OTIMIZADO MOBILE)
+   Floating Card (FAST LOAD + Z-INDEX FIX)
    ========================= */
 function FloatingCard({
   card,
   position,
   isMobile,
-  isPriority,
 }: {
   card: Card
   position: { x: number; y: number; z: number }
   isMobile: boolean
-  isPriority: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   
+  // Escala e Dimensões
   const baseScale = isMobile ? 1.25 : 1.44;
   const cardWidthPx = isMobile ? 140 : 220; 
-  
   const planeWidth = (cardWidthPx / 100) * 1.2
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
-    if (groupRef.current) {
-      groupRef.current.lookAt(camera.position)
-    }
+    if (groupRef.current) groupRef.current.lookAt(camera.position)
   })
 
   const dateObj = useMemo(() => {
@@ -112,12 +89,15 @@ function FloatingCard({
       position={[position.x, position.y, position.z]}
       scale={baseScale}
     >
+      {/* 
+         MÁSCARA DE OCLUSÃO (Parede Invisível)
+         Força o WebGL a escrever no DepthBuffer antes de desenhar o HTML.
+      */}
       <mesh ref={occludeRef}>
          <planeGeometry args={[planeWidth, planeHeight]} />
          <meshBasicMaterial 
-            colorWrite={false}
-            depthWrite={true}
-            transparent={false}
+            colorWrite={false} // Invisível aos olhos
+            depthWrite={true}  // Sólido para a física
             blending={THREE.NoBlending}
             side={THREE.DoubleSide}
          />
@@ -127,11 +107,13 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0.05]} 
-        zIndexRange={[200, 0]} 
+        // FIX Z-FIGHTING: Offset aumentado para 0.15 (afasta o html da malha de corte)
+        position={[0, 0, 0.15]} 
+        zIndexRange={[100, 0]} 
         style={{ 
             pointerEvents: 'none',
             transformStyle: 'preserve-3d', 
+            // willChange otimiza o render no Chrome Android
             willChange: 'transform, opacity', 
         }} 
       >
@@ -140,38 +122,46 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
+            // Sombras desativadas no mobile para 60FPS garantido
             boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', 
-            border: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            border: isMobile ? '1px solid rgba(255,255,255,0.15)' : 'none',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'translateZ(0)', 
           }}
         >
-            <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
+            <div className="relative w-full aspect-[3/4] bg-zinc-900/90 overflow-hidden rounded-xl border border-white/5">
                 {!isLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 z-0">
-                    <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 z-0">
+                    <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
                   </div>
                 )}
+                
+                {/* 
+                    FIX IMAGENS DEMORADAS: priority={true}
+                    Isso manda o navegador baixar TODAS as texturas agora, não só quando aparecem na tela.
+                */}
                 <Image
                     src={card.imageUrl}
                     alt={card.alt}
                     fill
                     className={cn(
-                        "object-cover transition-opacity duration-700 ease-in-out",
+                        "object-cover transition-opacity duration-500",
                         isLoaded ? "opacity-100" : "opacity-0"
                     )}
-                    unoptimized={false}
-                    sizes="(max-width: 768px) 140px, 250px"
-                    quality={isMobile ? 65 : 75}
-                    priority={isPriority}
+                    unoptimized={false} // Next Image otimiza o tamanho (webp/avif)
+                    // Sizes ajustado: baixa img de ~150px no celular (super leve)
+                    sizes="(max-width: 768px) 150px, 250px"
+                    priority={true} // CARREGAMENTO IMEDIATO
                     onLoad={() => setIsLoaded(true)}
                 />
                 
-                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-8 pb-3 px-2">
-                    <p className={`text-white/95 font-medium text-xs leading-tight drop-shadow-sm mb-1 line-clamp-2 ${!isMobile ? '[text-wrap:balance]' : ''}`}>
-                       {card.title}
-                    </p>
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-10 pb-3 px-2">
+                    {card.title && (
+                       <p className={`text-white/95 font-medium text-xs leading-tight drop-shadow-md mb-1 line-clamp-2 ${!isMobile ? '[text-wrap:balance]' : ''}`}>
+                          {card.title}
+                       </p>
+                    )}
                     
                     {dateObj && (
                         <div className="flex items-center justify-center gap-1.5 mt-0.5">
@@ -191,7 +181,7 @@ function FloatingCard({
 }
 
 /* =========================
-   Card Galaxy (AJUSTADO PRA SER PERTINHO)
+   Galaxy Geometry
    ========================= */
 function CardGalaxy({ isMobile }: { isMobile: boolean }) {
   const { cards } = useCard()
@@ -203,7 +193,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    
+    // Raio Compacto: 8 (bem perto) no mobile
     const radius = isMobile ? 8 : 12; 
     const yFactor = isMobile ? 1.6 : 1.2; 
 
@@ -229,7 +219,6 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
           card={card} 
           position={cardPositions[i]} 
           isMobile={isMobile}
-          isPriority={i < 3}
         />
       ))}
     </group>
@@ -237,13 +226,14 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 }
 
 /* =========================
-   Scene (CONFIG DE JOGO DE CELULAR)
+   Scene (HIGH PERFORMANCE SETUP)
    ========================= */
 function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
     const { camera } = useThree();
 
     useEffect(() => {
-        const targetZ = isMobile ? 18 : 30; 
+        // Câmera muito próxima para layout compacto
+        const targetZ = isMobile ? 19 : 30; 
         const targetFov = isMobile ? 80 : 60; 
         
         camera.position.set(0, 0, targetZ);
@@ -260,7 +250,7 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
             <Stars
                 radius={60} 
                 depth={40} 
-                count={isMobile ? 400 : 2500} 
+                count={isMobile ? 400 : 2000} // Estrelas mínimas no mobile
                 factor={3} 
                 saturation={0} 
                 fade={true} 
@@ -276,12 +266,12 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
                 makeDefault
                 enableDamping={true}
                 dampingFactor={0.07} 
-                enablePan={!isMobile} 
+                enablePan={false} // Importante: Travamos o PAN para usuário não perder a galáxia
                 enableZoom={true}
                 zoomSpeed={0.8}
                 rotateSpeed={0.6}
-                minDistance={3}
-                maxDistance={40}
+                minDistance={4}
+                maxDistance={35}
                 autoRotate={events.length > 2 && !isMobile} 
                 autoRotateSpeed={0.5}
             />
@@ -290,18 +280,18 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
 }
 
 /* =========================
-   UI Overlay
+   UI
    ========================= */
 const TimelineUI = ({ onClose }: { onClose: () => void }) => (
     <>
-        <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none h-20">
+        <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/90 to-transparent pointer-events-none h-24">
             <div className="text-white pointer-events-none pl-1">
-                <h1 className="text-base font-bold drop-shadow-lg">Galáxia de Memórias</h1>
-                <p className="text-[10px] text-white/70">Toque e arraste.</p>
+                <h1 className="text-lg font-bold drop-shadow-xl font-headline tracking-wide">Linha do Tempo</h1>
+                <p className="text-[10px] text-white/70">Toque e arraste para girar</p>
             </div>
             <button 
                 onClick={onClose} 
-                className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-2 shadow-lg active:scale-90 transition-transform touch-manipulation"
+                className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-3 shadow-lg active:scale-90 transition-transform touch-manipulation border border-white/5"
             >
                 <X className="w-5 h-5" />
             </button>
@@ -309,17 +299,17 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
     </>
 );
 
-
 /* =========================
-   Main Component
+   Main Wrapper
    ========================= */
-
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
   const dpr = 1;
   
+  // Efeito para travar o scroll da página de fundo (CORREÇÃO DE UX)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    // Opcional: tentar travar o scroll em iOS com position fixed se necessário, mas overflow costuma resolver no React
     return () => {
       document.body.style.overflow = '';
     };
@@ -328,17 +318,22 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
   if (events.length === 0) return null;
 
   return (
+    // FIX DE IMERSÃO: 
+    // - z-[9999]: Garante topo absoluto.
+    // - touch-none: Navegador ignora gestos de swipe do browser (avançar/voltar página).
+    // - overscroll-none: Impede o efeito elástico do iOS no fundo.
     <motion.div 
-      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] overflow-hidden"
+      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] overflow-hidden touch-none overscroll-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.5 }}
     >
       <CardProvider events={events}>
         <Suspense fallback={
             <div className="fixed inset-0 z-[10002] flex items-center justify-center text-white bg-black">
-                <Loader2 className="w-8 h-8 animate-spin" />
+                <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+                <p className="absolute mt-16 text-xs text-white/50 animate-pulse">Carregando memórias...</p>
             </div>
         }>
             <Canvas
