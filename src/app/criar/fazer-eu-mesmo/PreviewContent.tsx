@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { View } from 'lucide-react';
+import { View, Puzzle } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from 'next/dynamic';
@@ -202,17 +202,27 @@ export default function PreviewContent({
                     {shouldBeBlurred && puzzleImageSrc && (
                         <motion.div
                             key="preview-puzzle-screen"
-                            initial={{ opacity: 1 }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
-                            transition={{ duration: 0.6 }}
-                            className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/50 md:backdrop-blur-sm rounded-[2.5rem]"
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-lg rounded-[2rem]"
                         >
-                            <div className="w-full max-w-lg space-y-6">
-                                <div className="text-center">
-                                    <h2 className="text-xl font-bold text-white font-headline">Preview do Quebra-Cabeça</h2>
-                                    <p className="text-white/70 text-sm">Monte para testar a revelação.</p>
+                             <div className="w-full max-w-lg space-y-8 text-center">
+                                <div className="inline-block p-4 bg-primary/10 rounded-full border-2 border-primary/20 shadow-lg shadow-primary/20">
+                                    <Puzzle className="w-10 h-10 text-primary" />
                                 </div>
-                                <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+
+                                <div className="space-y-2">
+                                    <h2 className="text-3xl font-bold text-white font-headline">
+                                        Um Enigma de Amor
+                                    </h2>
+                                    <p className="text-white/70 text-sm max-w-xs mx-auto">
+                                        Monte a imagem para testar a grande revelação.
+                                    </p>
+                                </div>
+                                
+                                <div className="p-2 bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-primary/10">
                                     <RealPuzzle
                                         imageSrc={puzzleImageSrc}
                                         onReveal={() => setPreviewPuzzleRevealed(true)}
