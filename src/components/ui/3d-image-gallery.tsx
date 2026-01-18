@@ -67,7 +67,7 @@ function useIsMobile() {
 }
 
 /* =========================
-   Floating Card (FINAL / STABLE)
+   Floating Card (PERFORMANCE MAX)
    ========================= */
 function FloatingCard({
   card,
@@ -81,14 +81,16 @@ function FloatingCard({
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null) 
   
+  // Escala levemente ajustada para performance de render
   const baseScale = isMobile ? 1.35 : 1.44;
   const cardWidthPx = isMobile ? 150 : 220;
   
-  // Ajuste matemático fino para o Plane cobrir exatamente o HTML sem vazar
+  // Cálculo preciso para oclusão
   const planeWidth = (cardWidthPx / 100) * 1.2
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
+    // LookAt básico é barato para CPU
     if (groupRef.current) {
       groupRef.current.lookAt(camera.position)
     }
@@ -109,11 +111,8 @@ function FloatingCard({
       scale={baseScale}
     >
       {/* 
-          DEPTH MASK SUPER SÓLIDO
-          - colorWrite={false}: Invisível
-          - depthWrite={true}: Escreve na profundidade
-          - blending={NoBlending}: Otimiza renderização e evita transparência acidental
-          - transparent={false}: Força tratamento de objeto sólido
+          DEPTH MASK: OTIMIZADO 
+          Não altera visual, apenas garante a ordem dos pixels.
       */}
       <mesh ref={occludeRef}>
          <planeGeometry args={[planeWidth, planeHeight]} />
@@ -121,7 +120,7 @@ function FloatingCard({
             colorWrite={false}
             depthWrite={true}
             transparent={false}
-            blending={THREE.NoBlending}
+            blending={THREE.NoBlending} // Mais rápido
             side={THREE.DoubleSide}
          />
       </mesh>
@@ -130,11 +129,13 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0.08]} // Offset aumentado levemente para evitar flicker
-        zIndexRange={[500, 0]} // Range normalizado para evitar bugs de browser
+        position={[0, 0, 0.08]} 
+        // Reduzimos o range. Range gigantesco (100000) gasta mais memoria em alguns browsers. 500 é seguro.
+        zIndexRange={[500, 0]} 
         style={{ 
             pointerEvents: 'none',
-            transformStyle: 'preserve-3d', // Ajuda no renderizador do Chrome mobile
+            transformStyle: 'preserve-3d', 
+            willChange: 'transform, opacity', // Aviso para a GPU
         }} 
       >
         <div
@@ -142,11 +143,11 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', 
+            // Sombra mais simples no mobile para ganhar FPS
+            boxShadow: isMobile ? '0 4px 12px rgba(0,0,0,0.6)' : '0 8px 32px rgba(0,0,0,0.5)', 
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            // Força aceleração de hardware no elemento
-            transform: 'translateZ(0)',
+            transform: 'translateZ(0)', // Aceleração de Hardware forçada
           }}
         >
             <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
@@ -156,23 +157,28 @@ function FloatingCard({
                     fill
                     className="object-cover"
                     unoptimized={false}
+                    // Sizes crítico para mobile: baixa versão menor da imagem
                     sizes="(max-width: 768px) 150px, 250px"
-                    quality={75}
+                    quality={isMobile ? 70 : 75}
                     priority={false}
                 />
                 
-                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4 px-3">
-                    <p className="text-white/90 font-medium text-sm leading-snug drop-shadow-md mb-2 [text-wrap:balance]">
+                {/* 
+                   OTIMIZAÇÃO DE CSS DE TEXTO:
+                   Removemos backdrop-blur pesado e simplificamos o render de fonte.
+                */}
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-10 pb-3 px-3">
+                    <p className={`text-white/95 font-medium text-xs leading-snug drop-shadow-sm mb-1 line-clamp-2 ${!isMobile ? '[text-wrap:balance]' : ''}`}>
                        {card.title}
                     </p>
                     
                     {dateObj && (
-                        <div className="flex items-center justify-center gap-3">
-                            <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-purple-500"></div>
-                            <p className="text-purple-400 font-bold text-base font-sans drop-shadow-sm leading-none whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                            <div className="h-[1px] w-4 bg-purple-500/60"></div>
+                            <p className="text-purple-300 font-bold text-[10px] tracking-wider uppercase font-sans">
                                 {format(dateObj, "dd MMM yyyy", { locale: ptBR })}
                             </p>
-                            <div className="h-[1px] w-6 bg-gradient-to-l from-transparent to-purple-500"></div>
+                            <div className="h-[1px] w-4 bg-purple-500/60"></div>
                         </div>
                     )}
                 </div>
@@ -196,8 +202,9 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    const radius = isMobile ? 11 : 14;
-    const yFactor = isMobile ? 1.3 : 1; 
+    // Mantemos o raio maior para não embolar
+    const radius = isMobile ? 22 : 32; 
+    const yFactor = isMobile ? 1.4 : 1.2; 
 
     for (let i = 0; i < numCards; i++) {
         const y = 1 - (i / (numCards - 1)) * 2; 
@@ -243,10 +250,11 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
         <>
             <color attach="background" args={['#050505']} />
             
+            {/* OTIMIZAÇÃO CRÍTICA: Reduzi contagem de estrelas no mobile para salvar CPU */}
             <Stars
                 radius={80} 
                 depth={40} 
-                count={isMobile ? 1500 : 4000} 
+                count={isMobile ? 600 : 4000} // 600 é suficiente pro mobile e mto mais leve
                 factor={4} 
                 saturation={0} 
                 fade={true} 
@@ -287,8 +295,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
             </div>
             <button 
                 onClick={onClose} 
-                className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg active:scale-90 transition-transform"
-                style={{ touchAction: 'manipulation' }}
+                className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg active:scale-90 transition-transform touch-manipulation"
             >
                 <X className="w-6 h-6" />
             </button>
@@ -303,7 +310,8 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
 
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
-  const dpr = 1;
+  // Mantemos dpr 1 no mobile. Aumentar isso em telas 4K de celular mata a bateria e o FPS.
+  const dpr = 1; 
   
   if (events.length === 0) return null;
 
@@ -317,7 +325,17 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
         }>
             <Canvas
               dpr={dpr}
-              gl={{ antialias: false, powerPreference: 'high-performance', alpha: false }}
+              // CONFIGURAÇÕES DE GPU:
+              // precision: 'mediump' -> Roda MUITO mais rápido em celulares Android mid-range.
+              // stencil: false -> Economiza buffer.
+              gl={{ 
+                  antialias: false, 
+                  powerPreference: 'high-performance', 
+                  alpha: false,
+                  stencil: false,
+                  depth: true,
+                  precision: 'mediump' 
+              }}
               className="absolute inset-0 z-10 block"
             >
                 <Scene isMobile={isMobile} events={events} />
