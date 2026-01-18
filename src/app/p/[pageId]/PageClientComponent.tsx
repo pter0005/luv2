@@ -228,16 +228,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       {/* OVERLAYS MANTIDOS IGUAIS... */}
       <AnimatePresence>
         {showTimeline && (
-          <motion.div
-            key="timeline-layer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-[9999] bg-black"
-          >
-            <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />
-          </motion.div>
+          <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />
         )}
       </AnimatePresence>
 

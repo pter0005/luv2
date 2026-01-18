@@ -8,6 +8,8 @@ import { OrbitControls, Html, Stars } from "@react-three/drei"
 import { X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
 
 /* =========================
    Types
@@ -73,15 +75,17 @@ function FloatingCard({
   card,
   position,
   isMobile,
+  isPriority,
 }: {
   card: Card
   position: { x: number; y: number; z: number }
   isMobile: boolean
+  isPriority: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const occludeRef = useRef<THREE.Mesh>(null) 
+  const occludeRef = useRef<THREE.Mesh>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
   
-  // Levemente menor no mobile para caber mais na tela juntas
   const baseScale = isMobile ? 1.25 : 1.44;
   const cardWidthPx = isMobile ? 140 : 220; 
   
@@ -89,7 +93,6 @@ function FloatingCard({
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
-    // LookAt sem slerp é a opção mais leve matematicamente
     if (groupRef.current) {
       groupRef.current.lookAt(camera.position)
     }
@@ -125,7 +128,6 @@ function FloatingCard({
         occlude={[occludeRef]}
         distanceFactor={8} 
         position={[0, 0, 0.05]} 
-        // 200 é o suficiente pro sort do Z-index. Menos calculo pro browser.
         zIndexRange={[200, 0]} 
         style={{ 
             pointerEvents: 'none',
@@ -138,8 +140,6 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            // TRUQUE 60FPS: No mobile, troquei Shadow Pesada por Borda Sutil. 
-            // Shadow com blur radius alto mata performance. Borda é grátis pra GPU.
             boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', 
             border: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
             backfaceVisibility: 'hidden',
@@ -148,16 +148,24 @@ function FloatingCard({
           }}
         >
             <div className="relative w-full aspect-[3/4] bg-zinc-900 overflow-hidden rounded-xl border border-white/10">
+                {!isLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/50 z-0">
+                    <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
+                  </div>
+                )}
                 <Image
                     src={card.imageUrl}
                     alt={card.alt}
                     fill
-                    className="object-cover"
+                    className={cn(
+                        "object-cover transition-opacity duration-700 ease-in-out",
+                        isLoaded ? "opacity-100" : "opacity-0"
+                    )}
                     unoptimized={false}
-                    // Imagens bem leves (140px)
                     sizes="(max-width: 768px) 140px, 250px"
                     quality={isMobile ? 65 : 75}
-                    priority={false}
+                    priority={isPriority}
+                    onLoad={() => setIsLoaded(true)}
                 />
                 
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/95 via-black/60 to-transparent pt-8 pb-3 px-2">
@@ -196,10 +204,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
     
-    // AQUI É O SEGREDO: 8 deixa MUITO perto no mobile. Sensação de imersão total.
     const radius = isMobile ? 8 : 12; 
-    
-    // Deixa a esfera mais alta (estica pra cima/baixo) pra aproveitar a tela de celular
     const yFactor = isMobile ? 1.6 : 1.2; 
 
     for (let i = 0; i < numCards; i++) {
@@ -219,7 +224,13 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
   return (
     <group>
       {cards.map((card, i) => (
-        cardPositions[i] && <FloatingCard key={card.id} card={card} position={cardPositions[i]} isMobile={isMobile} />
+        cardPositions[i] && <FloatingCard 
+          key={card.id} 
+          card={card} 
+          position={cardPositions[i]} 
+          isMobile={isMobile}
+          isPriority={i < 3}
+        />
       ))}
     </group>
   )
@@ -232,9 +243,8 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
     const { camera } = useThree();
 
     useEffect(() => {
-        // Câmera muito mais perto (18) pq a esfera diminuiu
         const targetZ = isMobile ? 18 : 30; 
-        const targetFov = isMobile ? 80 : 60; // FOV maior pra ver mais coisas na tela pequena
+        const targetFov = isMobile ? 80 : 60; 
         
         camera.position.set(0, 0, targetZ);
         if (camera instanceof THREE.PerspectiveCamera) {
@@ -247,7 +257,6 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
         <>
             <color attach="background" args={['#020202']} />
             
-            {/* Economia maxima: 400 estrelas apenas no mobile */}
             <Stars
                 radius={60} 
                 depth={40} 
@@ -271,7 +280,7 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
                 enableZoom={true}
                 zoomSpeed={0.8}
                 rotateSpeed={0.6}
-                minDistance={3}  // Permite colar a câmera na imagem
+                minDistance={3}
                 maxDistance={40}
                 autoRotate={events.length > 2 && !isMobile} 
                 autoRotateSpeed={0.5}
@@ -309,10 +318,23 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
   const isMobile = useIsMobile();
   const dpr = 1;
   
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   if (events.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] overflow-hidden">
+    <motion.div 
+      className="fixed inset-0 w-full h-[100dvh] z-[9999] bg-[#020202] overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <CardProvider events={events}>
         <Suspense fallback={
             <div className="fixed inset-0 z-[10002] flex items-center justify-center text-white bg-black">
@@ -327,7 +349,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
                   alpha: false,
                   stencil: false,
                   depth: true,
-                  precision: 'mediump' // High Performance Mode
+                  precision: 'mediump'
               }}
               className="absolute inset-0 z-10 block"
             >
@@ -336,6 +358,6 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
         </Suspense>
         <TimelineUI onClose={onClose} />
       </CardProvider>
-    </div>
+    </motion.div>
   )
 }
