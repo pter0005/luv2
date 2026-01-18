@@ -51,7 +51,7 @@ function useIsMobile() {
 }
 
 /* =========================
-   Floating Card (FAST LOAD + Z-INDEX FIX)
+   Floating Card (Z-INDEX BLINDADO)
    ========================= */
 function FloatingCard({
   card,
@@ -68,8 +68,7 @@ function FloatingCard({
   
   const baseScale = isMobile ? 1.25 : 1.44;
   const cardWidthPx = isMobile ? 140 : 220; 
-  
-  const planeWidth = (cardWidthPx / 100) * 1.2
+  const planeWidth = (cardWidthPx / 100) * 1.25 // Aumentei para cobrir bem as bordas
   const planeHeight = planeWidth / (3/4)
 
   useFrame(({ camera }) => {
@@ -86,16 +85,21 @@ function FloatingCard({
 
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]} scale={baseScale}>
-      {/* 
-         FIX: Usar BoxGeometry (com espessura 0.1) em vez de PlaneGeometry. 
-         Isso cria um volume 3D real que bloqueia o fundo com mais precisão.
-      */}
-      <mesh ref={occludeRef}>
-         <boxGeometry args={[planeWidth, planeHeight, 0.2]} />
+      
+      {/* MÁSCARA DE BLOQUEIO RIGIDA */}
+      <mesh 
+        ref={occludeRef}
+        // renderOrder negativo força o ThreeJS a calcular a oclusão ANTES de desenhar o HTML ou outros meshes
+        renderOrder={-1} 
+      >
+         <boxGeometry args={[planeWidth, planeHeight, 0.1]} />
          <meshBasicMaterial 
-            colorWrite={false}
-            depthWrite={true}
-            side={THREE.DoubleSide} // Garante bloqueio dos dois lados
+            colorWrite={false}     // Invisível visualmente
+            depthWrite={true}      // ESCRITA NO Z-BUFFER OBRIGATÓRIA
+            depthTest={true}       // Teste contra outros objetos
+            side={THREE.DoubleSide}
+            transparent={false}    // SEGREDO: Se true, o threejs buga a ordem. False trata como sólido.
+            blending={THREE.NoBlending} // Sem mistura de cores
          />
       </mesh>
 
@@ -103,12 +107,12 @@ function FloatingCard({
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0.11]} // Levemente à frente da "caixa" invisível
-        zIndexRange={[100, 0]} 
+        position={[0, 0, 0.06]} // Offset leve para evitar "z-fighting" com a própria máscara
+        zIndexRange={[500, 0]}  // Range seguro para CSS
         style={{ 
             pointerEvents: 'none',
             transformStyle: 'preserve-3d', 
-            willChange: 'transform',
+            willChange: 'transform, opacity', 
         }} 
       >
         <div
@@ -116,8 +120,6 @@ function FloatingCard({
           style={{
             width: `${cardWidthPx}px`,
             background: 'transparent',
-            // TRUQUE 60FPS: No mobile, troquei Shadow Pesada por Borda Sutil. 
-            // Shadow com blur radius alto mata performance. Borda é grátis pra GPU.
             boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', 
             border: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
             backfaceVisibility: 'hidden',
@@ -137,13 +139,12 @@ function FloatingCard({
                     alt={card.alt}
                     fill
                     className={cn(
-                        "object-cover transition-opacity duration-500",
+                        "object-cover transition-opacity duration-300", // Transição rápida
                         isLoaded ? "opacity-100" : "opacity-0"
                     )}
-                    unoptimized={false} // Next Image otimiza o tamanho (webp/avif)
-                    // Sizes ajustado: baixa img de ~150px no celular (super leve)
+                    unoptimized={false} 
                     sizes="(max-width: 768px) 150px, 250px"
-                    priority={true} // CARREGAMENTO IMEDIATO
+                    priority={true} // CARREGA AGORA!
                     onLoad={() => setIsLoaded(true)}
                 />
                 
@@ -184,8 +185,8 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    // Raio Compacto: 8
-    const radius = isMobile ? 8 : 12; 
+    // Raio Compacto: 7 (bem perto) no mobile
+    const radius = isMobile ? 7 : 12; 
     const yFactor = isMobile ? 1.6 : 1.2; 
 
     for (let i = 0; i < numCards; i++) {
