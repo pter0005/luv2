@@ -340,7 +340,7 @@ const SpecialDateStep = () => {
 };
 
 // Helper function to upload a file to Firebase Storage
-const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<{ downloadURL: string; fullPath: string }> => {
+const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
     if (!userId) throw new Error("Usuário não identificado para upload.");
 
     const timestamp = Date.now();
@@ -356,7 +356,7 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
     try {
         await uploadBytes(fileRef, file);
         const downloadURL = await getDownloadURL(fileRef);
-        return { downloadURL, fullPath };
+        return { url: downloadURL, path: fullPath };
     } catch (error: any) {
         console.error("Erro detalhado no upload:", error);
         // Se der erro aqui, é certeza que a regra do Storage bloqueou ou o caminho tá errado
@@ -392,8 +392,7 @@ const GalleryStep = () => {
         try {
             const uploadPromises = filesArray.map(async file => {
                 const compressedFile = await compressImage(file, 1280, 0.8);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'gallery');
-                return { url: downloadURL, path: fullPath };
+                return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
 
             const newImageObjects = await Promise.all(uploadPromises);
@@ -545,8 +544,7 @@ const TimelineStep = () => {
             
             try {
                 const compressedFile = await compressImage(file, 1280, 0.8);
-                const { downloadURL, fullPath } = await uploadFile(storage, user.uid, compressedFile, 'timeline');
-                const newImageObject = { url: downloadURL, path: fullPath };
+                const newImageObject = await uploadFile(storage, user.uid, compressedFile, 'timeline');
                 const currentEvent = fields[index];
                 update(index, { ...currentEvent, image: newImageObject });
                 trigger(`timelineEvents.${index}.image`);
@@ -1814,6 +1812,8 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
 
     
 
