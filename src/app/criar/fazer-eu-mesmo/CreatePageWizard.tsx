@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -149,7 +150,7 @@ const steps = [
   { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
   { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
   { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment"] },
+  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment", "puzzleImage"] },
 ];
 
 const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
@@ -1584,8 +1585,21 @@ const WizardInternal = () => {
 
   const handleNext = async () => {
     const fieldsToValidate = steps[currentStep].fields || [];
+    console.log("Validando campos:", fieldsToValidate);
+    
     const ok = await trigger(fieldsToValidate as any);
-    if (!ok) return;
+    
+    if (!ok) {
+        const errors = methods.formState.errors;
+        console.error("Erros de validação:", errors);
+        
+        if (errors.puzzleImage) {
+             toast({ variant: "destructive", title: "Erro no Puzzle", description: "Envie uma imagem para o quebra-cabeça ou desative a opção." });
+        } else {
+             toast({ variant: "destructive", title: "Campos obrigatórios", description: "Verifique se preencheu tudo corretamente antes de avançar." });
+        }
+        return;
+    }
 
     let nextStepIndex = currentStep + 1;
     // Pula passos desabilitados
@@ -1630,7 +1644,7 @@ const WizardInternal = () => {
         .map(event => ({
             id: event.id || Math.random().toString(),
             imageUrl: event.image!.url,
-            alt: event.description || 'Timeline image',
+            alt: event.description || 'Memória',
             title: event.description || '',
             date: event.date ? new Date(event.date) : undefined,
         }));

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -161,21 +162,20 @@ function FloatingCard({
                     priority={false}
                 />
                 
-                {/* --- ÁREA DE TEXTO ESTILIZADA (NOVA VERSÃO) --- */}
-                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 via-black/70 to-transparent pt-12 pb-4 px-4 text-center">
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-10 pb-4 px-3">
                     {card.title && (
-                        <p className="text-white text-sm font-medium leading-snug drop-shadow-lg mb-2.5 [text-wrap:balance]">
+                        <p className="text-white/90 font-medium text-sm leading-snug drop-shadow-md mb-2 [text-wrap:balance]">
                            {card.title}
                         </p>
                     )}
                     
                     {dateObj && (
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="h-[1px] w-5 bg-gradient-to-r from-transparent to-purple-400 opacity-80"></div>
-                             <p className="text-purple-300 font-bold text-xs tracking-widest uppercase font-sans drop-shadow-sm">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="h-[1px] w-6 bg-gradient-to-r from-transparent to-purple-500"></div>
+                            <p className="text-purple-400 font-bold text-base font-sans drop-shadow-sm leading-none whitespace-nowrap">
                                 {format(dateObj, "dd MMM yyyy", { locale: ptBR })}
                             </p>
-                            <div className="h-[1px] w-5 bg-gradient-to-l from-transparent to-purple-400 opacity-80"></div>
+                            <div className="h-[1px] w-6 bg-gradient-to-l from-transparent to-purple-500"></div>
                         </div>
                     )}
                 </div>
@@ -185,7 +185,6 @@ function FloatingCard({
     </group>
   )
 }
-
 
 /* =========================
    Card Galaxy
@@ -200,7 +199,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
     if (numCards === 1) return [{ x: 0, y: 0, z: 0 }];
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
-    const radius = isMobile ? 12 : 18;
+    const radius = isMobile ? 24 : 35;
     const yFactor = isMobile ? 1.3 : 1; 
 
     for (let i = 0; i < numCards; i++) {
