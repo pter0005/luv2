@@ -137,7 +137,16 @@ const pageSchema = z.object({
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
   payment: paymentSchema.optional(),
+}).refine(data => {
+    if (data.enablePuzzle && !data.puzzleImage?.url) {
+        return false;
+    }
+    return true;
+}, {
+    message: "É necessário enviar uma imagem para o quebra-cabeça ou desativar a opção.",
+    path: ["puzzleImage"],
 });
+
 
 export type PageData = z.infer<typeof pageSchema>;
 
@@ -1805,3 +1814,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
