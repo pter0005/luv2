@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -147,11 +146,11 @@ export default function FeaturesCarousel() {
                     slidesPerView={'auto'}
                     // AQUI ESTÁ A MÁGICA DO EFEITO "DEITADO"
                     coverflowEffect={{
-                        rotate: 30,      // Aumentei de 0 para 30 (Isso faz eles virarem)
-                        stretch: 0,      // Espaçamento entre eles
-                        depth: 150,      // Profundidade (z-index visual)
-                        modifier: 1,     // Multiplicador do efeito
-                        slideShadows: false, // Sem sombra preta feia do swiper
+                        rotate: 45,
+                        stretch: 0,
+                        depth: 100,
+                        modifier: 1,
+                        slideShadows: false,
                     }}
                     modules={[EffectCoverflow, Navigation, Pagination]}
                     className="features-swiper !pb-12 !px-4" // Padding para não cortar sombras
@@ -218,5 +217,3 @@ export default function FeaturesCarousel() {
         </div>
     );
 }
-
-    
