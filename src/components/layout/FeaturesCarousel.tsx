@@ -18,79 +18,84 @@ import 'swiper/css/effect-coverflow';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-// --- COMPONENTE CELULAR (IPHONE MOCKUP PREMIUM) ---
+// --- PARTÍCULAS SUTIS ---
+const HeartEmitter = ({ isActive }: { isActive: boolean }) => {
+    if (!isActive) return null;
+    const particles = Array.from({ length: 3 }); 
+    return (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
+            {particles.map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute text-purple-500/80"
+                    initial={{ opacity: 0, y: 50, x: 0, scale: 0.4 }}
+                    animate={{ 
+                        opacity: [0, 1, 0],
+                        y: -100 - (Math.random() * 50),
+                        x: (Math.random() - 0.5) * 80, 
+                        scale: [0.4, 0.9, 0.5],
+                        rotate: (Math.random() - 0.5) * 40
+                    }}
+                    transition={{ 
+                        duration: 2 + Math.random(),
+                        repeat: Infinity, 
+                        ease: "easeOut",
+                        delay: i * 0.4,
+                    }}
+                    style={{ left: '50%', top: '50%' }}
+                >
+                    <Heart fill="currentColor" strokeWidth={0} size={22 + Math.random() * 15} className="drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+                </motion.div>
+            ))}
+        </div>
+    );
+};
+
+// --- COMPONENTE CELULAR ---
 const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isActive?: boolean }) => {
     return (
+        // O Tamanho do celular é fixo e imponente
         <div className={cn(
-            "relative mx-auto h-[580px] w-[290px] transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] select-none",
-            isActive ? "scale-100 z-50 filter-none" : "scale-95 z-0 blur-[1px] brightness-75" // Efeito de foco no central
+            "relative mx-auto transition-all duration-500 ease-out select-none",
+            "h-[500px] w-[260px] md:h-[620px] md:w-[310px]", 
+            isActive 
+                ? "scale-100 z-50 brightness-100" 
+                : "scale-90 z-0 brightness-[0.6] opacity-90 grayscale-[20%]" // Deixei menos escuro para ver melhor os de trás
         )}>
+            <HeartEmitter isActive={!!isActive} />
             
-            {/* Corações flutuantes (Visíveis apenas no ativo para limpar a visão) */}
+            {/* Glow Central */}
             {isActive && (
-                <>
-                    <MagicHeart className="-left-16 bottom-24" rotate={-45} delay={0} size={80} zIndex={40} />
-                    <MagicHeart className="-right-12 top-20" rotate={35} delay={2} size={65} zIndex={40} />
-                    <MagicHeart className="-left-10 top-8 opacity-50" rotate={-20} delay={1} size={40} zIndex={0} />
-                </>
+                <div className="absolute inset-0 bg-purple-600/25 blur-[50px] rounded-full -z-10" />
             )}
-            
-            {/* Estrutura do Celular */}
-            <div className="relative w-full h-full border-zinc-800 bg-zinc-950 border-[8px] rounded-[3.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,1)] flex flex-col justify-start overflow-hidden ring-1 ring-white/20 z-20">
-                {/* Botões laterais (Detalhe Realista) */}
-                <div className="absolute top-[90px] -left-[10px] h-[35px] w-[4px] bg-zinc-700 rounded-l-lg shadow-lg"></div>
-                <div className="absolute top-[140px] -left-[10px] h-[60px] w-[4px] bg-zinc-700 rounded-l-lg shadow-lg"></div>
-                <div className="absolute top-[130px] -right-[10px] h-[90px] w-[4px] bg-zinc-700 rounded-r-lg shadow-lg"></div>
+
+            {/* Estrutura */}
+            <div className="relative w-full h-full border-zinc-900 bg-black border-[7px] md:border-[9px] rounded-[3rem] md:rounded-[3.5rem] shadow-2xl flex flex-col justify-start overflow-hidden ring-1 ring-white/10 z-20">
+                <div className="absolute top-[90px] -left-[8px] h-[30px] w-[3px] bg-zinc-800 rounded-l-md"></div>
+                <div className="absolute top-[130px] -left-[8px] h-[50px] w-[3px] bg-zinc-800 rounded-l-md"></div>
                 
-                {/* Dynamic Island */}
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 h-[28px] w-[90px] bg-black rounded-full z-30 pointer-events-none flex items-center justify-end pr-2 ring-1 ring-white/5">
-                    <div className="w-1.5 h-1.5 bg-zinc-800/80 rounded-full"></div>
-                </div>
+                <div className="absolute top-5 left-1/2 transform -translate-x-1/2 h-[26px] w-[90px] md:h-[32px] md:w-[110px] bg-black rounded-full z-30 ring-1 ring-white/10 pointer-events-none"></div>
                 
-                {/* Tela / Conteúdo */}
-                <div className="w-full h-full bg-black relative z-10 overflow-hidden rounded-[3rem] backface-hidden">
+                <div className="w-full h-full bg-zinc-950 relative z-10 overflow-hidden rounded-[2.6rem] md:rounded-[3rem]">
                     {children}
+                    <div className="absolute bottom-0 w-full h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20"></div>
                 </div>
                 
-                {/* Reflexo de Vidro Premium */}
-                <div className="absolute inset-0 pointer-events-none z-40 bg-gradient-to-tr from-white/10 via-transparent to-transparent rounded-[3.5rem] opacity-80 mix-blend-overlay"></div>
-                <div className="absolute inset-0 pointer-events-none z-40 ring-1 ring-inset ring-white/5 rounded-[3.5rem]"></div>
+                <div className="absolute inset-0 pointer-events-none z-40 rounded-[3rem] md:rounded-[3.5rem] ring-1 ring-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]"></div>
             </div>
         </div>
     );
 }
-
-const MagicHeart = ({ className, delay, size, zIndex, rotate }: { className: string, delay: number, size: number, zIndex: number, rotate: number }) => (
-    <motion.div
-        className={cn("absolute text-purple-500", className)}
-        style={{ zIndex: zIndex }}
-        initial={{ opacity: 0, y: 30, scale: 0.8, rotate: rotate }}
-        animate={{ 
-            opacity: [0, 1, 1, 0],
-            y: [0, -40],
-            scale: [0.8, 1.1, 0.9],
-            rotate: [rotate, rotate + 10, rotate - 10, rotate]
-        }}
-        transition={{ 
-            duration: 4, 
-            repeat: Infinity, 
-            ease: "easeInOut",
-            delay: delay,
-            times: [0, 0.2, 0.8, 1]
-        }}
-    >
-        <Heart fill="currentColor" strokeWidth={2} size={size} className="drop-shadow-[0_4px_20px_rgba(168,85,247,0.6)]" />
-    </motion.div>
-);
-
 
 export default function FeaturesCarousel() {
     const { t } = useTranslation();
     const [swiper, setSwiper] = useState<SwiperType | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
-    const featureSlides = useMemo(() => [
+    // DADOS ORIGINAIS
+    const originalSlides = useMemo(() => [
         {
+          id: 1,
           icon: Calendar,
           title: t('featuresCarousel.slide1.title'),
           description: t('featuresCarousel.slide1.description'),
@@ -98,6 +103,7 @@ export default function FeaturesCarousel() {
           media: "https://i.imgur.com/FxHuXVb.mp4" 
         },
         {
+          id: 2,
           icon: Puzzle,
           title: t('featuresCarousel.slide2.title'),
           description: t('featuresCarousel.slide2.description'),
@@ -105,6 +111,7 @@ export default function FeaturesCarousel() {
           media: "https://i.imgur.com/hvUUFYV.png"
         },
         {
+          id: 3,
           icon: Clock,
           title: t('featuresCarousel.slide3.title'),
           description: t('featuresCarousel.slide3.description'),
@@ -113,36 +120,49 @@ export default function FeaturesCarousel() {
         },
     ], [t]);
 
-    const activeSlide = featureSlides[activeIndex];
+    // SOLUÇÃO DO BUG "3-1-2": Duplicamos os slides. 
+    // O Swiper precisa de mais slides do que 'slidesPerView' para fazer um loop perfeito.
+    // Com apenas 3 slides, ele se perde. Com 6 (ou 9), o loop é matemático e suave.
+    const featureSlides = [...originalSlides, ...originalSlides];
+
+    // Calculamos o índice real (0, 1, 2) baseado no loop duplicado para exibir o texto correto
+    const realActiveIndex = activeIndex % originalSlides.length;
+    const activeContent = originalSlides[realActiveIndex];
 
     return (
-        <div className="w-full flex flex-col items-center justify-center min-h-[900px] py-10 overflow-hidden bg-transparent">
+        <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="w-full flex flex-col items-center justify-center py-12 md:py-20 overflow-hidden bg-transparent"
+        >
             
-            {/* Header com Animação de Texto */}
-            <div className="text-center max-w-3xl mx-auto mb-8 transition-opacity duration-300 min-h-[160px] px-4 relative z-10">
+            {/* Header Texto */}
+            <div className="text-center w-full max-w-4xl mx-auto mb-8 px-4 relative z-10 min-h-[160px]">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={activeIndex}
-                        initial={{ opacity: 0, y: 15, filter: "blur(5px)" }}
-                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                        exit={{ opacity: 0, y: -15, filter: "blur(5px)" }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        key={realActiveIndex} // Usa o índice real para animar o texto
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -15 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex flex-col items-center"
                     >
-                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-900/10 border border-purple-500/30 mb-5 shadow-[0_0_30px_rgba(168,85,247,0.25)]">
-                            <activeSlide.icon className="w-7 h-7 text-purple-300" />
+                        <div className="mb-4 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                            <activeContent.icon className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
                         </div>
-                        <h3 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-xl mb-3">
-                            {activeSlide.title}
+                        <h3 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-4 drop-shadow-lg">
+                            {activeContent.title}
                         </h3>
-                        <p className="text-purple-200/80 text-base md:text-lg font-medium max-w-lg mx-auto leading-relaxed">
-                            {activeSlide.description}
+                        <p className="text-sm md:text-lg text-zinc-300 font-medium max-w-lg leading-relaxed">
+                            {activeContent.description}
                         </p>
                     </motion.div>
                 </AnimatePresence>
             </div>
             
-            {/* CARROSSEL 3D "PERFEITO" */}
-            <div className="relative w-full max-w-[1200px] perspective-[1000px]">
+            {/* CARROSSEL */}
+            <div className="relative w-full max-w-[1400px]">
                  <Swiper
                     onSwiper={setSwiper}
                     onSlideChange={(s) => setActiveIndex(s.realIndex)}
@@ -151,22 +171,42 @@ export default function FeaturesCarousel() {
                     centeredSlides={true}
                     loop={true}
                     slidesPerView={'auto'}
-                    initialSlide={1}
-                    speed={800} // Transição mais suave e lenta
-                    // CONFIGURAÇÃO MÁGICA PARA O EFEITO "ESCONDIDO/INCLINADO"
+                    initialSlide={1} // Começa no meio visualmente
+                    speed={600}
+                    // AQUI ESTÁ A CONFIGURAÇÃO "COLADO" (GLUED)
                     coverflowEffect={{
-                        rotate: 35,       // Inclinação perfeita para mostrar a lateral
-                        stretch: 0,       // Mantém agrupado
-                        depth: 100,       // Profundidade para empurrar os laterais para trás
-                        modifier: 1,      
-                        slideShadows: false, // Sem sombra preta, usamos blur/brilho no componente
-                        scale: 0.85       // REDUZ o tamanho dos laterais para enfatizar a profundidade
+                        rotate: 0,        // Rotação ZERO ou mínima para parecer "stacked" como na foto 2
+                        stretch: 0,       // O controle será feito via largura do slide (veja CSS abaixo)
+                        depth: 150,       // Profundidade para dar o efeito 3D atrás
+                        modifier: 1,
+                        slideShadows: false,
+                        scale: 1          // Mantemos a escala próxima
+                    }}
+                    // Breakpoints para ajustar o "aperto" (stretch)
+                    breakpoints={{
+                        0: { // Mobile
+                            coverflowEffect: {
+                                rotate: 20, 
+                                stretch: -40, // NEGATIVO: Puxa os slides pra cima do outro
+                                depth: 120,
+                                scale: 0.85
+                            }
+                        },
+                        768: { // Desktop
+                            coverflowEffect: {
+                                rotate: 20,    // Leve rotação
+                                stretch: -90,  // MUITO NEGATIVO: Isso faz eles ficarem COLADOS
+                                depth: 250,    // Profundidade forte
+                                scale: 0.85
+                            }
+                        }
                     }}
                     modules={[EffectCoverflow, Navigation, Pagination]}
-                    className="features-swiper !pb-14 !px-4 !overflow-visible" 
+                    className="features-swiper !pb-16 !px-4 !overflow-visible" 
                  >
                      {featureSlides.map((slide, index) => (
-                        <SwiperSlide key={index} className="!w-[300px] md:!w-[320px] transition-all duration-500">
+                        // Largura fixa aqui é importante para o cálculo de sobreposição
+                        <SwiperSlide key={`${slide.id}-${index}`} className="!w-[260px] md:!w-[310px] z-10">
                              {({ isActive }) => (
                                  <IphoneMockup isActive={isActive}>
                                     {slide.type === 'video' ? (
@@ -181,8 +221,7 @@ export default function FeaturesCarousel() {
                                             alt={slide.title}
                                             fill
                                             className="object-cover"
-                                            sizes="(max-width: 768px) 100vw, 300px"
-                                            quality={90}
+                                            sizes="(max-width: 768px) 260px, 310px"
                                         />
                                     )}
                                 </IphoneMockup>
@@ -191,44 +230,49 @@ export default function FeaturesCarousel() {
                     ))}
                  </Swiper>
 
-                 {/* Botões de Navegação Flutuantes e Minimalistas */}
-                 <div className="hidden md:block pointer-events-none absolute inset-0 z-30">
-                    <div className="relative w-full h-full max-w-[800px] mx-auto flex justify-between items-center pointer-events-auto">
-                        <Button onClick={() => swiper?.slidePrev()} variant="ghost" size="icon" className="rounded-full h-14 w-14 bg-black/20 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 hover:scale-110 backdrop-blur-xl transition-all duration-300 shadow-2xl group -translate-x-4 lg:-translate-x-12">
-                            <ChevronLeft className="h-6 w-6 text-white group-hover:-translate-x-0.5 transition-transform"/>
-                        </Button>
-                        <Button onClick={() => swiper?.slideNext()} variant="ghost" size="icon" className="rounded-full h-14 w-14 bg-black/20 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 hover:scale-110 backdrop-blur-xl transition-all duration-300 shadow-2xl group translate-x-4 lg:translate-x-12">
-                            <ChevronRight className="h-6 w-6 text-white group-hover:translate-x-0.5 transition-transform"/>
-                        </Button>
-                    </div>
+                 {/* Botões de Navegação */}
+                 <div className="hidden md:flex justify-between w-full absolute top-1/2 -translate-y-1/2 px-12 lg:px-40 pointer-events-none z-30">
+                    <Button onClick={() => swiper?.slidePrev()} variant="ghost" size="icon" className="pointer-events-auto h-16 w-16 rounded-full bg-black/40 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 backdrop-blur-md transition-all shadow-2xl group">
+                        <ChevronLeft className="h-8 w-8 text-white group-hover:-translate-x-1 transition-transform"/>
+                    </Button>
+                    <Button onClick={() => swiper?.slideNext()} variant="ghost" size="icon" className="pointer-events-auto h-16 w-16 rounded-full bg-black/40 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 backdrop-blur-md transition-all shadow-2xl group">
+                        <ChevronRight className="h-8 w-8 text-white group-hover:translate-x-1 transition-transform"/>
+                    </Button>
                  </div>
             </div>
             
-            {/* Paginação Customizada */}
-            <div className="flex justify-center items-center gap-2 mt-6 z-20">
-                {featureSlides.map((_, index) => (
+            {/* Paginação */}
+            <div className="flex gap-2.5 mt-4 z-20">
+                {originalSlides.map((_, index) => (
                     <button 
                         key={index}
-                        onClick={() => swiper?.slideToLoop(index)}
+                        // Precisamos encontrar o próximo índice correspondente no loop duplicado
+                        onClick={() => {
+                            // Hack para encontrar o slide mais próximo visualmente que corresponde ao ID
+                            const currentRealIndex = swiper?.realIndex || 0;
+                            const targetIndex = index;
+                            // Se estivermos longe, o swiper se vira com o loopTo
+                            swiper?.slideToLoop(targetIndex) 
+                        }}
                         className={cn(
-                            "h-1.5 rounded-full transition-all duration-500 ease-out",
-                            activeIndex === index 
-                                ? "w-8 bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]" 
-                                : "w-1.5 bg-zinc-700/50 hover:bg-zinc-600"
+                            "h-2 rounded-full transition-all duration-300",
+                            realActiveIndex === index 
+                                ? "w-10 bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.6)]" 
+                                : "w-2 bg-zinc-800 hover:bg-zinc-700"
                         )}
-                        aria-label={`Go to slide ${index + 1}`}
+                        aria-label={`Slide ${index + 1}`}
                     />
                 ))}
             </div>
 
-             <div className="mt-14 relative z-20">
-                <Button asChild className="bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:scale-105 active:scale-95 transition-all duration-300 text-white text-lg font-bold px-10 py-7 rounded-full shadow-[0_0_50px_-10px_rgba(147,51,234,0.4)] hover:shadow-[0_0_70px_-15px_rgba(147,51,234,0.6)] ring-1 ring-white/20">
-                    <Link href="/criar" className="flex items-center gap-3">
+             <motion.div className="mt-12 md:mt-16 relative z-20" whileTap={{ scale: 0.95 }}>
+                <Button asChild className="bg-white text-black hover:bg-zinc-200 text-lg font-bold px-10 py-7 rounded-full shadow-[0_10px_30px_-10px_rgba(255,255,255,0.3)] transition-all">
+                    <Link href="/criar" className="flex items-center gap-2">
                         {t('featuresCarousel.cta')} 
-                        <ArrowRight className="w-5 h-5 animate-pulse" />
+                        <ArrowRight className="w-5 h-5" />
                     </Link>
                 </Button>
-             </div>
-        </div>
+             </motion.div>
+        </motion.div>
     );
 }
