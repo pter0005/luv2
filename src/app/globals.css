@@ -385,6 +385,20 @@
     }
   }
 
+  .features-swiper {
+    @apply w-full py-4;
+  }
+
+  .features-swiper .swiper-slide {
+    @apply transition-all duration-500 ease-in-out;
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  .features-swiper .swiper-slide-active {
+    opacity: 1;
+    transform: scale(1);
+  }
 
   @media (min-width: 768px) {
     [data-radix-dialog-overlay] {
