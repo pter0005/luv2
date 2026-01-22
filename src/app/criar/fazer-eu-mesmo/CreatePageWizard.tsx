@@ -1,0 +1,1820 @@
+
+"use client";
+
+import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
+import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { AnimatePresence, motion } from "framer-motion";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import Countdown from "./Countdown";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/effect-cards';
+import 'swiper/css/effect-flip';
+import 'swiper/css/effect-cube';
+import 'swiper/css/pagination';
+import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
+import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
+import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
+import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage } from "./actions";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useSearchParams } from 'next/navigation'
+import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
+import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
+import { useUser, useFirebase } from "@/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import PreviewContent from "./PreviewContent";
+import FallingHearts from "@/components/effects/FallingHearts";
+import StarrySky from "@/components/effects/StarrySky";
+import MysticVortex from "@/components/effects/MysticVortex";
+import FloatingDots from "@/components/effects/FloatingDots";
+import CustomAudioPlayer from "./CustomAudioPlayer";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import NebulaBackground from "@/components/effects/NebulaBackground";
+import { FirebaseError } from "firebase/app";
+
+const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full aspect-square" />
+});
+
+
+const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
+
+const cpfMask = (v: string) => {
+    v = v.replace(/\D/g, ""); // Remove tudo que não é número
+    if (v.length > 11) v = v.slice(0, 11); // Limita aos 11 dígitos do CPF
+    
+    return v
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+
+const MAX_GALLERY_IMAGES_BASICO = 2;
+const MAX_GALLERY_IMAGES_AVANCADO = 6;
+const MAX_TIMELINE_IMAGES_BASICO = 5;
+const MAX_TIMELINE_IMAGES_AVANCADO = 20;
+
+
+const paymentSchema = z.object({
+  payerFirstName: z.string().min(1, "Nome é obrigatório."),
+  payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
+  payerEmail: z.string().email("E-mail inválido."),
+  payerCpf: z.string().min(14, "O CPF é obrigatório e deve ser completo.").max(14, "O CPF deve ter o formato 000.000.000-00."),
+});
+
+export const fileWithPreviewSchema = z.object({
+    url: z.string().url({ message: "URL de pré-visualização inválida." }),
+    path: z.string(),
+});
+export type FileWithPreview = z.infer<typeof fileWithPreviewSchema>;
+
+
+export const timelineEventSchema = z.object({
+    id: z.string().optional(),
+    image: fileWithPreviewSchema.optional(),
+    description: z.string().optional(),
+    date: z.date().optional(),
+});
+export type TimelineEvent = z.infer<typeof timelineEventSchema>;
+
+
+// Esquema do formulário completo
+const pageSchema = z.object({
+  plan: z.string().default('avancado'),
+  intentId: z.string().optional(),
+  userId: z.string().optional(),
+  title: z.string().default("Seu Título Aqui"),
+  titleColor: z.string().default("#FFFFFF"),
+  message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
+  messageFontSize: z.string().default("text-base"),
+  messageFormatting: z.array(z.string()).default([]),
+  specialDate: z.date().optional(),
+  countdownStyle: z.string().default("Padrão"),
+  countdownColor: z.string().default("#FFFFFF"),
+  galleryImages: z.array(fileWithPreviewSchema).default([]),
+  galleryStyle: z.string().default("Cube"),
+  timelineEvents: z.array(timelineEventSchema).default([]),
+  musicOption: z.string().default("none"),
+  youtubeUrl: z.string().optional().or(z.literal('')),
+  audioRecording: fileWithPreviewSchema.optional(),
+  songName: z.string().optional(),
+  artistName: z.string().optional(),
+  backgroundAnimation: z.string().default("none"),
+  heartColor: z.string().default("#D14D72"),
+  backgroundVideo: fileWithPreviewSchema.optional(),
+  enablePuzzle: z.boolean().default(false),
+  puzzleImage: fileWithPreviewSchema.optional(),
+  payment: paymentSchema.optional(),
+});
+
+
+export type PageData = z.infer<typeof pageSchema>;
+
+const steps = [
+  { id: "title", title: "Título da página", description: "Escreva o título dedicatório. Ex: João & Maria.", fields: ["title", "titleColor"] },
+  { id: "message", title: "Sua Mensagem de Amor", description: "Escreva a mensagem principal.", fields: ["message", "messageFontSize", "messageFormatting"] },
+  { id: "specialDate", title: "Data Especial", description: "Informe a data que simboliza o início de tudo.", fields: ["specialDate", "countdownStyle", "countdownColor"] },
+  { id: "gallery", title: "Galeria de Fotos", description: "Adicione as fotos que marcaram a história de vocês.", fields: ["galleryImages", "galleryStyle"] },
+  { id: "timeline", title: "Linha do Tempo 3D", description: "Momentos flutuantes para uma viagem nostálgica.", fields: ["timelineEvents"], requiredPlan: 'avancado' },
+  { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
+  { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
+  { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
+  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment"] },
+];
+
+const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
+    const { watch } = useFormContext<PageData>();
+    const plan = watch('plan');
+    const isLocked = requiredPlan && plan !== plan;
+
+    if (isLocked) {
+        return (
+            <div className="relative blur-sm pointer-events-none opacity-60">
+                {children}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg z-50">
+                    <Lock className="w-12 h-12 text-primary mb-4" />
+                    <p className="font-semibold text-center text-white">Recurso do Plano Avançado.</p>
+                </div>
+            </div>
+        );
+    }
+    return <>{children}</>;
+}
+
+
+// Componentes de Passo simplificados para o Wizard
+const TitleStep = () => {
+    const { control } = useFormContext<PageData>();
+    return (
+        <div className="space-y-8">
+            <FormField control={control} name="title" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Título</FormLabel>
+                    <FormControl><Input placeholder="Ex: João & Maria" {...field} /></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+            <FormField control={control} name="titleColor" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cor do título</FormLabel>
+                    <FormControl>
+                        <div className="relative flex items-center gap-4">
+                            <Input type="color" className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0" {...field} />
+                            <span className="text-sm">Escolha uma cor para o texto</span>
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        </div>
+    );
+};
+
+const MessageStep = () => {
+  const form = useFormContext<PageData>();
+    
+    return (
+        <div className="space-y-8">
+            <div className="space-y-2">
+                <FormLabel>Sua Mensagem</FormLabel>
+                <FormField control={form.control} name="messageFormatting" render={({ field }) => (
+                    <ToggleGroup type="multiple" variant="outline" className="justify-start" value={field.value} onValueChange={field.onChange}>
+                        <ToggleGroupItem value="bold"><Bold className="h-4 w-4" /></ToggleGroupItem>
+                        <ToggleGroupItem value="italic"><Italic className="h-4 w-4" /></ToggleGroupItem>
+                        <ToggleGroupItem value="strikethrough"><Strikethrough className="h-4 w-4" /></ToggleGroupItem>
+                    </ToggleGroup>
+                )} />
+                <FormField control={form.control} name="message" render={({ field }) => (
+                    <FormControl><Textarea placeholder="Sua declaração..." className="min-h-[288px]" {...field} /></FormControl>
+                )} />
+            </div>
+        </div>
+    );
+};
+
+
+const SpecialDateStep = () => {
+  const { control, setValue, watch } = useFormContext<PageData>();
+  const countdownStyle = watch("countdownStyle");
+  const titleColor = watch("titleColor");
+
+  return (
+    <div className="space-y-12">
+      {/* Calendar Section */}
+      <div className="space-y-4">
+        <FormLabel>Início do relacionamento</FormLabel>
+        <FormField
+          control={control}
+          name="specialDate"
+          render={({ field }) => (
+            <FormItem className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={field.value}
+                onSelect={field.onChange}
+                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                locale={ptBR}
+                className="rounded-md border"
+                captionLayout="dropdown-buttons"
+                fromYear={1960}
+                toYear={new Date().getFullYear()}
+              />
+            </FormItem>
+          )}
+        />
+        <FormDescription className="text-center">
+          Essa data será usada para o contador.
+        </FormDescription>
+      </div>
+
+      {/* Countdown Style Section */}
+      <div className="space-y-4">
+        <FormLabel>Modo de Exibição do Contador</FormLabel>
+        <FormField
+          control={control}
+          name="countdownStyle"
+          render={({ field }) => (
+            <RadioGroup
+              onValueChange={field.onChange}
+              value={field.value}
+              className="grid grid-cols-2 gap-4"
+            >
+              <FormItem>
+                <FormControl>
+                  <RadioGroupItem value="Padrão" id="countdown-style-default" className="sr-only" />
+                </FormControl>
+                <Label
+                  htmlFor="countdown-style-default"
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-md border-2 p-4 cursor-pointer",
+                    field.value === "Padrão" ? "border-primary" : "border-muted"
+                  )}
+                >
+                  Padrão
+                </Label>
+              </FormItem>
+              <FormItem>
+                <FormControl>
+                  <RadioGroupItem value="Simples" id="countdown-style-simple" className="sr-only" />
+                </FormControl>
+                <Label
+                  htmlFor="countdown-style-simple"
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-md border-2 p-4 cursor-pointer",
+                    field.value === "Simples" ? "border-primary" : "border-muted"
+                  )}
+                >
+                  Simples
+                </Label>
+              </FormItem>
+            </RadioGroup>
+          )}
+        />
+      </div>
+
+      {/* Countdown Color Section */}
+      <div className="space-y-4">
+        <FormLabel>Cor do Contador</FormLabel>
+        <FormField
+          control={control}
+          name="countdownColor"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="color"
+                    className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
+                    {...field}
+                  />
+                  <span>Clique no quadrado para escolher uma cor</span>
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <Button
+          type="button"
+          variant="link"
+          className="p-0 text-primary"
+          onClick={() => setValue("countdownColor", titleColor)}
+        >
+          <LinkIcon className="mr-2 h-4 w-4" />
+          Usar a cor do título
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Helper function to upload a file to Firebase Storage
+const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
+    if (!userId) throw new Error("Usuário não identificado para upload.");
+
+    const timestamp = Date.now();
+    // Limpa o nome do arquivo para evitar caracteres estranhos
+    const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
+    const fileName = `${timestamp}-${safeName}`;
+    
+    // O SEGREDO ESTÁ AQUI: O caminho TEM que começar com temp/{userId}
+    // Exemplo final: temp/12345/gallery/foto.jpg
+    const fullPath = `temp/${userId}/${folderName}/${fileName}`;
+    const fileRef = storageRef(storage, fullPath);
+
+    try {
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+        return { url: downloadURL, path: fullPath };
+    } catch (error: any) {
+        console.error("Erro detalhado no upload:", error);
+        // Se der erro aqui, é certeza que a regra do Storage bloqueou ou o caminho tá errado
+        throw error;
+    }
+};
+
+
+const GalleryStep = () => {
+    const { control, formState: { errors }, watch } = useFormContext<PageData>();
+    const plan = watch('plan');
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "galleryImages",
+    });
+    const { user } = useUser();
+    const { storage } = useFirebase();
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
+    
+    const MAX_GALLERY_IMAGES = plan === 'avancado' ? MAX_GALLERY_IMAGES_AVANCADO : MAX_GALLERY_IMAGES_BASICO;
+    const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || !user || !storage) return;
+
+        const availableSlots = MAX_GALLERY_IMAGES - fields.length;
+        if (availableSlots <= 0) return;
+
+        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        
+        try {
+            const uploadPromises = filesArray.map(async file => {
+                const compressedFile = await compressImage(file, 1280, 0.8);
+                return uploadFile(storage, user.uid, compressedFile, 'gallery');
+            });
+
+            const newImageObjects = await Promise.all(uploadPromises);
+            append(newImageObjects);
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas à galeria.' });
+        } catch (error: any) {
+            console.error("Error uploading files:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível enviar as imagens.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
+        remove(index);
+    };
+    
+    return (
+        <div className="space-y-8">
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType="fotos na galeria" />
+            
+            <div className="space-y-2">
+                <FormLabel>Suas Fotos para a galeria</FormLabel>
+                <FormControl>
+                    <label
+                        htmlFor="photo-upload"
+                        className={cn(
+                            "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                            (isLimitReached || isUploading) && "cursor-not-allowed opacity-50"
+                        )}
+                    >
+                        {isUploading ? (
+                            <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                        ) : (
+                            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                        )}
+                        <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade original)</p>
+                        <input
+                            id="photo-upload"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileChange}
+                            disabled={isLimitReached || isUploading}
+                        />
+                    </label>
+                </FormControl>
+                
+                {fields && fields.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="relative group aspect-square">
+                                <Image
+                                    src={(field as any).url || 'https://via.placeholder.com/150'}
+                                    alt={`Pré-visualização da imagem ${index + 1}`}
+                                    fill
+                                    className="rounded-md object-cover"
+                                    unoptimized
+                                />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    className="absolute -top-2 -right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-2 z-10"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+                <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
+                <FormField
+                    control={control}
+                    name="galleryStyle"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
+                                        <div key={style}>
+                                            <RadioGroupItem value={style} id={`style-${style}`} className="sr-only" />
+                                            <Label
+                                                htmlFor={`style-${style}`}
+                                                className={cn(
+                                                    "flex items-center justify-center rounded-md border-2 p-4 cursor-pointer hover:bg-accent transition-all",
+                                                    field.value === style ? "border-primary bg-primary/5" : "border-muted"
+                                                )}
+                                            >
+                                                {style}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        </div>
+    );
+};
+
+const TimelineStep = () => {
+    const { control, trigger, formState: { errors }, watch } = useFormContext<PageData>();
+    const plan = watch('plan');
+    const { fields, append: appendTimeline, remove, update } = useFieldArray({
+        control,
+        name: "timelineEvents",
+    });
+
+    const { user } = useUser();
+    const { storage } = useFirebase();
+    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+    const { toast } = useToast();
+
+    const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
+    const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
+        if (event.target.files && event.target.files[0] && user && storage) {
+            const file = event.target.files[0];
+            setUploadingIndex(index);
+            
+            try {
+                const compressedFile = await compressImage(file, 1280, 0.8);
+                const newImageObject = await uploadFile(storage, user.uid, compressedFile, 'timeline');
+                const currentEvent = fields[index];
+                update(index, { ...currentEvent, image: newImageObject });
+                trigger(`timelineEvents.${index}.image`);
+                toast({ title: "Imagem enviada!", description: "A imagem do momento foi atualizada." });
+            } catch (error: any) {
+                console.error("Error uploading timeline image:", error);
+                const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+                toast({
+                    variant: 'destructive',
+                    title: 'Erro no Upload',
+                    description: (
+                        <div>
+                            <p>Não foi possível enviar a imagem.</p>
+                            <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                        </div>
+                    )
+                });
+            } finally {
+                setUploadingIndex(null);
+            }
+        }
+    };
+
+
+    const handleRemove = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('image' in imageToRemove && (imageToRemove as any).image?.path && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).image.path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
+        remove(index);
+    }
+
+    const handleAddNewMoment = () => {
+        if (isLimitReached) return;
+        appendTimeline({ description: "", date: new Date(), id: new Date().toISOString() });
+    }
+
+    return (
+        <div className="space-y-6">
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType="momentos na linha do tempo" />
+            {errors.timelineEvents?.root && (
+                <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
+            )}
+            <p className="text-sm text-muted-foreground">Adicione momentos importantes. Cada momento terá uma imagem, data e uma breve descrição.</p>
+            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
+                {fields.map((field, index) => {
+                    const imagePreview = (field as any).image && (field as any).image.url;
+
+                    return (
+                        <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
+                             <div className="flex-shrink-0">
+                                <FormLabel htmlFor={`timeline-image-${index}`}>
+                                    <div className={cn(
+                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary relative",
+                                        imagePreview && "border-solid",
+                                        uploadingIndex === index && "opacity-50 cursor-not-allowed"
+                                    )}>
+                                        {imagePreview ? (
+                                            <Image src={imagePreview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
+                                        ) : (
+                                            <Upload className="w-6 h-6 text-muted-foreground" />
+                                        )}
+                                        {uploadingIndex === index && <Loader2 className="absolute w-6 h-6 text-primary animate-spin" />}
+                                    </div>
+                                </FormLabel>
+                                <FormControl>
+                                    <Input id={`timeline-image-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, index)} disabled={uploadingIndex === index} />
+                                </FormControl>
+                            </div>
+                            <div className="flex-grow space-y-2">
+                                <FormField
+                                    control={control}
+                                    name={`timelineEvents.${index}.description`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Textarea {...field} placeholder="Descreva este momento..." className="bg-background min-h-[50px] sm:min-h-[80px]" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={control}
+                                    name={`timelineEvents.${index}.date`}
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                            <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                "w-full pl-3 text-left font-normal",
+                                                !field.value && "text-muted-foreground"
+                                                )}
+                                            >
+                                                {field.value ? (
+                                                    format(new Date(field.value), "PPP", { locale: ptBR })
+                                                ) : (
+                                                    <span>Escolha a data</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value ? new Date(field.value) : undefined}
+                                                onSelect={field.onChange}
+                                                disabled={(date) =>
+                                                    date > new Date() || date < new Date("1900-01-01")
+                                                }
+                                                initialFocus
+                                                locale={ptBR}
+                                                captionLayout="dropdown-buttons"
+                                                fromYear={1960}
+                                                toYear={new Date().getFullYear()}
+                                            />
+                                        </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 p-2 h-auto w-auto text-muted-foreground hover:text-destructive" onClick={() => handleRemove(index)}>
+                                <Trash className="w-4 h-4" />
+                            </Button>
+                        </Card>
+                    )
+                })}
+            </div>
+            <Button onClick={handleAddNewMoment} disabled={isLimitReached} className="w-full">
+                <Plus className="mr-2" />
+                Adicionar Momento
+            </Button>
+        </div>
+    );
+};
+
+const MusicStep = () => {
+    const { control, setValue, getValues } = useFormContext<PageData>();
+    const { user, storage } = useFirebase();
+    const { toast } = useToast();
+    const musicOption = useWatch({ control, name: "musicOption" });
+    const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
+    const [isSearching, startSearchTransition] = useTransition();
+    const [showManualLinkInput, setShowManualLinkInput] = useState(false);
+    const manualLinkInputRef = useRef<HTMLInputElement>(null);
+    
+    // Audio recording state
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'recorded' | 'uploading'>('idle');
+    const audioRecording = useWatch({ control, name: "audioRecording" });
+
+
+    const handleSearchMusic = () => {
+        const sName = getValues("songName");
+        const aName = getValues("artistName");
+        if (!sName) {
+            toast({
+                variant: "destructive",
+                title: "O nome da música é obrigatório",
+            });
+            return;
+        }
+    
+        startSearchTransition(async () => {
+            try {
+                const result = await findYoutubeVideo({ songName: sName, artistName: aName || '' });
+                if (result.url) {
+                    setValue("youtubeUrl", result.url, { shouldDirty: true });
+                    toast({ title: "Música conectada!", description: "Sua música foi encontrada no YouTube." });
+                }
+            } catch (e: any) { 
+                toast({ 
+                    variant: "destructive", 
+                    title: "Erro na busca",
+                    description: e.message || "Não foi possível encontrar um vídeo."
+                }); 
+            }
+        });
+    };
+    
+    const handleSetManualLink = () => {
+      const manualUrl = manualLinkInputRef.current?.value;
+      if (manualUrl && manualUrl.startsWith("http")) {
+        setValue("youtubeUrl", manualUrl, { shouldDirty: true, shouldValidate: true });
+         toast({
+            title: "Link adicionado!",
+            description: "A música do link foi adicionada.",
+         });
+      } else {
+         toast({
+            variant: "destructive",
+            title: "Link inválido",
+            description: "Por favor, insira um link válido do YouTube.",
+         });
+      }
+    }
+
+  const uploadRecording = async (audioBlob: Blob) => {
+    if (!storage || !user) {
+        toast({ variant: 'destructive', title: 'Erro de Autenticação', description: 'Não foi possível enviar a gravação.' });
+        return;
+    }
+    setRecordingStatus('uploading');
+    try {
+        const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
+        setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
+        setRecordingStatus('recorded');
+        toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi guardada com segurança.' });
+    } catch (error: any) {
+        console.error("Error uploading audio:", error);
+        setRecordingStatus('recorded');
+        const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+        toast({
+            variant: 'destructive',
+            title: 'Erro no Envio',
+            description: (
+                <div>
+                    <p>Não foi possível salvar sua gravação.</p>
+                    <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                </div>
+            )
+        });
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      setValue("audioRecording", undefined, { shouldDirty: true });
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+        uploadRecording(audioBlob);
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorderRef.current.start();
+      setRecordingStatus("recording");
+    } catch (err: any) {
+      console.error("Error accessing microphone:", err);
+      const errorCode = err.name || 'unknown';
+      toast({
+          variant: "destructive",
+          title: "Erro de Microfone",
+          description: (
+            <div>
+                <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
+                <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+            </div>
+          )
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && recordingStatus === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+
+  return (
+    <div className="space-y-8">
+      <FormField
+        control={control}
+        name="musicOption"
+        render={({ field }) => (
+          <FormItem className="space-y-3">
+            <FormLabel>Escolha a trilha sonora</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue("youtubeUrl", ""); // Limpa a URL ao trocar de opção
+                    setShowManualLinkInput(false);
+                }}
+                defaultValue={field.value}
+                className="flex flex-col space-y-2"
+              >
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="none" id="music-none" className="peer sr-only" />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-none"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Nenhum Som
+                  </Label>
+                </FormItem>
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="record" id="music-record" className="peer sr-only" />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-record"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Gravar Mensagem de Voz <Mic className="h-5 w-5" />
+                  </Label>
+                </FormItem>
+                <FormItem>
+                  <FormControl>
+                    <RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" />
+                  </FormControl>
+                  <Label
+                    htmlFor="music-youtube"
+                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                  >
+                    Usar Música do YouTube <Youtube className="h-5 w-5" />
+                  </Label>
+                </FormItem>
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {musicOption === 'youtube' && (
+        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                    control={control}
+                    name="songName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome da Música</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Perfect" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={control}
+                    name="artistName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome do Artista</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Ed Sheeran" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
+                {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
+                Buscar com IA
+            </Button>
+            
+            {youtubeUrl && !isSearching && (
+                <div className="mt-4 pt-4 border-t border-border/50">
+                    <p className="text-sm text-center text-muted-foreground mb-2">A música não está correta?</p>
+                     <Button type="button" variant="secondary" className="w-full" onClick={() => setShowManualLinkInput(!showManualLinkInput)}>
+                        Usar um link direto do YouTube
+                    </Button>
+                </div>
+            )}
+            
+            {showManualLinkInput && (
+              <div className="mt-4 space-y-2">
+                  <FormLabel htmlFor="manual-link">Link do YouTube</FormLabel>
+                   <div className="flex gap-2">
+                      <Input id="manual-link" ref={manualLinkInputRef} placeholder="Cole o link aqui..." />
+                      <Button type="button" onClick={handleSetManualLink}>OK</Button>
+                   </div>
+              </div>
+            )}
+        </div>
+      )}
+      {musicOption === 'record' && (
+        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+            <h4 className="font-semibold">Gravador de Voz</h4>
+             <div className="flex flex-col sm:flex-row items-center gap-4">
+                {recordingStatus === "idle" && (
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
+                )}
+                {recordingStatus === "recording" && (
+                    <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
+                )}
+                 {recordingStatus === "recorded" && (
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
+                )}
+                {recordingStatus === 'uploading' && (
+                    <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Enviando...</Button>
+                )}
+                {audioRecording?.url && (
+                   <audio src={audioRecording.url} controls className="w-full" />
+                )}
+             </div>
+             <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
+                {recordingStatus === 'recording' && 'Gravando...'}
+                {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
+            </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+const animationOptions = [
+    { id: "none", name: "Nenhuma" },
+    { id: "falling-hearts", name: "Chuva de Corações" },
+    { id: "starry-sky", name: "Céu Estrelado", requiredPlan: "avancado" },
+    { id: "nebula", name: "Nebulosa Galáctica" },
+    { id: "floating-dots", name: "Pontos Coloridos", requiredPlan: "avancado" },
+    { id: "clouds", name: "Nuvens", requiredPlan: "avancado" },
+];
+
+const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
+    const { control, setValue, watch } = useFormContext<PageData>();
+    const backgroundAnimation = watch("backgroundAnimation");
+    const titleColor = watch("titleColor");
+    const plan = watch("plan");
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="backgroundAnimation"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Escolha a Animação</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 gap-4"
+                            >
+                                {animationOptions.map((option) => {
+                                    const isDisabled = option.requiredPlan && plan !== option.requiredPlan;
+                                    const labelContent = (
+                                         <Label
+                                            htmlFor={`anim-${option.id}`}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center rounded-md border-2 bg-popover p-4 h-24 text-sm relative overflow-hidden group/item",
+                                                isDisabled
+                                                    ? "border-muted/50 text-muted-foreground/50 cursor-not-allowed"
+                                                    : "cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                                field.value === option.id && !isDisabled ? "border-primary" : "border-muted"
+                                            )}
+                                        >
+                                            {isClient && isVisible && !isDisabled && (
+                                                <div className="absolute inset-0 w-full h-full opacity-30 group-hover/item:opacity-40 -z-10">
+                                                    {option.id === "falling-hearts" && <div className="w-full h-full relative overflow-hidden"><FallingHearts count={50} color={watch("heartColor")} /></div>}
+                                                    {option.id === "starry-sky" && <div className="w-full h-full relative overflow-hidden"><StarrySky /></div>}
+                                                    {option.id === "nebula" && <div className="w-full h-full relative overflow-hidden"><NebulaBackground /></div>}
+                                                    {option.id === "floating-dots" && <div className="w-full h-full relative overflow-hidden"><FloatingDots /></div>}
+                                                    {option.id === "mystic-fog" && <><div className="mystic-fog-1 !opacity-50 !-z-0"></div><div className="mystic-fog-2 !opacity-50 !-z-0"></div></>}
+                                                    {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4"/></video>}
+                                                </div>
+                                            )}
+                                            {isDisabled && <Lock className="absolute top-2 right-2 w-4 h-4" />}
+                                            <span className="relative z-10">{option.name}</span>
+                                        </Label>
+                                    );
+
+                                    return (
+                                        <FormItem key={option.id}>
+                                            <FormControl>
+                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" disabled={isDisabled} />
+                                            </FormControl>
+                                            {isDisabled ? (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>{labelContent}</TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>Exclusivo do Plano Avançado</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            ) : (
+                                                labelContent
+                                            )}
+                                        </FormItem>
+                                    );
+                                })}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+
+            {backgroundAnimation === 'falling-hearts' && (
+                 <FormField
+                    control={control}
+                    name="heartColor"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Cor dos Corações</FormLabel>
+                        <FormControl>
+                            <div className="relative flex items-center gap-4">
+                            <Input
+                                type="color"
+                                className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
+                                {...field}
+                            />
+                            <span className="text-sm">Clique no quadrado para escolher uma cor</span>
+                            </div>
+                        </FormControl>
+                        <Button
+                            type="button"
+                            variant="link"
+                            className="p-0 h-auto"
+                            onClick={() => setValue("heartColor", titleColor, { shouldDirty: true })}
+                        >
+                            <Pipette className="mr-2 h-4 w-4" />
+                            Usar a cor do título
+                        </Button>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+        </div>
+    );
+};
+
+const PuzzleStep = () => {
+    const { control, setValue, watch } = useFormContext<PageData>();
+    const { user, storage } = useFirebase();
+    const enablePuzzle = watch("enablePuzzle");
+    const puzzleImage = watch("puzzleImage");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0] && user && storage) {
+            const file = event.target.files[0];
+            setIsProcessing(true);
+            try {
+                const compressedBlob = await compressImage(file, 1280, 0.8);
+                const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
+                setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
+                toast({ title: 'Imagem processada!', description: 'A imagem para o quebra-cabeça foi definida.' });
+            } catch (error: any) {
+                console.error("Error processing puzzle image:", error);
+                const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+                toast({
+                    variant: 'destructive',
+                    title: 'Erro ao Processar',
+                    description: (
+                        <div>
+                            <p>Não foi possível usar esta imagem.</p>
+                            <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                        </div>
+                    )
+                });
+            } finally {
+                setIsProcessing(false);
+            }
+        }
+    };
+    
+    const removePuzzleImage = () => {
+        if (puzzleImage?.path && storage) {
+            const imageRef = storageRef(storage, puzzleImage.path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete puzzle image from storage:", err));
+        }
+        setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
+        toast({ title: 'Imagem removida.' });
+    };
+    
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enablePuzzle"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Quebra-Cabeça</FormLabel>
+                            <FormDescription>
+                                Exigir que o quebra-cabeça seja resolvido para ver a página.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
+            {enablePuzzle && (
+                 <div className="space-y-4">
+                    <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
+                     {!puzzleImage?.url ? (
+                        <FormControl>
+                        <label
+                            htmlFor="puzzle-photo-upload"
+                            className={cn(
+                                "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                isProcessing && "cursor-not-allowed opacity-50"
+                            )}
+                        >
+                            {isProcessing ? (
+                                <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                            ) : (
+                                <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                            )}
+                            <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
+                            <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
+                            <input
+                                id="puzzle-photo-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handlePuzzleImageChange}
+                                disabled={isProcessing}
+                            />
+                        </label>
+                        </FormControl>
+                     ) : (
+                        <div className="w-full flex flex-col items-center gap-6">
+                             <div className="w-full max-w-[300px] mx-auto">
+                                <RealPuzzle
+                                    imageSrc={puzzleImage.url}
+                                />
+                             </div>
+                             <Button
+                                 type="button"
+                                 variant="destructive"
+                                 onClick={removePuzzleImage}
+                                 size="sm"
+                             >
+                                 <X className="mr-2 h-4 w-4" />
+                                 Remover Imagem
+                             </Button>
+                        </div>
+                     )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const stepComponents = [
+    TitleStep,
+    MessageStep,
+    SpecialDateStep,
+    GalleryStep,
+    TimelineStep,
+    MusicStep,
+    BackgroundStep,
+    PuzzleStep,
+];
+
+const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
+    setPageId: (id: string) => void;
+    setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
+    setIntentId: (id: string) => void;
+    pixData: { qrCode: string; qrCodeBase64: string, paymentId: string } | null
+}) => {
+    const { getValues, control, formState: { isValid }, trigger, watch, setValue } = useFormContext<PageData>();
+    const plan = watch('plan');
+    const intentId = watch('intentId');
+    const { user } = useUser();
+    const [isProcessing, startTransition] = useTransition();
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [error, setError] = useState<{ message: string, details?: any } | null>(null);
+    const { toast } = useToast();
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    const price = plan === 'basico' ? 14.99 : 24.99;
+    const originalPrice = plan === 'basico' ? 30.00 : 50.00;
+
+    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+    const isAdmin = user?.email && adminEmails.includes(user.email);
+
+    const handlePaymentSuccess = useCallback((pageId: string) => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
+        toast({ title: 'Pagamento Aprovado!', description: 'Sua página foi criada com sucesso.' });
+        setPageId(pageId);
+        localStorage.removeItem('amore-pages-autosave');
+    }, [setPageId, toast]);
+    
+
+    const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
+    
+        pollingIntervalRef.current = setInterval(async () => {
+            const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
+            console.log("Status do pagamento:", result.status);
+            
+            if (result.status === 'approved' && result.pageId) {
+                clearInterval(pollingIntervalRef.current!);
+                handlePaymentSuccess(result.pageId);
+            } else if (result.status === 'error') {
+                clearInterval(pollingIntervalRef.current!);
+                setError({ message: result.error });
+            }
+        }, 3000); // Checa a cada 3 segundos
+    }, [handlePaymentSuccess]);
+
+    // Start polling when pixData is available
+    useEffect(() => {
+        if (pixData?.paymentId && intentId) {
+            startPolling(pixData.paymentId, intentId);
+        }
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
+    }, [pixData, intentId, startPolling]);
+
+    const handleGeneratePix = async () => {
+        setError(null);
+        setPixData(null);
+    
+        const isPayerDataValid = await trigger("payment");
+        if (!isPayerDataValid) {
+            toast({
+                variant: 'destructive',
+                title: 'Ops!',
+                description: 'Preencha o Nome, E-mail e CPF corretamente.'
+            });
+            return;
+        }
+
+        if (!user) {
+            setError({ message: "Sessão de usuário inválida. Por favor, faça login novamente." });
+            return;
+        }
+    
+        startTransition(async () => {
+            try {
+                // Get the latest form data and explicitly add the user ID
+                const fullData = { ...getValues(), userId: user.uid };
+                
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+
+                if (saveResult.error || !saveResult.intentId) {
+                    setError({ message: saveResult.error || "Não foi possível salvar o rascunho antes do pagamento.", details: saveResult.details });
+                    if (saveResult.error?.includes("NOT_FOUND")) {
+                      setValue('intentId', undefined, { shouldDirty: false });
+                    }
+                    return;
+                }
+                
+                setIntentId(saveResult.intentId);
+                const paymentResult = await processPixPayment(saveResult.intentId, price);
+                
+                if (paymentResult.error) {
+                    setError({ message: paymentResult.error, details: paymentResult.details || {} });
+                } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
+                    setPixData({ 
+                        qrCode: paymentResult.qrCode, 
+                        qrCodeBase64: paymentResult.qrCodeBase64, 
+                        paymentId: paymentResult.paymentId
+                    });
+                    // Polling will be started by the useEffect
+                }
+            } catch (err) {
+                setError({ message: "Erro ao conectar com o serviço de pagamento." });
+            }
+        });
+    };
+
+    const handleAdminFinalize = async () => {
+        if (!user || !intentId) {
+            toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' });
+            return;
+        }
+
+        startTransition(async () => {
+            try {
+                const result = await adminFinalizePage(intentId, user.uid);
+                if (result.error || !result.pageId) {
+                    setError({ message: result.error || "Falha ao finalizar como admin." });
+                } else {
+                    handlePaymentSuccess(result.pageId);
+                }
+            } catch (e) {
+                setError({ message: "Erro de servidor ao finalizar como admin." });
+            }
+        });
+    }
+
+    const handleManualVerification = async () => {
+        if (!pixData?.paymentId || !intentId) return;
+        setIsVerifying(true);
+        try {
+            const result = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
+            if (result.status === 'approved' && result.pageId) {
+                handlePaymentSuccess(result.pageId);
+            } else {
+                toast({ variant: 'default', title: 'Pagamento ainda não confirmado', description: 'Por favor, tente novamente em alguns instantes.' });
+            }
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erro na verificação', description: 'Não foi possível verificar o pagamento.' });
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Dados do Pagador</CardTitle>
+                    <CardDescription>Essas informações são necessárias para gerar o QR Code do PIX.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={control} name="payment.payerFirstName" render={({ field }) => <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                        <FormField control={control} name="payment.payerLastName" render={({ field }) => <FormItem><FormLabel>Sobrenome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+                     </div>
+                     <FormField control={control} name="payment.payerEmail" render={({ field }) => <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input {...field} type="email" /></FormControl><FormMessage /></FormItem>} />
+                     <FormField control={control} name="payment.payerCpf" render={({ field: { onChange, ...rest } }) => <FormItem><FormLabel>CPF</FormLabel><FormControl><Input {...rest} onChange={e => onChange(cpfMask(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
+                </CardContent>
+            </Card>
+
+            <Button 
+                type="button" 
+                size="lg" 
+                className="w-full" 
+                disabled={isProcessing}
+                onClick={handleGeneratePix}
+            >
+                {isProcessing ? <Loader2 className="animate-spin" /> : (
+                    <span>
+                        De <span className="line-through">R$ {originalPrice.toFixed(2).replace('.',',')}</span> por apenas R$ {price.toFixed(2).replace('.',',')}
+                    </span>
+                )}
+            </Button>
+            
+             {pixData && (
+                 <div className="flex flex-col items-center text-center gap-6">
+                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
+                    <div className="p-4 bg-white rounded-lg border">
+                        {pixData.qrCodeBase64 ? (
+                            <Image 
+                                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                                alt="PIX QR Code"
+                                width={256}
+                                height={256}
+                                unoptimized
+                            />
+                        ) : (
+                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                <Loader2 className="animate-spin mb-2" />
+                                <p className="text-xs">Gerando imagem...</p>
+                            </div>
+                        )}
+                    </div>
+                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copiar Código PIX
+                    </Button>
+                    <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
+                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                            Verificar Pagamento
+                    </Button>
+                </div>
+            )}
+            
+            {isAdmin && intentId && (
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
+                     <Button 
+                        type="button" 
+                        size="lg" 
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
+                        disabled={isProcessing}
+                        onClick={handleAdminFinalize}
+                    >
+                        {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
+                    </Button>
+                </div>
+            )}
+
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                </Alert>
+            )}
+        </div>
+    );
+};
+
+// Wizard Internal Logic
+const WizardInternal = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isClient, setIsClient] = useState(false);
+  const [showTimelinePreview, setShowTimelinePreview] = useState(false);
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const { user, isUserLoading } = useUser();
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [pageId, setPageId] = useState<string | null>(null);
+  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
+  
+  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
+
+  const plan = searchParams.get('plan') || 'avancado';
+
+  const methods = useForm<PageData>({
+    resolver: zodResolver(pageSchema),
+    mode: 'onChange',
+    defaultValues: { 
+        plan: plan,
+        title: "Seu Título Aqui",
+        messageFontSize: "text-base",
+        backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
+        galleryStyle: "Cube",
+        galleryImages: [], 
+        timelineEvents: [],
+        enablePuzzle: plan === 'avancado',
+        musicOption: plan === 'basico' ? 'none' : 'none',
+        payment: { payerCpf: "", payerEmail: "", payerFirstName: "", payerLastName: "" }
+    }
+  });
+  
+  const { watch, trigger, setValue, getValues } = methods;
+  const formData = watch();
+  const intentId = watch('intentId');
+
+  const restoreFromLocalStorage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const savedDataJSON = localStorage.getItem('amore-pages-autosave');
+    if (!savedDataJSON) return;
+
+    try {
+        const parsed = JSON.parse(savedDataJSON);
+        // Ensure the plan from URL overrides the saved one if it's a new session start
+        parsed.plan = plan;
+        if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
+        if (parsed.timelineEvents) {
+            parsed.timelineEvents.forEach((ev: any) => { if(ev.date) ev.date = new Date(ev.date) });
+        }
+        methods.reset(parsed);
+    } catch(e) {
+        console.error("Falha ao carregar rascunho. O rascunho pode estar corrompido.", e);
+        // If parsing fails, the saved data is likely corrupt. Clear it.
+        localStorage.removeItem('amore-pages-autosave');
+        methods.reset(); // Reset to default state
+        toast({
+            variant: "destructive",
+            title: "Erro ao carregar rascunho",
+            description: "Não foi possível carregar seu progresso salvo. Começando um novo."
+        });
+    }
+  }, [methods, plan, toast]);
+  
+  useEffect(() => {
+    setIsClient(true);
+    
+    if (searchParams.get('new') === 'true') {
+        localStorage.removeItem('amore-pages-autosave');
+        methods.reset(); // Resets to default values, including plan from URL
+    } else {
+        restoreFromLocalStorage();
+    }
+  }, [searchParams, methods, restoreFromLocalStorage]);
+
+
+  // --- AUTOSAVE LOGIC ---
+  const handleAutosave = useCallback(async (data: PageData) => {
+    if (!user || isUserLoading) return; // Don't save if no user or still loading
+    
+    // Explicitly add user ID to the data being saved
+    const dataToSave = { ...data, userId: user.uid };
+
+    try {
+        const result = await createOrUpdatePaymentIntent(dataToSave);
+
+        if (result.error) {
+            console.warn("Autosave failed:", result.error, result.details);
+            const errorString = (result.error || '').toLowerCase();
+            const detailsString = (result.details?.log || '').toLowerCase();
+
+            if (errorString.includes("collection") || errorString.includes("500") || detailsString.includes("collection")) {
+                setValue('intentId', undefined, { shouldDirty: false });
+            }
+        } else if (result.intentId && !dataToSave.intentId) {
+            setValue('intentId', result.intentId, { shouldDirty: false });
+            localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
+        } else {
+            localStorage.setItem('amore-pages-autosave', JSON.stringify(dataToSave));
+        }
+    } catch (e) {
+        console.error("Error during autosave:", e);
+    }
+  }, [user, isUserLoading, setValue]);
+
+  useEffect(() => {
+    const subscription = watch((value) => {
+        if (autosaveTimeoutRef.current) {
+            clearTimeout(autosaveTimeoutRef.current);
+        }
+        autosaveTimeoutRef.current = setTimeout(() => {
+            handleAutosave(value as PageData);
+        }, 1500); // Debounce autosave
+    });
+    
+    return () => {
+        subscription.unsubscribe();
+        if (autosaveTimeoutRef.current) {
+            clearTimeout(autosaveTimeoutRef.current);
+        }
+    };
+  }, [watch, handleAutosave]);
+  // --- END AUTOSAVE LOGIC ---
+
+
+  const handleNext = async () => {
+    const currentStepId = steps[currentStep].id;
+    
+    // Manual validation for puzzle step
+    if (currentStepId === 'puzzle') {
+        const currentData = getValues();
+        if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+            toast({
+                variant: "destructive",
+                title: "Imagem Obrigatória",
+                description: "Para ativar o quebra-cabeça, você precisa enviar uma imagem."
+            });
+            return; // Block advancement
+        }
+    } else {
+        // Standard validation for all other steps
+        const fieldsToValidate = steps[currentStep].fields || [];
+        const ok = await trigger(fieldsToValidate as any);
+        if (!ok) {
+            const errors = methods.formState.errors;
+            console.error("Erros de validação:", errors);
+            toast({ variant: "destructive", title: "Campos obrigatórios", description: "Verifique se preencheu tudo corretamente antes de avançar." });
+            return;
+        }
+    }
+
+    // If validation passes, proceed to the next step
+    let nextStepIndex = currentStep + 1;
+    while(nextStepIndex < steps.length && steps[nextStepIndex].requiredPlan && plan !== steps[nextStepIndex].requiredPlan) {
+        nextStepIndex++;
+    }
+    
+    if (steps[nextStepIndex]?.id === 'payment' && user) {
+        toast({ title: "Salvando rascunho...", description: "Preparando check-out seguro." });
+        await handleAutosave({ ...getValues(), userId: user.uid });
+    }
+    
+    setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
+  };
+  
+  const handleBack = async () => {
+      let prevStepIndex = currentStep - 1;
+      // Pula passos desabilitados ao voltar
+      while(prevStepIndex > 0 && steps[prevStepIndex].requiredPlan && plan !== steps[prevStepIndex].requiredPlan) {
+          prevStepIndex--;
+      }
+      setCurrentStep(Math.max(0, prevStepIndex));
+  };
+  
+  if (!user && !isUserLoading) {
+      return (
+          <div className="flex flex-col items-center justify-center text-center p-8">
+              <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Sessão Expirada</AlertTitle>
+                  <AlertDescription>Você precisa estar logado para criar uma página.</AlertDescription>
+              </Alert>
+              <Button asChild className="mt-4"><a href={`/login?redirect=/criar/fazer-eu-mesmo?plan=${plan}`}>Ir para o Login</a></Button>
+          </div>
+      )
+  }
+
+  const timelineEventsForDisplay = useMemo(() => {
+    if (!formData.timelineEvents) return [];
+    return formData.timelineEvents
+        .filter(event => event.image?.url)
+        .map(event => ({
+            id: event.id || Math.random().toString(),
+            imageUrl: event.image!.url,
+            alt: event.description || 'Memória',
+            title: event.description || '',
+            date: event.date ? new Date(event.date) : undefined,
+        }));
+    }, [isClient, formData.timelineEvents]);
+
+  if (showTimelinePreview) {
+      return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimelinePreview(false)} />;
+  }
+
+  const currentStepInfo = steps[currentStep];
+  const currentStepId = currentStepInfo?.id;
+  let StepComponent;
+
+  if (pageId) {
+      StepComponent = <SuccessStep pageId={pageId} />;
+  } else if (currentStepId === 'payment') {
+      StepComponent = <PaymentStep setPageId={setPageId} setPixData={setPixData} setIntentId={(id) => setValue('intentId', id)} pixData={pixData} />;
+  } else {
+      const Comp = stepComponents[currentStep];
+      StepComponent = (
+          <PlanLockWrapper requiredPlan={currentStepInfo.requiredPlan}>
+            <Comp isVisible={currentStepId === 'background'} />
+          </PlanLockWrapper>
+      );
+  }
+  
+  const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+
+  return (
+    <FormProvider {...methods}>
+      <div className="md:grid md:grid-cols-2 md:h-screen md:overflow-hidden">
+        
+        {/* Left Column: Preview (Desktop Only) */}
+        <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
+            <PreviewContent 
+                formData={formData} 
+                isClient={isClient}
+                onShowTimeline={() => setShowTimelinePreview(true)}
+                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                showPuzzlePreview={showPuzzlePreview}
+                previewPuzzleRevealed={previewPuzzleRevealed}
+                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+            />
+        </div>
+
+        {/* Right Column: Form Content */}
+        <div className="flex-grow p-6 md:p-12 md:overflow-y-auto">
+          <div className="flex justify-between items-center">
+              <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
+              <div className="flex-grow flex flex-col items-center gap-2 mx-4">
+                  <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
+                  <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
+              </div>
+              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
+          </div>
+
+          <div className="mt-8 space-y-2">
+              <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
+              <p className="text-muted-foreground">{steps[currentStep].description}</p>
+          </div>
+          
+          <div className="my-8">
+              {StepComponent}
+          </div>
+
+          {/* Mobile Preview Section (Integrated into the scroll) */}
+          <div className="md:hidden mt-16 pb-16">
+            <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
+                <p>Ou veja como está ficando</p>
+                <ChevronDown className="w-5 h-5 animate-bounce-subtle"/>
+            </div>
+            <div className='relative w-full'>
+                <PreviewContent 
+                    formData={formData} 
+                    isClient={isClient}
+                    onShowTimeline={() => setShowTimelinePreview(true)}
+                    hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                    showPuzzlePreview={showPuzzlePreview}
+                    previewPuzzleRevealed={previewPuzzleRevealed}
+                    setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                />
+            </div>
+          </div>
+        </div>
+      </div>
+    </FormProvider>
+  );
+}
+
+
+
+
+const ImageLimitWarning = ({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
+    if (currentCount > limit) {
+         return (
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Limite Excedido</AlertTitle>
+                <AlertDescription>Você excedeu o limite de {limit} {itemType}. Remova alguns para continuar.</AlertDescription>
+            </Alert>
+         )
+    }
+    return (
+        <Alert variant={currentCount === limit ? "destructive" : "default"}>
+            <Camera className="h-4 w-4" />
+            <AlertTitle>Contador de Imagens</AlertTitle>
+            <AlertDescription>Você usou {currentCount} de {limit} {itemType}.</AlertDescription>
+        </Alert>
+    )
+};
+
+const SuccessStep = ({ pageId }: { pageId: string }) => {
+    const pageUrl = `${window.location.origin}/p/${pageId}`;
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(pageUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+    
+    return (
+        <div className="flex flex-col items-center text-center gap-6">
+            <CheckCircle className="w-16 h-16 text-green-500"/>
+            <h2 className="text-2xl font-bold font-headline">Página Criada com Sucesso!</h2>
+            <p className="text-muted-foreground">Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.</p>
+            <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
+                <Input type="text" value={pageUrl} readOnly className="flex-1 bg-transparent border-0 ring-0 focus-visible:ring-0"/>
+                <Button onClick={handleCopy}>
+                    {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
+                    {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+            </div>
+            <div className="p-4 bg-white rounded-lg border mt-4">
+                <Image 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
+                    alt="QR Code da Página"
+                    width={200}
+                    height={200}
+                />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Você também pode salvar ou imprimir o QR Code acima.</p>
+            <Button asChild className="mt-4">
+                <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+                    <View className="mr-2" />
+                    Visualizar Página
+                </a>
+            </Button>
+        </div>
+    );
+};
+
+export default function CreatePageWizard() {
+  return (
+    <React.Suspense>
+      <WizardInternal />
+    </React.Suspense>
+  )
+}
+
+    
+
+    
+
+    

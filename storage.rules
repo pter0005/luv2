@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // --- FUNÇÕES DE SEGURANÇA ---
+    
+    // Verifica se o usuário está logado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Verifica se o usuário é dono da pasta (userId bate com o UID do login)
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Verifica se é um arquivo de mídia válido (Imagem, Vídeo ou Áudio)
+    // Impede que subam scripts maliciosos (.exe, .js)
+    function isValidMedia() {
+      return request.resource.contentType.matches('image/.*') || 
+             request.resource.contentType.matches('video/.*') ||
+             request.resource.contentType.matches('audio/.*');
+    }
+
+    // Limite de tamanho (ex: 50MB) para evitar abuso
+    function isValidSize() {
+      return request.resource.size < 50 * 1024 * 1024; 
+    }
+
+    // --- PASTA TEMPORÁRIA (RASCUNHO) ---
+    // Aqui é a "Caixa de Entrada". O usuário tem a chave dessa porta.
+    // Ele pode gravar, ler e deletar seus próprios arquivos aqui.
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write, delete: if isAuthenticated() && isOwner(userId) && isValidMedia() && isValidSize();
+    }
+    
+    // --- PASTAS DEFINITIVAS (PRODUÇÃO) ---
+    // Aqui é o "Cofre". O usuário NÃO tem a chave de escrita.
+    // Só o Backend (Admin SDK) consegue mover arquivos pra cá.
+    // Mas todo mundo pode ler (pra ver o site pronto).
+    
+    match /gallery-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+    
+    match /timeline-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+    
+    match /puzzle-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+    
+    match /background-videos/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+    
+    match /audio-recordings/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+  }
+}

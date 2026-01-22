@@ -1,0 +1,163 @@
+
+{
+  "entities": {
+    "LovePage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LovePage",
+      "type": "object",
+      "description": "Represents a single love declaration page created by a user.",
+      "properties": {
+        "title": { "type": "string", "description": "Page title" },
+        "titleColor": { "type": "string", "description": "Color for the title text" },
+        "message": { "type": "string", "description": "The main love message" },
+        "messageFontSize": { "type": "string", "description": "Tailwind class for message font size" },
+        "messageFormatting": { "type": "array", "items": { "type": "string" }, "description": "Array of formatting options like 'bold', 'italic'" },
+        "specialDate": { "type": "string", "format": "date-time", "description": "A special date for the countdown" },
+        "countdownStyle": { "type": "string", "description": "Style of the countdown timer" },
+        "countdownColor": { "type": "string", "description": "Color for the countdown numbers" },
+        "galleryImages": { "type": "array", "items": { "$ref": "#/entities/FileWithPreview" }, "description": "Array of image files for the gallery" },
+        "galleryStyle": { "type": "string", "description": "Display style for the image gallery" },
+        "timelineEvents": { 
+            "type": "array", 
+            "items": {
+                "type": "object",
+                "properties": {
+                    "image": { "$ref": "#/entities/FileWithPreview" },
+                    "description": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" }
+                }
+            },
+            "description": "Array of events for the 3D timeline"
+        },
+        "musicOption": { "type": "string", "description": "'none', 'youtube', or 'record'" },
+        "youtubeUrl": { "type": "string", "format": "uri", "description": "URL of the YouTube video" },
+        "audioRecording": { "type": "string", "description": "Base64 encoded audio recording" },
+        "songName": { "type": "string" },
+        "artistName": { "type": "string" },
+        "backgroundAnimation": { "type": "string", "description": "Type of background animation" },
+        "heartColor": { "type": "string", "description": "Color for falling hearts animation" },
+        "backgroundVideo": { "$ref": "#/entities/FileWithPreview" },
+        "enablePuzzle": { "type": "boolean", "description": "Whether the interactive puzzle is enabled" },
+        "puzzleImage": { "type": "string", "description": "Base64 encoded string of the puzzle image." },
+        "createdAt": {
+            "type": "object",
+            "description": "Firestore server timestamp of when the page was created."
+        }
+      }
+    },
+    "FileWithPreview": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "FileWithPreview",
+        "type": "object",
+        "description": "Represents a file with a public URL and its storage path.",
+        "properties": {
+            "url": { "type": "string", "format": "uri" },
+            "path": { "type": "string" }
+        },
+        "required": ["url", "path"]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Amore Pages application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+    "Template": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Template",
+      "type": "object",
+      "description": "Represents a pre-designed template that users can choose for their love declaration page.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Template entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the template."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the template."
+        },
+        "previewImageUrl": {
+          "type": "string",
+          "description": "URL of the preview image for the template.",
+          "format": "uri"
+        },
+        "defaultCss": {
+          "type": "string",
+          "description": "Default CSS for the template.",
+          "format": "string"
+        },
+        "defaultContent": {
+          "type": "string",
+          "description": "Default content for the template.",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "previewImageUrl",
+        "defaultCss",
+        "defaultContent"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous",
+      "google.com"
+    ]
+  },
+  "firestore": {
+    "/lovepages/{lovepageId}": {
+        "schema": { "$ref": "#/entities/LovePage" },
+        "description": "Stores the data for each created love page. Publicly readable and permanent."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profile data. Path-based ownership is enforced by the `userId` parameter."
+    },
+    "/templates/{templateId}": {
+      "schema": {
+        "$ref": "#/entities/Template"
+      },
+      "description": "Stores pre-designed templates available for users. No specific ownership; access can be controlled through application logic."
+    },
+    "/payment_intents/{intentId}": {
+      "schema": {
+        "$ref": "#/entities/LovePage"
+      },
+      "description": "Temporarily stores page data during payment process. Automatically deleted after 30 minutes.",
+      "ttl": {
+        "field": "expireAt"
+      }
+    }
+  }
+}
