@@ -57,7 +57,7 @@ export default function ComoFuncionaPage() {
             <h2 className="text-3xl md:text-4xl font-headline font-bold mb-2">Veja em Ação</h2>
             <h3 className="text-xl md:text-2xl text-muted-foreground font-script mb-2">Experimente montar!</h3>
             <p className="text-muted-foreground mb-8">Arraste as peças para trocá-las de lugar e revelar a imagem.</p>
-            <Puzzle />
+            <Puzzle imageSrc="https://i.imgur.com/zT1d9Sb.png" />
         </div>
 
       </div>
