@@ -95,7 +95,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide2.title'),
           description: t('featuresCarousel.slide2.description'),
           type: 'image',
-          media: "https://i.imgur.com/q5O2ztQ.png"
+          media: "https://i.imgur.com/hvUUFYV.png"
         },
         {
           icon: Clock,
