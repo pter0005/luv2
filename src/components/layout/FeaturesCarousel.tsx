@@ -102,7 +102,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide3.title'),
           description: t('featuresCarousel.slide3.description'),
           type: 'image',
-          media: "https://i.imgur.com/mYmNmAY.png"
+          media: "https://i.imgur.com/gW8Qc3M.png"
         },
     ], [t]);
 
