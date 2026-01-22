@@ -95,7 +95,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide2.title'),
           description: t('featuresCarousel.slide2.description'),
           type: 'image',
-          media: "https://i.imgur.com/vj5AAn7.png"
+          media: "https://i.imgur.com/q5O2ztQ.png"
         },
         {
           icon: Clock,
@@ -146,11 +146,11 @@ export default function FeaturesCarousel() {
                     slidesPerView={'auto'}
                     // AQUI ESTÁ A MÁGICA DO EFEITO "DEITADO"
                     coverflowEffect={{
-                        rotate: 45,
-                        stretch: 0,
-                        depth: 100,
-                        modifier: 1,
-                        slideShadows: false,
+                        rotate: 45,      // Aumentei de 0 para 45 (Isso faz eles virarem)
+                        stretch: 0,      // Espaçamento entre eles
+                        depth: 100,      // Profundidade (z-index visual)
+                        modifier: 1,     // Multiplicador do efeito
+                        slideShadows: false, // Sem sombra preta feia do swiper
                     }}
                     modules={[EffectCoverflow, Navigation, Pagination]}
                     className="features-swiper !pb-12 !px-4" // Padding para não cortar sombras
