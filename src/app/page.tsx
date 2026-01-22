@@ -20,6 +20,7 @@ import dynamic from 'next/dynamic';
 import FeaturesCarousel from '@/components/layout/FeaturesCarousel';
 import { PlanFeature } from '@/components/layout/PlanFeature';
 import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
@@ -47,7 +48,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
     initial={{ y: 120, opacity: 0, rotateX: 10 }}
     whileInView={{ y: 0, opacity: 1, rotateX: 0 }}
     transition={{ duration: 1.2, delay: delay, type: "spring", bounce: 0.2 }}
-    className={`relative group perspective-1000 ${className}`}
+    className={cn("relative group perspective-1000", className)}
   >
     {/* Animação Flutuante Contínua (Para dar vida) */}
     <motion.div 
@@ -90,29 +91,27 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
   </motion.div>
 );
 
-// --- SEÇÃO DE DEMONSTRAÇÃO (TEXTO ULTRA PROFISSIONAL) ---
+// --- SEÇÃO DE DEMONSTRAÇÃO (LAYOUT INCLINADO/DIAGONAL) ---
 function DemoSection() {
     return (
       <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
         
-        {/* Container Principal - Altura responsiva */}
-        <div className="relative w-full max-w-[1400px] h-auto py-24 md:h-[580px] md:py-0 bg-[#08020d] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
+        {/* Container Principal */}
+        <div className="relative w-full max-w-[1400px] h-[550px] bg-[#08020d] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
             
             {/* --- BACKGROUND --- */}
-            
-            {/* 1. Gradiente Base Profundo */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b] via-[#0f021a] to-[#05000a] z-0"></div>
             
-            {/* 2. GRID 3D "RETRO WAVE" (Perspectiva no chão) */}
+            {/* Grid de Fundo */}
             <div className="absolute inset-0 z-0 opacity-30 pointer-events-none perspective-500">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] transform rotate-x-12 scale-150"></div>
             </div>
 
-            {/* 3. Luzes de Palco (Spotlights) */}
+            {/* Glows de Fundo */}
             <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-            {/* 4. Estrelas Decorativas */}
+            {/* Partículas */}
             <motion.div animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-12 left-[20%] text-purple-300 opacity-60 z-10">
                 <Sparkles size={20} />
             </motion.div>
@@ -122,17 +121,21 @@ function DemoSection() {
 
 
             {/* --- CONTEÚDO --- */}
-            <div className="relative z-20 w-full h-full flex items-center justify-between px-4 md:px-10">
+            <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
 
-                {/* --- CELULAR ESQUERDO --- */}
-                <div className="hidden md:flex absolute left-[-20px] lg:left-6 -bottom-16 justify-center">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" className="origin-bottom-right rotate-[-10deg] scale-95" />
+                {/* --- CELULAR ESQUERDO (INCLINADO 45 GRAUS) --- */}
+                {/* rotate-[-45deg] faz ele ficar bem deitado na diagonal */}
+                <div className="hidden md:flex absolute -left-24 lg:-left-12 top-10 justify-center">
+                    <Iphone15Pro 
+                        videoSrc="https://i.imgur.com/GHtKVNZ.mp4" 
+                        className="origin-center rotate-[-40deg] scale-[0.85] lg:scale-90" // Rotação forte para esquerda
+                    />
                 </div>
 
-                {/* --- TEXTO CENTRAL (AQUI ESTÁ A MUDANÇA) --- */}
-                <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl md:mt-[-20px]">
+                {/* --- TEXTO CENTRAL --- */}
+                <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-20px]">
                     
-                    {/* Badge de "Novidade" estilo Glass */}
+                    {/* Badge */}
                     <motion.div 
                         initial={{ opacity: 0, y: -20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -152,27 +155,22 @@ function DemoSection() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="relative"
                     >
-                        {/* Glow atrás do texto para destacar do fundo */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-purple-500/10 blur-[60px] rounded-full -z-10"></div>
 
-                        {/* Tamanho de fonte responsivo */}
-                        <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-2xl">
+                        <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-2xl">
                             <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">
                                 Teste Nossa
                             </span>
-                            <span className="block text-3xl sm:text-4xl md:text-5xl font-light text-gray-400 my-2 tracking-normal italic font-serif opacity-80">
+                            <span className="block text-4xl md:text-5xl font-light text-gray-400 my-2 tracking-normal italic font-serif opacity-80">
                                 página de
                             </span>
                             <span className="relative inline-block">
-                                {/* Texto Gradiente */}
                                 <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-400 pb-2">
                                     Demonstração
                                 </span>
-                                {/* Brilho/Sombra do texto (Neon Effect) */}
                                 <span className="absolute inset-0 z-0 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 blur-lg opacity-40 animate-pulse">
                                     Demonstração
                                 </span>
-                                {/* Linha Decorativa embaixo */}
                                 <svg className="absolute w-full h-3 -bottom-1 left-0 text-pink-500 opacity-80" viewBox="0 0 100 10" preserveAspectRatio="none">
                                     <path d="M0 5 Q 50 10 100 5" stroke="url(#gradient-line)" strokeWidth="3" fill="none" strokeLinecap="round" />
                                     <defs>
@@ -187,12 +185,11 @@ function DemoSection() {
                         </h2>
                     </motion.div>
 
-                    {/* Parágrafo com tamanho de fonte responsivo */}
                     <motion.p 
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         transition={{ delay: 0.4 }}
-                        className="mt-6 text-gray-400 max-w-lg text-sm sm:text-base font-medium leading-relaxed"
+                        className="mt-6 text-gray-400 max-w-lg text-sm md:text-base font-medium leading-relaxed"
                     >
                         Veja na prática como sua declaração pode se tornar uma <span className="text-white font-semibold">experiência inesquecível</span>.
                     </motion.p>
@@ -203,17 +200,16 @@ function DemoSection() {
                         transition={{ delay: 0.5, duration: 0.6 }}
                         className="mt-10"
                     >
-                        {/* BOTÃO "SHIMMER" (Efeito de luz passando) - Com tamanho responsivo */}
                         <Link href="https://mycupid.com.br/p/A0vASdM58tZ2BOMksqCB" passHref target="_blank" rel="noopener noreferrer">
-                            <button className="relative inline-flex h-12 md:h-14 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-slate-50 shadow-[0_0_40px_-10px_rgba(168,85,247,0.5)] group hover:scale-105 transition-transform duration-300">
+                            <button className="relative inline-flex h-14 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-slate-50 shadow-[0_0_40px_-10px_rgba(168,85,247,0.5)] group hover:scale-105 transition-transform duration-300">
                                 <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-6 md:px-8 py-1 text-sm font-medium text-white backdrop-blur-3xl gap-2 md:gap-3">
-                                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white text-black flex items-center justify-center">
+                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-8 py-1 text-sm font-medium text-white backdrop-blur-3xl gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center">
                                         <Play size={14} fill="black" className="ml-0.5" />
                                     </div>
                                     <div className="flex flex-col items-start leading-none">
                                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Sem cadastro</span>
-                                        <span className="text-base md:text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Testar Agora</span>
+                                        <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Testar Agora</span>
                                     </div>
                                 </span>
                             </button>
@@ -221,9 +217,14 @@ function DemoSection() {
                     </motion.div>
                 </div>
 
-                {/* --- CELULAR DIREITO --- */}
-                <div className="hidden md:flex absolute right-[-20px] lg:right-6 -bottom-16 justify-center">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" delay={0.3} className="origin-bottom-left rotate-[10deg] scale-95" />
+                {/* --- CELULAR DIREITO (INCLINADO 45 GRAUS OPOSITOS) --- */}
+                {/* rotate-[45deg] faz ele ficar bem deitado na diagonal oposta */}
+                <div className="hidden md:flex absolute -right-24 lg:-right-12 top-10 justify-center">
+                    <Iphone15Pro 
+                        videoSrc="https://i.imgur.com/t7ICxbN.mp4" 
+                        delay={0.3} 
+                        className="origin-center rotate-[40deg] scale-[0.85] lg:scale-90" // Rotação forte para direita
+                    />
                 </div>
 
             </div>
@@ -231,7 +232,6 @@ function DemoSection() {
       </section>
     );
 }
-
 
 export default function Home() {
   const { t } = useTranslation();
@@ -516,3 +516,4 @@ export default function Home() {
     </>
   );
 }
+  
