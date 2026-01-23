@@ -12,6 +12,7 @@ import {
   Star,
   DatabaseZap,
   Hourglass,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -237,46 +238,54 @@ function DemoSection() {
 
 export default function Home() {
   const { t } = useTranslation();
-
-  const cursivePhrases = useMemo(() => [
-    t('home.hero.subtitle.part1'),
-    t('home.hero.subtitle.part2'),
-    t('home.hero.subtitle.part3'),
-  ], [t]);
-  
-  const simpleSteps = useMemo(() => [
-    {
-        icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl,
-        title: t('home.howitworks.step1.title'),
-        description: t('home.howitworks.step1.description'),
-    },
-    {
-        icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl,
-        title: t('home.howitworks.step2.title'),
-        description: t('home.howitworks.step2.description'),
-    },
-    {
-        icon: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl,
-        title: t('home.howitworks.step3.title'),
-        description: t('home.howitworks.step3.description'),
-    },
-    {
-        icon: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl,
-        title: t('home.howitworks.step4.title'),
-        description: t('home.howitworks.step4.description'),
-    },
-  ], [t]);
-
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [typedPhrase, setTypedPhrase] = useState('');
-  const [showTimeline, setShowTimeline] = useState(false);
-  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
   const heroRef = useRef(null);
+  
+  const [showTimeline, setShowTimeline] = useState(false);
+  
+  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
+  
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+
+    // --- LÓGICA DE DIGITAÇÃO (TYPING EFFECT) ---
+  const phrases = useMemo(() => [
+    "para alguém especial!",
+    "de forma única!",
+    "para quem merece!"
+  ], []);
+
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [typedPhrase, setTypedPhrase] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = phrases[phraseIndex];
+    const typeSpeed = isDeleting ? 50 : 100;
+    const delayBeforeDelete = 2000;
+
+    const handleTyping = () => {
+      if (!isDeleting) {
+        if (typedPhrase.length < currentPhrase.length) {
+            setTypedPhrase(currentPhrase.slice(0, typedPhrase.length + 1));
+        } else {
+            setTimeout(() => setIsDeleting(true), delayBeforeDelete);
+        }
+      } else {
+        if (typedPhrase.length > 0) {
+            setTypedPhrase(currentPhrase.slice(0, typedPhrase.length - 1));
+        } else {
+            setIsDeleting(false);
+            setPhraseIndex((prev) => (prev + 1) % phrases.length);
+        }
+      }
+    };
+
+    const timer = setTimeout(handleTyping, typeSpeed);
+    return () => clearTimeout(timer);
+  }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
   const timelineDemoEvents = useMemo(() => {
     const startDate = new Date(2021, 5, 15); // June 15, 2021
@@ -308,22 +317,29 @@ export default function Home() {
     });
   }, []);
 
-  useEffect(() => {
-    const currentPhrase = cursivePhrases[phraseIndex];
-    if (typedPhrase.length < currentPhrase.length) {
-      const timeout = setTimeout(() => {
-        setTypedPhrase(currentPhrase.slice(0, typedPhrase.length + 1));
-      }, 100);
-      return () => clearTimeout(timeout);
-    }
+  const simpleSteps = useMemo(() => [
+    {
+        icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl,
+        title: t('home.howitworks.step1.title'),
+        description: t('home.howitworks.step1.description'),
+    },
+    {
+        icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl,
+        title: t('home.howitworks.step2.title'),
+        description: t('home.howitworks.step2.description'),
+    },
+    {
+        icon: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl,
+        title: t('home.howitworks.step3.title'),
+        description: t('home.howitworks.step3.description'),
+    },
+    {
+        icon: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl,
+        title: t('home.howitworks.step4.title'),
+        description: t('home.howitworks.step4.description'),
+    },
+  ], [t]);
 
-    const timeout = setTimeout(() => {
-      setPhraseIndex((prevIndex) => (prevIndex + 1) % cursivePhrases.length);
-      setTypedPhrase('');
-    }, 2000); // Pause for 2 seconds
-
-    return () => clearTimeout(timeout);
-  }, [phraseIndex, typedPhrase, cursivePhrases]);
 
   if (showTimeline) {
     return <Timeline events={timelineDemoEvents} onClose={() => setShowTimeline(false)} />;
@@ -331,28 +347,24 @@ export default function Home() {
 
   return (
     <>
-      <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100vh] py-20 lg:py-0">
+       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100vh] py-20 lg:py-0">
         
-        {/* --- BACKGROUND CINEMATOGRÁFICO --- */}
-        {/* 1. Base Escura */}
+        {/* --- BACKGROUND --- */}
         <div className="absolute inset-0 bg-[#05000a] -z-30"></div>
-
-        {/* 2. Holofote Roxo (Ambient Light) */}
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[800px] bg-purple-900/30 blur-[120px] rounded-full pointer-events-none -z-20"></div>
-
-        {/* 3. Glow Rosa Secundário (Bottom Right) */}
+        {/* Glow Central Roxo */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[800px] bg-purple-900/20 blur-[120px] rounded-full pointer-events-none -z-20"></div>
+        {/* Glow Lateral Rosa */}
         <div className="absolute bottom-[-10%] right-0 w-[600px] h-[600px] bg-pink-600/10 blur-[100px] rounded-full pointer-events-none -z-20 animate-pulse-slow"></div>
-
-        {/* 4. Partículas/Estrelas Sutis */}
+        {/* Texture */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 -z-10 mix-blend-overlay"></div>
 
 
-        <div className="container grid lg:grid-cols-2 gap-12 lg:gap-0 items-center relative z-10 h-full">
+        <div className="container grid lg:grid-cols-2 gap-8 items-center relative z-10 h-full">
             
             {/* --- COLUNA DA ESQUERDA (TEXTO) --- */}
-            <div className="text-center lg:text-left flex flex-col items-center lg:items-start pt-10 lg:pt-0 order-2 lg:order-1">
+            <div className="text-center lg:text-left flex flex-col items-center lg:items-start pt-10 lg:pt-0 order-2 lg:order-1 relative z-20">
                  
-                 {/* Badge de Prova Social (Estilo Imagem 2) */}
+                 {/* Badge Social Proof */}
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -372,23 +384,23 @@ export default function Home() {
                     </div>
                  </motion.div>
 
-                 <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6">
+                 {/* Título com Efeito de Digitação */}
+                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[160px] lg:min-h-[auto]">
                     Declare seu amor <br />
                     <span className="relative inline-block mt-2">
-                        {/* Texto com Gradiente e Fonte Manuscrita */}
-                        <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-6xl lg:text-8xl animate-gradient-x pb-4">
+                        <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
                             {typedPhrase}
-                            <span className="animate-blink text-white ml-1 font-sans font-light">|</span>
+                            <span className="animate-blink text-purple-400 ml-1">|</span>
                         </span>
                         
-                        {/* Sublinhado Artístico */}
-                        <svg className="absolute w-full h-4 -bottom-2 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
+                        {/* Sublinhado */}
+                        <svg className="absolute w-full h-3 -bottom-1 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
                             <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
                         </svg>
                     </span>
                 </h1>
 
-                <p className="text-lg lg:text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed font-light">
+                <p className="text-base lg:text-lg text-gray-400 max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed font-light">
                     Transforme seus sentimentos em uma <strong className="text-white font-medium">obra de arte digital</strong>. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
                 </p>
 
@@ -403,7 +415,6 @@ export default function Home() {
                         </Button>
                     </Link>
                     
-                    {/* Botão Secundário (Demo) */}
                     <Link href="#demo-section" className="w-full sm:w-auto">
                          <Button
                             variant="ghost"
@@ -415,143 +426,135 @@ export default function Home() {
                         </Button>
                     </Link>
                 </div>
-                
-                <p className="mt-4 text-xs text-gray-500 font-medium uppercase tracking-widest opacity-60">
-                    ✨ Crie grátis • Sem cartão de crédito
-                </p>
             </div>
             
 
-            {/* --- COLUNA DA DIREITA (VISUAL FODA) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-1000 order-1 lg:order-2">
+            {/* --- COLUNA DA DIREITA (3 CELULARES ESTILO LEQUE) --- */}
+            <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
                  
-                 {/* O Celular Principal (Mistura do Img 2 e 3) */}
-                 <motion.div
-                    initial={{ opacity: 0, scale: 0.8, rotateY: -20 }}
-                    animate={{ opacity: 1, scale: 1, rotateY: -10 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className="relative z-20"
-                 >
-                    {/* Animação de Flutuação Suave */}
-                    <motion.div
-                        animate={{ y: [-15, 15, -15], rotateZ: [-1, 1, -1] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                        <div className="relative w-[300px] h-[600px] border-[8px] border-[#1a1a1a] bg-black rounded-[3.5rem] shadow-[0_0_60px_-15px_rgba(147,51,234,0.5)] overflow-hidden ring-1 ring-white/20">
-                            {/* Dynamic Island */}
-                            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-30 ring-1 ring-white/10 flex items-center justify-end px-3">
-                                <div className="w-2 h-2 rounded-full bg-green-500/50 animate-pulse"></div>
-                            </div>
+                 {/* CONTAINER PRINCIPAL */}
+                 <div className="relative w-[300px] h-[600px] flex items-center justify-center">
 
-                            {/* Conteúdo da Tela (Simulando o App) */}
-                            <div className="relative w-full h-full bg-[#0a0a0a]">
-                                <Image 
-                                    src="https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=600&h=1200&fit=crop" 
-                                    alt="Couple" 
-                                    fill 
-                                    className="object-cover opacity-60"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
-                                
-                                {/* UI Elements dentro do celular */}
-                                <div className="absolute bottom-10 left-6 right-6">
-                                    <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">Nosso tempo juntos</div>
-                                    <div className="flex gap-2 mb-6">
-                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
-                                            <span className="block text-2xl font-bold text-white">02</span>
-                                            <span className="text-[10px] text-gray-300">Anos</span>
-                                        </div>
-                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
-                                            <span className="block text-2xl font-bold text-white">11</span>
-                                            <span className="text-[10px] text-gray-300">Meses</span>
-                                        </div>
-                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
-                                            <span className="block text-2xl font-bold text-white">24</span>
-                                            <span className="text-[10px] text-gray-300">Dias</span>
-                                        </div>
-                                    </div>
-                                    <button className="w-full bg-white text-black rounded-full py-3 font-bold text-sm shadow-lg">Ver Linha do Tempo</button>
+                     {/* 1. CELULAR ESQUERDA (Deitado/Inclinado) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0, rotate: 0 }}
+                        animate={{ opacity: 1, x: -90, rotate: -15, y: 20 }}
+                        transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                        className="absolute z-10 brightness-[0.6] origin-bottom-right hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500"
+                     >
+                        <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
+                                className="w-full h-full object-cover" 
+                                autoPlay loop muted playsInline 
+                                src="https://i.imgur.com/GHtKVNZ.mp4" 
+                            />
+                        </div>
+                     </motion.div>
+
+                     {/* 2. CELULAR DIREITA (Deitado/Inclinado) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0, rotate: 0 }}
+                        animate={{ opacity: 1, x: 90, rotate: 15, y: 20 }}
+                        transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                        className="absolute z-10 brightness-[0.6] origin-bottom-left hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500"
+                     >
+                        <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
+                                className="w-full h-full object-cover" 
+                                autoPlay loop muted playsInline 
+                                src="https://i.imgur.com/t7ICxbN.mp4" 
+                            />
+                        </div>
+                     </motion.div>
+
+                     {/* 3. CELULAR CENTRAL (Reto e em Destaque) */}
+                     <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="relative z-30"
+                     >
+                         <motion.div
+                             animate={{ y: [-8, 8, -8] }}
+                             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                         >
+                            <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
+                                {/* Dynamic Island */}
+                                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
+                                    <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                                 </div>
+                                
+                                <video 
+                                    className="w-full h-full object-cover" 
+                                    autoPlay loop muted playsInline 
+                                    src="https://i.imgur.com/FxHuXVb.mp4" 
+                                />
+                                
+                                {/* Reflexo na tela */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                             </div>
+                        </motion.div>
+                     </motion.div>
+
+
+                     {/* --- ELEMENTOS FLUTUANTES --- */}
+                     
+                     {/* Corações Flutuantes (Estilo Imagem de Referência) */}
+                     <motion.div 
+                        animate={{ y: [-10, 10, -10] }} 
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-[10%] left-[-80px] z-0 opacity-80"
+                     >
+                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 drop-shadow-2xl rotate-[-20deg]" />
+                     </motion.div>
+
+                     <motion.div 
+                        animate={{ y: [10, -10, 10] }} 
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                        className="absolute bottom-[20%] right-[-80px] z-0 opacity-80"
+                     >
+                        <Heart fill="#a855f7" className="text-purple-500 w-20 h-20 drop-shadow-2xl rotate-[20deg]" />
+                     </motion.div>
+
+                     <motion.div 
+                        animate={{ y: [5, -5, 5] }} 
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        className="absolute bottom-[-20px] left-[-40px] z-0 opacity-60"
+                     >
+                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 drop-shadow-xl rotate-[-10deg]" />
+                     </motion.div>
+
+
+                     {/* Widget 1: Suporte 24/7 */}
+                     <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="absolute left-[-50px] top-[25%] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
+                     >
+                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                             <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
                         </div>
-                    </motion.div>
-                 </motion.div>
-
-                 {/* --- ELEMENTOS FLUTUANTES (WIDGETS ESTILO IMAGEM 3) --- */}
-                 
-                 {/* Widget 1: Música (Esquerda) */}
-                 <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                    className="absolute left-[-20px] lg:left-[-60px] top-[20%] bg-[#121212]/90 backdrop-blur-xl border border-white/10 p-3 rounded-2xl shadow-2xl flex items-center gap-3 z-30 max-w-[220px]"
-                 >
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shrink-0">
-                        <div className="bar-loader flex gap-[2px] items-end h-4">
-                            <span className="w-[3px] h-2 bg-white animate-music-bar"></span>
-                            <span className="w-[3px] h-4 bg-white animate-music-bar animation-delay-100"></span>
-                            <span className="w-[3px] h-3 bg-white animate-music-bar animation-delay-200"></span>
+                        <div>
+                             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
+                             <p className="text-xs text-white font-bold">Online 24/7</p>
                         </div>
-                    </div>
-                    <div>
-                         <p className="text-[10px] text-green-400 font-bold uppercase">Tocando agora</p>
-                         <p className="text-xs text-white font-medium truncate w-[100px]">Perfect - Ed Sheeran</p>
-                    </div>
-                 </motion.div>
+                     </motion.div>
 
-                 {/* Widget 2: Avaliação (Direita Baixo) */}
-                 <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7, duration: 0.8 }}
-                    className="absolute right-[-10px] lg:right-[-40px] bottom-[25%] bg-[#121212]/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30"
-                 >
-                    <div className="flex items-center gap-1 mb-1">
-                        {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />)}
-                    </div>
-                    <p className="text-xs text-white font-medium">"Melhor presente!"</p>
-                    <p className="text-[10px] text-gray-400 mt-1">- Ana & Pedro</p>
-                 </motion.div>
+                     {/* Widget 2: Avaliação 5 Estrelas */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8 }}
+                        className="absolute right-[-40px] bottom-[25%] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 py-3 px-5 rounded-2xl shadow-2xl z-40 text-center hover:scale-105 transition-transform"
+                     >
+                        <div className="flex items-center gap-1 mb-1 justify-center">
+                            {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />)}
+                        </div>
+                        <p className="text-[11px] text-white font-bold">Avaliação dos usuários</p>
+                     </motion.div>
 
-                 {/* Widget 3: Notificação (Topo Direita) */}
-                 <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9, duration: 0.8 }}
-                    className="absolute right-[0px] top-[15%] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg shadow-purple-500/40 z-10 rotate-6"
-                 >
-                    ❤️ Design Personalizado
-                 </motion.div>
-
-                 {/* Corações Flutuantes (Particles) */}
-                 {[...Array(6)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute z-0 text-purple-500/40"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ 
-                            opacity: [0, 0.8, 0], 
-                            scale: [0.5, 1.2, 0.8],
-                            y: [0, -100 - (i*20)],
-                            x: [(i%2===0 ? -20 : 20), (i%2===0 ? -50 : 50)]
-                        }}
-                        transition={{ 
-                            duration: 4 + i, 
-                            repeat: Infinity, 
-                            delay: i * 0.5,
-                            ease: "easeOut"
-                        }}
-                        style={{
-                            left: `${20 + (i * 15)}%`,
-                            bottom: '10%'
-                        }}
-                    >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 .81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                        </svg>
-                    </motion.div>
-                 ))}
-
+                 </div>
             </div>
         </div>
       </section>
@@ -681,7 +684,7 @@ export default function Home() {
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_basic')} />
                          <PlanFeature text={t('home.plans.feature.timeline_basic')} />
-                        <PlanFeature text="Página disponível por 25h" icon={Hourglass} />
+                        <PlanFeature text="Página disponível por 12 horas" icon={Hourglass} />
                         <PlanFeature text={t('home.plans.feature.music')} included={false} />
                         <PlanFeature text={t('home.plans.feature.puzzle')} included={false}/>
                     </ul>
