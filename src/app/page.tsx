@@ -4,15 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChevronRight,
-  Star,
   TestTube2,
   Play,
   Sparkles,
   Zap,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
@@ -21,6 +19,7 @@ import FeaturesCarousel from '@/components/layout/FeaturesCarousel';
 import { PlanFeature } from '@/components/layout/PlanFeature';
 import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import TestimonialsMarquee from '@/components/layout/TestimonialsMarquee';
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
@@ -265,24 +264,6 @@ export default function Home() {
     },
   ], [t]);
 
-  const testimonials = useMemo(() => [
-    {
-      name: t('home.testimonials.t1.name'),
-      avatar: PlaceHolderImages.find(p => p.id === 'avatar1')?.imageUrl,
-      text: t('home.testimonials.t1.text'),
-    },
-    {
-      name: t('home.testimonials.t2.name'),
-      avatar: PlaceHolderImages.find(p => p.id === 'avatar2')?.imageUrl,
-      text: t('home.testimonials.t2.text'),
-    },
-    {
-      name: t('home.testimonials.t3.name'),
-      avatar: PlaceHolderImages.find(p => p.id === 'avatar3')?.imageUrl,
-      text: t('home.testimonials.t3.text'),
-    },
-  ], [t]);
-
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
   const [showTimeline, setShowTimeline] = useState(false);
@@ -437,31 +418,38 @@ export default function Home() {
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding">
-        <div className="container max-w-5xl">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">{t('home.testimonials.title')}</h2>
-            <p className="mt-4 text-base text-muted-foreground">{t('home.testimonials.description')}</p>
+      <AnimatedSection id="avaliacoes" className="section-padding bg-black/20 overflow-hidden relative">
+        {/* Efeito de Fundo Sutil na Seção */}
+        <div className="absolute inset-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
+        
+        <div className="container relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            
+            {/* Badge 'Social Proof' */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
+                <div className="flex -space-x-2">
+                    {[1,2,3].map(i => (
+                        <div key={i} className="w-6 h-6 rounded-full border-2 border-black bg-gray-500 overflow-hidden">
+                             <Image src={`https://picsum.photos/seed/avatar${i}/24/24`} alt="User" width={24} height={24} />
+                        </div>
+                    ))}
+                </div>
+                <span className="text-xs font-semibold text-purple-300 tracking-wide uppercase">+10.000 Casais Felizes</span>
+            </div>
+
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
+              O que nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">clientes</span> dizem
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Histórias reais de pessoas que criaram páginas únicas para surpreender alguém especial com o MyCupid.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <Card key={i} className="card-glow p-6 transition-all">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-2 text-yellow-400 mb-4">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
-                  </div>
-                  <p className="mb-6 text-foreground/90 text-sm">"{testimonial.text}"</p>
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="person" />
-                      <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-semibold text-sm">{testimonial.name}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          
+          {/* Componente Marquee Inserido Aqui */}
+          <div className="-mx-4 md:-mx-8 lg:-mx-16"> {/* Margem negativa para expandir a largura visual */}
+             <TestimonialsMarquee />
           </div>
+          
         </div>
       </AnimatedSection>
       
@@ -516,4 +504,3 @@ export default function Home() {
     </>
   );
 }
-  

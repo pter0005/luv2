@@ -51,9 +51,9 @@ const translations = {
     'home.video_demo.title': 'Veja a Magia Acontecer',
     'home.video_demo.subtitle': 'Uma Experiência Única',
     'home.video_demo.description': 'Assista a um exemplo de como sua declaração pode se transformar em um presente inesquecível.',
-
-    'home.testimonials.title': 'Histórias que Inspiram',
-    'home.testimonials.description': 'Veja o que casais apaixonados estão dizendo sobre Amore Pages.',
+    
+    'home.testimonials.title': 'O que nossos clientes dizem',
+    'home.testimonials.description': 'Histórias reais de pessoas que criaram páginas únicas para surpreender alguém especial com o MyCupid.',
     'home.testimonials.t1.name': 'Juliana S.',
     'home.testimonials.t1.text': 'Criei uma página para nosso aniversário de 5 anos e meu marido chorou de emoção. Foi o presente mais lindo que já dei!',
     'home.testimonials.t2.name': 'Ricardo M.',
@@ -78,7 +78,7 @@ const translations = {
     'home.plans.basico.cta': 'Testar Plano Básico',
 
     // Footer
-    'footer.copyright': '© {year} Amore Pages. Todos os direitos reservados.',
+    'footer.copyright': '© {year} MyCupid. Todos os direitos reservados.',
     'footer.terms': 'Termos de uso',
     'footer.privacy': 'Política de privacidade',
   },
@@ -132,8 +132,8 @@ const translations = {
     'home.video_demo.subtitle': 'A Unique Experience',
     'home.video_demo.description': 'Watch an example of how your declaration can turn into an unforgettable gift.',
     
-    'home.testimonials.title': 'Inspiring Stories',
-    'home.testimonials.description': 'See what loving couples are saying about Amore Pages.',
+    'home.testimonials.title': 'What our clients say',
+    'home.testimonials.description': 'Real stories from people who created unique pages to surprise someone special with MyCupid.',
     'home.testimonials.t1.name': 'Juliana S.',
     'home.testimonials.t1.text': 'I created a page for our 5th anniversary and my husband cried with emotion. It was the most beautiful gift I have ever given!',
     'home.testimonials.t2.name': 'Ricardo M.',
@@ -158,7 +158,7 @@ const translations = {
     'home.plans.basico.cta': 'Test Basic Plan',
 
     // Footer
-    'footer.copyright': '© {year} Amore Pages. All rights reserved.',
+    'footer.copyright': '© {year} MyCupid. All rights reserved.',
     'footer.terms': 'Terms of use',
     'footer.privacy': 'Privacy policy',
   },
@@ -212,8 +212,8 @@ const translations = {
     'home.video_demo.subtitle': 'Una Experiencia Única',
     'home.video_demo.description': 'Mira un ejemplo de cómo tu declaración puede convertirse en un regalo inolvidable.',
     
-    'home.testimonials.title': 'Historias que Inspiran',
-    'home.testimonials.description': 'Vea lo que dicen las parejas enamoradas sobre Amore Pages.',
+    'home.testimonials.title': 'Lo que dicen nuestros clientes',
+    'home.testimonials.description': 'Historias reales de personas que crearon páginas únicas para sorprender a alguien especial con MyCupid.',
     'home.testimonials.t1.name': 'Juliana S.',
     'home.testimonials.t1.text': 'Creé una página para nuestro 5º aniversario y mi marido lloró de emoción. ¡Fue el regalo más bonito que he dado!',
     'home.testimonials.t2.name': 'Ricardo M.',
@@ -238,7 +238,7 @@ const translations = {
     'home.plans.basico.cta': 'Probar Plan Básico',
 
     // Footer
-    'footer.copyright': '© {year} Amore Pages. Todos los derechos reservados.',
+    'footer.copyright': '© {year} MyCupid. Todos los derechos reservados.',
     'footer.terms': 'Términos de uso',
     'footer.privacy': 'Política de privacidad',
   },
