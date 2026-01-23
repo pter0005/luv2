@@ -102,7 +102,7 @@ export default function CreatePage() {
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text="Galeria de fotos (até 2)" />
                         <PlanFeature text="Linha do Tempo 3D (até 5 momentos)" />
-                        <PlanFeature text="Página disponível por 24h" icon={Hourglass} />
+                        <PlanFeature text="Página disponível por 25h" icon={Hourglass} />
                         <PlanFeature text="Música de fundo" included={false} />
                         <PlanFeature text="Quebra-cabeça Interativo" included={false}/>
                         <PlanFeature text="Backup na nuvem" included={false} />

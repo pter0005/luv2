@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -9,6 +10,8 @@ import {
   Sparkles,
   Zap,
   Star,
+  DatabaseZap,
+  Hourglass,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -553,7 +556,7 @@ export default function Home() {
         </div>
       </section>
 
-      <AnimatedSection id="how-it-works-simple" className="section-padding bg-card/50">
+      <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
@@ -580,7 +583,7 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection className="section-padding bg-card/50">
+      <AnimatedSection className="section-padding bg-transparent">
         <div className="container">
             <div className="text-center max-w-2xl mx-auto mb-0">
               <h2 className='text-4xl md:text-5xl font-semibold tracking-tight leading-tight'>{t('home.features.title')}</h2>
@@ -595,11 +598,11 @@ export default function Home() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="demo-section" className="section-padding bg-card/50">
+      <AnimatedSection id="demo-section" className="section-padding bg-transparent">
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding bg-card/50 overflow-hidden relative">
+      <AnimatedSection id="avaliacoes" className="section-padding bg-transparent overflow-hidden relative">
         {/* Efeito de Fundo Sutil na Seção */}
         <div className="absolute inset-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
         
@@ -634,7 +637,7 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection id="planos" className="section-padding bg-card/50">
+      <AnimatedSection id="planos" className="section-padding bg-transparent">
         <div className="container max-w-5xl">
             <div className="text-center max-w-2xl mx-auto mb-16">
                 <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">{t('home.plans.title')}</h2>
@@ -657,6 +660,7 @@ export default function Home() {
                         <PlanFeature text={t('home.plans.feature.music')} />
                         <PlanFeature text={t('home.plans.feature.puzzle')} />
                         <PlanFeature text={t('home.plans.feature.timeline_advanced')} />
+                        <PlanFeature text="Página permanente com backup" icon={DatabaseZap} />
                     </ul>
                     <Button asChild size="lg" className="w-full mt-auto">
                         <Link href="/login?redirect=/criar?plan=avancado&new=true">
@@ -677,6 +681,7 @@ export default function Home() {
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_basic')} />
                          <PlanFeature text={t('home.plans.feature.timeline_basic')} />
+                        <PlanFeature text="Página disponível por 25h" icon={Hourglass} />
                         <PlanFeature text={t('home.plans.feature.music')} included={false} />
                         <PlanFeature text={t('home.plans.feature.puzzle')} included={false}/>
                     </ul>

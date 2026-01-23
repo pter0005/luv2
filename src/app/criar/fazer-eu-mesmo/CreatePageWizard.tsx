@@ -1370,6 +1370,15 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
 
     return (
         <div className="space-y-6">
+            <Alert variant={plan === 'avancado' ? 'default' : 'destructive'} className="border-primary/20 bg-primary/5">
+                <AlertTriangle className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-primary">Plano Selecionado: {plan === 'avancado' ? 'Avançado' : 'Básico'}</AlertTitle>
+                <AlertDescription className="text-primary/80">
+                    {plan === 'avancado'
+                        ? 'Sua página será permanente e ficará salva com segurança.'
+                        : 'Atenção: Sua página ficará disponível por 25 horas após a criação.'}
+                </AlertDescription>
+            </Alert>
             <Card>
                 <CardHeader>
                     <CardTitle>Dados do Pagador</CardTitle>
