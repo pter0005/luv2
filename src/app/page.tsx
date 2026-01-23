@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -13,6 +12,8 @@ import {
   DatabaseZap,
   Hourglass,
   Heart,
+  Palette,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -44,49 +45,35 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
     );
 };
 
-// --- COMPONENTE IPHONE 15 PRO (Design Titânio Realista) ---
+// --- COMPONENTE IPHONE 15 PRO (Para a seção de Demo) ---
 const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
   <motion.div 
-    // Animação de entrada: sobe e gira levemente
     initial={{ y: 120, opacity: 0, rotateX: 10 }}
     whileInView={{ y: 0, opacity: 1, rotateX: 0 }}
     transition={{ duration: 1.2, delay: delay, type: "spring", bounce: 0.2 }}
     className={cn("relative group perspective-1000", className)}
   >
-    {/* Animação Flutuante Contínua (Para dar vida) */}
     <motion.div 
       animate={{ y: [0, -15, 0] }} 
       transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: delay }}
       className="relative"
     >
-        {/* Sombra realista no chão */}
         <div className="absolute inset-x-10 bottom-[-20px] h-10 bg-black/60 blur-xl rounded-full opacity-60"></div>
-
-        {/* Estrutura do Celular */}
         <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-gradient-to-br from-[#4a4a4a] via-[#1a1a1a] to-[#0a0a0a] shadow-2xl ring-1 ring-white/10">
-        
-        {/* Bezel (Borda da tela) */}
         <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden mask-image-rounded">
-            
-            {/* Dynamic Island */}
             <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
                 <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-[0_2px_10px_rgba(0,0,0,0.5)] ring-1 ring-[#1f1f1f]">
                     <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
                 </div>
             </div>
-
-            {/* VÍDEO / TELA */}
             <div className="relative w-full h-full bg-[#050505] z-10">
             <video 
                 className="w-full h-full object-cover scale-[1.02]" 
                 autoPlay loop muted playsInline 
                 src={videoSrc}
             />
-            {/* Overlay Cinematográfico */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30 pointer-events-none"></div>
             </div>
-
-            {/* Reflexo de Vidro */}
             <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-30 rounded-[3.2rem]"></div>
         </div>
         </div>
@@ -94,27 +81,18 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
   </motion.div>
 );
 
-// --- SEÇÃO DE DEMONSTRAÇÃO (LAYOUT INCLINADO/DIAGONAL) ---
+// --- SEÇÃO DE DEMONSTRAÇÃO ---
 function DemoSection() {
     return (
       <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
-        
-        {/* Container Principal */}
         <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
-            
-            {/* --- BACKGROUND --- */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b] via-[#0f021a] to-[#05000a] z-0"></div>
-            
-            {/* Grid de Fundo */}
             <div className="absolute inset-0 z-0 opacity-30 pointer-events-none perspective-500">
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] transform rotate-x-12 scale-150"></div>
             </div>
-
-            {/* Glows de Fundo */}
             <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-            {/* Partículas */}
             <motion.div animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-12 left-[20%] text-purple-300 opacity-60 z-10">
                 <Sparkles size={20} />
             </motion.div>
@@ -122,23 +100,15 @@ function DemoSection() {
                 <Zap size={16} fill="currentColor" />
             </motion.div>
 
-
-            {/* --- CONTEÚDO --- */}
             <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
-
-                {/* --- CELULAR ESQUERDO (INCLINADO 45 GRAUS) --- */}
-                {/* rotate-[-45deg] faz ele ficar bem deitado na diagonal */}
                 <div className="hidden md:flex absolute -left-24 lg:-left-12 top-10 justify-center">
                     <Iphone15Pro 
                         videoSrc="https://i.imgur.com/GHtKVNZ.mp4" 
-                        className="origin-center rotate-[-40deg] scale-[0.85] lg:scale-90" // Rotação forte para esquerda
+                        className="origin-center rotate-[-40deg] scale-[0.85] lg:scale-90" 
                     />
                 </div>
 
-                {/* --- TEXTO CENTRAL --- */}
                 <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-20px]">
-                    
-                    {/* Badge */}
                     <motion.div 
                         initial={{ opacity: 0, y: -20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -159,7 +129,6 @@ function DemoSection() {
                         className="relative"
                     >
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-purple-500/10 blur-[60px] rounded-full -z-10"></div>
-
                         <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-2xl">
                             <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">
                                 Teste Nossa
@@ -220,16 +189,13 @@ function DemoSection() {
                     </motion.div>
                 </div>
 
-                {/* --- CELULAR DIREITO (INCLINADO 45 GRAUS OPOSITOS) --- */}
-                {/* rotate-[45deg] faz ele ficar bem deitado na diagonal oposta */}
                 <div className="hidden md:flex absolute -right-24 lg:-right-12 top-10 justify-center">
                     <Iphone15Pro 
                         videoSrc="https://i.imgur.com/t7ICxbN.mp4" 
                         delay={0.3} 
-                        className="origin-center rotate-[40deg] scale-[0.85] lg:scale-90" // Rotação forte para direita
+                        className="origin-center rotate-[40deg] scale-[0.85] lg:scale-90" 
                     />
                 </div>
-
             </div>
         </div>
       </section>
@@ -242,15 +208,12 @@ export default function Home() {
   
   const [showTimeline, setShowTimeline] = useState(false);
   
-  const heroImageUrl = PlaceHolderImages.find(p => p.id === 'heroVertical')?.imageUrl || '';
-  
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
 
-    // --- LÓGICA DE DIGITAÇÃO (TYPING EFFECT) ---
+  // --- LÓGICA DE DIGITAÇÃO (TYPING EFFECT) ---
   const phrases = useMemo(() => [
     "para alguém especial!",
     "de forma única!",
@@ -263,7 +226,7 @@ export default function Home() {
 
   useEffect(() => {
     const currentPhrase = phrases[phraseIndex];
-    const typeSpeed = isDeleting ? 50 : 100;
+    const typeSpeed = isDeleting ? 40 : 80;
     const delayBeforeDelete = 2000;
 
     const handleTyping = () => {
@@ -287,35 +250,8 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
-  const timelineDemoEvents = useMemo(() => {
-    const startDate = new Date(2021, 5, 15); // June 15, 2021
-    const eventsData = [
-      { description: "Nosso primeiro encontro", imageUrl: "https://i.imgur.com/OXZTiYV.png" },
-      { description: "Nossa Primeira viagem", imageUrl: "https://i.imgur.com/DlwrBgW.png" },
-      { description: "Show do Bruno Mars", imageUrl: "https://i.imgur.com/Ejeh5vJ.png" },
-      { description: "Nosso primeiro carro juntos", imageUrl: "https://i.imgur.com/4cJl6lr.png" },
-      { description: "Aniversário de 1 ano", imageUrl: "https://i.imgur.com/m6R0J62.png" },
-      { description: "Mudança para nosso cantinho", imageUrl: "https://i.imgur.com/bXQmqFE.png" },
-      { description: "Férias na Disney", imageUrl: "https://i.imgur.com/5zAqwhQ.png" },
-      { description: "O pedido de casamento", imageUrl: "https://i.imgur.com/Ghg4Fqf.png" },
-      { description: "Fim de ano na praia", imageUrl: "https://i.imgur.com/cBOYaXM.png" },
-      { description: "Aniversário de 2 anos", imageUrl: "https://i.imgur.com/umW7vdJ.png" }
-    ];
-
-    return eventsData.map((event, index) => {
-      const eventDate = new Date(startDate);
-      eventDate.setMonth(startDate.getMonth() + index * 3 + Math.floor(Math.random() * 3));
-      eventDate.setDate(startDate.getDate() + Math.floor(Math.random() * 28));
-
-      return {
-        id: `demo-${index}`,
-        imageUrl: event.imageUrl,
-        alt: event.description,
-        title: event.description,
-        date: eventDate
-      };
-    });
-  }, []);
+  // Demo data for timeline (hidden)
+  const timelineDemoEvents = useMemo(() => [], []);
 
   const simpleSteps = useMemo(() => [
     {
@@ -347,24 +283,22 @@ export default function Home() {
 
   return (
     <>
+       {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100vh] py-20 lg:py-0">
         
-        {/* --- BACKGROUND --- */}
+        {/* BACKGROUND */}
         <div className="absolute inset-0 bg-[#05000a] -z-30"></div>
-        {/* Glow Central Roxo */}
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[800px] bg-purple-900/20 blur-[120px] rounded-full pointer-events-none -z-20"></div>
-        {/* Glow Lateral Rosa */}
         <div className="absolute bottom-[-10%] right-0 w-[600px] h-[600px] bg-pink-600/10 blur-[100px] rounded-full pointer-events-none -z-20 animate-pulse-slow"></div>
-        {/* Texture */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 -z-10 mix-blend-overlay"></div>
 
 
         <div className="container grid lg:grid-cols-2 gap-8 items-center relative z-10 h-full">
             
-            {/* --- COLUNA DA ESQUERDA (TEXTO) --- */}
+            {/* --- ESQUERDA: TEXTO --- */}
             <div className="text-center lg:text-left flex flex-col items-center lg:items-start pt-10 lg:pt-0 order-2 lg:order-1 relative z-20">
                  
-                 {/* Badge Social Proof */}
+                 {/* Social Proof */}
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -384,7 +318,7 @@ export default function Home() {
                     </div>
                  </motion.div>
 
-                 {/* Título com Efeito de Digitação */}
+                 {/* Título com Digitação */}
                  <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[160px] lg:min-h-[auto]">
                     Declare seu amor <br />
                     <span className="relative inline-block mt-2">
@@ -393,7 +327,6 @@ export default function Home() {
                             <span className="animate-blink text-purple-400 ml-1">|</span>
                         </span>
                         
-                        {/* Sublinhado */}
                         <svg className="absolute w-full h-3 -bottom-1 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
                             <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
                         </svg>
@@ -429,18 +362,17 @@ export default function Home() {
             </div>
             
 
-            {/* --- COLUNA DA DIREITA (3 CELULARES ESTILO LEQUE) --- */}
+            {/* --- DIREITA: 3 CELULARES (LEQUE 3D) --- */}
             <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
                  
-                 {/* CONTAINER PRINCIPAL */}
                  <div className="relative w-[300px] h-[600px] flex items-center justify-center">
 
-                     {/* 1. CELULAR ESQUERDA (Deitado/Inclinado) */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS & INCLINADO) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
-                        animate={{ opacity: 1, x: -90, rotate: -15, y: 20 }}
+                        animate={{ opacity: 1, x: -90, rotate: -15, y: 30 }}
                         transition={{ duration: 1, delay: 0.2, type: "spring" }}
-                        className="absolute z-10 brightness-[0.6] origin-bottom-right hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500"
+                        className="absolute z-0 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-right"
                      >
                         <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
@@ -451,12 +383,12 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* 2. CELULAR DIREITA (Deitado/Inclinado) */}
+                     {/* 2. CELULAR DIREITA (ATRÁS & INCLINADO) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
-                        animate={{ opacity: 1, x: 90, rotate: 15, y: 20 }}
+                        animate={{ opacity: 1, x: 90, rotate: 15, y: 30 }}
                         transition={{ duration: 1, delay: 0.2, type: "spring" }}
-                        className="absolute z-10 brightness-[0.6] origin-bottom-left hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500"
+                        className="absolute z-0 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-left"
                      >
                         <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
@@ -467,7 +399,7 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* 3. CELULAR CENTRAL (Reto e em Destaque) */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) */}
                      <motion.div
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -479,79 +411,84 @@ export default function Home() {
                              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                          >
                             <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
-                                {/* Dynamic Island */}
                                 <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                     <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                                 </div>
-                                
                                 <video 
                                     className="w-full h-full object-cover" 
                                     autoPlay loop muted playsInline 
                                     src="https://i.imgur.com/FxHuXVb.mp4" 
                                 />
-                                
-                                {/* Reflexo na tela */}
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                             </div>
                         </motion.div>
                      </motion.div>
 
 
-                     {/* --- ELEMENTOS FLUTUANTES --- */}
+                     {/* --- ELEMENTOS FLUTUANTES (WIDGETS FORA DO CELULAR) --- */}
                      
-                     {/* Corações Flutuantes (Estilo Imagem de Referência) */}
+                     {/* Corações: Alguns atrás (z-0) outros na frente (z-40) */}
                      <motion.div 
                         animate={{ y: [-10, 10, -10] }} 
                         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute top-[10%] left-[-80px] z-0 opacity-80"
+                        className="absolute top-[5%] left-[-100px] z-0 opacity-70"
                      >
-                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 drop-shadow-2xl rotate-[-20deg]" />
+                        <Heart fill="#a855f7" className="text-purple-500 w-28 h-28 drop-shadow-2xl rotate-[-20deg]" />
                      </motion.div>
 
                      <motion.div 
                         animate={{ y: [10, -10, 10] }} 
                         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute bottom-[20%] right-[-80px] z-0 opacity-80"
+                        className="absolute bottom-[20%] right-[-90px] z-0 opacity-70"
                      >
-                        <Heart fill="#a855f7" className="text-purple-500 w-20 h-20 drop-shadow-2xl rotate-[20deg]" />
+                        <Heart fill="#d8b4fe" className="text-purple-300 w-24 h-24 drop-shadow-2xl rotate-[20deg]" />
                      </motion.div>
-
+                     
+                     {/* Coração FLUTUANDO NA FRENTE DO CELULAR */}
                      <motion.div 
-                        animate={{ y: [5, -5, 5] }} 
+                        animate={{ y: [5, -5, 5], x: [0, 5, 0] }} 
                         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        className="absolute bottom-[-20px] left-[-40px] z-0 opacity-60"
+                        className="absolute bottom-[-10px] left-[-30px] z-40 opacity-90"
                      >
-                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 drop-shadow-xl rotate-[-10deg]" />
+                         <div className="relative">
+                            <Heart fill="#ec4899" className="text-pink-500 w-16 h-16 drop-shadow-xl rotate-[-10deg]" />
+                             {/* Brilho extra */}
+                            <div className="absolute inset-0 bg-pink-400 blur-xl opacity-40"></div>
+                         </div>
                      </motion.div>
 
 
-                     {/* Widget 1: Suporte 24/7 */}
+                     {/* WIDGET 1: Suporte (Ao lado esquerdo, FORA) */}
                      <motion.div
-                        initial={{ opacity: 0, x: -30 }}
+                        initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 }}
-                        className="absolute left-[-50px] top-[25%] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
+                        className="absolute left-[-160px] md:left-[-180px] top-[30%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
                      >
-                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                             <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+                             <MessageCircle size={18} className="text-green-400" />
+                             <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e] border border-black"></div>
                         </div>
                         <div>
                              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
-                             <p className="text-xs text-white font-bold">Online 24/7</p>
+                             <p className="text-sm text-white font-bold">Online 24/7</p>
                         </div>
                      </motion.div>
 
-                     {/* Widget 2: Avaliação 5 Estrelas */}
+                     {/* WIDGET 2: Avaliação/Design (Ao lado direito, FORA) */}
                      <motion.div
-                        initial={{ opacity: 0, x: 30 }}
+                        initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.8 }}
-                        className="absolute right-[-40px] bottom-[25%] bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 py-3 px-5 rounded-2xl shadow-2xl z-40 text-center hover:scale-105 transition-transform"
+                        className="absolute right-[-140px] md:right-[-160px] bottom-[30%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
                      >
-                        <div className="flex items-center gap-1 mb-1 justify-center">
-                            {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />)}
+                         <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+                             <Palette size={10} /> Design Personalizado
+                         </div>
+                        <div className="flex items-center gap-1 mb-1">
+                            {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                         </div>
-                        <p className="text-[11px] text-white font-bold">Avaliação dos usuários</p>
+                        <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
                      </motion.div>
 
                  </div>
