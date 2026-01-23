@@ -289,9 +289,9 @@ export default function Home() {
         {/* BACKGROUND TOTAL DA PAGINA (Degradê Roxo + Rosa + Preto) */}
         <div className="absolute inset-0 bg-[#05000a] -z-30"></div>
         {/* Glow Superior Roxo */}
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[900px] bg-purple-900/30 blur-[130px] rounded-full pointer-events-none -z-20"></div>
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[800px] bg-purple-900/20 blur-[120px] rounded-full pointer-events-none -z-20"></div>
         {/* Glow Inferior Rosa */}
-        <div className="absolute bottom-[-10%] right-0 w-[700px] h-[700px] bg-pink-700/20 blur-[120px] rounded-full pointer-events-none -z-20"></div>
+        <div className="absolute bottom-[-10%] right-0 w-[600px] h-[600px] bg-pink-600/10 blur-[100px] rounded-full pointer-events-none -z-20"></div>
         {/* Noise Texture */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 -z-10 mix-blend-overlay"></div>
 
@@ -371,7 +371,7 @@ export default function Home() {
                  {/* CONTAINER PRINCIPAL (SCALE PARA MOBILE) */}
                  <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.75] md:scale-100 transition-transform duration-300">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VIDEO DO CASAL */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VIDEO CASAL */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
                         animate={{ opacity: 1, x: -120, rotate: -15, y: 40 }}
@@ -444,7 +444,7 @@ export default function Home() {
                      <motion.div 
                         animate={{ y: [10, -10, 10] }} 
                         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute bottom-[-50px] right-[-120px] z-0 opacity-80"
+                        className="absolute bottom-[-50px] right-[-120px] z-50 opacity-80"
                      >
                         <Heart fill="#a855f7" className="text-purple-500 w-28 h-28 drop-shadow-[0_0_25px_rgba(168,85,247,0.5)] rotate-[20deg]" />
                      </motion.div>
