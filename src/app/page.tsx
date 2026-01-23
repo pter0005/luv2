@@ -328,46 +328,228 @@ export default function Home() {
 
   return (
     <>
-      <section ref={heroRef} className="bg-card/50 relative w-full overflow-hidden flex items-center justify-center min-h-[calc(100vh-5rem)] py-24">
-        <div className="container grid md:grid-cols-2 gap-12 items-center">
-            <div className="text-center md:text-left">
-                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground font-display leading-tight">
-                    {t('home.hero.title')} <br />
-                    <span className="block font-handwriting text-primary text-5xl md:text-6xl mt-2 leading-relaxed">
-                    {typedPhrase}
-                    <span className="animate-blink">|</span>
+      <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100vh] py-20 lg:py-0">
+        
+        {/* --- BACKGROUND CINEMATOGRÁFICO --- */}
+        {/* 1. Base Escura */}
+        <div className="absolute inset-0 bg-[#05000a] -z-30"></div>
+
+        {/* 2. Holofote Roxo (Ambient Light) */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[800px] bg-purple-900/30 blur-[120px] rounded-full pointer-events-none -z-20"></div>
+
+        {/* 3. Glow Rosa Secundário (Bottom Right) */}
+        <div className="absolute bottom-[-10%] right-0 w-[600px] h-[600px] bg-pink-600/10 blur-[100px] rounded-full pointer-events-none -z-20 animate-pulse-slow"></div>
+
+        {/* 4. Partículas/Estrelas Sutis */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 -z-10 mix-blend-overlay"></div>
+
+
+        <div className="container grid lg:grid-cols-2 gap-12 lg:gap-0 items-center relative z-10 h-full">
+            
+            {/* --- COLUNA DA ESQUERDA (TEXTO) --- */}
+            <div className="text-center lg:text-left flex flex-col items-center lg:items-start pt-10 lg:pt-0 order-2 lg:order-1">
+                 
+                 {/* Badge de Prova Social (Estilo Imagem 2) */}
+                 <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-8 backdrop-blur-md shadow-lg shadow-purple-500/10 hover:bg-white/10 transition-colors cursor-default"
+                 >
+                    <div className="flex -space-x-3">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden">
+                                <Image src={`https://picsum.photos/seed/love${i}/100/100`} alt="User" width={32} height={32} />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-col items-start leading-none">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
+                        <span className="text-sm font-bold text-white">+20.000 Casais</span>
+                    </div>
+                 </motion.div>
+
+                 <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6">
+                    Declare seu amor <br />
+                    <span className="relative inline-block mt-2">
+                        {/* Texto com Gradiente e Fonte Manuscrita */}
+                        <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-6xl lg:text-8xl animate-gradient-x pb-4">
+                            {typedPhrase}
+                            <span className="animate-blink text-white ml-1 font-sans font-light">|</span>
+                        </span>
+                        
+                        {/* Sublinhado Artístico */}
+                        <svg className="absolute w-full h-4 -bottom-2 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
+                            <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
+                        </svg>
                     </span>
                 </h1>
-                <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto md:mx-0 my-6">
-                    {t('home.hero.description')}
+
+                <p className="text-lg lg:text-xl text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed font-light">
+                    Transforme seus sentimentos em uma <strong className="text-white font-medium">obra de arte digital</strong>. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
                 </p>
-                <Link href="/login?redirect=/criar">
-                    <Button
-                    size="lg"
-                    className="group relative w-full sm:w-auto shadow-[0_0_20px_0px] shadow-primary/50"
-                    >
-                    {t('home.hero.cta')}
-                    <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                </Link>
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <Link href="/login?redirect=/criar" className="w-full sm:w-auto">
+                        <Button
+                        size="xl"
+                        className="group relative w-full sm:w-auto bg-white text-black hover:bg-purple-50 hover:scale-105 transition-all duration-300 font-bold text-lg px-8 py-6 rounded-full shadow-[0_0_40px_-10px_rgba(168,85,247,0.6)]"
+                        >
+                        {t('home.hero.cta')}
+                        <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform text-purple-600" />
+                        </Button>
+                    </Link>
+                    
+                    {/* Botão Secundário (Demo) */}
+                    <Link href="#demo-section" className="w-full sm:w-auto">
+                         <Button
+                            variant="ghost"
+                            size="xl"
+                            className="w-full sm:w-auto text-white hover:bg-white/10 hover:text-white rounded-full px-8 py-6 border border-white/10 backdrop-blur-sm"
+                        >
+                            <Play className="w-4 h-4 mr-2 fill-white" />
+                            Ver Exemplo
+                        </Button>
+                    </Link>
+                </div>
+                
+                <p className="mt-4 text-xs text-gray-500 font-medium uppercase tracking-widest opacity-60">
+                    ✨ Crie grátis • Sem cartão de crédito
+                </p>
             </div>
-            <motion.div 
-                className="relative w-full h-[60vh] md:h-auto md:aspect-[9/10] rounded-3xl overflow-hidden shadow-2xl shadow-primary/20"
-                style={{ y }}
-                initial={{ opacity: 0, y: 50, rotate: 5 }}
-                animate={{ opacity: 1, y: 0, rotate: 0 }}
-                transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1]}}
-            >
-                 <Image
-                    src={heroImageUrl}
-                    alt="Casal feliz"
-                    fill
-                    className="object-cover"
-                    priority
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    data-ai-hint="happy couple"
-                />
-            </motion.div>
+            
+
+            {/* --- COLUNA DA DIREITA (VISUAL FODA) --- */}
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-1000 order-1 lg:order-2">
+                 
+                 {/* O Celular Principal (Mistura do Img 2 e 3) */}
+                 <motion.div
+                    initial={{ opacity: 0, scale: 0.8, rotateY: -20 }}
+                    animate={{ opacity: 1, scale: 1, rotateY: -10 }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="relative z-20"
+                 >
+                    {/* Animação de Flutuação Suave */}
+                    <motion.div
+                        animate={{ y: [-15, 15, -15], rotateZ: [-1, 1, -1] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                        <div className="relative w-[300px] h-[600px] border-[8px] border-[#1a1a1a] bg-black rounded-[3.5rem] shadow-[0_0_60px_-15px_rgba(147,51,234,0.5)] overflow-hidden ring-1 ring-white/20">
+                            {/* Dynamic Island */}
+                            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-30 ring-1 ring-white/10 flex items-center justify-end px-3">
+                                <div className="w-2 h-2 rounded-full bg-green-500/50 animate-pulse"></div>
+                            </div>
+
+                            {/* Conteúdo da Tela (Simulando o App) */}
+                            <div className="relative w-full h-full bg-[#0a0a0a]">
+                                <Image 
+                                    src="https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=600&h=1200&fit=crop" 
+                                    alt="Couple" 
+                                    fill 
+                                    className="object-cover opacity-60"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+                                
+                                {/* UI Elements dentro do celular */}
+                                <div className="absolute bottom-10 left-6 right-6">
+                                    <div className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1">Nosso tempo juntos</div>
+                                    <div className="flex gap-2 mb-6">
+                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
+                                            <span className="block text-2xl font-bold text-white">02</span>
+                                            <span className="text-[10px] text-gray-300">Anos</span>
+                                        </div>
+                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
+                                            <span className="block text-2xl font-bold text-white">11</span>
+                                            <span className="text-[10px] text-gray-300">Meses</span>
+                                        </div>
+                                        <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 text-center flex-1 border border-white/5">
+                                            <span className="block text-2xl font-bold text-white">24</span>
+                                            <span className="text-[10px] text-gray-300">Dias</span>
+                                        </div>
+                                    </div>
+                                    <button className="w-full bg-white text-black rounded-full py-3 font-bold text-sm shadow-lg">Ver Linha do Tempo</button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                 </motion.div>
+
+                 {/* --- ELEMENTOS FLUTUANTES (WIDGETS ESTILO IMAGEM 3) --- */}
+                 
+                 {/* Widget 1: Música (Esquerda) */}
+                 <motion.div
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5, duration: 0.8 }}
+                    className="absolute left-[-20px] lg:left-[-60px] top-[20%] bg-[#121212]/90 backdrop-blur-xl border border-white/10 p-3 rounded-2xl shadow-2xl flex items-center gap-3 z-30 max-w-[220px]"
+                 >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shrink-0">
+                        <div className="bar-loader flex gap-[2px] items-end h-4">
+                            <span className="w-[3px] h-2 bg-white animate-music-bar"></span>
+                            <span className="w-[3px] h-4 bg-white animate-music-bar animation-delay-100"></span>
+                            <span className="w-[3px] h-3 bg-white animate-music-bar animation-delay-200"></span>
+                        </div>
+                    </div>
+                    <div>
+                         <p className="text-[10px] text-green-400 font-bold uppercase">Tocando agora</p>
+                         <p className="text-xs text-white font-medium truncate w-[100px]">Perfect - Ed Sheeran</p>
+                    </div>
+                 </motion.div>
+
+                 {/* Widget 2: Avaliação (Direita Baixo) */}
+                 <motion.div
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7, duration: 0.8 }}
+                    className="absolute right-[-10px] lg:right-[-40px] bottom-[25%] bg-[#121212]/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30"
+                 >
+                    <div className="flex items-center gap-1 mb-1">
+                        {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />)}
+                    </div>
+                    <p className="text-xs text-white font-medium">"Melhor presente!"</p>
+                    <p className="text-[10px] text-gray-400 mt-1">- Ana & Pedro</p>
+                 </motion.div>
+
+                 {/* Widget 3: Notificação (Topo Direita) */}
+                 <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9, duration: 0.8 }}
+                    className="absolute right-[0px] top-[15%] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg shadow-purple-500/40 z-10 rotate-6"
+                 >
+                    ❤️ Design Personalizado
+                 </motion.div>
+
+                 {/* Corações Flutuantes (Particles) */}
+                 {[...Array(6)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute z-0 text-purple-500/40"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ 
+                            opacity: [0, 0.8, 0], 
+                            scale: [0.5, 1.2, 0.8],
+                            y: [0, -100 - (i*20)],
+                            x: [(i%2===0 ? -20 : 20), (i%2===0 ? -50 : 50)]
+                        }}
+                        transition={{ 
+                            duration: 4 + i, 
+                            repeat: Infinity, 
+                            delay: i * 0.5,
+                            ease: "easeOut"
+                        }}
+                        style={{
+                            left: `${20 + (i * 15)}%`,
+                            bottom: '10%'
+                        }}
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 .81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </motion.div>
+                 ))}
+
+            </div>
         </div>
       </section>
 
