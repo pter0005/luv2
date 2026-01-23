@@ -371,7 +371,7 @@ export default function Home() {
                  {/* CONTAINER PRINCIPAL (SCALE PARA MOBILE) */}
                  <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.75] md:scale-100 transition-transform duration-300">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VIDEO CASAL AGORA */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VIDEO DO CASAL */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
                         animate={{ opacity: 1, x: -120, rotate: -15, y: 40 }}
@@ -382,7 +382,6 @@ export default function Home() {
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay loop muted playsInline 
-                                // VIDEO CASAL AQUI
                                 src="https://i.imgur.com/GHtKVNZ.mp4" 
                             />
                         </div>
@@ -404,7 +403,7 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* 3. CELULAR CENTRAL (DESTAQUE) - CONTADOR AQUI */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) - CONTADOR */}
                      <motion.div
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -422,7 +421,6 @@ export default function Home() {
                                 <video 
                                     className="w-full h-full object-cover" 
                                     autoPlay loop muted playsInline 
-                                    // VIDEO CONTADOR
                                     src="https://i.imgur.com/FxHuXVb.mp4" 
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
@@ -470,12 +468,12 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* WIDGET 1: Suporte (POSIÇÃO: TOPO ESQUERDO / TOP-LEFT) */}
+                     {/* WIDGET 1: Suporte (POSIÇÃO: TOPO ESQUERDO) */}
                      <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 }}
-                        className="absolute -left-[100px] md:-left-[200px] top-[0] md:-top-[20px] bg-black/20 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
+                        className="absolute -left-[100px] md:-left-[180px] top-[0] md:-top-[20px] bg-black/20 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
                      >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
@@ -487,12 +485,12 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* WIDGET 2: Avaliação/Design (POSIÇÃO: BAIXO DIREITA / BOTTOM-RIGHT) */}
+                     {/* WIDGET 2: Avaliação/Design (POSIÇÃO: BAIXO DIREITA) */}
                      <motion.div
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.8 }}
-                        className="absolute -right-[100px] md:-right-[180px] bottom-[0] md:bottom-[20px] bg-black/20 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
+                        className="absolute -right-[100px] md:-right-[160px] bottom-[0] md:bottom-[20px] bg-black/20 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
                      >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
