@@ -8,28 +8,28 @@ import { cn } from "@/lib/utils";
 // --- DADOS REAIS & HUMANIZADOS (Gírias + Linguagem Jovem) ---
 const testimonials = [
     // --- LINHA DE CIMA ---
-    { name: "Lucas & Mari", text: "Mano, na moral... ela chorou horrores qnd viu kkkk. Ficou mto perfeito, sério!", image: "https://images.unsplash.com/photo-1516585427167-9f4af9627e6c?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Bia & Thiago", text: "Gente, o q é essa linha do tempo?? A gente ficou um tempão lembrando dos roles. Surreal.", image: "https://images.unsplash.com/photo-1621624666561-84d00bae58f6?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Rafa & Ju", text: "Eu sou zero criativo pra presente, mas isso aqui salvou dms. Montei em 20 min e ficou top.", image: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Gui & Lau", text: "O puzzle no começo é genial, ela ficou tipo 'uai oq é isso?' e dps amou a surpresa.", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Matheus & Isa", text: "Melhor presente, papo reto. Mto melhor que dar só chocolate ou roupa. Ela postou em tudo q é lugar.", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Bru & Manu", text: "Achei q ia ser difícil de fazer mas é mó de boa. A musica de fundo deu mó clima 😍", image: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Fe & Gi", text: "O QR Code funcionou direitinho no jantar. Foi o ponto alto da noite, vlw msm!", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Dani & Lice", text: "Cara, mt foda. É uma parada q fica pra sempre, tlgd? Não é q nem presente q acaba ou quebra.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Du & Sophia", text: "Nossa história ficou linda demais ali. Chorei junto com ela, admito kkkk.", image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Vini & Valen", text: "O suporte me ajudou rapidão com a foto q tava torta. Atendimento 10/10.", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Lucas & Mari", text: "Mano, na moral... ela chorou horrores qnd viu kkkk. Ficou mto perfeito, sério!", image: "https://images.unsplash.com/photo-1568414269584-5c4a03502936?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Bia & Thiago", text: "Gente, o q é essa linha do tempo?? A gente ficou um tempão lembrando dos roles. Surreal.", image: "https://images.unsplash.com/photo-1554188248-986adbb73371?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Rafa & Ju", text: "Eu sou zero criativo pra presente, mas isso aqui salvou dms. Montei em 20 min e ficou top.", image: "https://images.unsplash.com/photo-1594419542038-a12a22579737?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Gui & Lau", text: "O puzzle no começo é genial, ela ficou tipo 'uai oq é isso?' e dps amou a surpresa.", image: "https://images.unsplash.com/photo-1593104547489-5cfb3839a3b5?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Matheus & Isa", text: "Melhor presente, papo reto. Mto melhor que dar só chocolate ou roupa. Ela postou em tudo q é lugar.", image: "https://images.unsplash.com/photo-1549419137-535d909b0222?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Bru & Manu", text: "Achei q ia ser difícil de fazer mas é mó de boa. A musica de fundo deu mó clima 😍", image: "https://images.unsplash.com/photo-1515810231945-885731773489?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Fe & Gi", text: "O QR Code funcionou direitinho no jantar. Foi o ponto alto da noite, vlw msm!", image: "https://images.unsplash.com/photo-1567457490308-72644a95780f?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Dani & Lice", text: "Cara, mt foda. É uma parada q fica pra sempre, tlgd? Não é q nem presente q acaba ou quebra.", image: "https://images.unsplash.com/photo-1567520668032-23c896d7c485?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Du & Sophia", text: "Nossa história ficou linda demais ali. Chorei junto com ela, admito kkkk.", image: "https://images.unsplash.com/photo-1587403913054-c817291a2e7c?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Vini & Valen", text: "O suporte me ajudou rapidão com a foto q tava torta. Atendimento 10/10.", image: "https://images.unsplash.com/photo-1558238459-25f0dba49f39?w=150&h=150&fit=crop&crop=faces&q=80" },
     
     // --- LINHA DE BAIXO ---
-    { name: "Dedé & Lena", text: "Sem palavras... ficou mto profissa! Parece q paguei uma fortuna pra um designer fazer.", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Léo & Lu", text: "Minha mina ficou chocada. Falou q foi o presente mais criativo q eu já dei. Vcs são brabos!", image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Rô & Liv", text: "As fotos em 3D dão um tchan a mais. Ficamos vendo no celular um tempão.", image: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Gabs & Clara", text: "Fiz pro dia dos namorados, foi sucesso total. Todo mundo perguntou como eu fiz kkk.", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Ale & Gabi", text: "Vale cada centavo, na moral. É mto barato pelo tanto q emociona.", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Di & Yas", text: "Os coraçõezinhos caindo na tela... aff q amor! ❤️ Ela amou demais.", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Rick & Lê", text: "Usei a IA pra escrever o texto pq sou péssimo com palavras e ficou lindo dms.", image: "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Serginho & Nick", text: "Simples, rápido e emocionante. O combo perfeito pra quem quer surpreender.", image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Fer & Sah", text: "Eu tava sem ideia do q dar e isso salvou meu namoro kkkk brincadeira, mas ajudou mto!", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&h=150&fit=crop&crop=faces&q=80" },
-    { name: "Will & Carol", text: "Aquele contador de tempo é hipnotizante. A gnt fica olhando os segundos passarem juntinhos.", image: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Dedé & Lena", text: "Sem palavras... ficou mto profissa! Parece q paguei uma fortuna pra um designer fazer.", image: "https://images.unsplash.com/photo-1559526324-c1f275fbfa32?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Léo & Lu", text: "Minha mina ficou chocada. Falou q foi o presente mais criativo q eu já dei. Vcs são brabos!", image: "https://images.unsplash.com/photo-1574284883300-d867a3039304?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Rô & Liv", text: "As fotos em 3D dão um tchan a mais. Ficamos vendo no celular um tempão.", image: "https://images.unsplash.com/photo-1515940023024-2782c5f115a7?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Gabs & Clara", text: "Fiz pro dia dos namorados, foi sucesso total. Todo mundo perguntou como eu fiz kkk.", image: "https://images.unsplash.com/photo-1529552554749-886470b16a24?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Ale & Gabi", text: "Vale cada centavo, na moral. É mto barato pelo tanto q emociona.", image: "https://images.unsplash.com/photo-1508215904-a6988825b733?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Di & Yas", text: "Os coraçõezinhos caindo na tela... aff q amor! ❤️ Ela amou demais.", image: "https://images.unsplash.com/photo-1553921355-c05345d131a9?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Rick & Lê", text: "Usei a IA pra escrever o texto pq sou péssimo com palavras e ficou lindo dms.", image: "https://images.unsplash.com/photo-1525114734253-e9a7e1f42289?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Serginho & Nick", text: "Simples, rápido e emocionante. O combo perfeito pra quem quer surpreender.", image: "https://images.unsplash.com/photo-1488161628813-04466f872be2?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Fer & Sah", text: "Eu tava sem ideia do q dar e isso salvou meu namoro kkkk brincadeira, mas ajudou mto!", image: "https://images.unsplash.com/photo-1533244243430-58005eb55c3c?w=150&h=150&fit=crop&crop=faces&q=80" },
+    { name: "Will & Carol", text: "Aquele contador de tempo é hipnotizante. A gnt fica olhando os segundos passarem juntinhos.", image: "https://images.unsplash.com/photo-1506193700-159b1a4a49a9?w=150&h=150&fit=crop&crop=faces&q=80" },
 ];
 
 const topRow = testimonials.slice(0, 10);
