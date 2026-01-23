@@ -21,32 +21,49 @@ import 'swiper/css/pagination';
 // --- PARTÍCULAS SUTIS ---
 const HeartEmitter = ({ isActive }: { isActive: boolean }) => {
     if (!isActive) return null;
-    const particles = Array.from({ length: 3 }); 
+    const particles = Array.from({ length: 6 }); // Mais corações para um efeito mais rico
     return (
         <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
-            {particles.map((_, i) => (
-                <motion.div
-                    key={i}
-                    className="absolute text-purple-500/80"
-                    initial={{ opacity: 0, y: 50, x: 0, scale: 0.4 }}
-                    animate={{ 
-                        opacity: [0, 1, 0],
-                        y: -100 - (Math.random() * 50),
-                        x: (Math.random() - 0.5) * 80, 
-                        scale: [0.4, 0.9, 0.5],
-                        rotate: (Math.random() - 0.5) * 40
-                    }}
-                    transition={{ 
-                        duration: 2 + Math.random(),
-                        repeat: Infinity, 
-                        ease: "easeOut",
-                        delay: i * 0.4,
-                    }}
-                    style={{ left: '50%', top: '50%' }}
-                >
-                    <Heart fill="currentColor" strokeWidth={0} size={22 + Math.random() * 15} className="drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-                </motion.div>
-            ))}
+            {particles.map((_, i) => {
+                // Posição Aleatória ao Redor (em um círculo imaginário)
+                const angle = (i / particles.length) * 2 * Math.PI + Math.random() * 0.5;
+                const radius = 180 + Math.random() * 40; // Em pixels, para ficar fora do celular (310px de largura / 2 = 155px)
+                const initialX = Math.cos(angle) * radius;
+                const initialY = Math.sin(angle) * radius * 0.8; // Elipse um pouco mais achatada
+
+                return (
+                    <motion.div
+                        key={i}
+                        className="absolute text-purple-500/70"
+                        // Posição inicial invisível e fora do centro
+                        initial={{
+                            opacity: 0,
+                            x: initialX,
+                            y: initialY,
+                            scale: 0.2,
+                        }}
+                        // Animação de "respirar" no lugar
+                        animate={{
+                            opacity: [0, 1, 0], // Fade in, then fade out
+                            scale: [0.4, 1, 0.4], // Pulsa no tamanho
+                            y: [initialY, initialY - 15, initialY], // Flutua suavemente para cima e para baixo
+                        }}
+                        transition={{
+                            duration: 3.5 + Math.random() * 2, // Duração mais longa e variada
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.6, // Atraso para não começarem todos juntos
+                        }}
+                        style={{
+                            // A origem da animação é o centro do celular
+                            left: '50%', 
+                            top: '45%', // Um pouco acima do centro
+                        }}
+                    >
+                        <Heart fill="currentColor" strokeWidth={0} size={20 + Math.random() * 20} className="drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]" />
+                    </motion.div>
+                );
+            })}
         </div>
     );
 };
