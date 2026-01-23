@@ -361,127 +361,140 @@ export default function Home() {
                 </div>
             </div>
             
+
+            {/* --- DIREITA: 3 CELULARES (LEQUE 3D PERFEITO) --- */}
             <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
-                
-                {/* 1. CELULAR ESQUERDA (ATRÁS & INCLINADO) */}
-                <motion.div
-                    initial={{ opacity: 0, x: 0, rotate: 0 }}
-                    animate={{ opacity: 1, x: -90, rotate: -15, y: 30 }}
-                    transition={{ duration: 1, delay: 0.2, type: "spring" }}
-                    className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-right"
-                >
-                    <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                        <video 
-                            className="w-full h-full object-cover" 
-                            autoPlay loop muted playsInline 
-                            src="https://i.imgur.com/FxHuXVb.mp4" 
-                        />
-                    </div>
-                </motion.div>
+                 
+                 <div className="relative w-[300px] h-[600px] flex items-center justify-center">
 
-                {/* 2. CELULAR DIREITA (ATRÁS & INCLINADO) */}
-                <motion.div
-                    initial={{ opacity: 0, x: 0, rotate: 0 }}
-                    animate={{ opacity: 1, x: 90, rotate: 15, y: 30 }}
-                    transition={{ duration: 1, delay: 0.2, type: "spring" }}
-                    className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-left"
-                >
-                    <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                        <video 
-                            className="w-full h-full object-cover" 
-                            autoPlay loop muted playsInline 
-                            src="https://i.imgur.com/t7ICxbN.mp4" 
-                        />
-                    </div>
-                </motion.div>
-
-                {/* 3. CELULAR CENTRAL (DESTAQUE) */}
-                <motion.div
-                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="relative z-30"
-                >
-                    <motion.div
-                        animate={{ y: [-8, 8, -8] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
-                            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
-                                <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
-                            </div>
-                            <video 
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VÍDEO DO CONTADOR AGORA */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0, rotate: 0 }}
+                        animate={{ opacity: 1, x: -90, rotate: -15, y: 30 }}
+                        transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                        className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-right"
+                     >
+                        <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay loop muted playsInline 
-                                src="https://i.imgur.com/GHtKVNZ.mp4" 
+                                src="https://i.imgur.com/FxHuXVb.mp4" 
                             />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                         </div>
-                    </motion.div>
-                </motion.div>
+                     </motion.div>
 
-                {/* --- ELEMENTOS FLUTUANTES --- */}
-                
-                {/* Corações Flutuantes */}
-                <motion.div 
-                    animate={{ y: [-10, 10, -10] }} 
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[5%] left-[5%] lg:left-[15%] z-20 opacity-70"
-                >
-                    <Heart fill="#a855f7" className="text-purple-500 w-28 h-28 drop-shadow-2xl rotate-[-20deg]" />
-                </motion.div>
+                     {/* 2. CELULAR DIREITA (ATRÁS) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0, rotate: 0 }}
+                        animate={{ opacity: 1, x: 90, rotate: 15, y: 30 }}
+                        transition={{ duration: 1, delay: 0.2, type: "spring" }}
+                        className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-left"
+                     >
+                        <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
+                                className="w-full h-full object-cover" 
+                                autoPlay loop muted playsInline 
+                                src="https://i.imgur.com/t7ICxbN.mp4" 
+                            />
+                        </div>
+                     </motion.div>
 
-                <motion.div 
-                    animate={{ y: [10, -10, 10] }} 
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-[15%] right-[10%] lg:right-[20%] z-20 opacity-70"
-                >
-                    <Heart fill="#d8b4fe" className="text-purple-300 w-24 h-24 drop-shadow-2xl rotate-[20deg]" />
-                </motion.div>
-                
-                <motion.div 
-                    animate={{ y: [5, -5, 5], x: [0, 5, 0] }} 
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                    className="absolute bottom-[5%] left-[20%] z-40 opacity-90"
-                >
-                    <div className="relative">
-                        <Heart fill="#ec4899" className="text-pink-500 w-16 h-16 drop-shadow-xl rotate-[-10deg]" />
-                        <div className="absolute inset-0 bg-pink-400 blur-xl opacity-40"></div>
-                    </div>
-                </motion.div>
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) - VÍDEO DO CASAL AGORA */}
+                     <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="relative z-30"
+                     >
+                         <motion.div
+                             animate={{ y: [-8, 8, -8] }}
+                             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                         >
+                            <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
+                                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
+                                    <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
+                                </div>
+                                <video 
+                                    className="w-full h-full object-cover" 
+                                    autoPlay loop muted playsInline 
+                                    src="https://i.imgur.com/GHtKVNZ.mp4" 
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
+                            </div>
+                        </motion.div>
+                     </motion.div>
 
-                {/* WIDGET 1: Suporte */}
-                <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="absolute left-[0] md:left-[5%] top-[30%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
-                >
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
-                        <MessageCircle size={18} className="text-green-400" />
-                        <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e] border border-black"></div>
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
-                        <p className="text-sm text-white font-bold">Online 24/7</p>
-                    </div>
-                </motion.div>
 
-                {/* WIDGET 2: Avaliação */}
-                <motion.div
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 }}
-                    className="absolute right-[0] md:right-[5%] bottom-[30%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
-                >
-                    <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
-                        <Palette size={10} /> Design Personalizado
-                    </div>
-                    <div className="flex items-center gap-1 mb-1">
-                        {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
-                    </div>
-                    <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
-                </motion.div>
+                     {/* --- ELEMENTOS FLUTUANTES (WIDGETS FORA DO CELULAR) --- */}
+                     
+                     {/* Corações: Z-INDEX ajustado para ficarem na frente e atrás */}
+                     
+                     {/* Coração GIGANTE ATRÁS (Esquerda) */}
+                     <motion.div 
+                        animate={{ y: [-10, 10, -10] }} 
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute top-[0%] left-[-120px] md:left-[-140px] z-0 opacity-40"
+                     >
+                        <Heart fill="#a855f7" className="text-purple-500 w-32 h-32 drop-shadow-2xl rotate-[-20deg]" />
+                     </motion.div>
+
+                     {/* Coração MEDIO ATRÁS (Direita) */}
+                     <motion.div 
+                        animate={{ y: [10, -10, 10] }} 
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                        className="absolute bottom-[10%] right-[-100px] z-0 opacity-50"
+                     >
+                        <Heart fill="#d8b4fe" className="text-purple-300 w-24 h-24 drop-shadow-2xl rotate-[20deg]" />
+                     </motion.div>
+                     
+                     {/* Coração FLUTUANDO NA FRENTE DO CELULAR CENTRAL (Destaque) */}
+                     <motion.div 
+                        animate={{ y: [5, -5, 5], x: [0, 5, 0] }} 
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                        className="absolute bottom-[40px] left-[-20px] z-50 opacity-100"
+                     >
+                         <div className="relative">
+                            <Heart fill="#ec4899" className="text-pink-500 w-16 h-16 drop-shadow-[0_10px_20px_rgba(236,72,153,0.5)] rotate-[-15deg]" />
+                             {/* Brilho extra */}
+                            <div className="absolute inset-0 bg-pink-400 blur-xl opacity-40 animate-pulse"></div>
+                         </div>
+                     </motion.div>
+
+
+                     {/* WIDGET 1: Suporte (Ao lado esquerdo, FORA) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="absolute left-[-160px] md:left-[-190px] top-[25%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
+                     >
+                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
+                             <MessageCircle size={18} className="text-green-400" />
+                             <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e] border border-black"></div>
+                        </div>
+                        <div>
+                             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
+                             <p className="text-sm text-white font-bold">Online 24/7</p>
+                        </div>
+                     </motion.div>
+
+                     {/* WIDGET 2: Avaliação/Design (Ao lado direito, FORA) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8 }}
+                        className="absolute right-[-140px] md:right-[-170px] bottom-[35%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
+                     >
+                         <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+                             <Palette size={10} /> Design Personalizado
+                         </div>
+                        <div className="flex items-center gap-1 mb-1">
+                            {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
+                        </div>
+                        <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
+                     </motion.div>
+
+                 </div>
             </div>
         </div>
       </section>
