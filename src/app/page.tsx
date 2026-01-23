@@ -30,14 +30,14 @@ const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr
 
 const AnimatedSection = ({ children, className, id }: { children: React.ReactNode, className?: string, id?: string }) => {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.1 }); // Amount menor carrega mais rápido no scroll
+    const isInView = useInView(ref, { once: true, amount: 0.1 });
 
     return (
         <section ref={ref} id={id} className={className}>
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, ease: "easeOut" }} // Animação mais rápida = sensação de fluidez
+                transition={{ duration: 0.6, ease: "easeOut" }}
             >
                 {children}
             </motion.div>
@@ -45,7 +45,7 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
     );
 };
 
-// --- COMPONENTE IPHONE OTIMIZADO (Menos sombras pesadas) ---
+// --- COMPONENTE IPHONE 15 PRO (Demo Section) ---
 const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
   <motion.div 
     initial={{ y: 60, opacity: 0 }}
@@ -67,7 +67,6 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
                     src={videoSrc}
                 />
             </div>
-            {/* Reflexo estático leve */}
             <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 rounded-[3.2rem]"></div>
         </div>
     </div>
@@ -77,10 +76,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
 function DemoSection() {
     return (
       <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
-        {/* Container mais leve */}
         <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 bg-black/40 backdrop-blur-sm shadow-2xl">
-            
-            {/* Background Otimizado CSS */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a052b] via-[#0f021a] to-[#05000a] opacity-80"></div>
             
             <div className="absolute top-0 left-1/4 w-[300px] h-[300px] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"></div>
@@ -136,10 +132,8 @@ export default function Home() {
   const heroRef = useRef(null);
   const [showTimeline, setShowTimeline] = useState(false);
   
-  // Hooks de animação simples
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
 
-  // --- LÓGICA DE DIGITAÇÃO ---
   const phrases = useMemo(() => ["para alguém especial!", "de forma única!", "para quem merece!"], []);
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
@@ -163,7 +157,6 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
-  // Passos otimizados
   const simpleSteps = useMemo(() => [
     { icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl, title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
     { icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl, title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
@@ -175,12 +168,11 @@ export default function Home() {
 
   return (
     <>
-       {/* --- HERO SECTION OTIMIZADA --- */}
+       {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        {/* BACKGROUND UNIFICADO (Leve) */}
+        {/* BACKGROUND UNIFICADO */}
         <div className="absolute inset-0 -z-30 bg-[#05000a]">
-            {/* Gradiente Radial CSS é mais leve que múltiplos elementos DOM */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
             <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-pink-700/10 blur-[100px] rounded-full pointer-events-none"></div>
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
@@ -188,10 +180,9 @@ export default function Home() {
 
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-12 lg:gap-8 items-center relative z-10 h-full">
             
-            {/* --- TEXTO (AGORA APARECE PRIMEIRO NO MOBILE) --- */}
+            {/* --- TEXTO --- */}
             <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
                  
-                 {/* Social Proof */}
                  <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-md shadow-lg">
                     <div className="flex -space-x-3">
                         {[1, 2, 3, 4].map((i) => (
@@ -206,7 +197,6 @@ export default function Home() {
                     </div>
                  </div>
 
-                 {/* Título Otimizado */}
                  <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
                     Declare seu amor <br />
                     <span className="relative inline-block mt-2">
@@ -239,35 +229,36 @@ export default function Home() {
             </div>
             
 
-            {/* --- CELULARES (ABAIXO NO MOBILE, DIREITA NO PC) --- */}
-            <div className="relative h-[500px] md:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0 lg:mt-0">
+            {/* --- ÁREA DOS CELULARES (Layout 3D Corrigido) --- */}
+            <div className="relative h-[550px] md:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0 lg:mt-0">
                  
-                 {/* CONTAINER PRINCIPAL (Escala reduzida no mobile para não travar scroll) */}
-                 <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.6] sm:scale-[0.7] md:scale-100 transition-transform duration-300 will-change-transform">
+                 {/* Container Principal: Aumentei para w-[500px] para caber os 3 celulares sem cortar */}
+                 <div className="relative w-[500px] h-[600px] flex items-center justify-center scale-[0.55] sm:scale-[0.7] md:scale-100 transition-transform duration-300 will-change-transform">
 
-                     {/* 1. ESQUERDA (ATRÁS) - VÍDEO DO CONTADOR */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - Vídeo Contador */}
+                     {/* Usei classe 'absolute' com left/top fixos em vez de translate para garantir posição */}
                      <motion.div
                         animate={{ y: [0, 10, 0] }}
                         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute z-10 brightness-[0.5] -translate-x-[90px] rotate-[-15deg] origin-bottom-right"
+                        className="absolute z-10 brightness-[0.5] -left-12 top-10 rotate-[-15deg] origin-bottom-right"
                      >
                         <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 2. DIREITA (ATRÁS) - OUTRO VIDEO */}
+                     {/* 2. CELULAR DIREITA (ATRÁS) - Outro Vídeo */}
                      <motion.div
                         animate={{ y: [0, -10, 0] }}
                         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute z-10 brightness-[0.5] translate-x-[90px] rotate-[15deg] origin-bottom-left"
+                        className="absolute z-10 brightness-[0.5] -right-12 top-10 rotate-[15deg] origin-bottom-left"
                      >
                         <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 3. CENTRAL (DESTAQUE) - VÍDEO CASAL */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) - Vídeo Casal */}
                      <motion.div
                         animate={{ y: [-5, 5, -5] }}
                         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
@@ -283,27 +274,26 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* --- WIDGETS & CORAÇÕES OTIMIZADOS --- */}
+                     {/* --- WIDGETS & CORAÇÕES (Com transparência 20% menor) --- */}
                      
-                     {/* Coração GIGANTE Roxo (Estático para performance ou animação leve) */}
-                     <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-50px] left-[-140px] z-0 opacity-60">
+                     <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-50px] left-[-80px] z-0 opacity-40">
                         <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 drop-shadow-lg rotate-[-25deg]" />
                      </motion.div>
 
-                     <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-120px] z-0 opacity-60">
+                     <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-60px] z-0 opacity-40">
                         <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 drop-shadow-lg rotate-[15deg]" />
                      </motion.div>
                      
-                     <div className="absolute bottom-[80px] left-[-80px] z-0 opacity-60">
+                     <div className="absolute bottom-[80px] left-[-20px] z-0 opacity-40">
                         <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 drop-shadow-md rotate-[-10deg]" />
                      </div>
 
-                     <div className="absolute top-[40px] right-[-100px] z-0 opacity-50">
+                     <div className="absolute top-[40px] right-[-40px] z-0 opacity-30">
                         <Heart fill="#a855f7" className="text-purple-600 w-16 h-16 drop-shadow-md rotate-[25deg]" />
                      </div>
 
                      {/* WIDGET 1: Suporte (Esquerda Topo) */}
-                     <div className="absolute -left-[120px] md:-left-[180px] top-[10%] bg-white/5 backdrop-blur-md border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
+                     <div className="absolute -left-[100px] top-[15%] bg-white/5 backdrop-blur-md border border-white/5 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
                              <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
@@ -315,7 +305,7 @@ export default function Home() {
                      </div>
 
                      {/* WIDGET 2: Avaliação (Direita Baixo) */}
-                     <div className="absolute -right-[120px] md:-right-[160px] bottom-[10%] bg-white/5 backdrop-blur-md border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
+                     <div className="absolute -right-[100px] bottom-[15%] bg-white/5 backdrop-blur-md border border-white/5 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
                          </div>
@@ -330,7 +320,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SEÇÕES SEGUINTES MANTIDAS COM BG TRANSPARENTE PARA APROVEITAR O BACKGROUND DO HERO */}
+      {/* SEÇÕES SEGUINTES ... (MANTIDAS IGUAIS) */}
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
