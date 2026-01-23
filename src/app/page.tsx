@@ -328,8 +328,7 @@ export default function Home() {
 
   return (
     <>
-      <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[calc(100vh-5rem)] py-24">
-        <div className="absolute inset-0 w-full h-full mystic-glow -z-10"></div>
+      <section ref={heroRef} className="bg-card/50 relative w-full overflow-hidden flex items-center justify-center min-h-[calc(100vh-5rem)] py-24">
         <div className="container grid md:grid-cols-2 gap-12 items-center">
             <div className="text-center md:text-left">
                  <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground font-display leading-tight">
