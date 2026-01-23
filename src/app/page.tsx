@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -364,12 +363,12 @@ export default function Home() {
             
 
             {/* --- DIREITA: 3 CELULARES (LEQUE 3D PERFEITO) --- */}
-            <div className="relative h-[550px] md:h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
+            <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
                  
-                 {/* CONTAINER PRINCIPAL (SCALE PARA MOBILE PARA NÃO VAZAR) */}
-                 <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.65] xs:scale-[0.75] md:scale-100 transition-transform duration-300">
+                 {/* CONTAINER PRINCIPAL (SCALE PARA MOBILE) */}
+                 <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.75] md:scale-100 transition-transform duration-300">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VÍDEO DO CONTADOR (AGORA CORRETO) */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VIDEO CASAL AGORA */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
                         animate={{ opacity: 1, x: -90, rotate: -15, y: 30 }}
@@ -380,8 +379,8 @@ export default function Home() {
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay loop muted playsInline 
-                                // VIDEO CONTADOR
-                                src="https://i.imgur.com/FxHuXVb.mp4" 
+                                // VIDEO CASAL AQUI
+                                src="https://i.imgur.com/GHtKVNZ.mp4" 
                             />
                         </div>
                      </motion.div>
@@ -402,7 +401,7 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* 3. CELULAR CENTRAL (DESTAQUE) - VÍDEO DO CASAL (AGORA CORRETO) */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) - CONTADOR AQUI */}
                      <motion.div
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -420,8 +419,8 @@ export default function Home() {
                                 <video 
                                     className="w-full h-full object-cover" 
                                     autoPlay loop muted playsInline 
-                                    // VIDEO CASAL
-                                    src="https://i.imgur.com/GHtKVNZ.mp4" 
+                                    // VIDEO CONTADOR
+                                    src="https://i.imgur.com/FxHuXVb.mp4" 
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                             </div>
@@ -429,46 +428,51 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* --- ELEMENTOS FLUTUANTES (WIDGETS FORA DO CELULAR) --- */}
+                     {/* --- ELEMENTOS FLUTUANTES (AURA ROXA) --- */}
                      
-                     {/* Coração GIGANTE ATRÁS (Esquerda) */}
+                     {/* Coração GIGANTE ROXO ATRÁS (Esquerda Alta) */}
                      <motion.div 
                         animate={{ y: [-10, 10, -10] }} 
                         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute top-[0%] left-[-120px] md:left-[-140px] z-0 opacity-40"
+                        className="absolute top-[-50px] left-[-160px] z-0 opacity-100"
                      >
-                        <Heart fill="#a855f7" className="text-purple-500 w-32 h-32 drop-shadow-2xl rotate-[-20deg]" />
+                        <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 drop-shadow-[0_0_25px_rgba(168,85,247,0.6)] rotate-[-15deg]" />
                      </motion.div>
 
-                     {/* Coração MEDIO ATRÁS (Direita) */}
+                     {/* Coração MEDIO ROXO ATRÁS (Direita Baixa) */}
                      <motion.div 
                         animate={{ y: [10, -10, 10] }} 
                         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute bottom-[10%] right-[-100px] z-0 opacity-50"
+                        className="absolute bottom-[-20px] right-[-140px] z-0 opacity-100"
                      >
-                        <Heart fill="#d8b4fe" className="text-purple-300 w-24 h-24 drop-shadow-2xl rotate-[20deg]" />
+                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] rotate-[15deg]" />
                      </motion.div>
                      
-                     {/* Coração FLUTUANDO NA FRENTE DO CELULAR CENTRAL (Destaque) */}
+                     {/* Coração PEQUENO FLUTUANDO (Esquerda Baixa) */}
                      <motion.div 
                         animate={{ y: [5, -5, 5], x: [0, 5, 0] }} 
                         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        className="absolute bottom-[40px] left-[-20px] z-50 opacity-100"
+                        className="absolute bottom-[80px] left-[-80px] z-0 opacity-80"
                      >
-                         <div className="relative">
-                            <Heart fill="#ec4899" className="text-pink-500 w-16 h-16 drop-shadow-[0_10px_20px_rgba(236,72,153,0.5)] rotate-[-15deg]" />
-                             {/* Brilho extra */}
-                            <div className="absolute inset-0 bg-pink-400 blur-xl opacity-40 animate-pulse"></div>
-                         </div>
+                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 drop-shadow-[0_0_15px_rgba(216,180,254,0.5)] rotate-[-10deg]" />
+                     </motion.div>
+
+                     {/* Coração DIREITA CIMA (Equilíbrio) */}
+                     <motion.div 
+                        animate={{ y: [-8, 8, -8] }} 
+                        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                        className="absolute top-[40px] right-[-100px] z-0 opacity-60"
+                     >
+                        <Heart fill="#a855f7" className="text-purple-600 w-16 h-16 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] rotate-[25deg]" />
                      </motion.div>
 
 
-                     {/* WIDGET 1: Suporte (Ao lado esquerdo, FORA) */}
+                     {/* WIDGET 1: Suporte (MUITO MAIS PARA CIMA E ESQUERDA) */}
                      <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 }}
-                        className="absolute left-[-160px] md:left-[-190px] top-[25%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
+                        className="absolute -left-[140px] md:-left-[200px] top-[10%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-3 px-4 rounded-2xl shadow-2xl flex items-center gap-3 z-40 hover:scale-105 transition-transform"
                      >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
@@ -480,12 +484,12 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* WIDGET 2: Avaliação/Design (Ao lado direito, FORA) */}
+                     {/* WIDGET 2: Avaliação/Design (MUITO MAIS PARA BAIXO E DIREITA) */}
                      <motion.div
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.8 }}
-                        className="absolute right-[-140px] md:right-[-170px] bottom-[35%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
+                        className="absolute -right-[120px] md:-right-[180px] bottom-[10%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
                      >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
@@ -643,4 +647,3 @@ export default function Home() {
     </>
   );
 }
-
