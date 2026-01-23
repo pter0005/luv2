@@ -293,8 +293,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
 
         // LÓGICA DE EXPIRAÇÃO
         if (finalPageData.plan === 'basico') {
-            const oneDayInMillis = 24 * 60 * 60 * 1000;
-            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + oneDayInMillis);
+            const twelveHoursInMillis = 12 * 60 * 60 * 1000;
+            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twelveHoursInMillis);
         }
 
         // 3. (ETAPA CRUCIAL) Move os arquivos para o local permanente ANTES de salvar no DB
@@ -367,3 +367,5 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
 // Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
+
+    

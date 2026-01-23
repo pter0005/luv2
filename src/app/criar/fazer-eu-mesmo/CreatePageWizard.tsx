@@ -1376,7 +1376,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                 <AlertDescription className="text-primary/80">
                     {plan === 'avancado'
                         ? 'Sua página será permanente e ficará salva com segurança.'
-                        : 'Atenção: Sua página ficará disponível por 25 horas após a criação.'}
+                        : 'Atenção: Sua página ficará disponível por 12 horas após a criação.'}
                 </AlertDescription>
             </Alert>
             <Card>
@@ -1821,6 +1821,8 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
 
     
 
