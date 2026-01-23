@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from "next/link";
-import { Brush, ArrowLeft, RotateCcw, Loader2, TestTube2, Star } from "lucide-react";
+import { Brush, ArrowLeft, RotateCcw, Loader2, TestTube2, Star, DatabaseZap, Hourglass } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -86,6 +87,7 @@ export default function CreatePage() {
                         <PlanFeature text="Música de fundo" />
                         <PlanFeature text="Quebra-cabeça Interativo" />
                         <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" />
+                        <PlanFeature text="Página permanente com backup" icon={DatabaseZap} />
                     </ul>
                     <Button onClick={() => handleStartNew('avancado')} size="lg" className="w-full mt-auto">
                         <TestTube2 className="mr-2" />
@@ -100,8 +102,10 @@ export default function CreatePage() {
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text="Galeria de fotos (até 2)" />
                         <PlanFeature text="Linha do Tempo 3D (até 5 momentos)" />
+                        <PlanFeature text="Página disponível por 24h" icon={Hourglass} />
                         <PlanFeature text="Música de fundo" included={false} />
                         <PlanFeature text="Quebra-cabeça Interativo" included={false}/>
+                        <PlanFeature text="Backup na nuvem" included={false} />
                     </ul>
                      <Button onClick={() => handleStartNew('basico')} size="lg" className="w-full mt-auto" variant="secondary">
                          <TestTube2 className="mr-2" />
@@ -129,4 +133,3 @@ export default function CreatePage() {
       </div>
   );
 }
-

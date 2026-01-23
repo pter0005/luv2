@@ -39,9 +39,14 @@
         "backgroundVideo": { "$ref": "#/entities/FileWithPreview" },
         "enablePuzzle": { "type": "boolean", "description": "Whether the interactive puzzle is enabled" },
         "puzzleImage": { "type": "string", "description": "Base64 encoded string of the puzzle image." },
+        "qrCodeDesign": { "type": "string", "description": "Identifier for the chosen custom QR code design." },
         "createdAt": {
             "type": "object",
             "description": "Firestore server timestamp of when the page was created."
+        },
+        "expireAt": {
+            "type": "object",
+            "description": "Firestore server timestamp of when the page should expire. Only present for 'basico' plan."
         }
       }
     },
@@ -136,7 +141,10 @@
   "firestore": {
     "/lovepages/{lovepageId}": {
         "schema": { "$ref": "#/entities/LovePage" },
-        "description": "Stores the data for each created love page. Publicly readable and permanent."
+        "description": "Stores the data for each created love page. Pages from 'basico' plan are temporary and have a TTL.",
+        "ttl": {
+          "field": "expireAt"
+        }
     },
     "/users/{userId}": {
       "schema": {

@@ -116,6 +116,46 @@ export async function processPixPayment(intentId: string, price: number) {
     }
 }
 
+export async function processCardPayment(intentId: string, price: number, cardData: any) {
+    const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    if (!MERCADO_PAGO_ACCESS_TOKEN) return { error: "Token do Mercado Pago não configurado no servidor." };
+
+    try {
+        const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
+        const payment = new Payment(client);
+
+        const paymentBody = {
+            transaction_amount: price,
+            description: 'Amore Pages - Página de Amor',
+            token: cardData.token,
+            installments: cardData.installments,
+            payment_method_id: cardData.payment_method_id,
+            issuer_id: cardData.issuer_id,
+            payer: {
+                email: cardData.payer.email,
+                identification: {
+                    type: cardData.payer.identification.type,
+                    number: cardData.payer.identification.number,
+                },
+            },
+            external_reference: intentId,
+        };
+
+        const result = await payment.create({ body: paymentBody });
+
+        if (result && result.id && result.status === 'approved') {
+            const finalizationResult = await finalizeLovePage(intentId, result.id.toString());
+            return finalizationResult;
+        } else {
+            console.error("Card payment not approved or failed:", result);
+            return { error: `Pagamento com cartão falhou. Status: ${result.status} - ${result.status_detail}` };
+        }
+    } catch (error: any) {
+        console.error("Erro no Servidor (processCardPayment):", error);
+        return { error: `Erro ao processar pagamento com cartão: ${error.message}` };
+    }
+}
+
 // ----------------------------------------------------------------
 // NOVA LÓGICA DE MOVIMENTAÇÃO DE ARQUIVOS (ROBUSTA)
 // ----------------------------------------------------------------
@@ -246,10 +286,16 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         }
         
         // 2. Separa os dados e define o ID e a data de criação
-        const { payment, aiPrompt, plan, ...finalPageData } = sanitized;
+        const { payment, aiPrompt, ...finalPageData } = sanitized;
         finalPageData.id = newPageId;
         finalPageData.createdAt = Timestamp.now();
         finalPageData.paymentId = paymentId; // Guarda o ID do pagamento para referência
+
+        // LÓGICA DE EXPIRAÇÃO
+        if (finalPageData.plan === 'basico') {
+            const oneDayInMillis = 24 * 60 * 60 * 1000;
+            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + oneDayInMillis);
+        }
 
         // 3. (ETAPA CRUCIAL) Move os arquivos para o local permanente ANTES de salvar no DB
         const dataWithPermanentFiles = await moveFilesToPermanentStorage(finalPageData, newPageId);
