@@ -96,7 +96,7 @@ function DemoSection() {
       <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
         
         {/* Container Principal */}
-        <div className="relative w-full max-w-[1400px] h-[550px] bg-[#08020d] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
+        <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
             
             {/* --- BACKGROUND --- */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b] via-[#0f021a] to-[#05000a] z-0"></div>
@@ -372,7 +372,7 @@ export default function Home() {
         </div>
       </section>
 
-      <AnimatedSection id="how-it-works-simple" className="section-padding">
+      <AnimatedSection id="how-it-works-simple" className="section-padding bg-card/50">
         <div className="container max-w-6xl">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
@@ -414,11 +414,11 @@ export default function Home() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="demo-section" className="section-padding">
+      <AnimatedSection id="demo-section" className="section-padding bg-card/50">
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding bg-black/20 overflow-hidden relative">
+      <AnimatedSection id="avaliacoes" className="section-padding bg-card/50 overflow-hidden relative">
         {/* Efeito de Fundo Sutil na Seção */}
         <div className="absolute inset-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/10 via-transparent to-transparent pointer-events-none" />
         
@@ -466,7 +466,11 @@ export default function Home() {
                         <Star className="w-4 h-4" /> {t('home.plans.recommended')}
                     </div>
                     <h3 className="text-2xl font-bold text-primary">{t('home.plans.avancado.title')}</h3>
-                    <p className="text-muted-foreground text-sm mb-8">{t('home.plans.avancado.description')}</p>
+                    <p className="text-muted-foreground text-sm mb-4">{t('home.plans.avancado.description')}</p>
+                    <div className="text-center my-6">
+                        <p className="text-4xl font-bold text-foreground">R$24,99</p>
+                        <p className="text-sm text-muted-foreground">Pagamento único</p>
+                    </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_advanced')} />
                         <PlanFeature text={t('home.plans.feature.music')} />
@@ -484,7 +488,11 @@ export default function Home() {
                 {/* Plano Básico */}
                 <div className="bg-card/80 backdrop-blur-sm border border-border p-8 rounded-2xl flex flex-col">
                     <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
-                    <p className="text-muted-foreground text-sm mb-8">{t('home.plans.basico.description')}</p>
+                    <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
+                    <div className="text-center my-6">
+                        <p className="text-4xl font-bold text-foreground">R$14,99</p>
+                        <p className="text-sm text-muted-foreground">Pagamento único</p>
+                    </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_basic')} />
                          <PlanFeature text={t('home.plans.feature.timeline_basic')} />
