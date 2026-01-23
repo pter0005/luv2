@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -363,11 +364,12 @@ export default function Home() {
             
 
             {/* --- DIREITA: 3 CELULARES (LEQUE 3D PERFEITO) --- */}
-            <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
+            <div className="relative h-[550px] md:h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
                  
-                 <div className="relative w-[300px] h-[600px] flex items-center justify-center">
+                 {/* CONTAINER PRINCIPAL (SCALE PARA MOBILE PARA NÃO VAZAR) */}
+                 <div className="relative w-[300px] h-[600px] flex items-center justify-center scale-[0.65] xs:scale-[0.75] md:scale-100 transition-transform duration-300">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VÍDEO DO CONTADOR AGORA */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS) - VÍDEO DO CONTADOR (AGORA CORRETO) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0, rotate: 0 }}
                         animate={{ opacity: 1, x: -90, rotate: -15, y: 30 }}
@@ -378,6 +380,7 @@ export default function Home() {
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay loop muted playsInline 
+                                // VIDEO CONTADOR
                                 src="https://i.imgur.com/FxHuXVb.mp4" 
                             />
                         </div>
@@ -399,7 +402,7 @@ export default function Home() {
                         </div>
                      </motion.div>
 
-                     {/* 3. CELULAR CENTRAL (DESTAQUE) - VÍDEO DO CASAL AGORA */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) - VÍDEO DO CASAL (AGORA CORRETO) */}
                      <motion.div
                         initial={{ opacity: 0, y: 50, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -417,6 +420,7 @@ export default function Home() {
                                 <video 
                                     className="w-full h-full object-cover" 
                                     autoPlay loop muted playsInline 
+                                    // VIDEO CASAL
                                     src="https://i.imgur.com/GHtKVNZ.mp4" 
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
@@ -426,8 +430,6 @@ export default function Home() {
 
 
                      {/* --- ELEMENTOS FLUTUANTES (WIDGETS FORA DO CELULAR) --- */}
-                     
-                     {/* Corações: Z-INDEX ajustado para ficarem na frente e atrás */}
                      
                      {/* Coração GIGANTE ATRÁS (Esquerda) */}
                      <motion.div 
@@ -641,3 +643,4 @@ export default function Home() {
     </>
   );
 }
+
