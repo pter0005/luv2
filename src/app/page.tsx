@@ -229,35 +229,41 @@ export default function Home() {
             {/* --- ÁREA DOS CELULARES (Layout 45 Graus Liso) --- */}
             <div className="relative h-[550px] md:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0 lg:mt-0">
                  
-                 {/* Container com Scale para Mobile (para não cortar os 45 graus) */}
+                 {/* CONTAINER PRINCIPAL */}
                  <div className="relative w-full max-w-[320px] md:max-w-[500px] h-[600px] flex items-center justify-center scale-[0.55] sm:scale-[0.7] md:scale-100 transition-transform duration-300 transform-gpu">
 
-                     {/* 1. ESQUERDA (ATRÁS & DEITADO 45º) */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS & DEITADO 45º) - CORRIGIDO */}
                      <motion.div
-                        animate={{ y: [0, 10, 0] }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute z-10 brightness-[0.4] left-[-160px] top-[50px] rotate-[-45deg] origin-center will-change-transform"
+                        initial={{ x: 0, rotate: 0 }}
+                        whileInView={{ x: -160, y: 50, rotate: -45 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, ease: "backOut" }} // backOut dá um efeito de "pulo" ao chegar
+                        className="absolute z-10 brightness-[0.4] origin-center will-change-transform"
                      >
                         <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 2. DIREITA (ATRÁS & DEITADO 45º) */}
+                     {/* 2. CELULAR DIREITA (ATRÁS & DEITADO 45º) - CORRIGIDO */}
                      <motion.div
-                        animate={{ y: [0, -10, 0] }}
-                        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                        className="absolute z-10 brightness-[0.4] right-[-160px] top-[50px] rotate-[45deg] origin-center will-change-transform"
+                        initial={{ x: 0, rotate: 0 }}
+                        whileInView={{ x: 160, y: 50, rotate: 45 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1, ease: "backOut" }}
+                        className="absolute z-10 brightness-[0.4] origin-center will-change-transform"
                      >
                         <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 3. CENTRAL (DESTAQUE) */}
+                     {/* 3. CELULAR CENTRAL (Reto) */}
                      <motion.div
-                        animate={{ y: [-5, 5, -5] }}
-                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        initial={{ y: 50, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
                         className="relative z-30 will-change-transform"
                      >
                         <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
@@ -270,7 +276,7 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* --- WIDGETS & CORAÇÕES (Leves e posicionados) --- */}
+                     {/* --- WIDGETS & CORAÇÕES --- */}
                      
                      <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-80px] left-[-100px] z-0 opacity-40">
                         <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 drop-shadow-md rotate-[-25deg]" />
@@ -288,8 +294,13 @@ export default function Home() {
                         <Heart fill="#a855f7" className="text-purple-600 w-16 h-16 rotate-[25deg]" />
                      </div>
 
-                     {/* WIDGET 1: Suporte (Esquerda Topo) */}
-                     <div className="absolute -left-[140px] md:-left-[180px] top-[0] bg-black/40 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
+                     {/* WIDGET 1: Suporte */}
+                     <motion.div 
+                        initial={{ opacity: 0, x: -50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.8 }}
+                        className="absolute -left-[140px] md:-left-[180px] top-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
+                     >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
                              <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
@@ -298,10 +309,15 @@ export default function Home() {
                              <p className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Suporte</p>
                              <p className="text-sm text-white font-bold">Online 24/7</p>
                         </div>
-                     </div>
+                     </motion.div>
 
-                     {/* WIDGET 2: Avaliação (Direita Baixo) */}
-                     <div className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-black/40 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
+                     {/* WIDGET 2: Avaliação */}
+                     <motion.div 
+                        initial={{ opacity: 0, x: 50 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1 }}
+                        className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
+                     >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
                          </div>
@@ -309,7 +325,7 @@ export default function Home() {
                             {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                         </div>
                         <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
-                     </div>
+                     </motion.div>
 
                  </div>
             </div>
