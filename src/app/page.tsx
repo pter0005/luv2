@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Play,
   Sparkles,
-  Zap,
   Star,
   Palette,
   MessageCircle,
@@ -37,8 +36,8 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, ease: "easeOut" }} // Mais rápido para parecer mais responsivo
-                className="will-change-[opacity,transform]"
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="will-change-transform"
             >
                 {children}
             </motion.div>
@@ -46,7 +45,7 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
     );
 };
 
-// --- COMPONENTE IPHONE (Leve e sem Blur) ---
+
 const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
   <motion.div 
     initial={{ y: 40, opacity: 0 }}
@@ -63,7 +62,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
             </div>
             <div className="relative w-full h-full bg-[#050505] z-10">
                 <video 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover scale-[1.01]" 
                     autoPlay loop muted playsInline 
                     src={videoSrc}
                 />
@@ -121,7 +120,7 @@ function DemoSection() {
                 </div>
 
                 <div className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[-15deg]" />
+                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[15deg]" />
                 </div>
             </div>
         </div>
@@ -160,21 +159,20 @@ export default function Home() {
   }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
   const simpleSteps = useMemo(() => [
-    { id: 1, image: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl ?? '', title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
-    { id: 2, image: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl ?? '', title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
-    { id: 3, image: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl ?? '', title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
-    { id: 4, image: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl ?? '', title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
+    { icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl, title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
+    { icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl, title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
+    { icon: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl, title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
+    { icon: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl, title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
   ], [t]);
-
 
   if (showTimeline) return <Timeline events={[]} onClose={() => setShowTimeline(false)} />;
 
   return (
     <>
-       {/* --- HERO SECTION OTIMIZADA PARA MOBILE --- */}
+       {/* --- HERO SECTION --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        {/* BACKGROUND - Usando CSS puro para não pesar */}
+        {/* BACKGROUND */}
         <div className="absolute inset-0 -z-30 bg-[#05000a]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay"></div>
@@ -182,8 +180,8 @@ export default function Home() {
 
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
-            {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-1 lg:order-1">
+            {/* --- TEXTO (order-1 no mobile) --- */}
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-1">
                  
                  <div className="inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
                     <div className="flex -space-x-3">
@@ -230,83 +228,58 @@ export default function Home() {
                 </div>
             </div>
             
-
-            {/* --- ÁREA DOS CELULARES (Layout 45 Graus & Performance Fix) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-2 lg:order-2">
+            {/* --- ÁREA DOS CELULARES (order-2 no mobile) --- */}
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-2">
                  
-                 {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para garantir que TUDO caiba */}
-                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.7] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 {/* CONTAINER PRINCIPAL */}
+                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.7] sm:scale-90 md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS & DEITADO -15º) */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS & -15 GRAUS) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
                         whileInView={{ opacity: 1, x: -110, y: 30, rotate: -15 }}
-                        transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-right will-change-transform"
+                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-right"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[10px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                             <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
+                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[10px] border-black bg-black overflow-hidden shadow-2xl">
+                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60" />
+                             <video className="relative w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 2. CELULAR DIREITA (ATRÁS & DEITADO 15º) */}
+                     {/* 2. CELULAR DIREITA (ATRÁS & 15 GRAUS) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
                         whileInView={{ opacity: 1, x: 110, y: 30, rotate: 15 }}
-                        transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-left will-change-transform"
+                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-left"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[10px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                             <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
+                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[10px] border-black bg-black overflow-hidden shadow-2xl">
+                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60" />
+                             <video className="relative w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 3. CELULAR CENTRAL (Reto) */}
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) */}
                      <motion.div
-                        initial={{ y: 50, opacity: 0 }}
-                        whileInView={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+                        initial={{ opacity: 0, y: 100, scale: 0.9 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
                         className="relative z-30 will-change-transform"
                      >
-                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[12px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                        <div className="relative w-[280px] h-[580px] rounded-[3.5rem] border-[12px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                            <div className="absolute -inset-8 bg-primary/30 blur-3xl rounded-full opacity-70" />
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                 <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                             </div>
-                            <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/GHtKVNZ.mp4" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
+                            <video className="relative w-full h-full object-cover z-10" autoPlay loop muted playsInline src="https://i.imgur.com/GHtKVNZ.mp4" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none z-20"></div>
                         </div>
                      </motion.div>
 
 
-                     {/* --- WIDGETS & BRILHOS (Otimizados: Sem Blur pesado, Sombras leves) --- */}
-                     
-                     <div className="absolute top-[-80px] left-[-100px] z-0 opacity-40 animate-pulse">
-                        <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
-                           <Sparkles className="text-purple-600 w-32 h-32 rotate-[-25deg]" />
-                        </motion.div>
-                     </div>
-
-                     <div className="absolute bottom-[-20px] right-[-80px] z-0 opacity-40 animate-pulse">
-                         <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}>
-                           <Sparkles className="text-purple-500 w-24 h-24 rotate-[15deg]" />
-                         </motion.div>
-                     </div>
-                     
-                     <div className="absolute bottom-[80px] left-[-40px] z-0 opacity-40">
-                         <Sparkles className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
-                     </div>
-
-                     <div className="absolute top-[20px] right-[-60px] z-0 opacity-30">
-                         <Sparkles className="text-purple-600 w-16 h-16 rotate-[25deg]" />
-                     </div>
-
-                     {/* WIDGET 1: Suporte (Esquerda Topo) - BG Sólido Transparente */}
-                     <motion.div 
-                        initial={{ opacity: 0, x: -30 }} 
-                        whileInView={{ opacity: 1, x: 0 }} 
-                        transition={{ delay: 0.5 }}
-                        className="absolute -left-[140px] md:-left-[180px] top-[0] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-lg flex items-center gap-3 z-40"
-                     >
+                     {/* WIDGETS */}
+                     <div className="absolute -left-[140px] md:-left-[180px] top-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
                              <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
@@ -315,92 +288,46 @@ export default function Home() {
                              <p className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Suporte</p>
                              <p className="text-sm text-white font-bold">Online 24/7</p>
                         </div>
-                     </motion.div>
+                     </div>
 
-                     {/* WIDGET 2: Avaliação (Direita Baixo) - BG Sólido Transparente */}
-                     <motion.div 
-                        initial={{ opacity: 0, x: 30 }} 
-                        whileInView={{ opacity: 1, x: 0 }} 
-                        transition={{ delay: 0.7 }}
-                        className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-lg z-40 flex flex-col items-center"
-                     >
-                         <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                     <div className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
+                         <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
                          </div>
                         <div className="flex items-center gap-1 mb-1">
                             {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                         </div>
                         <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
-                     </motion.div>
+                     </div>
 
                  </div>
             </div>
         </div>
       </section>
-
-      {/* RESTO DAS SEÇÕES (MANTIDAS) */}
-      <AnimatedSection id="how-it-works-simple" className="py-24 md:py-32 bg-[#05000a]">
-        <div className="container max-w-7xl relative z-10">
-          {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="font-display font-bold tracking-tight text-4xl md:text-5xl text-white mb-6">
-              Crie um presente inesquecível em <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                4 passos simples
-              </span>
-            </h2>
-            <p className="text-lg text-zinc-400">
-                {t('home.howitworks.description')}
-            </p>
-          </div>
-
-          {/* Grid de Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-            
-            {/* Linha Conectora (Apenas Desktop) */}
-            <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent border-t border-dashed border-white/20 -z-10"></div>
-
-            {simpleSteps.map((step, i) => (
-                <motion.div 
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="group relative flex flex-col h-full"
-                >
-                    {/* Número Flutuante com Glow */}
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
-                        <div className="w-12 h-12 rounded-full bg-[#0a0a0a] border border-purple-500/50 flex items-center justify-center text-xl font-bold text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 group-hover:bg-purple-600 transition-all duration-300">
+      
+      {/* RESTO DAS SEÇÕES */}
+      <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
+        <div className="container max-w-6xl relative z-10">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
+              <p className="text-base text-muted-foreground mt-4">{t('home.howitworks.description')}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {simpleSteps.map((step, i) => (
+                    <div key={i} className="relative flex flex-col items-center text-center group">
+                        <div className="absolute -top-5 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/30 z-10">
                             {i+1}
                         </div>
-                    </div>
-
-                    {/* Card Glassmorphism */}
-                    <div className="flex-1 pt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group-hover:-translate-y-2 shadow-xl">
-                        
-                        {/* Ilustração com Glow no Fundo */}
-                        <div className="relative w-40 h-40 mx-auto mb-6">
-                            <div className="absolute inset-0 bg-purple-500/20 blur-[40px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
-                            {step.image && <Image 
-                                src={step.image} 
-                                alt={step.title} 
-                                fill 
-                                className="object-contain relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" 
-                            />}
-                        </div>
-
-                        <div className="text-center">
-                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
-                                {step.title}
-                            </h3>
-                            <p className="text-sm text-zinc-400 leading-relaxed font-medium group-hover:text-zinc-200 transition-colors">
-                                {step.description}
-                            </p>
+                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
+                            <div className="relative w-48 h-48 mb-4">
+                                {step.icon && <Image src={step.icon} alt={step.title} fill className="object-contain" sizes="192px"/>}
+                            </div>
+                            <h3 className="font-bold text-lg text-foreground">{step.title}</h3>
+                            <p className="text-muted-foreground text-sm mt-2 flex-grow">{step.description}</p>
                         </div>
                     </div>
-                </motion.div>
-            ))}
-          </div>
+                ))}
+            </div>
         </div>
       </AnimatedSection>
       
