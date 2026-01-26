@@ -213,7 +213,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center h-full">
             
             {/* --- COLUNA ESQUERDA: TEXTO E CTA --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left order-1">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left order-2 lg:order-1">
                  
                  {/* Badge de Prova Social */}
                  <motion.div 
@@ -295,23 +295,8 @@ export default function Home() {
             
 
             {/* --- COLUNA DIREITA: VISUAL HERO (O "PULO DO GATO") --- */}
-            <div className="relative h-[450px] lg:h-[700px] flex items-center justify-center order-2 perspective-[2000px] -mt-16 lg:mt-0">
+            <div className="relative h-[450px] lg:h-[700px] flex items-center justify-center order-1 lg:order-2 perspective-[2000px] -mt-16 lg:mt-0">
                  
-                 {/* CORAÇÕES FLUTUANTES (Fora do container que escala) */}
-                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} className="absolute top-10 -left-8 z-40 lg:top-20 lg:-left-12">
-                    <Heart className="w-16 h-16 text-purple-500 rotate-[-25deg]" fill="#a855f7" strokeWidth={0} />
-                </motion.div>
-                <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute top-8 -right-4 z-40 lg:top-16 lg:-right-8">
-                    <Heart className="w-14 h-14 text-purple-500 rotate-[20deg]" fill="#a855f7" strokeWidth={0} />
-                </motion.div>
-                <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-24 -right-12 z-40 lg:bottom-28 lg:-right-16">
-                    <Heart className="w-20 h-20 text-purple-500 rotate-[35deg]" fill="#a855f7" strokeWidth={0} />
-                </motion.div>
-                <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="absolute bottom-20 -left-10 z-40 lg:bottom-24 lg:-left-14">
-                    <Heart className="w-16 h-16 text-purple-500 -rotate-[30deg]" fill="#a855f7" strokeWidth={0} />
-                </motion.div>
-
-
                  {/* Glow Central Atrás dos Phones */}
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-purple-600/30 blur-[80px] rounded-full z-0"></div>
 
