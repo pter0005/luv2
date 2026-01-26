@@ -160,11 +160,12 @@ export default function Home() {
   }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
   const simpleSteps = useMemo(() => [
-    { icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl, title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl, title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl, title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl, title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
+    { id: 1, image: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl ?? '', title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
+    { id: 2, image: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl ?? '', title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
+    { id: 3, image: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl ?? '', title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
+    { id: 4, image: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl ?? '', title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
   ], [t]);
+
 
   if (showTimeline) return <Timeline events={[]} onClose={() => setShowTimeline(false)} />;
 
@@ -182,7 +183,7 @@ export default function Home() {
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-2 lg:order-1">
                  
                  <div className="inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
                     <div className="flex -space-x-3">
@@ -231,31 +232,31 @@ export default function Home() {
             
 
             {/* --- ÁREA DOS CELULARES (Layout 45 Graus & Performance Fix) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-1 lg:order-2">
                  
                  {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para garantir que TUDO caiba */}
-                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.45] xs:scale-[0.55] sm:scale-[0.65] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.6] sm:scale-[0.75] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS & DEITADO -45º) */}
+                     {/* 1. CELULAR ESQUERDA (ATRÁS & DEITADO -15º) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: -140, y: 30, rotate: -45 }}
+                        whileInView={{ opacity: 1, x: -110, y: 30, rotate: -15 }}
                         transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
                         className="absolute z-10 brightness-[0.4] origin-bottom-right will-change-transform"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[10px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
                         </div>
                      </motion.div>
 
-                     {/* 2. CELULAR DIREITA (ATRÁS & DEITADO 45º) */}
+                     {/* 2. CELULAR DIREITA (ATRÁS & DEITADO 15º) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: 140, y: 30, rotate: 45 }}
+                        whileInView={{ opacity: 1, x: 110, y: 30, rotate: 15 }}
                         transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
                         className="absolute z-10 brightness-[0.4] origin-bottom-left will-change-transform"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[10px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video className="w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
                         </div>
                      </motion.div>
@@ -267,7 +268,7 @@ export default function Home() {
                         transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
                         className="relative z-30 will-change-transform"
                      >
-                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[12px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                 <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                             </div>
@@ -277,9 +278,8 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* --- WIDGETS & CORAÇÕES (Otimizados: Sem Blur pesado, Sombras leves) --- */}
+                     {/* --- WIDGETS & BRILHOS (Otimizados: Sem Blur pesado, Sombras leves) --- */}
                      
-                     {/* Corações estáticos ou com animação leve CSS para performance */}
                      <div className="absolute top-[-80px] left-[-100px] z-0 opacity-40 animate-pulse">
                         <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
                            <Sparkles className="text-purple-600 w-32 h-32 rotate-[-25deg]" />
@@ -339,28 +339,66 @@ export default function Home() {
       </section>
 
       {/* RESTO DAS SEÇÕES (MANTIDAS) */}
-      <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
-        <div className="container max-w-6xl relative z-10">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
-              <p className="text-base text-muted-foreground mt-4">{t('home.howitworks.description')}</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {simpleSteps.map((step, i) => (
-                    <div key={i} className="relative flex flex-col items-center text-center group">
-                        <div className="absolute -top-5 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/30 z-10">
-                            {i+1}
-                        </div>
-                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
-                            <div className="relative w-48 h-48 mb-4">
-                                <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill className="object-contain" sizes="192px"/>
-                            </div>
-                            <h3 className="font-bold text-lg text-foreground">{step.title}</h3>
-                            <p className="text-muted-foreground text-sm mt-2 flex-grow">{step.description}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
+      <AnimatedSection id="how-it-works-simple" className="py-24 md:py-32 bg-[#05000a]">
+        <div className="container max-w-7xl relative z-10">
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <h2 className="font-display font-bold tracking-tight text-4xl md:text-5xl text-white mb-6">
+              Crie um presente inesquecível em <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                4 passos simples
+              </span>
+            </h2>
+            <p className="text-lg text-zinc-400">
+              {t('home.howitworks.description')}
+            </p>
+          </div>
+
+          {/* Grid de Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+            {/* Linha Conectora (Apenas Desktop) */}
+            <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent border-t border-dashed border-white/20 -z-10"></div>
+
+            {simpleSteps.map((step, i) => (
+              <motion.div
+                key={step.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="group relative flex flex-col h-full"
+              >
+                {/* Número Flutuante com Glow */}
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
+                  <div className="w-12 h-12 rounded-full bg-[#0a0a0a] border border-purple-500/50 flex items-center justify-center text-xl font-bold text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 group-hover:bg-purple-600 transition-all duration-300">
+                    {step.id}
+                  </div>
+                </div>
+
+                {/* Card Glassmorphism */}
+                <div className="flex-1 pt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group-hover:-translate-y-2 shadow-xl">
+                  {/* Ilustração com Glow no Fundo */}
+                  <div className="relative w-40 h-40 mx-auto mb-6">
+                    <div className="absolute inset-0 bg-purple-500/20 blur-[40px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      fill
+                      className="object-contain relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-zinc-400 leading-relaxed font-medium group-hover:text-zinc-200 transition-colors">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </AnimatedSection>
       
