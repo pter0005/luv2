@@ -55,7 +55,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
     className={cn("relative group transform-gpu", className)}
   >
     <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#121212] shadow-2xl ring-1 ring-white/10">
-        <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
+        <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[10px] border-black overflow-hidden">
             <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
                 <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
                     <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
@@ -63,7 +63,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
             </div>
             <div className="relative w-full h-full bg-[#050505] z-10">
                 <video 
-                    className="w-full h-full object-cover scale-[1.01]" 
+                    className="w-full h-full object-cover" 
                     autoPlay loop muted playsInline 
                     src={videoSrc}
                 />
@@ -121,7 +121,7 @@ function DemoSection() {
                 </div>
 
                 <div className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[15deg]" />
+                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[-15deg]" />
                 </div>
             </div>
         </div>
@@ -183,7 +183,7 @@ export default function Home() {
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-2 lg:order-1">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-1 lg:order-1">
                  
                  <div className="inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
                     <div className="flex -space-x-3">
@@ -232,10 +232,10 @@ export default function Home() {
             
 
             {/* --- ÁREA DOS CELULARES (Layout 45 Graus & Performance Fix) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-1 lg:order-2">
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-2 lg:order-2">
                  
                  {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para garantir que TUDO caiba */}
-                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.6] sm:scale-[0.75] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.7] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* 1. CELULAR ESQUERDA (ATRÁS & DEITADO -15º) */}
                      <motion.div
@@ -350,53 +350,55 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-lg text-zinc-400">
-              {t('home.howitworks.description')}
+                {t('home.howitworks.description')}
             </p>
           </div>
 
           {/* Grid de Steps */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+            
             {/* Linha Conectora (Apenas Desktop) */}
             <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent border-t border-dashed border-white/20 -z-10"></div>
 
             {simpleSteps.map((step, i) => (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group relative flex flex-col h-full"
-              >
-                {/* Número Flutuante com Glow */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
-                  <div className="w-12 h-12 rounded-full bg-[#0a0a0a] border border-purple-500/50 flex items-center justify-center text-xl font-bold text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 group-hover:bg-purple-600 transition-all duration-300">
-                    {step.id}
-                  </div>
-                </div>
+                <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                    className="group relative flex flex-col h-full"
+                >
+                    {/* Número Flutuante com Glow */}
+                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
+                        <div className="w-12 h-12 rounded-full bg-[#0a0a0a] border border-purple-500/50 flex items-center justify-center text-xl font-bold text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 group-hover:bg-purple-600 transition-all duration-300">
+                            {i+1}
+                        </div>
+                    </div>
 
-                {/* Card Glassmorphism */}
-                <div className="flex-1 pt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group-hover:-translate-y-2 shadow-xl">
-                  {/* Ilustração com Glow no Fundo */}
-                  <div className="relative w-40 h-40 mx-auto mb-6">
-                    <div className="absolute inset-0 bg-purple-500/20 blur-[40px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
-                    <Image
-                      src={step.image}
-                      alt={step.title}
-                      fill
-                      className="object-contain relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
-                    />
-                  </div>
+                    {/* Card Glassmorphism */}
+                    <div className="flex-1 pt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group-hover:-translate-y-2 shadow-xl">
+                        
+                        {/* Ilustração com Glow no Fundo */}
+                        <div className="relative w-40 h-40 mx-auto mb-6">
+                            <div className="absolute inset-0 bg-purple-500/20 blur-[40px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+                            {step.image && <Image 
+                                src={step.image} 
+                                alt={step.title} 
+                                fill 
+                                className="object-contain relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" 
+                            />}
+                        </div>
 
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-zinc-400 leading-relaxed font-medium group-hover:text-zinc-200 transition-colors">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
+                                {step.title}
+                            </h3>
+                            <p className="text-sm text-zinc-400 leading-relaxed font-medium group-hover:text-zinc-200 transition-colors">
+                                {step.description}
+                            </p>
+                        </div>
+                    </div>
+                </motion.div>
             ))}
           </div>
         </div>
