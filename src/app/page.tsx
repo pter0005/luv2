@@ -47,41 +47,12 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
     );
 };
 
-// --- COMPONENTE IPHONE OTIMIZADO (Leve) ---
-const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
-  <motion.div 
-    initial={{ y: 60, opacity: 0 }}
-    whileInView={{ y: 0, opacity: 1 }}
-    transition={{ duration: 0.8, delay: delay, ease: "easeOut" }}
-    className={cn("relative group transform-gpu", className)}
-  >
-    <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#1a1a1a] shadow-2xl ring-1 ring-white/10">
-        <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
-            <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
-                <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
-                    <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
-                </div>
-            </div>
-            <div className="relative w-full h-full bg-[#050505] z-10">
-                <video 
-                    className="w-full h-full object-cover"
-                    style={{'objectPosition':'48% 50%'}} 
-                    autoPlay loop muted playsInline 
-                    src={videoSrc}
-                />
-            </div>
-            <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 rounded-[3.2rem]"></div>
-        </div>
-    </div>
-  </motion.div>
-);
-
 const CSSIphone = ({ videoSrc, className }: { videoSrc: string, className?: string }) => (
   <div className={cn("relative w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden", className)}>
     <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
         <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
     </div>
-    <video className="w-full h-full object-cover" autoPlay loop muted playsInline src={videoSrc} />
+    <video className="w-full h-full object-cover" style={{objectPosition: '48% 50%'}} autoPlay loop muted playsInline src={videoSrc} />
     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
   </div>
 );
@@ -97,6 +68,27 @@ const FloatingWidget = ({ children, className, delay }: { children: React.ReactN
     </motion.div>
 );
 
+// --- COMPONENTE IPHONE OTIMIZADO (GPU FRIENDLY) ---
+const Iphone15Pro = ({ videoSrc, className }: { videoSrc: string, className?: string }) => (
+  <div className={cn("relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#1a1a1a] shadow-2xl ring-1 ring-white/10 group transform-gpu will-change-transform", className)}>
+    <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden mask-image-rounded">
+        <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
+                <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
+            </div>
+        </div>
+        <div className="relative w-full h-full bg-[#050505] z-10">
+            <video 
+                className="w-full h-full object-cover scale-[1.01]" 
+                autoPlay loop muted playsInline 
+                src={videoSrc}
+            />
+        </div>
+        {/* Reflexo estático para não pesar a GPU */}
+        <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 rounded-[3.2rem]"></div>
+    </div>
+  </div>
+);
 
 function DemoSection() {
     return (
@@ -109,10 +101,19 @@ function DemoSection() {
             </motion.div>
 
             <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
-                <div className="hidden lg:flex absolute -left-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" className="origin-center rotate-[-15deg]" />
-                </div>
+                {/* Lateral Esquerda */}
+                <motion.div 
+                    initial={{ x: -50, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.8 }}
+                    className="hidden lg:flex absolute -left-12 top-10 justify-center scale-90"
+                >
+                    <div className="rotate-[-15deg]">
+                        <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" />
+                    </div>
+                </motion.div>
 
+                {/* Texto Central */}
                 <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-20px]">
                     <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
                         <span className="relative flex h-2 w-2">
@@ -140,9 +141,17 @@ function DemoSection() {
                     </div>
                 </div>
 
-                <div className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://res.cloudinary.com/dncoxm1it/video/upload/v1769412070/2026-01-26_04-18-56_wyf9ir.mp4" className="origin-center rotate-[15deg]" />
-                </div>
+                {/* Lateral Direita */}
+                <motion.div 
+                    initial={{ x: 50, opacity: 0 }}
+                    whileInView={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.8 }}
+                    className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90"
+                >
+                    <div className="rotate-[15deg]">
+                        <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" />
+                    </div>
+                </motion.div>
             </div>
         </div>
       </section>
@@ -190,7 +199,7 @@ export default function Home() {
 
   return (
     <>
-       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center min-h-[100dvh] pt-24 pb-12 lg:py-0 bg-[#05000a]">
+      <section ref={heroRef} className="relative w-full overflow-hidden flex items-center min-h-[100dvh] pt-24 pb-12 lg:py-0 bg-[#05000a]">
     {/* Background Effects (Sutil e Profissional) */}
     <div className="absolute inset-0 z-0">
          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen opacity-50"></div>
