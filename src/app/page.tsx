@@ -81,7 +81,7 @@ const Iphone15Pro = ({ videoSrc, className }: { videoSrc: string, className?: st
         <div className="relative w-full h-full bg-[#050505] z-10">
             <video 
                 className="w-full h-full object-cover" 
-                style={{objectPosition: '48% 50%'}}
+                style={{objectPosition: '49.5% 50%'}}
                 autoPlay loop muted playsInline 
                 src={videoSrc}
             />
@@ -361,16 +361,16 @@ export default function Home() {
 
                      {/* EFEITOS DE CORAÇÃO (Paralaxe suave) */}
                      <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-12 -right-12 z-0 opacity-60">
-                        <Heart fill="#a855f7" className="text-purple-300 w-24 h-24 rotate-12 blur-[1px]" />
+                        <Heart fill="#a855f7" className="w-24 h-24 rotate-12" />
                      </motion.div>
                      <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute top-[20%] -left-12 z-0 opacity-50">
-                        <Heart fill="#a855f7" className="text-purple-600 w-12 h-12 rotate-[25deg] drop-shadow-md" />
+                        <Heart fill="#a855f7" className="w-12 h-12 rotate-[25deg]" />
                      </motion.div>
                      <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-20 -left-20 z-40 opacity-80">
-                        <Heart fill="#a855f7" className="text-purple-600 w-16 h-16 -rotate-12 drop-shadow-lg" />
+                        <Heart fill="#a855f7" className="w-16 h-16 -rotate-12" />
                      </motion.div>
                      <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-[25%] -right-10 z-0 opacity-50">
-                        <Heart fill="#a855f7" className="text-purple-600 w-14 h-14 rotate-[-20deg] drop-shadow-lg" />
+                        <Heart fill="#a855f7" className="w-14 h-14 rotate-[-20deg]" />
                      </motion.div>
 
                  </div>
