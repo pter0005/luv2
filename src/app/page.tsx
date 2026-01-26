@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -191,11 +190,11 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [typedPhrase, isDeleting, phraseIndex, phrases]);
 
-  const simpleSteps = useMemo(() => [
-    { icon: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl, title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl, title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl, title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
-    { icon: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl, title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
+  const steps = useMemo(() => [
+    { id: 1, image: PlaceHolderImages.find(p => p.id === 'step1')?.imageUrl, title: t('home.howitworks.step1.title'), description: t('home.howitworks.step1.description') },
+    { id: 2, image: PlaceHolderImages.find(p => p.id === 'step2')?.imageUrl, title: t('home.howitworks.step2.title'), description: t('home.howitworks.step2.description') },
+    { id: 3, image: PlaceHolderImages.find(p => p.id === 'step3')?.imageUrl, title: t('home.howitworks.step3.title'), description: t('home.howitworks.step3.description') },
+    { id: 4, image: PlaceHolderImages.find(p => p.id === 'step4')?.imageUrl, title: t('home.howitworks.step4.title'), description: t('home.howitworks.step4.description') },
   ], [t]);
 
   if (showTimeline) return <Timeline events={[]} onClose={() => setShowTimeline(false)} />;
@@ -382,26 +381,67 @@ export default function Home() {
       
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl relative z-10">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
-              <p className="text-base text-muted-foreground mt-4">{t('home.howitworks.description')}</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {simpleSteps.map((step, i) => (
-                    <div key={i} className="relative flex flex-col items-center text-center group">
-                        <div className="absolute -top-5 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/30 z-10">
-                            {i+1}
-                        </div>
-                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
-                            <div className="relative w-48 h-48 mb-4">
-                                <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill className="object-contain" sizes="192px"/>
-                            </div>
-                            <h3 className="font-bold text-lg text-foreground">{step.title}</h3>
-                            <p className="text-muted-foreground text-sm mt-2 flex-grow">{step.description}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto mb-20">
+              <h2 className="font-display font-bold tracking-tight text-4xl md:text-5xl text-white mb-6">
+                  Crie um presente inesquecível em <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                      4 passos simples
+                  </span>
+              </h2>
+              <p className="text-lg text-zinc-400">
+                  {t('home.howitworks.description')}
+              </p>
+          </div>
+
+          {/* Grid de Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+              
+              {/* Linha Conectora (Apenas Desktop) */}
+              <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent border-t border-dashed border-white/20 -z-10"></div>
+
+              {steps.map((step, i) => (
+                  <motion.div 
+                      key={step.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: i * 0.1 }}
+                      className="group relative flex flex-col h-full"
+                  >
+                      {/* Número Flutuante com Glow */}
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20">
+                          <div className="w-12 h-12 rounded-full bg-[#0a0a0a] border border-purple-500/50 flex items-center justify-center text-xl font-bold text-white shadow-[0_0_15px_rgba(168,85,247,0.4)] group-hover:scale-110 group-hover:bg-purple-600 transition-all duration-300">
+                              {step.id}
+                          </div>
+                      </div>
+
+                      {/* Card Glassmorphism */}
+                      <div className="flex-1 pt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 group-hover:-translate-y-2 shadow-xl">
+                          
+                          {/* Ilustração com Glow no Fundo */}
+                          <div className="relative w-40 h-40 mx-auto mb-6">
+                              <div className="absolute inset-0 bg-purple-500/20 blur-[40px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-500"></div>
+                              <Image 
+                                  src={step.image || ''} 
+                                  alt={step.title} 
+                                  fill 
+                                  className="object-contain relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3" 
+                                  sizes="160px"
+                              />
+                          </div>
+
+                          <div className="text-center">
+                              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">
+                                  {step.title}
+                              </h3>
+                              <p className="text-sm text-zinc-400 leading-relaxed font-medium group-hover:text-zinc-200 transition-colors">
+                                  {step.description}
+                              </p>
+                          </div>
+                      </div>
+                  </motion.div>
+              ))}
+          </div>
         </div>
       </AnimatedSection>
       
@@ -490,4 +530,4 @@ export default function Home() {
     </>
   );
 }
-
+```
