@@ -55,6 +55,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
   >
     <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#121212] shadow-2xl ring-1 ring-white/10">
         <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[10px] border-black overflow-hidden">
+            <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60 -z-10" />
             <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
                 <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
                     <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
@@ -242,7 +243,7 @@ export default function Home() {
                         className="absolute z-10 brightness-[0.4] origin-bottom-right"
                      >
                         <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[10px] border-black bg-black overflow-hidden shadow-2xl">
-                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60" />
+                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60 -z-10" />
                              <video className="relative w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/FxHuXVb.mp4" />
                         </div>
                      </motion.div>
@@ -255,7 +256,7 @@ export default function Home() {
                         className="absolute z-10 brightness-[0.4] origin-bottom-left"
                      >
                         <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[10px] border-black bg-black overflow-hidden shadow-2xl">
-                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60" />
+                             <div className="absolute -inset-6 bg-primary/20 blur-2xl rounded-full opacity-60 -z-10" />
                              <video className="relative w-full h-full object-cover" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4" />
                         </div>
                      </motion.div>
@@ -268,7 +269,7 @@ export default function Home() {
                         className="relative z-30 will-change-transform"
                      >
                         <div className="relative w-[280px] h-[580px] rounded-[3.5rem] border-[12px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
-                            <div className="absolute -inset-8 bg-primary/30 blur-3xl rounded-full opacity-70" />
+                            <div className="absolute -inset-8 bg-primary/30 blur-3xl rounded-full opacity-70 -z-10" />
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                 <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                             </div>
