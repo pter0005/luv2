@@ -68,6 +68,7 @@ const FloatingWidget = ({ children, className, delay }: { children: React.ReactN
     </motion.div>
 );
 
+
 // --- COMPONENTE IPHONE OTIMIZADO (GPU FRIENDLY) ---
 const Iphone15Pro = ({ videoSrc, className }: { videoSrc: string, className?: string }) => (
   <div className={cn("relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#1a1a1a] shadow-2xl ring-1 ring-white/10 group transform-gpu will-change-transform", className)}>
@@ -79,7 +80,8 @@ const Iphone15Pro = ({ videoSrc, className }: { videoSrc: string, className?: st
         </div>
         <div className="relative w-full h-full bg-[#050505] z-10">
             <video 
-                className="w-full h-full object-cover scale-[1.01]" 
+                className="w-full h-full object-cover" 
+                style={{objectPosition: '48% 50%'}}
                 autoPlay loop muted playsInline 
                 src={videoSrc}
             />
@@ -376,8 +378,7 @@ export default function Home() {
         </div>
     </div>
   </section>
-
-      {/* RESTO DAS SEÇÕES (Sem alterações) */}
+      
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
