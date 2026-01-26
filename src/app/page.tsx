@@ -52,7 +52,7 @@ const CSSIphone = ({ videoSrc, className }: { videoSrc: string, className?: stri
     <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
         <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
     </div>
-    <video className="w-full h-full object-cover" style={{objectPosition: '48% 50%'}} autoPlay loop muted playsInline src={videoSrc} />
+    <video className="w-full h-full object-cover" style={{objectPosition: '49.5% 50%'}} autoPlay loop muted playsInline src={videoSrc} />
     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
   </div>
 );
@@ -360,18 +360,29 @@ export default function Home() {
                      </FloatingWidget>
 
                      {/* EFEITOS DE CORAÇÃO (Paralaxe suave) */}
-                     <motion.div animate={{ y: [0, -15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-12 -right-12 z-0 opacity-60">
-                        <Heart fill="#a855f7" className="w-24 h-24 rotate-12" />
-                     </motion.div>
-                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute top-[20%] -left-12 z-0 opacity-50">
-                        <Heart fill="#a855f7" className="w-12 h-12 rotate-[25deg]" />
-                     </motion.div>
-                     <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute bottom-20 -left-20 z-40 opacity-80">
-                        <Heart fill="#a855f7" className="w-16 h-16 -rotate-12" />
-                     </motion.div>
-                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} className="absolute bottom-[25%] -right-10 z-0 opacity-50">
-                        <Heart fill="#a855f7" className="w-14 h-14 rotate-[-20deg]" />
-                     </motion.div>
+                     <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-4 -left-8 z-40 opacity-80">
+                        <Heart className="w-16 h-16 text-purple-500 -rotate-[25deg]" strokeWidth={2} fill="none" />
+                    </motion.div>
+
+                    <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} className="absolute -top-2 right-12 z-40">
+                        <Heart className="w-14 h-14 text-purple-500 rotate-[20deg]" fill="#a855f7" strokeWidth={0} />
+                    </motion.div>
+
+                    <motion.div animate={{ y: [0, -12, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }} className="absolute top-8 -right-4 z-20 opacity-70">
+                        <Heart className="w-20 h-20 text-purple-500 rotate-[35deg]" strokeWidth={2} fill="none" />
+                    </motion.div>
+
+                    <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.2 }} className="absolute bottom-40 -left-6 z-20 opacity-80">
+                        <Heart className="w-16 h-16 text-purple-500 -rotate-[30deg]" strokeWidth={2} fill="none" />
+                    </motion.div>
+
+                    <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }} className="absolute bottom-32 left-10 z-40">
+                        <Heart className="w-12 h-12 text-purple-500 -rotate-[10deg]" fill="#a855f7" strokeWidth={0} />
+                    </motion.div>
+
+                    <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 0.8 }} className="absolute bottom-24 -right-8 z-20 opacity-60">
+                        <Heart className="w-20 h-20 text-purple-500 rotate-[25deg]" strokeWidth={2} fill="none" />
+                    </motion.div>
 
                  </div>
             </div>
