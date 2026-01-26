@@ -111,7 +111,7 @@ function DemoSection() {
                     className="hidden lg:flex absolute -left-12 top-10 justify-center scale-90"
                 >
                     <div className="rotate-[-15deg]">
-                        <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" />
+                        <Iphone15Pro videoSrc="https://res.cloudinary.com/dncoxm1it/video/upload/v1769412069/2026-01-26_04-19-40_btnwe5.mp4" />
                     </div>
                 </motion.div>
 
@@ -151,7 +151,7 @@ function DemoSection() {
                     className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90"
                 >
                     <div className="rotate-[15deg]">
-                        <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" />
+                        <Iphone15Pro videoSrc="https://res.cloudinary.com/dncoxm1it/video/upload/v1769412070/2026-01-26_04-18-56_wyf9ir.mp4" />
                     </div>
                 </motion.div>
             </div>
@@ -530,4 +530,3 @@ export default function Home() {
     </>
   );
 }
-```
