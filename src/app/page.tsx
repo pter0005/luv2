@@ -191,12 +191,7 @@ export default function Home() {
   return (
     <>
        {/* --- HERO SECTION DEFINITIVA --- */}
-       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
-        
-        <div className="absolute inset-0 -z-30 bg-[#05000a]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
-        </div>
+       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0 bg-transparent">
 
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
@@ -262,7 +257,8 @@ export default function Home() {
                         transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
                         className="absolute z-10 brightness-[0.4] origin-bottom-right"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay 
@@ -281,7 +277,8 @@ export default function Home() {
                         transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
                         className="absolute z-10 brightness-[0.4] origin-bottom-left"
                      >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay 
@@ -300,7 +297,8 @@ export default function Home() {
                         transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
                         className="relative z-30 will-change-transform"
                      >
-                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[10px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                        <div className="relative w-[280px] h-[580px] rounded-[3.5rem] border-[10px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                 <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                             </div>
@@ -317,25 +315,7 @@ export default function Home() {
                      </motion.div>
 
 
-                     {/* --- WIDGETS & CORAÇÕES --- */}
-                     
-                     <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-80px] left-[-100px] z-20 opacity-80">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-32 h-32 drop-shadow-md rotate-[-25deg]" />
-                     </motion.div>
-
-                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-80px] z-40 opacity-80">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-500 w-24 h-24 drop-shadow-md rotate-[15deg]" />
-                     </motion.div>
-                     
-                     <div className="absolute bottom-[60px] left-[-50px] z-20 opacity-70">
-                        <Heart fill="#d8b4fe" strokeWidth={0} className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
-                     </div>
-
-                     <div className="absolute top-[40px] right-[-60px] z-20 opacity-60">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-16 h-16 rotate-[25deg]" />
-                     </div>
-
-                     {/* WIDGET 1: Suporte */}
+                     {/* WIDGETS & CORAÇÕES */}
                      <div className="absolute -left-[110px] md:-left-[150px] top-[70px] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
@@ -347,7 +327,6 @@ export default function Home() {
                         </div>
                      </div>
 
-                     {/* WIDGET 2: Avaliação */}
                      <div className="absolute -right-[120px] md:-right-[140px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
@@ -364,7 +343,7 @@ export default function Home() {
       </section>
 
       {/* RESTO DAS SEÇÕES (Igual ao anterior) */}
-      <AnimatedSection id="how-it-works-simple" className="section-padding">
+      <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
@@ -376,7 +355,7 @@ export default function Home() {
                         <div className="absolute -top-5 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/30 z-10">
                             {i+1}
                         </div>
-                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105">
+                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
                             <div className="relative w-48 h-48 mb-4">
                                 <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill className="object-contain" sizes="192px"/>
                             </div>
@@ -389,7 +368,7 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection className="section-padding">
+      <AnimatedSection className="section-padding bg-transparent">
         <div className="container relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-0">
               <h2 className='text-4xl md:text-5xl font-semibold tracking-tight leading-tight'>{t('home.features.title')}</h2>
@@ -400,11 +379,11 @@ export default function Home() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="demo-section" className="section-padding">
+      <AnimatedSection id="demo-section" className="section-padding bg-transparent">
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding overflow-hidden relative">
+      <AnimatedSection id="avaliacoes" className="section-padding bg-transparent overflow-hidden relative">
         <div className="container relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
@@ -422,14 +401,14 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection id="planos" className="section-padding">
+      <AnimatedSection id="planos" className="section-padding bg-transparent">
         <div className="container max-w-5xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
                 <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">{t('home.plans.title')}</h2>
                 <p className="mt-4 text-base text-muted-foreground">{t('home.plans.description')}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div className="card-glow border-primary/50 p-8 rounded-2xl relative flex flex-col">
+                <div className="card-glow border-primary/50 p-8 rounded-2xl relative flex flex-col bg-white/5 backdrop-blur-md">
                     <div className="absolute -top-4 right-8 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold flex items-center gap-2">
                         <Star className="w-4 h-4" /> {t('home.plans.recommended')}
                     </div>
@@ -450,7 +429,7 @@ export default function Home() {
                         <Link href="/login?redirect=/criar?plan=avancado&new=true"><TestTube className="mr-2" />{t('home.plans.avancado.cta')}</Link>
                     </Button>
                 </div>
-                <div className="bg-card/80 backdrop-blur-md border border-border p-8 rounded-2xl flex flex-col">
+                <div className="bg-white/5 backdrop-blur-md border border-border p-8 rounded-2xl flex flex-col">
                     <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
                     <div className="text-center my-6">
