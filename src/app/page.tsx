@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -46,6 +47,29 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
         </section>
     );
 };
+
+const FloatingHeart = ({ className, delay }: { className?: string; delay: number }) => {
+  return (
+    <motion.div
+      className={cn("absolute text-purple-400/30 pointer-events-none", className)}
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{
+        opacity: [0, 0.7, 0, 0],
+        scale: [0, 1, 0.8, 0],
+      }}
+      transition={{
+        duration: 5,
+        ease: "easeInOut",
+        repeat: Infinity,
+        repeatDelay: 1,
+        delay,
+      }}
+    >
+      <Heart fill="currentColor" strokeWidth={0} className="w-24 h-24" />
+    </motion.div>
+  );
+};
+
 
 // --- COMPONENTE IPHONE (Leve, sem Blur pesado) ---
 const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
@@ -218,13 +242,6 @@ export default function Home() {
     <>
        {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
-        
-        {/* BACKGROUND UNIFICADO */}
-        <div className="absolute inset-0 -z-30 bg-[#05000a]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
-            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-pink-700/10 blur-[100px] rounded-full pointer-events-none"></div>
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
-        </div>
 
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
@@ -280,12 +297,9 @@ export default function Home() {
             {/* --- ÁREA DOS CELULARES (Layout 45 Graus - Otimizado e Centralizado) --- */}
             <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-2 lg:order-2">
                  
-                 {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para caber os 3 */}
-                 {/* O segredo: width-full max-w-[500px] para limitar e centralizar */}
-                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.55] xs:scale-[0.65] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.65] xs:scale-[0.75] sm:scale-[0.85] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* 1. ESQUERDA (ATRÁS & -15º) */}
-                     {/* Usando Absolute Left para posicionar ao lado */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
                         whileInView={{ opacity: 1, x: -140, y: 30, rotate: -15 }}
@@ -301,7 +315,7 @@ export default function Home() {
                                     loop 
                                     muted 
                                     playsInline 
-                                    poster="https://i.imgur.com/FxHuXVb.png" // Adicione um poster para carregar rápido
+                                    poster="https://i.imgur.com/FxHuXVb.png"
                                     src="https://i.imgur.com/FxHuXVb.mp4" 
                                 />
                             </div>
@@ -316,7 +330,7 @@ export default function Home() {
                         className="absolute z-10 brightness-[0.4] origin-bottom-left will-change-transform"
                      >
                         <div className="relative">
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[80%] bg-purple-600/25 blur-[70px] rounded-full -z-10"></div>
+                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[80%] bg-purple-600/25 blur-[70px] rounded-full -z-10"></div>
                             <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                                 <video 
                                     className="w-full h-full object-cover" 
@@ -358,28 +372,11 @@ export default function Home() {
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                         </div>
                      </motion.div>
-
-
-                     {/* --- WIDGETS & CORAÇÕES (Otimizados) --- */}
                      
-                     <div className="absolute top-[-80px] left-[-160px] z-0 opacity-40 animate-pulse pointer-events-none">
-                         <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 rotate-[-15deg] drop-shadow-md" />
-                     </div>
-
-                     <div className="absolute bottom-[-20px] right-[-140px] z-0 opacity-40 animate-pulse pointer-events-none">
-                         <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[25deg] drop-shadow-md" />
-                     </div>
-                     
-                     <div className="absolute bottom-[20px] left-[-120px] z-0 opacity-30 pointer-events-none">
-                         <Heart fill="#d8b4fe" className="text-purple-300 w-16 h-16 rotate-[-35deg]" />
-                     </div>
-                     
-                     <div className="absolute top-[40px] right-[-100px] z-0 opacity-50 animate-pulse pointer-events-none">
-                         <Heart fill="#a855f7" className="text-purple-500 w-16 h-16 rotate-[25deg] drop-shadow-md" />
-                     </div>
-                     <div className="absolute bottom-[-60px] left-[-180px] z-0 opacity-30 animate-pulse pointer-events-none">
-                         <Heart fill="#d8b4fe" className="text-purple-400 w-24 h-24 rotate-[-40deg] drop-shadow-md" />
-                     </div>
+                    <FloatingHeart className="top-[5%] left-[5%]" delay={0} />
+                    <FloatingHeart className="top-[10%] right-[2%]" delay={1.5} />
+                    <FloatingHeart className="bottom-[15%] left-[10%]" delay={2.5} />
+                    <FloatingHeart className="bottom-[5%] right-[8%]" delay={4} />
 
 
                      {/* WIDGET 1: Suporte (Esquerda Topo) */}
@@ -387,7 +384,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: -30 }} 
                         whileInView={{ opacity: 1, x: 0 }} 
                         transition={{ delay: 0.5 }}
-                        className="absolute -left-[140px] md:-left-[200px] top-[10%] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
+                        className="absolute -left-[140px] md:-left-[180px] top-[0] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
                      >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
@@ -404,7 +401,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: 30 }} 
                         whileInView={{ opacity: 1, x: 0 }} 
                         transition={{ delay: 0.7 }}
-                        className="absolute -right-[120px] md:-right-[180px] bottom-[15%] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
+                        className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
                      >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
@@ -531,3 +528,5 @@ export default function Home() {
     </>
   );
 }
+
+    
