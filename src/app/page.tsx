@@ -193,10 +193,15 @@ export default function Home() {
        {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        <div className="container grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
+        <div className="absolute inset-0 -z-30 bg-[#05000a]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+        </div>
+
+        <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-2 lg:order-1">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
                  
                  <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
                     <div className="flex -space-x-3">
@@ -244,9 +249,10 @@ export default function Home() {
             </div>
             
 
-            {/* --- ÁREA DOS CELULARES --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-1 lg:order-2">
+            {/* --- ÁREA DOS CELULARES (Layout 15 Graus) --- */}
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
                  
+                 {/* CONTAINER PRINCIPAL */}
                  <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.75] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* 1. CELULAR ESQUERDA (ATRÁS & 15 GRAUS) */}
@@ -313,8 +319,24 @@ export default function Home() {
 
                      {/* --- WIDGETS & CORAÇÕES --- */}
                      
+                     <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-80px] left-[-100px] z-20 opacity-80">
+                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-32 h-32 drop-shadow-md rotate-[-25deg]" />
+                     </motion.div>
+
+                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-80px] z-40 opacity-80">
+                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-500 w-24 h-24 drop-shadow-md rotate-[15deg]" />
+                     </motion.div>
+                     
+                     <div className="absolute bottom-[60px] left-[-50px] z-20 opacity-70">
+                        <Heart fill="#d8b4fe" strokeWidth={0} className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
+                     </div>
+
+                     <div className="absolute top-[40px] right-[-60px] z-20 opacity-60">
+                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-16 h-16 rotate-[25deg]" />
+                     </div>
+
                      {/* WIDGET 1: Suporte */}
-                     <div className="absolute -left-[110px] md:-left-[150px] top-[40px] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
+                     <div className="absolute -left-[110px] md:-left-[150px] top-[70px] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
                              <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
@@ -324,26 +346,9 @@ export default function Home() {
                              <p className="text-sm text-white font-bold">Online 24/7</p>
                         </div>
                      </div>
-                     
-                     <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-80px] left-[-100px] z-20 opacity-80">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-32 h-32 drop-shadow-md rotate-[-25deg]" />
-                     </motion.div>
-
-                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-80px] z-40 opacity-80">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-500 w-24 h-24 drop-shadow-md rotate-[15deg]" />
-                     </motion.div>
-                     
-                     <div className="absolute bottom-[80px] left-[-40px] z-20 opacity-70">
-                        <Heart fill="#d8b4fe" strokeWidth={0} className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
-                     </div>
-
-                     <div className="absolute top-[20px] right-[-60px] z-20 opacity-60">
-                        <Heart fill="#a855f7" strokeWidth={0} className="text-purple-600 w-16 h-16 rotate-[25deg]" />
-                     </div>
-
 
                      {/* WIDGET 2: Avaliação */}
-                     <div className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
+                     <div className="absolute -right-[120px] md:-right-[140px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
                          </div>
