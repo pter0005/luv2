@@ -28,6 +28,7 @@ import TestimonialsMarquee from '@/components/layout/TestimonialsMarquee';
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
+// --- OTIMIZAÇÃO: Componente de Seção Leve ---
 const AnimatedSection = ({ children, className, id }: { children: React.ReactNode, className?: string, id?: string }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -37,8 +38,8 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="will-change-transform"
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="will-change-[opacity,transform]"
             >
                 {children}
             </motion.div>
@@ -46,75 +47,63 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
     );
 };
 
-// --- COMPONENTE IPHONE OTIMIZADO (COM AUTOPLAY FORÇADO) ---
-const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Força o play quando o componente monta
-  useEffect(() => {
-    if (videoRef.current) {
-        videoRef.current.play().catch(error => {
-            // Autoplay foi bloqueado ou falhou, geralmente requer interação do usuário
-            console.log("Autoplay prevent", error);
-        });
-    }
-  }, []);
-
-  return (
-    <motion.div 
-        initial={{ y: 60, opacity: 0 }}
-        whileInView={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: delay, ease: "easeOut" }}
-        className={cn("relative group transform-gpu", className)}
-    >
-        <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#1a1a1a] shadow-2xl ring-1 ring-white/10">
-            <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
-                {/* Dynamic Island */}
-                <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
-                    <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
-                        <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
-                    </div>
+// --- COMPONENTE IPHONE (Leve, sem Blur pesado) ---
+const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, delay?: number, className?: string }) => (
+  <motion.div 
+    initial={{ y: 40, opacity: 0 }}
+    whileInView={{ y: 0, opacity: 1 }}
+    transition={{ duration: 0.8, delay: delay, ease: "easeOut" }}
+    className={cn("relative group transform-gpu will-change-transform", className)}
+  >
+    <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-[#1a1a1a] shadow-2xl ring-1 ring-white/10">
+        <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
+            <div className="absolute top-5 left-1/2 transform -translate-x-1/2 z-50">
+                <div className="w-[100px] h-[28px] bg-black rounded-full flex items-center justify-between px-3 shadow-sm ring-1 ring-[#1f1f1f]">
+                    <div className="w-2 h-2 rounded-full bg-[#111] ring-1 ring-white/10 ml-auto opacity-50"></div>
                 </div>
-                
-                {/* Video Container */}
-                <div className="relative w-full h-full bg-[#050505] z-10">
-                    <video 
-                        ref={videoRef}
-                        className="w-full h-full object-cover scale-[1.01]" 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline 
-                        preload="auto"
-                        src={videoSrc}
-                    />
-                </div>
-                
-                {/* Reflexo */}
-                <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/5 via-transparent to-transparent opacity-30 rounded-[3.2rem]"></div>
             </div>
+            <div className="relative w-full h-full bg-[#050505] z-10">
+                <video 
+                    className="w-full h-full object-cover scale-[1.01]" 
+                    autoPlay loop muted playsInline 
+                    src={videoSrc}
+                />
+            </div>
+            <div className="absolute inset-0 z-40 pointer-events-none bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 rounded-[3.2rem]"></div>
         </div>
-    </motion.div>
-  );
-};
+    </div>
+  </motion.div>
+);
 
+// --- SEÇÃO DE DEMONSTRAÇÃO (ESTILO LEQUE 3D) ---
 function DemoSection() {
     return (
-      <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
-        <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 bg-black/40 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b]/80 via-[#0f021a]/80 to-[#05000a]/80"></div>
+      <section className="w-full py-20 px-4 flex justify-center items-center overflow-hidden">
+        {/* Container Principal com Estilo Vidro Escuro */}
+        <div className="relative w-full max-w-[1400px] h-[650px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 bg-black/40 shadow-2xl">
             
+            {/* Background Interno */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b]/90 via-[#0f021a]/90 to-[#05000a]/90"></div>
+            
+            {/* GLOW ROXO ATRÁS DOS CELULARES (O Pedido Principal) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/30 blur-[120px] rounded-full pointer-events-none z-0 animate-pulse-slow"></div>
+
             <motion.div animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-12 left-[20%] text-purple-300 opacity-60 z-10">
                 <Sparkles size={20} />
             </motion.div>
 
             <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
-                <div className="hidden lg:flex absolute -left-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" className="origin-center rotate-[-15deg]" />
+                
+                {/* --- CELULARES ESTÁTICOS LATERAIS (Apenas Desktop para compor a cena lateral) --- */}
+                <div className="hidden lg:flex absolute -left-20 top-20 justify-center scale-75 opacity-50 blur-[1px]">
+                    <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" className="rotate-[-15deg]" />
                 </div>
 
-                <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-20px]">
-                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
+                {/* --- CONTEÚDO CENTRAL --- */}
+                <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-40px]">
+                    
+                    {/* Badge */}
+                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/80 px-4 py-1.5 backdrop-blur-md">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
@@ -131,7 +120,7 @@ function DemoSection() {
                         <Link href="https://mycupid.com.br/p/A0vASdM58tZ2BOMksqCB" passHref target="_blank" rel="noopener noreferrer">
                             <button className="relative inline-flex h-14 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-slate-50 group hover:scale-105 transition-transform duration-300">
                                 <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-8 py-1 text-sm font-medium text-white gap-3">
+                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-8 py-1 text-sm font-medium text-white backdrop-blur-md gap-3">
                                     <Play size={14} fill="white" />
                                     <span className="text-lg font-bold">Testar Agora</span>
                                 </span>
@@ -140,8 +129,9 @@ function DemoSection() {
                     </div>
                 </div>
 
-                <div className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[15deg]" />
+                {/* --- CELULARES ESTÁTICOS LATERAIS (Desktop) --- */}
+                <div className="hidden lg:flex absolute -right-20 top-20 justify-center scale-75 opacity-50 blur-[1px]">
+                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="rotate-[15deg]" />
                 </div>
             </div>
         </div>
@@ -191,14 +181,21 @@ export default function Home() {
   return (
     <>
        {/* --- HERO SECTION DEFINITIVA --- */}
-       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0 bg-transparent">
+       <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
+        
+        {/* BACKGROUND UNIFICADO */}
+        <div className="absolute inset-0 -z-30 bg-[#05000a]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-[#05000a] to-[#05000a]"></div>
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-pink-700/10 blur-[100px] rounded-full pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+        </div>
 
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-1 lg:order-1">
                  
-                 <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
+                 <div className="inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
                     <div className="flex -space-x-3">
                         {[1, 2, 3, 4].map((i) => (
                             <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
@@ -244,61 +241,65 @@ export default function Home() {
             </div>
             
 
-            {/* --- ÁREA DOS CELULARES (Layout 15 Graus) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
+            {/* --- ÁREA DOS CELULARES (Layout 45 Graus - Otimizado e Centralizado) --- */}
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-2 lg:order-2">
                  
-                 {/* CONTAINER PRINCIPAL */}
-                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.75] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para caber os 3 */}
+                 {/* O segredo: width-full max-w-[500px] para limitar e centralizar */}
+                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.45] xs:scale-[0.55] sm:scale-[0.65] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
-                     {/* 1. CELULAR ESQUERDA (ATRÁS & 15 GRAUS) */}
+                     {/* 1. ESQUERDA (ATRÁS & -15º) */}
+                     {/* Usando Absolute Left para posicionar ao lado */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: -100, y: 30, rotate: -15 }}
-                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-right"
+                        whileInView={{ opacity: 1, x: -140, y: 30, rotate: -15 }}
+                        transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-right will-change-transform"
                      >
-                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay 
                                 loop 
                                 muted 
                                 playsInline 
+                                poster="https://i.imgur.com/FxHuXVb.png" // Adicione um poster para carregar rápido
                                 src="https://i.imgur.com/FxHuXVb.mp4" 
                             />
                         </div>
                      </motion.div>
 
-                     {/* 2. CELULAR DIREITA (ATRÁS & 15 GRAUS) */}
+                     {/* 2. DIREITA (ATRÁS & 15º) */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: 100, y: 30, rotate: 15 }}
-                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-left"
+                        whileInView={{ opacity: 1, x: 140, y: 30, rotate: 15 }}
+                        transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-left will-change-transform"
                      >
-                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                        <div className="relative w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                              <video 
                                 className="w-full h-full object-cover" 
                                 autoPlay 
                                 loop 
                                 muted 
                                 playsInline 
+                                poster="https://i.imgur.com/t7ICxbN.png"
                                 src="https://i.imgur.com/t7ICxbN.mp4" 
                              />
                         </div>
                      </motion.div>
-                     
-                     {/* 3. CELULAR CENTRAL (DESTAQUE) */}
+
+                     {/* 3. CENTRAL (DESTAQUE) */}
                      <motion.div
-                        initial={{ opacity: 0, y: 100, scale: 0.9 }}
-                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                        initial={{ y: 50, opacity: 0 }}
+                        whileInView={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
                         className="relative z-30 will-change-transform"
                      >
-                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                        <div className="relative w-[280px] h-[580px] rounded-[3.5rem] border-[10px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                        {/* Glow Roxo ATRÁS do celular central */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[80%] bg-purple-600/30 blur-[80px] rounded-full -z-10 animate-pulse-slow"></div>
+
+                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[10px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
                             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
                                 <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
                             </div>
@@ -308,26 +309,54 @@ export default function Home() {
                                 loop 
                                 muted 
                                 playsInline 
+                                poster="https://i.imgur.com/GHtKVNZ.png"
                                 src="https://i.imgur.com/GHtKVNZ.mp4" 
                             />
+                            {/* Reflexo Vidro Leve */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                         </div>
                      </motion.div>
 
 
-                     {/* WIDGETS & CORAÇÕES */}
-                     <div className="absolute -left-[110px] md:-left-[150px] top-[70px] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
+                     {/* --- WIDGETS & CORAÇÕES (Otimizados) --- */}
+                     
+                     {/* Corações Roxos (Estáticos para performance no scroll) */}
+                     <div className="absolute top-[-80px] left-[-120px] z-0 opacity-40 animate-pulse pointer-events-none">
+                        <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 rotate-[-25deg] drop-shadow-md" />
+                     </div>
+
+                     <div className="absolute bottom-[-20px] right-[-100px] z-0 opacity-40 animate-pulse pointer-events-none">
+                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[15deg] drop-shadow-md" />
+                     </div>
+                     
+                     <div className="absolute bottom-[80px] left-[-40px] z-0 opacity-30 pointer-events-none">
+                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
+                     </div>
+
+                     {/* WIDGET 1: Suporte (Esquerda Topo) */}
+                     <motion.div 
+                        initial={{ opacity: 0, x: -30 }} 
+                        whileInView={{ opacity: 1, x: 0 }} 
+                        transition={{ delay: 0.5 }}
+                        className="absolute -left-[140px] md:-left-[180px] top-[0] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
+                     >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
-                             <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
+                             <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black animate-pulse"></div>
                         </div>
                         <div>
                              <p className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Suporte</p>
                              <p className="text-sm text-white font-bold">Online 24/7</p>
                         </div>
-                     </div>
+                     </motion.div>
 
-                     <div className="absolute -right-[120px] md:-right-[140px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
+                     {/* WIDGET 2: Avaliação (Direita Baixo) */}
+                     <motion.div 
+                        initial={{ opacity: 0, x: 30 }} 
+                        whileInView={{ opacity: 1, x: 0 }} 
+                        transition={{ delay: 0.7 }}
+                        className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
+                     >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
                          </div>
@@ -335,14 +364,14 @@ export default function Home() {
                             {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                         </div>
                         <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
-                     </div>
+                     </motion.div>
 
                  </div>
             </div>
         </div>
       </section>
 
-      {/* RESTO DAS SEÇÕES (Igual ao anterior) */}
+      {/* RESTO DAS SEÇÕES (MANTIDAS) */}
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
