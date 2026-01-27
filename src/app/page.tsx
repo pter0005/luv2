@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -283,9 +282,10 @@ export default function Home() {
                  
                  {/* CONTAINER PRINCIPAL: Scale 0.45 no mobile para caber os 3 */}
                  {/* O segredo: width-full max-w-[500px] para limitar e centralizar */}
-                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.45] xs:scale-[0.55] sm:scale-[0.65] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[320px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.55] xs:scale-[0.65] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* 1. ESQUERDA (ATRÁS & -15º) */}
+                     {/* Usando Absolute Left para posicionar ao lado */}
                      <motion.div
                         initial={{ opacity: 0, x: 0 }}
                         whileInView={{ opacity: 1, x: -140, y: 30, rotate: -15 }}
@@ -301,7 +301,7 @@ export default function Home() {
                                     loop 
                                     muted 
                                     playsInline 
-                                    poster="https://i.imgur.com/FxHuXVb.png"
+                                    poster="https://i.imgur.com/FxHuXVb.png" // Adicione um poster para carregar rápido
                                     src="https://i.imgur.com/FxHuXVb.mp4" 
                                 />
                             </div>
@@ -326,7 +326,7 @@ export default function Home() {
                                     playsInline 
                                     poster="https://i.imgur.com/t7ICxbN.png"
                                     src="https://i.imgur.com/t7ICxbN.mp4" 
-                                />
+                                 />
                             </div>
                         </div>
                      </motion.div>
@@ -362,23 +362,23 @@ export default function Home() {
 
                      {/* --- WIDGETS & CORAÇÕES (Otimizados) --- */}
                      
-                     <div className="absolute top-[-50px] left-[-160px] z-0 opacity-40 animate-pulse pointer-events-none">
+                     <div className="absolute top-[-80px] left-[-160px] z-0 opacity-40 animate-pulse pointer-events-none">
                          <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 rotate-[-15deg] drop-shadow-md" />
                      </div>
 
                      <div className="absolute bottom-[-20px] right-[-140px] z-0 opacity-40 animate-pulse pointer-events-none">
-                         <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[15deg] drop-shadow-md" />
+                         <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[25deg] drop-shadow-md" />
                      </div>
                      
-                     <div className="absolute bottom-[80px] left-[-80px] z-0 opacity-30 pointer-events-none">
-                         <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
+                     <div className="absolute bottom-[20px] left-[-120px] z-0 opacity-30 pointer-events-none">
+                         <Heart fill="#d8b4fe" className="text-purple-300 w-16 h-16 rotate-[-35deg]" />
                      </div>
                      
                      <div className="absolute top-[40px] right-[-100px] z-0 opacity-50 animate-pulse pointer-events-none">
                          <Heart fill="#a855f7" className="text-purple-500 w-16 h-16 rotate-[25deg] drop-shadow-md" />
                      </div>
-                     <div className="absolute bottom-[-60px] left-[-140px] z-0 opacity-30 animate-pulse pointer-events-none">
-                         <Heart fill="#d8b4fe" className="text-purple-400 w-24 h-24 rotate-[-30deg] drop-shadow-md" />
+                     <div className="absolute bottom-[-60px] left-[-180px] z-0 opacity-30 animate-pulse pointer-events-none">
+                         <Heart fill="#d8b4fe" className="text-purple-400 w-24 h-24 rotate-[-40deg] drop-shadow-md" />
                      </div>
 
 
@@ -404,7 +404,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: 30 }} 
                         whileInView={{ opacity: 1, x: 0 }} 
                         transition={{ delay: 0.7 }}
-                        className="absolute -right-[120px] md:-right-[180px] bottom-[10%] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
+                        className="absolute -right-[120px] md:-right-[180px] bottom-[15%] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
                      >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
