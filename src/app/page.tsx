@@ -63,7 +63,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
   return (
     <motion.div 
         initial={{ y: 60, opacity: 0 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: delay, ease: "easeOut" }}
         className={cn("relative group transform-gpu", className)}
     >
@@ -141,7 +141,7 @@ function DemoSection() {
                 </div>
 
                 <div className="hidden lg:flex absolute -right-12 top-10 justify-center scale-90">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[-15deg]" />
+                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="origin-center rotate-[15deg]" />
                 </div>
             </div>
         </div>
@@ -193,10 +193,92 @@ export default function Home() {
        {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
+        <div className="container flex flex-col-reverse lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
+            {/* --- ÁREA DOS CELULARES --- */}
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 scale-[0.8] sm:scale-100">
+                 
+                 {/* CONTAINER PRINCIPAL */}
+                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center transition-transform duration-300 transform-gpu will-change-transform">
+
+                     {/* BRILHO ROXO ATRÁS */}
+                     <motion.div 
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 10, repeat: Infinity }}
+                        className="absolute z-0 w-[400px] h-[400px] bg-purple-600/50 rounded-full blur-[100px] will-change-transform" 
+                     />
+                     <motion.div 
+                        animate={{ scale: [1, 0.9, 1], opacity: [0.2, 0.4, 0.2] }}
+                        transition={{ duration: 12, repeat: Infinity, delay: 3 }}
+                        className="absolute z-0 w-[300px] h-[300px] bg-pink-500/30 rounded-full blur-[80px] will-change-transform" 
+                     />
+
+
+                     {/* 1. CELULAR ESQUERDA (ATRÁS & 15 GRAUS) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0 }}
+                        whileInView={{ opacity: 1, x: -140, y: 30, rotate: -15 }}
+                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-right"
+                     >
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
+                                className="w-full h-full object-cover scale-[1.02]" 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                src="https://i.imgur.com/FxHuXVb.mp4" 
+                            />
+                        </div>
+                     </motion.div>
+
+                     {/* 2. CELULAR DIREITA (ATRÁS & 15 GRAUS) */}
+                     <motion.div
+                        initial={{ opacity: 0, x: 0 }}
+                        whileInView={{ opacity: 1, x: 140, y: 30, rotate: 15 }}
+                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
+                        className="absolute z-10 brightness-[0.4] origin-bottom-left"
+                     >
+                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[8px] border-[#121212] bg-black overflow-hidden shadow-2xl">
+                             <video 
+                                className="w-full h-full object-cover scale-[1.02]" 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                src="https://i.imgur.com/t7ICxbN.mp4" 
+                             />
+                        </div>
+                     </motion.div>
+
+                     {/* 3. CELULAR CENTRAL (DESTAQUE) */}
+                     <motion.div
+                        initial={{ opacity: 0, y: 100, scale: 0.9 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+                        className="relative z-30 will-change-transform"
+                     >
+                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[10px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
+                            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
+                                <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
+                            </div>
+                            <video 
+                                className="w-full h-full object-cover" 
+                                autoPlay 
+                                loop 
+                                muted 
+                                playsInline 
+                                src="https://i.imgur.com/GHtKVNZ.mp4" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
+                        </div>
+                     </motion.div>
+                 </div>
+            </div>
+
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-12 lg:pt-0 relative z-20">
                  
                  <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
                     <div className="flex -space-x-3">
@@ -241,119 +323,6 @@ export default function Home() {
                         </Button>
                     </Link>
                 </div>
-            </div>
-            
-
-            {/* --- ÁREA DOS CELULARES (Layout 45 Graus) --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
-                 
-                 {/* CONTAINER PRINCIPAL */}
-                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.55] sm:scale-[0.7] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
-
-                     {/* 1. CELULAR ESQUERDA (ATRÁS & 45 GRAUS) */}
-                     <motion.div
-                        initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: -140, y: 30, rotate: -45 }}
-                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-right"
-                     >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                             <video 
-                                className="w-full h-full object-cover" 
-                                autoPlay 
-                                loop 
-                                muted 
-                                playsInline 
-                                src="https://i.imgur.com/FxHuXVb.mp4" 
-                            />
-                        </div>
-                     </motion.div>
-
-                     {/* 2. CELULAR DIREITA (ATRÁS & 45 GRAUS) */}
-                     <motion.div
-                        initial={{ opacity: 0, x: 0 }}
-                        whileInView={{ opacity: 1, x: 140, y: 30, rotate: 45 }}
-                        transition={{ duration: 1.2, ease: "backOut", delay: 0.2 }}
-                        className="absolute z-10 brightness-[0.4] origin-bottom-left"
-                     >
-                        <div className="w-[260px] h-[520px] rounded-[3rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                             <video 
-                                className="w-full h-full object-cover" 
-                                autoPlay 
-                                loop 
-                                muted 
-                                playsInline 
-                                src="https://i.imgur.com/t7ICxbN.mp4" 
-                             />
-                        </div>
-                     </motion.div>
-
-                     {/* 3. CELULAR CENTRAL (DESTAQUE) */}
-                     <motion.div
-                        initial={{ opacity: 0, y: 100, scale: 0.9 }}
-                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-                        className="relative z-30 will-change-transform"
-                     >
-                        <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-2xl ring-1 ring-white/20">
-                            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
-                                <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
-                            </div>
-                            <video 
-                                className="w-full h-full object-cover" 
-                                autoPlay 
-                                loop 
-                                muted 
-                                playsInline 
-                                src="https://i.imgur.com/GHtKVNZ.mp4" 
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
-                        </div>
-                     </motion.div>
-
-
-                     {/* --- WIDGETS & CORAÇÕES --- */}
-                     
-                     <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-[-80px] left-[-100px] z-0 opacity-40">
-                        <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 drop-shadow-md rotate-[-25deg]" />
-                     </motion.div>
-
-                     <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 2 }} className="absolute bottom-[-20px] right-[-80px] z-0 opacity-40">
-                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 drop-shadow-md rotate-[15deg]" />
-                     </motion.div>
-                     
-                     <div className="absolute bottom-[80px] left-[-40px] z-0 opacity-40">
-                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
-                     </div>
-
-                     <div className="absolute top-[20px] right-[-60px] z-0 opacity-30">
-                        <Heart fill="#a855f7" className="text-purple-600 w-16 h-16 rotate-[25deg]" />
-                     </div>
-
-                     {/* WIDGET 1: Suporte */}
-                     <div className="absolute -left-[140px] md:-left-[180px] top-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
-                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
-                             <MessageCircle size={18} className="text-green-400" />
-                             <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
-                        </div>
-                        <div>
-                             <p className="text-[10px] text-gray-300 uppercase font-bold tracking-wider">Suporte</p>
-                             <p className="text-sm text-white font-bold">Online 24/7</p>
-                        </div>
-                     </div>
-
-                     {/* WIDGET 2: Avaliação */}
-                     <div className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center animate-bounce-subtle" style={{ animationDelay: '1s' }}>
-                         <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
-                             <Palette size={10} /> Design Personalizado
-                         </div>
-                        <div className="flex items-center gap-1 mb-1">
-                            {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
-                        </div>
-                        <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
-                     </div>
-
-                 </div>
             </div>
         </div>
       </section>
