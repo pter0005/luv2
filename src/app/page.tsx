@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -78,64 +79,100 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
 // --- SEÇÃO DE DEMONSTRAÇÃO (ESTILO LEQUE 3D) ---
 function DemoSection() {
     return (
-      <section className="w-full py-20 px-4 flex justify-center items-center overflow-hidden">
-        {/* Container Principal com Estilo Vidro Escuro */}
-        <div className="relative w-full max-w-[1400px] h-[650px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 bg-black/40 shadow-2xl">
-            
-            {/* Background Interno */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b]/90 via-[#0f021a]/90 to-[#05000a]/90"></div>
-            
-            {/* GLOW ROXO ATRÁS DOS CELULARES (O Pedido Principal) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/30 blur-[120px] rounded-full pointer-events-none z-0 animate-pulse-slow"></div>
-
-            <motion.div animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-12 left-[20%] text-purple-300 opacity-60 z-10">
-                <Sparkles size={20} />
-            </motion.div>
-
-            <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
+        <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
+            <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
                 
-                {/* --- CELULARES ESTÁTICOS LATERAIS (Apenas Desktop para compor a cena lateral) --- */}
-                <div className="hidden lg:flex absolute -left-20 top-20 justify-center scale-75 opacity-50 blur-[1px]">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/GHtKVNZ.mp4" className="rotate-[-15deg]" />
+                {/* BACKGROUND ROXO ESCURO */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#1a052b] via-[#0f021a] to-[#05000a] z-0"></div>
+                <div className="absolute inset-0 z-0 opacity-30 pointer-events-none perspective-500">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] transform rotate-x-12 scale-150"></div>
                 </div>
+                
+                {/* GLOWS / LUZES */}
+                <div className="absolute top-0 left-1/4 w-[400px] h-[400px] bg-purple-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+                
+                {/* ÍCONES FLUTUANTES (Sparkles e Zap) */}
+                <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 4, repeat: Infinity }} className="absolute top-12 left-[20%] text-purple-300 opacity-60 z-10">
+                   <Sparkles />
+                </motion.div>
+                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="absolute bottom-20 right-[20%] text-pink-300 opacity-50 z-10">
+                   <Zap />
+                </motion.div>
 
-                {/* --- CONTEÚDO CENTRAL --- */}
-                <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-40px]">
+                <div className="relative z-20 w-full h-full flex items-center justify-between px-4">
                     
-                    {/* Badge */}
-                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900/80 px-4 py-1.5 backdrop-blur-md">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-                        </span>
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Nova Experiência</span>
+                    {/* CELULAR ESQUERDO (Video GHtKVNZ.mp4) */}
+                    <div className="hidden md:flex absolute -left-24 lg:-left-12 top-10 justify-center">
+                        <motion.div
+                            initial={{ opacity: 0, y: 120, rotateX: 10 }}
+                            whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="relative group perspective-1000 origin-center rotate-[-40deg] scale-[0.85] lg:scale-90">
+                             <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-gradient-to-br from-[#4a4a4a] via-[#1a1a1a] to-[#0a0a0a] shadow-2xl ring-1 ring-white/10">
+                                <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
+                                    <video className="w-full h-full object-cover scale-[1.02]" autoPlay loop muted playsInline src="https://i.imgur.com/GHtKVNZ.mp4"></video>
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
 
-                    <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-xl">
-                        Teste Nossa <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-400">Demonstração</span>
-                    </h2>
+                    {/* CONTEÚDO CENTRAL (Texto e Botão) */}
+                    <div className="flex-1 flex flex-col items-center text-center mx-auto z-30 max-w-4xl mt-[-20px]">
+                        
+                        <motion.div initial={{ opacity: 0, y: -20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/5 bg-white/5 px-4 py-1.5 backdrop-blur-md hover:bg-white/10 transition-colors cursor-default">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Nova Experiência</span>
+                        </motion.div>
 
-                    <div className="mt-10">
-                        <Link href="https://mycupid.com.br/p/A0vASdM58tZ2BOMksqCB" passHref target="_blank" rel="noopener noreferrer">
-                            <button className="relative inline-flex h-14 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-slate-50 group hover:scale-105 transition-transform duration-300">
-                                <span className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-8 py-1 text-sm font-medium text-white backdrop-blur-md gap-3">
-                                    <Play size={14} fill="white" />
-                                    <span className="text-lg font-bold">Testar Agora</span>
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }} className="relative">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-purple-500/10 blur-[60px] rounded-full -z-10"></div>
+                            <h2 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tighter drop-shadow-2xl">
+                                <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">Teste Nossa</span>
+                                <span className="block text-4xl md:text-5xl font-light text-gray-400 my-2 tracking-normal italic font-serif opacity-80">página de</span>
+                                <span className="relative inline-block">
+                                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-400 pb-2">Demonstração</span>
                                 </span>
-                            </button>
-                        </Link>
-                    </div>
-                </div>
+                            </h2>
+                        </motion.div>
 
-                {/* --- CELULARES ESTÁTICOS LATERAIS (Desktop) --- */}
-                <div className="hidden lg:flex absolute -right-20 top-20 justify-center scale-75 opacity-50 blur-[1px]">
-                    <Iphone15Pro videoSrc="https://i.imgur.com/t7ICxbN.mp4" className="rotate-[15deg]" />
+                        <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.7, delay: 0.3 }} className="mt-6 text-gray-400 max-w-lg text-sm md:text-base font-medium leading-relaxed">
+                            Veja na prática como sua declaração pode se tornar uma <span className="text-white font-semibold">experiência inesquecível</span>.
+                        </motion.p>
+
+                        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="mt-10">
+                            <a target="_blank" rel="noopener noreferrer" href="https://mycupid.com.br/p/A0vASdM58tZ2BOMksqCB">
+                                <button className="relative inline-flex h-14 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-slate-50 shadow-[0_0_40px_-10px_rgba(168,85,247,0.5)] group hover:scale-105 transition-transform duration-300">
+                                    <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]"></span>
+                                    <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-black/90 px-8 py-1 text-sm font-medium text-white backdrop-blur-3xl gap-3">
+                                      <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Testar Agora</span>
+                                    </span>
+                                </button>
+                            </a>
+                        </motion.div>
+                    </div>
+
+                    {/* CELULAR DIREITO (Video t7ICxbN.mp4) */}
+                    <div className="hidden md:flex absolute -right-24 lg:-right-12 top-10 justify-center">
+                         <motion.div
+                            initial={{ opacity: 0, y: 120, rotateX: 10 }}
+                            whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                            transition={{ duration: 0.8 }}
+                            className="relative group perspective-1000 origin-center rotate-[40deg] scale-[0.85] lg:scale-90">
+                             <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-gradient-to-br from-[#4a4a4a] via-[#1a1a1a] to-[#0a0a0a] shadow-2xl ring-1 ring-white/10">
+                                <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
+                                    <video className="w-full h-full object-cover scale-[1.02]" autoPlay loop muted playsInline src="https://i.imgur.com/t7ICxbN.mp4"></video>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+
                 </div>
             </div>
-        </div>
-      </section>
+        </section>
     );
 }
 
@@ -325,24 +362,23 @@ export default function Home() {
 
                      {/* --- WIDGETS & CORAÇÕES (Otimizados) --- */}
                      
-                     {/* Corações Roxos (Estáticos para performance no scroll) */}
-                     <div className="absolute top-[-80px] left-[-120px] z-0 opacity-40 animate-pulse pointer-events-none">
-                        <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 rotate-[-25deg] drop-shadow-md" />
+                     <div className="absolute top-[-50px] left-[-160px] z-0 opacity-40 animate-pulse pointer-events-none">
+                         <Heart fill="#a855f7" className="text-purple-600 w-32 h-32 rotate-[-15deg] drop-shadow-md" />
                      </div>
 
-                     <div className="absolute bottom-[-20px] right-[-100px] z-0 opacity-40 animate-pulse pointer-events-none">
-                        <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[15deg] drop-shadow-md" />
+                     <div className="absolute bottom-[-20px] right-[-140px] z-0 opacity-40 animate-pulse pointer-events-none">
+                         <Heart fill="#a855f7" className="text-purple-500 w-24 h-24 rotate-[15deg] drop-shadow-md" />
                      </div>
                      
-                     <div className="absolute bottom-[80px] left-[-40px] z-0 opacity-30 pointer-events-none">
-                        <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
+                     <div className="absolute bottom-[80px] left-[-80px] z-0 opacity-30 pointer-events-none">
+                         <Heart fill="#d8b4fe" className="text-purple-300 w-14 h-14 rotate-[-10deg]" />
                      </div>
                      
-                     <div className="absolute top-[-20px] right-[-80px] z-0 opacity-50 animate-pulse pointer-events-none">
-                        <Heart fill="#a855f7" className="text-purple-500 w-28 h-28 rotate-[20deg] drop-shadow-md" />
+                     <div className="absolute top-[40px] right-[-100px] z-0 opacity-50 animate-pulse pointer-events-none">
+                         <Heart fill="#a855f7" className="text-purple-500 w-16 h-16 rotate-[25deg] drop-shadow-md" />
                      </div>
                      <div className="absolute bottom-[-60px] left-[-140px] z-0 opacity-30 animate-pulse pointer-events-none">
-                        <Heart fill="#d8b4fe" className="text-purple-400 w-24 h-24 rotate-[-30deg] drop-shadow-md" />
+                         <Heart fill="#d8b4fe" className="text-purple-400 w-24 h-24 rotate-[-30deg] drop-shadow-md" />
                      </div>
 
 
@@ -351,7 +387,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: -30 }} 
                         whileInView={{ opacity: 1, x: 0 }} 
                         transition={{ delay: 0.5 }}
-                        className="absolute -left-[140px] md:-left-[180px] top-[0] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
+                        className="absolute -left-[140px] md:-left-[200px] top-[10%] bg-zinc-900/90 border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40"
                      >
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
@@ -368,7 +404,7 @@ export default function Home() {
                         initial={{ opacity: 0, x: 30 }} 
                         whileInView={{ opacity: 1, x: 0 }} 
                         transition={{ delay: 0.7 }}
-                        className="absolute -right-[140px] md:-right-[160px] bottom-[0] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
+                        className="absolute -right-[120px] md:-right-[180px] bottom-[10%] bg-zinc-900/90 border border-white/10 py-4 px-5 rounded-2xl shadow-xl z-40 flex flex-col items-center"
                      >
                          <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
                              <Palette size={10} /> Design Personalizado
