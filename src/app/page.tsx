@@ -193,13 +193,62 @@ export default function Home() {
        {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        <div className="container flex flex-col-reverse lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
+        <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
+            {/* --- TEXTO --- */}
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
+                 
+                 <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
+                    <div className="flex -space-x-3">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
+                                <Image src={`https://picsum.photos/seed/love${i}/100/100`} alt="User" width={32} height={32} className="object-cover" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex flex-col items-start leading-none">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
+                        <span className="text-sm font-bold text-white">+20.000 Casais</span>
+                    </div>
+                 </div>
+
+                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
+                    Declare seu amor <br />
+                    <span className="relative inline-block mt-2">
+                        <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
+                            {typedPhrase}
+                            <span className="animate-blink text-purple-400 ml-1">|</span>
+                        </span>
+                        <svg className="absolute w-full h-3 -bottom-1 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
+                            <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
+                        </svg>
+                    </span>
+                </h1>
+
+                <p className="text-base lg:text-lg text-gray-400 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-light">
+                    Transforme seus sentimentos em uma <strong className="text-white font-medium">obra de arte digital</strong>. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <Link href="/login?redirect=/criar" className="w-full sm:w-auto">
+                        <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
+                            {t('home.hero.cta')} <ChevronRight className="w-5 h-5 ml-2" />
+                        </Button>
+                    </Link>
+                    <Link href="#demo-section" className="w-full sm:w-auto">
+                         <Button variant="ghost" size="xl" className="w-full sm:w-auto text-white border border-white/10 rounded-full px-8 py-6 hover:bg-white/5">
+                            <Play className="w-4 h-4 mr-2 fill-white" /> Ver Exemplo
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+            
+
             {/* --- ÁREA DOS CELULARES --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 scale-[0.8] sm:scale-100">
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
                  
                  {/* CONTAINER PRINCIPAL */}
-                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.7] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* BRILHO ROXO ATRÁS */}
                      <motion.div 
@@ -274,55 +323,8 @@ export default function Home() {
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                         </div>
                      </motion.div>
+
                  </div>
-            </div>
-
-            {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-12 lg:pt-0 relative z-20">
-                 
-                 <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
-                    <div className="flex -space-x-3">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
-                                <Image src={`https://picsum.photos/seed/love${i}/100/100`} alt="User" width={32} height={32} className="object-cover" />
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex flex-col items-start leading-none">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
-                        <span className="text-sm font-bold text-white">+20.000 Casais</span>
-                    </div>
-                 </div>
-
-                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
-                    Declare seu amor <br />
-                    <span className="relative inline-block mt-2">
-                        <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
-                            {typedPhrase}
-                            <span className="animate-blink text-purple-400 ml-1">|</span>
-                        </span>
-                        <svg className="absolute w-full h-3 -bottom-1 left-0 text-purple-500 opacity-60" viewBox="0 0 100 10" preserveAspectRatio="none">
-                            <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="2" fill="none" />
-                        </svg>
-                    </span>
-                </h1>
-
-                <p className="text-base lg:text-lg text-gray-400 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-light">
-                    Transforme seus sentimentos em uma <strong className="text-white font-medium">obra de arte digital</strong>. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <Link href="/login?redirect=/criar" className="w-full sm:w-auto">
-                        <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
-                            {t('home.hero.cta')} <ChevronRight className="w-5 h-5 ml-2" />
-                        </Button>
-                    </Link>
-                    <Link href="#demo-section" className="w-full sm:w-auto">
-                         <Button variant="ghost" size="xl" className="w-full sm:w-auto text-white border border-white/10 rounded-full px-8 py-6 hover:bg-white/5">
-                            <Play className="w-4 h-4 mr-2 fill-white" /> Ver Exemplo
-                        </Button>
-                    </Link>
-                </div>
             </div>
         </div>
       </section>
