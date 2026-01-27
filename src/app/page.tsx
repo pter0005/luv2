@@ -193,10 +193,10 @@ export default function Home() {
        {/* --- HERO SECTION DEFINITIVA --- */}
        <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         
-        <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
+        <div className="container grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-2 lg:order-1">
                  
                  <div className="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6 backdrop-blur-sm shadow-lg">
                     <div className="flex -space-x-3">
@@ -245,9 +245,9 @@ export default function Home() {
             
 
             {/* --- ÁREA DOS CELULARES --- */}
-            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0">
+            <div className="relative h-[600px] w-full flex items-center justify-center perspective-[1200px] mt-8 lg:mt-0 order-1 lg:order-2">
                  
-                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.7] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                 <div className="relative w-[350px] md:w-[500px] h-[600px] flex items-center justify-center scale-[0.75] sm:scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
                      {/* 1. CELULAR ESQUERDA (ATRÁS & 15 GRAUS) */}
                      <motion.div
@@ -314,7 +314,7 @@ export default function Home() {
                      {/* --- WIDGETS & CORAÇÕES --- */}
                      
                      {/* WIDGET 1: Suporte */}
-                     <div className="absolute -left-[140px] md:-left-[180px] top-[0] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
+                     <div className="absolute -left-[110px] md:-left-[150px] top-[40px] bg-black/40 backdrop-blur-sm border border-white/10 py-3 px-4 rounded-2xl shadow-xl flex items-center gap-3 z-40 animate-bounce-subtle">
                         <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 shrink-0">
                              <MessageCircle size={18} className="text-green-400" />
                              <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border border-black"></div>
@@ -359,7 +359,7 @@ export default function Home() {
       </section>
 
       {/* RESTO DAS SEÇÕES (Igual ao anterior) */}
-      <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
+      <AnimatedSection id="how-it-works-simple" className="section-padding">
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">{t('home.howitworks.title').replace('4 passos simples', '')}<span className="text-primary">{t('home.howitworks.title').match(/4 passos simples/)}</span></h2>
@@ -371,7 +371,7 @@ export default function Home() {
                         <div className="absolute -top-5 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/30 z-10">
                             {i+1}
                         </div>
-                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
+                        <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105">
                             <div className="relative w-48 h-48 mb-4">
                                 <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill className="object-contain" sizes="192px"/>
                             </div>
@@ -384,7 +384,7 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection className="section-padding bg-transparent">
+      <AnimatedSection className="section-padding">
         <div className="container relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-0">
               <h2 className='text-4xl md:text-5xl font-semibold tracking-tight leading-tight'>{t('home.features.title')}</h2>
@@ -395,11 +395,11 @@ export default function Home() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="demo-section" className="section-padding bg-transparent">
+      <AnimatedSection id="demo-section" className="section-padding">
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding bg-transparent overflow-hidden relative">
+      <AnimatedSection id="avaliacoes" className="section-padding overflow-hidden relative">
         <div className="container relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
@@ -417,14 +417,14 @@ export default function Home() {
         </div>
       </AnimatedSection>
       
-      <AnimatedSection id="planos" className="section-padding bg-transparent">
+      <AnimatedSection id="planos" className="section-padding">
         <div className="container max-w-5xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
                 <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">{t('home.plans.title')}</h2>
                 <p className="mt-4 text-base text-muted-foreground">{t('home.plans.description')}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div className="card-glow border-primary/50 p-8 rounded-2xl relative flex flex-col bg-white/5 backdrop-blur-md">
+                <div className="card-glow border-primary/50 p-8 rounded-2xl relative flex flex-col">
                     <div className="absolute -top-4 right-8 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold flex items-center gap-2">
                         <Star className="w-4 h-4" /> {t('home.plans.recommended')}
                     </div>
@@ -445,7 +445,7 @@ export default function Home() {
                         <Link href="/login?redirect=/criar?plan=avancado&new=true"><TestTube className="mr-2" />{t('home.plans.avancado.cta')}</Link>
                     </Button>
                 </div>
-                <div className="bg-white/5 backdrop-blur-md border border-border p-8 rounded-2xl flex flex-col">
+                <div className="bg-card/80 backdrop-blur-md border border-border p-8 rounded-2xl flex flex-col">
                     <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
                     <div className="text-center my-6">
