@@ -16,10 +16,9 @@ import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
 import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
-import YoutubePlayer from '@/components/ui/YoutubePlayer';
 
+const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
-
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
@@ -46,6 +45,7 @@ export default function PreviewContent({
 }: PreviewContentProps) {
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
+    const youtubePlayerRef = useRef<{ play: () => void }>(null);
 
     const [isPreviewPuzzleComplete, setIsPreviewPuzzleComplete] = useState(false);
 
@@ -54,6 +54,11 @@ export default function PreviewContent({
             setIsPreviewPuzzleComplete(false);
         }
     }, [showPuzzlePreview]);
+    
+    const handlePreviewReveal = () => {
+        setPreviewPuzzleRevealed(true);
+        youtubePlayerRef.current?.play();
+    };
 
     const backgroundVideoPreview = useMemo(() => {
         if (formData.backgroundVideo?.url && typeof formData.backgroundVideo.url === 'string') {
@@ -190,10 +195,10 @@ export default function PreviewContent({
                             
                             {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (
                                 <YoutubePlayer 
+                                    ref={youtubePlayerRef}
                                     url={formData.youtubeUrl}
                                     songName={formData.songName}
                                     artistName={formData.artistName}
-                                    autoplay={previewPuzzleRevealed}
                                     volume={0.5}
                                 />
                             )}
@@ -253,7 +258,7 @@ export default function PreviewContent({
                                             </div>
                                             <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
                                             <Button
-                                                onClick={() => setPreviewPuzzleRevealed(true)}
+                                                onClick={handlePreviewReveal}
                                                 size="lg"
                                                 className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg shadow-primary/30"
                                             >

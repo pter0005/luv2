@@ -64,23 +64,18 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [showBoom, setShowBoom] = useState(false);
-  const [autoplayAudio, setAutoplayAudio] = useState(false);
+  const playerRef = useRef<{ play: () => void }>(null);
 
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'lovePageLogo')?.imageUrl || '';
 
-  // ETAPA 2.1: ESCUDO DE PROTEÇÃO PARA O PUZZLE
   const hasPuzzle = useMemo(() => {
     if (!pageData.enablePuzzle || !pageData.puzzleImage?.url) return false;
-    // Se a imagem do puzzle AINDA estiver na pasta temp, não exiba o puzzle.
     return !pageData.puzzleImage.path.includes('temp/');
   }, [pageData.enablePuzzle, pageData.puzzleImage]);
 
-
-  // ETAPA 2.2: ESCUDO DE PROTEÇÃO PARA A TIMELINE
   const timelineEventsForDisplay = useMemo(() => {
     if (!pageData.timelineEvents) return [];
     return pageData.timelineEvents
-      // FILTRO DE SEGURANÇA: Garante que só tentaremos renderizar imagens da pasta pública 'lovepages'
       .filter((event: any) => event.image?.url && !event.image.path.includes('temp/'))
       .map((event: any) => ({
         id: event.id || Math.random().toString(),
@@ -97,14 +92,13 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     setIsClient(true);
     if (!hasPuzzle) {
       setPuzzleRevealed(true);
-      setAutoplayAudio(true);
     }
   }, [hasPuzzle]);
 
   const handleReveal = useCallback(() => {
     setShowBoom(true); 
     setPuzzleRevealed(true);
-    setAutoplayAudio(true);
+    playerRef.current?.play();
     setTimeout(() => setShowBoom(false), 2000);
   }, []);
   
@@ -208,10 +202,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-12 mb-12 flex justify-center">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
                 <YoutubePlayer 
+                  ref={playerRef}
                   url={pageData.youtubeUrl}
                   songName={pageData.songName}
                   artistName={pageData.artistName}
-                  autoplay={autoplayAudio}
                   volume={0.6}
                 />
              )}

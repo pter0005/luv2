@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
 import ReactPlayer from "react-player/youtube";
 import { Play, Pause, Heart, Shuffle, SkipBack, SkipForward, Repeat } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -14,7 +14,6 @@ interface YoutubePlayerProps {
   songName?: string;
   artistName?: string;
   coverImage?: string;
-  autoplay?: boolean;
   volume?: number;
 }
 
@@ -26,14 +25,13 @@ const getYoutubeThumbnail = (url: string) => {
     return videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null;
 };
 
-export default function YoutubePlayer({ 
+const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({ 
   url, 
   songName, 
   artistName, 
   coverImage,
-  autoplay = false, 
-  volume = 0.5 // Volume um pouco mais alto por padrão no mobile ajuda a perceber
-}: YoutubePlayerProps) {
+  volume = 0.5
+}, ref) => {
   const [hasWindow, setHasWindow] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -51,40 +49,17 @@ export default function YoutubePlayer({
     }
   }, []);
 
-  // Lógica de Autoplay segura para Mobile
-  useEffect(() => {
-    if (autoplay && isReady) {
-      // 1. Começa mutado (necessário para o browser não bloquear o vídeo)
-      setIsMuted(true);
-      setIsPlaying(true);
-    }
-  }, [autoplay, isReady]);
-
-  // Listener de "Resgate de Áudio": Tenta desmutar no primeiro toque do usuário na tela
-  useEffect(() => {
-    const attemptUnmute = () => {
-      if (isMuted && isPlaying) {
+  useImperativeHandle(ref, () => ({
+    play: () => {
+      if (isReady) {
+        setIsPlaying(true);
         setIsMuted(false);
-        // Não removemos o listener imediatamente se falhar, tentamos de novo
       }
-    };
-
-    if (isMuted && isPlaying) {
-      window.addEventListener("click", attemptUnmute);
-      window.addEventListener("touchstart", attemptUnmute);
-      window.addEventListener("scroll", attemptUnmute); // Até o scroll serve como intenção
     }
-
-    return () => {
-      window.removeEventListener("click", attemptUnmute);
-      window.removeEventListener("touchstart", attemptUnmute);
-      window.removeEventListener("scroll", attemptUnmute);
-    };
-  }, [isMuted, isPlaying]);
+  }));
 
   const handlePlay = () => {
     setIsPlaying(true);
-    // Removemos o setTimeout daqui, pois ele perde o contexto de interação do usuário
   };
 
   const handlePause = () => {
@@ -92,7 +67,6 @@ export default function YoutubePlayer({
   };
   
   const handleManualPlayPause = () => {
-    // Interação direta com o botão: podemos desmutar sem medo
     setIsMuted(false);
     setIsPlaying(!isPlaying);
   };
@@ -134,13 +108,13 @@ export default function YoutubePlayer({
                 onProgress={(state) => setProgress(state.played)}
                 width="0%"
                 height="0%"
-                playsinline={true} // Importante para iOS não abrir fullscreen
+                playsinline={true}
                 config={{
                     youtube: {
                         playerVars: { 
                             controls: 0,
                             modestbranding: 1,
-                            playsinline: 1, // Reforço para iOS
+                            playsinline: 1, 
                             origin: typeof window !== 'undefined' ? window.location.origin : undefined
                         }
                     }
@@ -220,4 +194,8 @@ export default function YoutubePlayer({
         </div>
     </div>
   );
-};
+});
+
+YoutubePlayer.displayName = 'YoutubePlayer';
+
+export default YoutubePlayer;
