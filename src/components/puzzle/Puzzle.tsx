@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { CheckCircle, Loader2 } from "lucide-react";
@@ -13,40 +14,48 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
   const [isComplete, setIsComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Função para embaralhar garantindo que não comece resolvido
   const shufflePieces = useCallback((array: any[]) => {
     let newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
+    // Garante que não comece resolvido
     const isSolved = newArray.every((p, i) => p.originalIndex === i);
     return isSolved ? shufflePieces(newArray) : newArray;
   }, []);
 
   useEffect(() => {
-    if (imageSrc) {
-      setImageLoaded(false);
-      setIsComplete(false);
-      
-      const img = new window.Image();
-      // A linha crossOrigin estava causando problemas de CORS com o Firebase Storage.
-      // img.crossOrigin = "anonymous"; 
-      img.src = imageSrc;
-      
-      img.onload = () => {
-        const initialPieces = [];
-        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
-          initialPieces.push({ id: i, originalIndex: i });
-        }
-        setPieces(shufflePieces(initialPieces));
-        setImageLoaded(true);
-      };
+    if (!imageSrc) return;
 
-      img.onerror = () => {
-        console.error("Erro ao carregar imagem do puzzle.");
-        setImageLoaded(false);
-      };
+    setImageLoaded(false);
+    setIsComplete(false);
+    setSelectedPieceIndex(null);
+
+    const img = new Image();
+    
+    // Função que inicializa o puzzle
+    const handleImageLoad = () => {
+      const initialPieces = [];
+      for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+        initialPieces.push({ id: i, originalIndex: i });
+      }
+      setPieces(shufflePieces(initialPieces));
+      setImageLoaded(true);
+    };
+
+    img.onload = handleImageLoad;
+    img.onerror = () => {
+      console.error("Erro ao carregar imagem.");
+      setImageLoaded(false);
+    };
+
+    // Importante: Definir o SRC por último para garantir que o onload capture o evento
+    img.src = imageSrc;
+
+    // Se a imagem já estiver no cache, o onload pode não disparar em alguns navegadores
+    if (img.complete) {
+      handleImageLoad();
     }
   }, [imageSrc, shufflePieces]);
 
@@ -71,9 +80,9 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
         ];
         setPieces(newPieces);
         
-        // Verifica se completou
-        const solved = newPieces.every((p, i) => p.originalIndex === i);
-        if (solved) setIsComplete(true);
+        if (newPieces.every((p, i) => p.originalIndex === i)) {
+          setIsComplete(true);
+        }
       }
       setSelectedPieceIndex(null);
     }
@@ -85,39 +94,43 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
         className="w-full aspect-square relative touch-none select-none bg-zinc-900 rounded-xl overflow-hidden shadow-2xl" 
         style={{ maxWidth: maxDimension }}
       >
+        {/* Camada de Loading */}
         {!imageLoaded && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900">
-            <Loader2 className="animate-spin text-white w-8 h-8" />
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-900">
+            <Loader2 className="animate-spin text-white w-10 h-10" />
           </div>
         )}
         
+        {/* Overlay de Sucesso */}
         <AnimatePresence>
           {isComplete && (
             <motion.div 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[2px]"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="bg-white p-4 rounded-full"
               >
-                <CheckCircle className="w-20 h-20 text-green-500 bg-white rounded-full" />
+                <CheckCircle className="w-12 h-12 text-green-500" />
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="grid w-full h-full p-1 gap-1" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}>
+        {/* Grid do Puzzle */}
+        <div 
+          className="grid w-full h-full p-1 gap-1 bg-zinc-800" 
+          style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}
+        >
           {pieces.map((piece, index) => {
-            // Cálculo da posição da fatia da imagem
             const col = piece.originalIndex % GRID_SIZE;
             const row = Math.floor(piece.originalIndex / GRID_SIZE);
 
-            // Em CSS, para grids, o background-size de 300% (GRID_SIZE * 100)
-            // e background-position usando porcentagens relativas (0, 50, 100)
-            // garante o recorte perfeito independente da resolução da imagem original.
+            // Cálculo perfeito de posição:
+            // Para 3 colunas, as posições são 0%, 50% e 100%
             const posX = (col / (GRID_SIZE - 1)) * 100;
             const posY = (row / (GRID_SIZE - 1)) * 100;
 
@@ -127,17 +140,20 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
                 layout
                 onClick={() => handlePieceClick(index)}
                 className={cn(
-                  "relative w-full h-full cursor-pointer overflow-hidden border border-white/10",
-                  selectedPieceIndex === index ? "ring-4 ring-blue-500 z-20 scale-[0.98] rounded-md" : "rounded-sm"
+                  "relative w-full h-full cursor-pointer transition-shadow",
+                  selectedPieceIndex === index 
+                    ? "z-20 ring-4 ring-yellow-400 scale-[0.95] rounded-lg shadow-2xl" 
+                    : "ring-1 ring-white/10 rounded-sm"
                 )}
                 style={{
                   backgroundImage: imageLoaded ? `url("${imageSrc}")` : 'none',
+                  // backgroundSize: 300% para um grid 3x3
                   backgroundSize: `${GRID_SIZE * 100}% ${GRID_SIZE * 100}%`,
                   backgroundPosition: `${posX}% ${posY}%`,
                   backgroundRepeat: 'no-repeat',
                 }}
                 whileHover={{ scale: isComplete ? 1 : 1.02 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
               />
             );
           })}
