@@ -20,30 +20,37 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
       const j = Math.floor(Math.random() * (i + 1));
       [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
+    // Ensure the shuffled array is not already the solution
     return newArray.every((p, i) => p.originalIndex === i) ? shufflePieces(newArray) : newArray;
   }, []);
 
   useEffect(() => {
     const initialPieces = [];
-    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) initialPieces.push({ id: i, originalIndex: i });
+    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+      initialPieces.push({ id: i, originalIndex: i });
+    }
     setPieces(shufflePieces(initialPieces));
     
     if (imageSrc) {
       setImageLoaded(false); // Reset on new image
       setIsComplete(false);
       const img = new window.Image();
+      img.crossOrigin = "anonymous"; // Handle CORS for images from other domains
       img.src = imageSrc;
       img.onload = () => {
         setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
         setImageLoaded(true);
       };
+      img.onerror = () => {
+          console.error("Failed to load puzzle image.");
+          setImageLoaded(false); // Stay in loading state on error
+      }
     } else {
       setImageLoaded(false);
       setIsComplete(false);
     }
   }, [imageSrc, shufflePieces]);
 
-  // REVELAÇÃO AUTOMÁTICA
   useEffect(() => {
     if (isComplete && onReveal) {
       onReveal(); 
@@ -89,23 +96,25 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
 
         <div className="grid gap-1 w-full h-full p-1 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}>
           {pieces.map((piece, index) => {
+            const col = piece.originalIndex % GRID_SIZE;
+            const row = Math.floor(piece.originalIndex / GRID_SIZE);
             const imageAspectRatio = imageSize.width / imageSize.height;
-            let backgroundWidth, backgroundHeight, backgroundX, backgroundY;
-            
-            if (imageAspectRatio > 1) { // Imagem horizontal (paisagem)
-                backgroundWidth = 'auto';
-                backgroundHeight = `${GRID_SIZE * 100}%`;
-                const totalWidth = imageSize.height * GRID_SIZE * imageAspectRatio;
-                const offsetX = (totalWidth - imageSize.height * GRID_SIZE) / 2;
-                backgroundX = `calc(${(piece.originalIndex % GRID_SIZE) * -100}% - ${offsetX}px)`;
-                backgroundY = `${Math.floor(piece.originalIndex / GRID_SIZE) * -100}%`;
-            } else { // Imagem vertical (retrato) ou quadrada
-                backgroundWidth = `${GRID_SIZE * 100}%`;
-                backgroundHeight = 'auto';
-                const totalHeight = imageSize.width * GRID_SIZE / imageAspectRatio;
-                const offsetY = (totalHeight - imageSize.width * GRID_SIZE) / 2;
-                backgroundX = `${(piece.originalIndex % GRID_SIZE) * -100}%`;
-                backgroundY = `calc(${Math.floor(piece.originalIndex / GRID_SIZE) * -100}% - ${offsetY}px)`;
+
+            let backgroundSize;
+            let backgroundPosition;
+
+            // This logic calculates the background-size and background-position to "cover" the square puzzle area
+            // with the source image without distortion, just like `background-size: cover`.
+            if (imageAspectRatio > 1) { // Landscape image
+                const scaledWidthPercent = GRID_SIZE * 100 * imageAspectRatio;
+                backgroundSize = `${scaledWidthPercent}% ${GRID_SIZE * 100}%`;
+                const offsetXPercent = (scaledWidthPercent - (GRID_SIZE * 100)) / 2;
+                backgroundPosition = `-${col * 100 + offsetXPercent}% -${row * 100}%`;
+            } else { // Portrait or square image
+                const scaledHeightPercent = (GRID_SIZE * 100) / imageAspectRatio;
+                backgroundSize = `${GRID_SIZE * 100}% ${scaledHeightPercent}%`;
+                const offsetYPercent = (scaledHeightPercent - (GRID_SIZE * 100)) / 2;
+                backgroundPosition = `-${col * 100}% -${row * 100 + offsetYPercent}%`;
             }
 
             return (
@@ -119,8 +128,8 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
                 )}
                 style={{
                   backgroundImage: imageLoaded ? `url("${imageSrc}")` : 'none',
-                  backgroundSize: `${backgroundWidth} ${backgroundHeight}`,
-                  backgroundPosition: `${backgroundX} ${backgroundY}`,
+                  backgroundSize: backgroundSize,
+                  backgroundPosition: backgroundPosition,
                   backgroundColor: '#18181b',
                   backgroundRepeat: 'no-repeat',
                 }}
