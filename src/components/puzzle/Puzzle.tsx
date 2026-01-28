@@ -7,21 +7,12 @@ import { cn } from "@/lib/utils";
 const GRID_SIZE = 3;
 
 const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
-  const [containerWidth, setContainerWidth] = useState(maxDimension);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageSize, setImageSize] = useState({ width: 1, height: 1 });
   const [pieces, setPieces] = useState<any[]>([]);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const updateWidth = () => setContainerWidth(containerRef.current!.offsetWidth);
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
 
   const shufflePieces = useCallback((array: any[]) => {
     let newArray = [...array];
@@ -39,10 +30,11 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
     
     if (imageSrc) {
       setImageLoaded(false); // Reset on new image
+      setIsComplete(false);
       const img = new window.Image();
       img.src = imageSrc;
       img.onload = () => {
-        setImageSize({ width: img.width, height: img.height });
+        setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
         setImageLoaded(true);
       };
     } else {
@@ -53,11 +45,10 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
 
   // REVELAÇÃO AUTOMÁTICA
   useEffect(() => {
+    // FIX: Removed the timeout to preserve user interaction context for audio autoplay.
+    // When the puzzle is complete, onReveal is called immediately.
     if (isComplete && onReveal) {
-      const timer = setTimeout(() => {
-        onReveal(); 
-      }, 1200);
-      return () => clearTimeout(timer);
+      onReveal(); 
     }
   }, [isComplete, onReveal]);
 
@@ -79,27 +70,10 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
       setSelectedPieceIndex(null);
     }
   };
-  
-  const imageAspectRatio = imageSize.width / imageSize.height;
-  const boardIsSquare = 1; // The puzzle board has aspect-ratio: 1/1
-
-  let bgSizeX, bgSizeY;
-  if (imageAspectRatio > boardIsSquare) {
-    // Image is wider than the board, so height is the constraining dimension.
-    // We need to size it so the height covers the board, and the width overflows.
-    bgSizeX = `${GRID_SIZE * 100 * imageAspectRatio}%`;
-    bgSizeY = `${GRID_SIZE * 100}%`;
-  } else {
-    // Image is taller or same aspect ratio, so width is the constraining dimension.
-    // We size it so the width covers the board, and the height overflows.
-    bgSizeX = `${GRID_SIZE * 100}%`;
-    bgSizeY = `${GRID_SIZE * 100 / imageAspectRatio}%`;
-  }
 
   return (
     <div className="w-full flex flex-col items-center" ref={containerRef}>
       <div className="w-full aspect-square relative touch-none select-none" style={{ maxWidth: maxDimension }}>
-        {/* Mostra um loader ou um placeholder se não tiver imagem */}
         {!imageLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 rounded-xl">
                 <Loader2 className="animate-spin text-primary" />
@@ -117,8 +91,23 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
 
         <div className="grid gap-1 w-full h-full p-1 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` }}>
           {pieces.map((piece, index) => {
-            const posX = (piece.originalIndex % GRID_SIZE / (GRID_SIZE - 1)) * 100;
-            const posY = (Math.floor(piece.originalIndex / GRID_SIZE) / (GRID_SIZE - 1)) * 100;
+            const imageAspectRatio = imageSize.width / imageSize.height;
+            const isCroppedHorizontally = imageAspectRatio > 1;
+
+            const backgroundSize = isCroppedHorizontally
+              ? `auto ${GRID_SIZE * 100}%`
+              : `${GRID_SIZE * 100}% auto`;
+
+            const col = piece.originalIndex % GRID_SIZE;
+            const row = Math.floor(piece.originalIndex / GRID_SIZE);
+
+            const tileBgX = (col / (GRID_SIZE - 1)) * 100;
+            const tileBgY = (row / (GRID_SIZE - 1)) * 100;
+
+            const backgroundPosition = isCroppedHorizontally
+              ? `${tileBgX}% center`
+              : `center ${tileBgY}%`;
+
             return (
               <motion.div
                 key={piece.id}
@@ -130,9 +119,9 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
                 )}
                 style={{
                   backgroundImage: imageLoaded ? `url("${imageSrc}")` : 'none',
-                  backgroundSize: `${bgSizeX} ${bgSizeY}`,
-                  backgroundPosition: `${posX}% ${posY}%`,
-                  backgroundColor: '#18181b'
+                  backgroundSize: backgroundSize,
+                  backgroundPosition: backgroundPosition,
+                  backgroundColor: '#18181b',
                 }}
               />
             );
