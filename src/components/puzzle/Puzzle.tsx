@@ -30,7 +30,8 @@ const Puzzle = ({ imageSrc, onReveal, maxDimension = 450 }: any) => {
       setIsComplete(false);
       
       const img = new window.Image();
-      img.crossOrigin = "anonymous";
+      // A linha crossOrigin estava causando problemas de CORS com o Firebase Storage.
+      // img.crossOrigin = "anonymous"; 
       img.src = imageSrc;
       
       img.onload = () => {
