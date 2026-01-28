@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -21,7 +20,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2 } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
@@ -60,6 +59,9 @@ const GalleryImage = ({ img, index }: { img: any, index: number }) => {
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
+  
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [showBoom, setShowBoom] = useState(false);
   const [autoplayAudio, setAutoplayAudio] = useState(false);
@@ -250,12 +252,40 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 </h2>
                 <p className="text-white/60 text-sm">Monte o quebra-cabeça para desbloquear sua surpresa.</p>
               </div>
-              <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
-                <RealPuzzle
-                  imageSrc={pageData.puzzleImage.url}
-                  onReveal={handleReveal}
-                />
-              </div>
+
+               <AnimatePresence mode="wait">
+                {!isPuzzleComplete ? (
+                   <motion.div key="puzzle-view" initial={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+                        <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
+                        <RealPuzzle
+                            imageSrc={pageData.puzzleImage.url}
+                            onReveal={() => setIsPuzzleComplete(true)}
+                        />
+                        </div>
+                   </motion.div>
+                ) : (
+                    <motion.div
+                        key="reveal-button-view"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
+                        className="flex flex-col items-center gap-6 pt-4"
+                    >
+                        <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
+                            <CheckCircle className="w-12 h-12 text-green-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
+                        <Button
+                          onClick={handleReveal}
+                          size="lg"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95"
+                        >
+                          <Play className="mr-3 h-5 w-5 fill-white" />
+                          Revelar Surpresa
+                        </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}

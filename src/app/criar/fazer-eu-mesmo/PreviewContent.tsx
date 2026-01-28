@@ -1,12 +1,11 @@
-
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { View, Puzzle } from 'lucide-react';
+import { View, Puzzle, Play, CheckCircle } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
 import dynamic from 'next/dynamic';
@@ -47,6 +46,14 @@ export default function PreviewContent({
 }: PreviewContentProps) {
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
+
+    const [isPreviewPuzzleComplete, setIsPreviewPuzzleComplete] = useState(false);
+
+    useEffect(() => {
+        if (!showPuzzlePreview) {
+            setIsPreviewPuzzleComplete(false);
+        }
+    }, [showPuzzlePreview]);
 
     const backgroundVideoPreview = useMemo(() => {
         if (formData.backgroundVideo?.url && typeof formData.backgroundVideo.url === 'string') {
@@ -223,12 +230,39 @@ export default function PreviewContent({
                                     </p>
                                 </div>
                                 
-                                <div className="p-2 bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-primary/10">
-                                    <RealPuzzle
-                                        imageSrc={puzzleImageSrc}
-                                        onReveal={() => setPreviewPuzzleRevealed(true)}
-                                    />
-                                </div>
+                                <AnimatePresence mode="wait">
+                                    {!isPreviewPuzzleComplete ? (
+                                        <motion.div key="puzzle-preview-view" initial={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
+                                            <div className="p-2 bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-primary/10">
+                                                <RealPuzzle
+                                                    imageSrc={puzzleImageSrc}
+                                                    onReveal={() => setIsPreviewPuzzleComplete(true)}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="reveal-button-preview-view"
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
+                                            className="flex flex-col items-center gap-6 pt-4"
+                                        >
+                                            <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
+                                                <CheckCircle className="w-12 h-12 text-green-400" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
+                                            <Button
+                                                onClick={() => setPreviewPuzzleRevealed(true)}
+                                                size="lg"
+                                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg shadow-primary/30"
+                                            >
+                                                <Play className="mr-3 h-5 w-5 fill-white" />
+                                                Testar Revelação
+                                            </Button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </motion.div>
                     )}
