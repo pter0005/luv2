@@ -85,7 +85,16 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
+        // For 'failed-precondition' (missing index) or any other non-permission error,
+        // we should expose the original error so the component can inspect its message.
+        if (error.code !== 'permission-denied') {
+          setError(error);
+          setData(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // For permission errors, we wrap it in our custom error type for better debugging.
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -96,11 +105,11 @@ export function useCollection<T = any>(
           path,
         })
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
-        // trigger global error propagation
+        // trigger global error propagation for permission errors
         errorEmitter.emit('permission-error', contextualError);
       }
     );

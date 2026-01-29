@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -310,8 +309,8 @@ export default function Home() {
                                 loop 
                                 muted 
                                 playsInline 
-                                poster="https://i.imgur.com/GHtKVNZ.png"
-                                src="https://i.imgur.com/GHtKVNZ.mp4" 
+                                poster="https://i.imgur.com/FxHuXVb.png"
+                                src="https://i.imgur.com/FxHuXVb.mp4" 
                             />
                         </div>
                      </motion.div>
@@ -357,8 +356,8 @@ export default function Home() {
                                   loop 
                                   muted 
                                   playsInline 
-                                  poster="https://i.imgur.com/FxHuXVb.png"
-                                  src="https://i.imgur.com/FxHuXVb.mp4" 
+                                  poster="https://i.imgur.com/GHtKVNZ.png"
+                                  src="https://i.imgur.com/GHtKVNZ.mp4" 
                               />
                               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                           </div>
