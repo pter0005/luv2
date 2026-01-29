@@ -8,8 +8,8 @@ export default function Footer() {
   const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '';
 
   return (
-    <footer className="py-8 border-t border-t-border bg-background/80 md:backdrop-blur-sm">
-      <div className="container flex flex-col md:flex-row items-center justify-between gap-6">
+    <footer className="py-12 border-t border-t-border bg-background/50 md:backdrop-blur-sm">
+      <div className="container flex flex-col items-center justify-center gap-8 text-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src={logoUrl}
@@ -20,28 +20,26 @@ export default function Footer() {
             data-ai-hint="logo love cupid"
           />
         </Link>
-        <div className="flex flex-col items-center md:items-end gap-4">
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-sm text-muted-foreground">
-              <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
-              <div className="flex items-center gap-6">
-                <Link href="/termos" className="hover:text-primary transition-colors">
-                  {t('footer.terms')}
-                </Link>
-                <Link href="/privacidade" className="hover:text-primary transition-colors">
-                  {t('footer.privacy')}
-                </Link>
-              </div>
-            </div>
-            <a href="https://brou.dev" target="_blank" rel="noopener noreferrer">
-              <Image
-                src="https://i.imgur.com/vjZ2cyr.png"
-                alt="Desenvolvido por Brou"
-                width={120}
-                height={30}
-                className="opacity-70 hover:opacity-100 transition-opacity"
-              />
-            </a>
+        <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
+          <div className="flex items-center gap-6">
+            <Link href="/termos" className="hover:text-primary transition-colors">
+              {t('footer.terms')}
+            </Link>
+            <Link href="/privacidade" className="hover:text-primary transition-colors">
+              {t('footer.privacy')}
+            </Link>
+          </div>
         </div>
+        <a href="https://brou.dev" target="_blank" rel="noopener noreferrer" className="group mt-4">
+          <Image
+            src="https://i.imgur.com/vjZ2cyr.png"
+            alt="Desenvolvido por Brou"
+            width={150}
+            height={37.5}
+            className="opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+          />
+        </a>
       </div>
     </footer>
   );
