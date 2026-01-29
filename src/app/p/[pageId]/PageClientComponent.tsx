@@ -91,6 +91,17 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   
   const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
 
+  const handleReveal = useCallback(() => {
+    setShowExplosion(true);
+    setPuzzleRevealed(true);
+    playerRef.current?.play();
+    setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); 
+
+    setTimeout(() => {
+        setShowExplosion(false);
+    }, 2000); // Allow remnants to fade
+  }, [cookieName]);
+
   useEffect(() => {
     setIsClient(true);
     if (hasCookie(cookieName)) {
@@ -100,19 +111,14 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     }
   }, [hasPuzzle, cookieName]);
 
-  const handleReveal = useCallback(() => {
-    setShowExplosion(true);
-    
-    setTimeout(() => {
-      setPuzzleRevealed(true);
-      playerRef.current?.play();
-      setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); 
-    }, 100);
-
-    setTimeout(() => {
-        setShowExplosion(false);
-    }, 1500);
-  }, [cookieName]);
+  useEffect(() => {
+    if (isPuzzleComplete) {
+      const timer = setTimeout(() => {
+        handleReveal();
+      }, 700); // Wait for user to see the checkmark
+      return () => clearTimeout(timer);
+    }
+  }, [isPuzzleComplete, handleReveal]);
   
   const targetDateIso = useMemo(() => {
     if (!pageData.specialDate) return null;
@@ -168,7 +174,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           opacity: puzzleRevealed ? 1 : 0.4, 
           filter: puzzleRevealed ? 'blur(0px)' : 'blur(15px)',
         }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
+        transition={{ duration: 1.0, ease: "easeOut" }}
       >
         <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-20 relative z-20">
           
@@ -294,14 +300,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                             <CheckCircle className="w-12 h-12 text-green-400" />
                         </div>
                         <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
-                        <Button
-                          onClick={handleReveal}
-                          size="lg"
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg shadow-primary/30 transition-all hover:scale-105 active:scale-95"
-                        >
-                          <Play className="mr-3 h-5 w-5 fill-white" />
-                          Revelar Surpresa
-                        </Button>
                   </motion.div>
                 )}
               </AnimatePresence>

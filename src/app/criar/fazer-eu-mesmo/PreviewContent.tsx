@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,32 +49,33 @@ export default function PreviewContent({
     const youtubePlayerRef = useRef<{ play: () => void }>(null);
 
     const [isPreviewPuzzleComplete, setIsPreviewPuzzleComplete] = useState(false);
-    const [showExplosion, setShowExplosion] = useState(false); // Novo estado para a explosão
+    const [showExplosion, setShowExplosion] = useState(false);
+
+    const handlePreviewReveal = useCallback(() => {
+        setShowExplosion(true);
+        setPreviewPuzzleRevealed(true);
+        youtubePlayerRef.current?.play();
+        
+        setTimeout(() => {
+            setShowExplosion(false);
+        }, 2000);
+    }, [setPreviewPuzzleRevealed]);
 
     useEffect(() => {
         if (!showPuzzlePreview) {
             setIsPreviewPuzzleComplete(false);
-            setShowExplosion(false);
         }
     }, [showPuzzlePreview]);
+
+    useEffect(() => {
+        if (isPreviewPuzzleComplete) {
+            const timer = setTimeout(() => {
+                handlePreviewReveal();
+            }, 700);
+            return () => clearTimeout(timer);
+        }
+    }, [isPreviewPuzzleComplete, handlePreviewReveal]);
     
-    const handlePreviewReveal = () => {
-        // 1. Ativa a explosão visual
-        setShowExplosion(true);
-
-        // 2. Delay minúsculo para a explosão aparecer antes do conteúdo mudar
-        setTimeout(() => {
-            setPreviewPuzzleRevealed(true);
-            youtubePlayerRef.current?.play();
-            
-            // Aqui entraria a lógica de Cookies (instrução abaixo)
-        }, 100);
-
-        // 3. Remove o componente de explosão do DOM após a animação acabar (performance)
-        setTimeout(() => {
-            setShowExplosion(false);
-        }, 1500);
-    };
 
     const backgroundVideoPreview = useMemo(() => {
         if (formData.backgroundVideo?.url && typeof formData.backgroundVideo.url === 'string') {
@@ -115,7 +116,7 @@ export default function PreviewContent({
                     animate={{
                         filter: shouldBeBlurred ? 'blur(15px) brightness(0.7)' : 'blur(0px) brightness(1)',
                     }}
-                    transition={{ filter: { duration: 1 } }}
+                    transition={{ filter: { duration: 1.0, ease: "easeOut" } }}
                  >
                     {/* ... (Todo o código do background permanece igual) ... */}
                     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
@@ -262,14 +263,6 @@ export default function PreviewContent({
                                                 <CheckCircle className="w-12 h-12 text-green-400" />
                                             </div>
                                             <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
-                                            <Button
-                                                onClick={handlePreviewReveal}
-                                                size="lg"
-                                                className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg shadow-primary/30"
-                                            >
-                                                <Play className="mr-3 h-5 w-5 fill-white" />
-                                                Testar Revelação
-                                            </Button>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

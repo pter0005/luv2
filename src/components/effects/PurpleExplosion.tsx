@@ -3,19 +3,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const PARTICLE_COUNT = 30;
+const PARTICLE_COUNT = 40; // Increased particle count
 
 export default function PurpleExplosion() {
   // Gera posições aleatórias em círculo para as partículas
   const particles = Array.from({ length: PARTICLE_COUNT }).map((_, i) => {
     const angle = (Math.PI * 2 * i) / PARTICLE_COUNT;
-    const distance = Math.random() * 120 + 80; // Distância da explosão
+    const distance = Math.random() * 150 + 100; // Explode further
     return {
       id: i,
       x: Math.cos(angle) * distance,
       y: Math.sin(angle) * distance,
-      delay: Math.random() * 0.1,
-      size: Math.random() * 4 + 2,
+      delay: Math.random() * 0.2, // More spread out start times
+      duration: Math.random() * 0.6 + 0.7, // Random duration for each particle (0.7s to 1.3s)
+      size: Math.random() * 5 + 3, // Slightly larger particles
     };
   });
 
@@ -42,7 +43,7 @@ export default function PurpleExplosion() {
             opacity: 0,
           }}
           transition={{
-            duration: 0.8,
+            duration: p.duration, // Use randomized duration
             delay: p.delay,
             ease: [0.16, 1, 0.3, 1], // Easing 'Expo' para sensação de 'Pop' rápido
           }}

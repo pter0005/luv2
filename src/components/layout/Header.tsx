@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useTranslation } from "@/lib/i18n";
+import { motion } from "framer-motion";
 
 const navLinks = [
   { href: "/#recursos", labelKey: "nav.recursos" },
@@ -42,6 +43,29 @@ export default function Header() {
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === "headerLogo")?.imageUrl || "";
   const { user, isUserLoading } = useUser();
   const { t, setLocale, locale } = useTranslation();
+  
+  // State for header visibility on scroll
+  const [hidden, setHidden] = useState(false);
+  const [lastY, setLastY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY > lastY && currentY > 100) {
+        setHidden(true); // Scrolling down
+      } else {
+        setHidden(false); // Scrolling up
+      }
+      setLastY(currentY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastY]);
+
 
   const handleSignOut = async () => {
     try {
@@ -106,8 +130,15 @@ export default function Header() {
   };
 
   return (
-    <header className={cn(
-        "fixed top-0 left-0 w-full z-50 transition-all duration-300 bg-background/80 md:backdrop-blur-sm border-b border-border/50 shadow-lg"
+    <motion.header
+      variants={{
+        visible: { y: 0 },
+        hidden: { y: "-100%" },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      className={cn(
+        "fixed top-0 left-0 w-full z-50 transition-colors duration-300 bg-background/80 md:backdrop-blur-sm border-b border-border/50 shadow-lg"
       )}>
       <div className={cn(
           "container flex items-center justify-between transition-all duration-300 h-20"
@@ -225,6 +256,6 @@ export default function Header() {
         </div>
 
       </div>
-    </header>
+    </motion.header>
   );
 }
