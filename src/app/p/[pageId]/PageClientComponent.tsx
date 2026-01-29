@@ -64,7 +64,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
   
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
-  const [showBoom, setShowBoom] = useState(false);
+  const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
 
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'lovePageLogo')?.imageUrl || '';
@@ -101,11 +101,17 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [hasPuzzle, cookieName]);
 
   const handleReveal = useCallback(() => {
-    setShowBoom(true); 
-    setPuzzleRevealed(true);
-    setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); // Set cookie for 30 days
-    playerRef.current?.play();
-    setTimeout(() => setShowBoom(false), 2000);
+    setShowExplosion(true);
+    
+    setTimeout(() => {
+      setPuzzleRevealed(true);
+      playerRef.current?.play();
+      setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); 
+    }, 100);
+
+    setTimeout(() => {
+        setShowExplosion(false);
+    }, 1500);
   }, [cookieName]);
   
   const targetDateIso = useMemo(() => {
@@ -119,6 +125,19 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
+      
+      {/* CAMADA DE EFEITOS ESPECIAIS */}
+      <AnimatePresence>
+        {showExplosion && (
+            <motion.div 
+                initial={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="fixed inset-0 z-[999] pointer-events-none"
+            >
+                <PurpleExplosion />
+            </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* CAMADA 0: CABEÇALHO */}
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
@@ -290,8 +309,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {showBoom && <PurpleExplosion />}
     </div>
   );
 }

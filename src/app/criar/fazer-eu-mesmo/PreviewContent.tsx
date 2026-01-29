@@ -16,6 +16,7 @@ import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
 import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
+import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
 
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
@@ -48,16 +49,31 @@ export default function PreviewContent({
     const youtubePlayerRef = useRef<{ play: () => void }>(null);
 
     const [isPreviewPuzzleComplete, setIsPreviewPuzzleComplete] = useState(false);
+    const [showExplosion, setShowExplosion] = useState(false); // Novo estado para a explosão
 
     useEffect(() => {
         if (!showPuzzlePreview) {
             setIsPreviewPuzzleComplete(false);
+            setShowExplosion(false);
         }
     }, [showPuzzlePreview]);
     
     const handlePreviewReveal = () => {
-        setPreviewPuzzleRevealed(true);
-        youtubePlayerRef.current?.play();
+        // 1. Ativa a explosão visual
+        setShowExplosion(true);
+
+        // 2. Delay minúsculo para a explosão aparecer antes do conteúdo mudar
+        setTimeout(() => {
+            setPreviewPuzzleRevealed(true);
+            youtubePlayerRef.current?.play();
+            
+            // Aqui entraria a lógica de Cookies (instrução abaixo)
+        }, 100);
+
+        // 3. Remove o componente de explosão do DOM após a animação acabar (performance)
+        setTimeout(() => {
+            setShowExplosion(false);
+        }, 1500);
     };
 
     const backgroundVideoPreview = useMemo(() => {
@@ -74,7 +90,6 @@ export default function PreviewContent({
     }, [formData.backgroundAnimation]);
 
     const puzzleImageSrc = formData.puzzleImage?.url;
-
     const shouldBeBlurred = showPuzzlePreview && !previewPuzzleRevealed;
 
     return (
@@ -82,6 +97,19 @@ export default function PreviewContent({
             <div className={cn(
                 "relative w-full max-w-md h-[85vh] bg-zinc-800 rounded-[2.5rem] p-3 border-[6px] border-zinc-700 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
             )}>
+                 {/* CAMADA DE EFEITOS ESPECIAIS (ACIMA DE TUDO) */}
+                 <AnimatePresence>
+                    {showExplosion && (
+                        <motion.div 
+                            initial={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="absolute inset-0 z-[999] pointer-events-none"
+                        >
+                            <PurpleExplosion />
+                        </motion.div>
+                    )}
+                 </AnimatePresence>
+
                  <motion.div 
                     className="relative z-10 w-full flex-grow flex flex-col rounded-[2rem] overflow-hidden bg-background"
                     animate={{
@@ -89,7 +117,7 @@ export default function PreviewContent({
                     }}
                     transition={{ filter: { duration: 1 } }}
                  >
-                    {/* CAMADA 1: FUNDO ANIMADO (MOVIDO PARA DENTRO DA TELA) */}
+                    {/* ... (Todo o código do background permanece igual) ... */}
                     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
                         {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={50} color={formData.heartColor} />}
                         {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
@@ -109,7 +137,6 @@ export default function PreviewContent({
                         )}
                     </div>
                     
-                    {/* CAMADA 2: Conteúdo Principal */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-6 bg-zinc-900 rounded-b-xl z-20 flex items-center justify-center">
                         <div className="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
                     </div>
@@ -118,6 +145,7 @@ export default function PreviewContent({
                         "flex-grow overflow-y-auto browser-scrollbar transition-all relative z-10",
                         shouldBeBlurred ? "pointer-events-none select-none" : "pointer-events-auto"
                     )}>
+                        {/* ... (Conteúdo do texto e galeria permanece igual) ... */}
                         <div className="w-full max-w-4xl mx-auto p-6 md:p-8 space-y-12 md:space-y-14">
                             <div className="space-y-4 text-center pt-8">
                                 <h1
@@ -160,24 +188,6 @@ export default function PreviewContent({
                                     centeredSlides={formData.galleryStyle === 'Coverflow'}
                                     slidesPerView={'auto'}
                                     autoplay={{ delay: 3000, disableOnInteraction: false }}
-                                    coverflowEffect={{
-                                        rotate: 50,
-                                        stretch: 0,
-                                        depth: 100,
-                                        modifier: 1,
-                                        slideShadows: true,
-                                    }}
-                                    cardsEffect={{
-                                        perSlideRotate: 2,
-                                        perSlideOffset: 8,
-                                        slideShadows: true,
-                                    }}
-                                    cubeEffect={{
-                                        shadow: true,
-                                        slideShadows: true,
-                                        shadowOffset: 20,
-                                        shadowScale: 0.94,
-                                    }}
                                     pagination={{ clickable: true }}
                                     modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
                                     className="mySwiper-small"
@@ -210,7 +220,6 @@ export default function PreviewContent({
                     </div>
                 </motion.div>
                 
-                {/* CAMADA 3: Puzzle Overlay */}
                 <AnimatePresence>
                     {shouldBeBlurred && puzzleImageSrc && (
                         <motion.div
@@ -222,17 +231,13 @@ export default function PreviewContent({
                             className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-lg rounded-[2rem]"
                         >
                              <div className="w-full max-w-lg space-y-8 text-center">
+                                {/* ... (Cabeçalho do puzzle) ... */}
                                 <div className="inline-block p-4 bg-primary/10 rounded-full border-2 border-primary/20 shadow-lg shadow-primary/20">
                                     <Puzzle className="w-10 h-10 text-primary" />
                                 </div>
-
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-white font-headline">
-                                        Um Enigma de Amor
-                                    </h2>
-                                    <p className="text-white/70 text-sm max-w-xs mx-auto">
-                                        Monte a imagem para testar a grande revelação.
-                                    </p>
+                                    <h2 className="text-3xl font-bold text-white font-headline">Um Enigma de Amor</h2>
+                                    <p className="text-white/70 text-sm max-w-xs mx-auto">Monte a imagem para testar a grande revelação.</p>
                                 </div>
                                 
                                 <AnimatePresence mode="wait">
