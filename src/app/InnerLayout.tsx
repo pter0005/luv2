@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import DiscountBanner from '@/components/layout/DiscountBanner';
 import React from 'react';
 import { cn } from '@/lib/utils';
+import CookieConsent from '@/components/layout/CookieConsent';
 
 export default function InnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,6 +29,7 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
         <main className={cn("flex-grow", !isLovePage && "pt-20")}>{children}</main>
         <Footer />
       </div>
+      <CookieConsent />
     </div>
   );
 }

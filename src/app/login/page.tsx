@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -11,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useFirebase, useUser } from '@/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -113,12 +112,23 @@ function LoginContent() {
     }
   }, [user, isUserLoading, router, redirectUrl]);
 
+  const handleSuccessfulLogin = async (user: User) => {
+    const idToken = await user.getIdToken();
+    await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+    });
+    router.push(redirectUrl);
+  };
+
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
     if (!auth || !firestore) return;
     setIsLoading(true);
     try {
+        let userCredential;
         if (isRegister) {
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+            userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
             const userRef = doc(firestore, "users", user.uid);
             const userDoc = await getDoc(userRef);
@@ -133,9 +143,10 @@ function LoginContent() {
 
             toast({ title: 'Conta criada com sucesso!', description: 'Você será redirecionado em breve.' });
         } else {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
         }
+        await handleSuccessfulLogin(userCredential.user);
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Email Auth Error:`, firebaseError.code, firebaseError.message);
@@ -182,6 +193,7 @@ function LoginContent() {
       }
 
       toast({ title: 'Login com Google bem-sucedido!', description: 'Você será redirecionado em breve.' });
+      await handleSuccessfulLogin(user);
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Google Auth Error:`, firebaseError.code, firebaseError.message);

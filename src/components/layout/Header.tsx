@@ -38,6 +38,7 @@ const navLinks = [
 export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === "headerLogo")?.imageUrl || "";
   const { user, isUserLoading } = useUser();
   const { t, setLocale, locale } = useTranslation();
@@ -46,8 +47,8 @@ export default function Header() {
     try {
       const auth = getAuth();
       await signOut(auth);
-      
-      window.location.href = '/login'; 
+      await fetch('/api/logout', { method: 'POST' });
+      router.push('/login'); 
     } catch (error) {
       console.error("Erro ao sair:", error);
     }

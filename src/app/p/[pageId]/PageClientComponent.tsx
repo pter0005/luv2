@@ -13,6 +13,7 @@ import 'swiper/css/effect-cards';
 import 'swiper/css/effect-flip';
 import 'swiper/css/effect-cube';
 import dynamic from 'next/dynamic';
+import { setCookie, hasCookie } from 'cookies-next';
 
 import Countdown from '@/app/criar/fazer-eu-mesmo/Countdown';
 import FallingHearts from '@/components/effects/FallingHearts';
@@ -68,6 +69,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'lovePageLogo')?.imageUrl || '';
 
+  const cookieName = `puzzle_solved_${pageData.id}`;
+
   const hasPuzzle = useMemo(() => {
     if (!pageData.enablePuzzle || !pageData.puzzleImage?.url) return false;
     return !pageData.puzzleImage.path.includes('temp/');
@@ -90,17 +93,20 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle) {
+    if (hasCookie(cookieName)) {
+      setPuzzleRevealed(true);
+    } else if (!hasPuzzle) {
       setPuzzleRevealed(true);
     }
-  }, [hasPuzzle]);
+  }, [hasPuzzle, cookieName]);
 
   const handleReveal = useCallback(() => {
     setShowBoom(true); 
     setPuzzleRevealed(true);
+    setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); // Set cookie for 30 days
     playerRef.current?.play();
     setTimeout(() => setShowBoom(false), 2000);
-  }, []);
+  }, [cookieName]);
   
   const targetDateIso = useMemo(() => {
     if (!pageData.specialDate) return null;
