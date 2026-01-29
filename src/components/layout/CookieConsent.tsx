@@ -29,9 +29,9 @@ export default function CookieConsent() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] w-full max-w-lg px-4 sm:px-0"
+          className="fixed bottom-4 inset-x-0 z-[200] px-4"
         >
-          <div className="bg-background/80 backdrop-blur-md text-foreground rounded-xl border border-border/20 p-6 shadow-2xl">
+          <div className="max-w-lg mx-auto bg-background/80 backdrop-blur-md text-foreground rounded-xl border border-border/20 p-6 shadow-2xl">
             <div className="flex items-center gap-3">
               <Cookie className="h-5 w-5 shrink-0" />
               <h3 className="font-semibold text-base">Aviso de Cookies</h3>

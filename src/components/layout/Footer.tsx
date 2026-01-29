@@ -20,16 +20,27 @@ export default function Footer() {
             data-ai-hint="logo love cupid"
           />
         </Link>
-        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-sm text-muted-foreground">
-          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
-          <div className="flex items-center gap-6">
-            <Link href="/termos" className="hover:text-primary transition-colors">
-              {t('footer.terms')}
-            </Link>
-            <Link href="/privacidade" className="hover:text-primary transition-colors">
-              {t('footer.privacy')}
-            </Link>
-          </div>
+        <div className="flex flex-col items-center md:items-end gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-sm text-muted-foreground">
+              <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
+              <div className="flex items-center gap-6">
+                <Link href="/termos" className="hover:text-primary transition-colors">
+                  {t('footer.terms')}
+                </Link>
+                <Link href="/privacidade" className="hover:text-primary transition-colors">
+                  {t('footer.privacy')}
+                </Link>
+              </div>
+            </div>
+            <a href="https://brou.dev" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="https://i.imgur.com/vjZ2cyr.png"
+                alt="Desenvolvido por Brou"
+                width={120}
+                height={30}
+                className="opacity-70 hover:opacity-100 transition-opacity"
+              />
+            </a>
         </div>
       </div>
     </footer>
