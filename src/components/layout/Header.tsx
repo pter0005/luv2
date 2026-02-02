@@ -71,11 +71,13 @@ export default function Header() {
   const handleSignOut = async () => {
     try {
       const auth = getAuth();
-      await signOut(auth);
-      await removeSession();
+      await signOut(auth); // Faz o logout no cliente Firebase
+      await removeSession(); // Chama a server action para remover o cookie
+      router.push('/login'); // Redireciona o usuário para a página de login
+      router.refresh(); // Garante que o estado da aplicação seja limpo
     } catch (error) {
       console.error("Erro ao sair:", error);
-      // Fallback redirect
+      // Fallback em caso de erro, força um redirect
       window.location.href = '/login';
     }
   };

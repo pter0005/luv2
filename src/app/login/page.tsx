@@ -77,7 +77,6 @@ const googleErrorMessages: { [key: string]: string } = {
 function LoginContent() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -92,13 +91,10 @@ function LoginContent() {
     },
   });
 
-  useEffect(() => {
-    // Se o usuário já está logado (e não está mais carregando), redirecione-o.
-    // Isso evita o loop onde um usuário logado vê a página de login.
-    if (!isUserLoading && user) {
-      router.push(redirectUrl);
-    }
-  }, [user, isUserLoading, router, redirectUrl]);
+  const handleAuthSuccess = async (authedUser: User) => {
+    // Chama a server action que cria o cookie e faz o redirect no servidor.
+    await createSession(authedUser.uid, redirectUrl);
+  };
 
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
     if (!auth || !firestore) return;
@@ -125,8 +121,7 @@ function LoginContent() {
             toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
         }
         
-        await createSession(userCredential.user.uid);
-        window.location.href = redirectUrl; // Força um refresh para o middleware pegar o cookie
+        await handleAuthSuccess(userCredential.user);
 
     } catch (error) {
         const firebaseError = error as FirebaseError;
@@ -175,8 +170,7 @@ function LoginContent() {
 
       toast({ title: 'Login com Google bem-sucedido!', description: 'Você será redirecionado em breve.' });
       
-      await createSession(user.uid);
-      window.location.href = redirectUrl; // Força um refresh para o middleware pegar o cookie
+      await handleAuthSuccess(result.user);
 
     } catch (error) {
         const firebaseError = error as FirebaseError;
@@ -204,11 +198,13 @@ function LoginContent() {
     }
   };
 
-  if (isUserLoading || user) {
+  // Se a página carregar, o middleware já garantiu que não há usuário logado.
+  // Apenas mostramos o loader enquanto o cliente Firebase inicializa.
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Verificando sessão...</p>
+        <p className="ml-4 text-muted-foreground">Carregando...</p>
       </div>
     );
   }
