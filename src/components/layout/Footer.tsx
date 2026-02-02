@@ -62,7 +62,7 @@ export default function Footer() {
           <div className="lg:text-right">
              <h3 className="font-bold text-white mb-6">Desenvolvimento</h3>
              <a 
-                href="https://brou.dev" 
+                href="https://new-tec.netlify.app/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="group inline-block bg-white/5 border border-white/10 rounded-xl p-4 transition-all hover:bg-white/10 hover:border-purple-500/30 hover:shadow-[0_0_20px_-5px_rgba(168,85,247,0.3)]"
