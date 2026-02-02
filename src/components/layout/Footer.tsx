@@ -74,7 +74,7 @@ export default function Footer() {
                         alt="Brou Dev"
                         width={100}
                         height={25}
-                        className="opacity-70 group-hover:opacity-100 transition-all grayscale group-hover:grayscale-0"
+                        className="transition-all"
                     />
                 </div>
              </a>
