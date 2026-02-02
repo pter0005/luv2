@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -291,22 +292,22 @@ export default function Home() {
             
             {/* --- ÁREA DOS CELULARES + CARD (MOBILE) --- */}
             <div className="flex flex-col items-center w-full order-1 lg:order-2">
-                <div className="inline-flex lg:hidden items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-4 shadow-lg">
-                    <div className="flex -space-x-3">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
-                                <Image src={`https://picsum.photos/seed/love${i}/100/100`} alt="User" width={32} height={32} className="object-cover" />
+                <div className="inline-flex lg:hidden items-center gap-2 bg-zinc-900/80 border border-white/10 rounded-full py-1.5 px-3 mb-2 shadow-lg">
+                    <div className="flex -space-x-2">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="w-6 h-6 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
+                                <Image src={`https://picsum.photos/seed/love${i}/100/100`} alt="User" width={24} height={24} className="object-cover" />
                             </div>
                         ))}
                     </div>
                     <div className="flex flex-col items-start leading-none">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
-                        <span className="text-sm font-bold text-white">+20.000 Casais</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
+                        <span className="text-xs font-bold text-white">+20.000 Casais</span>
                     </div>
                 </div>
 
-                <div className="relative h-[450px] sm:h-[500px] lg:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0">
-                    <div className="relative w-full max-w-[500px] h-[500px] sm:h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.75] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
+                <div className="relative h-[500px] sm:h-[600px] lg:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0">
+                    <div className="relative w-full max-w-[500px] h-[600px] flex items-center justify-center scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
                         {/* 1. ESQUERDA (ATRÁS & -15º) */}
                         <motion.div
                             initial={{ opacity: 0, x: 0 }}
@@ -532,3 +533,5 @@ export default function Home() {
     </>
   );
 }
+
+    
