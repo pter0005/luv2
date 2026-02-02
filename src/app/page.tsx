@@ -242,7 +242,7 @@ export default function Home() {
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-8 items-center relative z-10 h-full">
             
             {/* --- TEXTO --- */}
-            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-20 lg:pt-0 relative z-20 order-2 lg:order-1">
+            <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-8 lg:pt-0 relative z-20 order-2 lg:order-1">
                  
                  <div className="inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
                     <div className="flex -space-x-3">
@@ -291,7 +291,7 @@ export default function Home() {
             
 
             {/* --- ÁREA DOS CELULARES (Layout 45 Graus - Otimizado e Centralizado) --- */}
-            <div className="relative h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-10 lg:mt-0">
+            <div className="relative h-[500px] sm:h-[600px] lg:h-[650px] w-full flex items-center justify-center perspective-[1200px] order-1 lg:order-2 mt-0">
                  
                  <div className="relative w-full max-w-[500px] h-[600px] flex items-center justify-center scale-[0.6] xs:scale-[0.75] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
