@@ -1640,19 +1640,6 @@ const WizardInternal = () => {
       setCurrentStep(Math.max(0, prevStepIndex));
   };
   
-  if (!user && !isUserLoading) {
-      return (
-          <div className="flex flex-col items-center justify-center text-center p-8">
-              <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Sessão Expirada</AlertTitle>
-                  <AlertDescription>Você precisa estar logado para criar uma página.</AlertDescription>
-              </Alert>
-              <Button asChild className="mt-4"><a href={`/login?redirect=/criar/fazer-eu-mesmo?plan=${plan}`}>Ir para o Login</a></Button>
-          </div>
-      )
-  }
-
   const timelineEventsForDisplay = useMemo(() => {
     if (!formData.timelineEvents) return [];
     return formData.timelineEvents

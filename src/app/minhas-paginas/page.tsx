@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useCollection } from '@/firebase';
@@ -67,12 +66,6 @@ export default function MinhasPaginasPage() {
   const [showIndexWarning, setShowIndexWarning] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login?redirect=/minhas-paginas');
-    }
-  }, [user, isUserLoading, router]);
-
-  useEffect(() => {
       if (error?.message.includes("indexes?create_composite")) {
         console.warn(
             "ALERTA IMPORTANTE PARA O DESENVOLVEDOR:\n" +
@@ -92,83 +85,73 @@ export default function MinhasPaginasPage() {
     );
   }
   
-  if (user) {
-    return (
-        <div className="container py-12 md:py-24">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
-            <div>
-                <h1 className="text-3xl font-bold font-headline">Minhas Páginas de Amor</h1>
-                <p className="text-muted-foreground">Gerencie aqui todas as suas criações.</p>
-            </div>
-            <Button asChild>
+  return (
+      <div className="container py-12 md:py-24">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
+          <div>
+              <h1 className="text-3xl font-bold font-headline">Minhas Páginas de Amor</h1>
+              <p className="text-muted-foreground">Gerencie aqui todas as suas criações.</p>
+          </div>
+          <Button asChild>
+              <Link href="/criar">
+                  <PlusCircle className="mr-2 h-4 w-4"/>
+                  Criar Nova Página
+              </Link>
+          </Button>
+        </div>
+
+        {showIndexWarning && (
+          <Alert variant="destructive" className="mb-8">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Ação Necessária: Criar Índice no Firestore</AlertTitle>
+              <AlertDescription>
+                  A busca por suas páginas requer um índice que não existe no banco de dados. Para corrigir, abra o console do navegador (F12), encontre o erro do Firestore e clique no link fornecido para criar o índice.
+              </AlertDescription>
+          </Alert>
+        )}
+        
+        <AnimatePresence>
+          <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                  visible: {
+                      transition: {
+                          staggerChildren: 0.1
+                      }
+                  }
+              }}
+          >
+              {arePagesLoading && !showIndexWarning && (
+                  [...Array(3)].map((_, i) => <PageSkeleton key={i} />)
+              )}
+
+              {!arePagesLoading && lovePages && lovePages.length > 0 && (
+                  lovePages.map((page) => (
+                     <motion.div 
+                          key={page.id}
+                          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                     >
+                          <LovePageCard page={page} />
+                     </motion.div>
+                  ))
+              )}
+          </motion.div>
+        </AnimatePresence>
+        
+        {!arePagesLoading && (!lovePages || lovePages.length === 0) && (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
+            <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
+            <h2 className="text-xl font-semibold">Nenhuma página criada ainda</h2>
+            <p className="text-muted-foreground mt-2">Que tal começar a sua primeira obra de arte?</p>
+            <Button asChild variant="outline" className="mt-6">
                 <Link href="/criar">
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Criar Nova Página
+                    Criar minha primeira página
                 </Link>
             </Button>
           </div>
-
-          {showIndexWarning && (
-            <Alert variant="destructive" className="mb-8">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Ação Necessária: Criar Índice no Firestore</AlertTitle>
-                <AlertDescription>
-                    A busca por suas páginas requer um índice que não existe no banco de dados. Para corrigir, abra o console do navegador (F12), encontre o erro do Firestore e clique no link fornecido para criar o índice.
-                </AlertDescription>
-            </Alert>
-          )}
-          
-          <AnimatePresence>
-            <motion.div 
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                    visible: {
-                        transition: {
-                            staggerChildren: 0.1
-                        }
-                    }
-                }}
-            >
-                {arePagesLoading && !showIndexWarning && (
-                    [...Array(3)].map((_, i) => <PageSkeleton key={i} />)
-                )}
-
-                {!arePagesLoading && lovePages && lovePages.length > 0 && (
-                    lovePages.map((page) => (
-                       <motion.div 
-                            key={page.id}
-                            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                       >
-                            <LovePageCard page={page} />
-                       </motion.div>
-                    ))
-                )}
-            </motion.div>
-          </AnimatePresence>
-          
-          {!arePagesLoading && (!lovePages || lovePages.length === 0) && (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-              <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h2 className="text-xl font-semibold">Nenhuma página criada ainda</h2>
-              <p className="text-muted-foreground mt-2">Que tal começar a sua primeira obra de arte?</p>
-              <Button asChild variant="outline" className="mt-6">
-                  <Link href="/criar">
-                      Criar minha primeira página
-                  </Link>
-              </Button>
-            </div>
-          )}
-        </div>
-      );
-  }
-
-  // Fallback para o redirecionamento
-  return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Redirecionando para o login...</p>
+        )}
       </div>
-  );
+    );
 }
