@@ -26,7 +26,7 @@ export default function Footer() {
           <a href="https://www.instagram.com/mycupid.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-muted-foreground hover:text-primary transition-colors">
             <Instagram className="h-6 w-6" />
           </a>
-          <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-muted-foreground hover:text-primary transition-colors">
+          <a href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-muted-foreground hover:text-primary transition-colors">
             <MessageSquare className="h-6 w-6" />
           </a>
           <a href="mailto:contatomycupid@gmail.com" aria-label="Email" className="text-muted-foreground hover:text-primary transition-colors">
