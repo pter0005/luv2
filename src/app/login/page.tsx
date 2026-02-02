@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import Link from 'next/link';
+import { createSession } from '@/app/auth-actions';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -76,7 +77,7 @@ const googleErrorMessages: { [key: string]: string } = {
 
 function LoginContent() {
   const { auth, firestore } = useFirebase();
-  const { user, isUserLoading } = useUser();
+  const { isUserLoading } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -88,39 +89,6 @@ function LoginContent() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
-  
-  useEffect(() => {
-    const error = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
-    if (error) {
-      console.error(`OAuth Error received in URL: ${error} - ${errorDescription}`);
-      toast({
-        variant: 'destructive',
-        title: 'Falha na Autenticação Externa',
-        description: `Ocorreu um erro durante o processo de login: ${errorDescription || error}. Verifique as configurações de credenciais.`,
-        duration: 10000,
-      });
-      router.replace('/login', undefined);
-    }
-  }, [searchParams, toast, router]);
-
-
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push(redirectUrl);
-    }
-  }, [user, isUserLoading, router, redirectUrl]);
-
-  const handleSuccessfulLogin = async (user: User) => {
-    // Force refresh of the token to ensure it's fresh
-    const idToken = await user.getIdToken(true);
-    await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-    });
-    // The useEffect above will handle the redirect once the user state is confirmed.
-  };
 
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
     if (!auth || !firestore) return;
@@ -146,7 +114,10 @@ function LoginContent() {
             userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
         }
-        await handleSuccessfulLogin(userCredential.user);
+        
+        await createSession(userCredential.user.uid);
+        window.location.href = redirectUrl;
+
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Email Auth Error:`, firebaseError.code, firebaseError.message);
@@ -193,7 +164,10 @@ function LoginContent() {
       }
 
       toast({ title: 'Login com Google bem-sucedido!', description: 'Você será redirecionado em breve.' });
-      await handleSuccessfulLogin(user);
+      
+      await createSession(user.uid);
+      window.location.href = redirectUrl;
+
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Google Auth Error:`, firebaseError.code, firebaseError.message);

@@ -28,6 +28,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useTranslation } from "@/lib/i18n";
 import { motion } from "framer-motion";
+import { removeSession } from "@/app/auth-actions";
 
 const navLinks = [
   { href: "/#recursos", labelKey: "nav.recursos" },
@@ -71,10 +72,11 @@ export default function Header() {
     try {
       const auth = getAuth();
       await signOut(auth);
-      await fetch('/api/logout', { method: 'POST' });
-      router.push('/login'); 
+      await removeSession();
     } catch (error) {
       console.error("Erro ao sair:", error);
+      // Fallback redirect
+      window.location.href = '/login';
     }
   };
 

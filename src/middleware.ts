@@ -1,40 +1,31 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-function redirectToLogin(request: NextRequest) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    // Preserve the original path for redirection after login
-    url.search = `redirect=${request.nextUrl.pathname}`;
-    return NextResponse.redirect(url);
-}
+// Rotas que precisam de login
+const protectedRoutes = ['/criar', '/minhas-paginas'];
+// Rotas que usuário logado não deve acessar
+const authRoutes = ['/login'];
 
-export async function middleware(request: NextRequest) {
-  const sessionCookie = request.cookies.get('__session')?.value;
+export function middleware(request: NextRequest) {
+  const session = request.cookies.get('session_user')?.value;
+  const { pathname } = request.nextUrl;
 
-  // 1. If no cookie, definitely not logged in.
-  if (!sessionCookie) {
-    return redirectToLogin(request);
+  // 1. Se tentar acessar rota protegida sem cookie -> Manda pro Login
+  if (protectedRoutes.some((route) => pathname.startsWith(route)) && !session) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname); // Salva onde ele queria ir
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 2. There's a cookie, but is it valid?
-  // We call a dedicated API route that runs in a Node.js environment
-  // and can use the firebase-admin SDK to verify the cookie.
-  const response = await fetch(`${request.nextUrl.origin}/api/auth/verify`, {
-    headers: {
-      'Cookie': `__session=${sessionCookie}`,
-    },
-  });
-
-  // 3. If the verification API returns anything other than 200,
-  // the cookie is invalid or expired. Redirect to login.
-  if (response.status !== 200) {
-    return redirectToLogin(request);
+  // 2. Se já tem cookie e tenta acessar login -> Manda direto pra criar
+  if (authRoutes.includes(pathname) && session) {
+    return NextResponse.redirect(new URL('/criar', request.url));
   }
 
-  // 4. Session is valid. Allow the user to proceed.
   return NextResponse.next();
 }
 
+// Configuração para o middleware rodar apenas nas rotas necessárias
 export const config = {
-  matcher: ['/criar/:path*', '/minhas-paginas/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
