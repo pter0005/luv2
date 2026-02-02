@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -89,7 +90,6 @@ function LoginContent() {
   });
   
   useEffect(() => {
-    // This effect checks for OAuth errors passed back in the URL.
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
     if (error) {
@@ -100,7 +100,6 @@ function LoginContent() {
         description: `Ocorreu um erro durante o processo de login: ${errorDescription || error}. Verifique as configurações de credenciais.`,
         duration: 10000,
       });
-      // Clean the URL
       router.replace('/login', undefined);
     }
   }, [searchParams, toast, router]);
@@ -113,13 +112,14 @@ function LoginContent() {
   }, [user, isUserLoading, router, redirectUrl]);
 
   const handleSuccessfulLogin = async (user: User) => {
-    const idToken = await user.getIdToken();
+    // Force refresh of the token to ensure it's fresh
+    const idToken = await user.getIdToken(true);
     await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
     });
-    router.push(redirectUrl);
+    // The useEffect above will handle the redirect once the user state is confirmed.
   };
 
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
@@ -220,10 +220,11 @@ function LoginContent() {
     }
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Verificando sessão...</p>
       </div>
     );
   }
