@@ -2,8 +2,8 @@
 "use client";
 
 import Link from "next/link";
-import { Brush, ArrowLeft, RotateCcw, Loader2, TestTube2, Star, DatabaseZap, Hourglass } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, RotateCcw, Loader2, TestTube2, Star, DatabaseZap, Hourglass } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,6 @@ export default function CreatePage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  // Effect to check for saved draft in localStorage
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("amore-pages-autosave")) {
       setDraftExists(true);
@@ -26,7 +25,6 @@ export default function CreatePage() {
     router.push(`/criar/fazer-eu-mesmo?plan=${plan}&new=true`);
   };
 
-  // While checking user auth, show a loading state
   if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -36,7 +34,6 @@ export default function CreatePage() {
     );
   }
   
-  // If loading is done and there is a user, render the page content
   return (
       <div className="relative min-h-screen">
         <div className="relative z-10 container py-20 flex flex-col items-center justify-center min-h-screen">

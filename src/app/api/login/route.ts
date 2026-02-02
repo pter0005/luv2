@@ -1,21 +1,25 @@
-import { NextResponse } from 'next/server';
-import { createSessionCookie } from '@/lib/session';
+'use server';
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { idToken } = body;
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-    if (!idToken) {
-      return NextResponse.json({ success: false, error: 'ID token is required.' }, { status: 400 });
-    }
-  
-    await createSessionCookie(idToken);
-  
-    return NextResponse.json({ success: true }, { status: 200 });
+export async function createSession(uid: string) {
+  // Define o cookie de sessão
+  cookies().set('session_user', uid, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 5, // 5 dias
+    path: '/',
+    sameSite: 'lax',
+  });
+}
 
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ success: false, error: 'An unexpected error occurred.' }, { status: 500 });
-  }
+export async function removeSession() {
+  cookies().delete('session_user');
+  redirect('/login');
+}
+
+export async function getSession() {
+  const session = cookies().get('session_user')?.value;
+  return session || null;
 }

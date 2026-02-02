@@ -1,17 +1,14 @@
 'use client';
 
 import { useUser, useCollection } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, Heart, PlusCircle, View, Calendar, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Loader2, Heart, PlusCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase } from '@/firebase';
 import Image from 'next/image';
 import { Card, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -54,7 +51,6 @@ const PageSkeleton = () => (
 
 export default function MinhasPaginasPage() {
   const { user, isUserLoading } = useUser();
-  const router = useRouter();
   const firestore = useFirestore();
 
   const pagesQuery = useMemoFirebase(() => {
@@ -140,7 +136,7 @@ export default function MinhasPaginasPage() {
           </motion.div>
         </AnimatePresence>
         
-        {!arePagesLoading && (!lovePages || lovePages.length === 0) && (
+        {!arePagesLoading && (!lovePages || lovePages.length === 0) && !showIndexWarning && (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
             <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
             <h2 className="text-xl font-semibold">Nenhuma página criada ainda</h2>

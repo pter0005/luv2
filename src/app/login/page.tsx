@@ -77,7 +77,7 @@ const googleErrorMessages: { [key: string]: string } = {
 
 function LoginContent() {
   const { auth, firestore } = useFirebase();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -85,10 +85,13 @@ function LoginContent() {
   const [isGoogleLoading, setGoogleLoading] = useState(false);
   const redirectUrl = searchParams.get('redirect') || '/minhas-paginas';
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
+  useEffect(() => {
+    // Se o usuário já está logado (e não está mais carregando), redirecione-o.
+    // Isso evita o loop onde um usuário logado vê a página de login.
+    if (!isUserLoading && user) {
+      router.push(redirectUrl);
+    }
+  }, [user, isUserLoading, router, redirectUrl]);
 
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
     if (!auth || !firestore) return;
@@ -116,7 +119,7 @@ function LoginContent() {
         }
         
         await createSession(userCredential.user.uid);
-        window.location.href = redirectUrl;
+        window.location.href = redirectUrl; // Força um refresh para o middleware pegar o cookie
 
     } catch (error) {
         const firebaseError = error as FirebaseError;
@@ -166,7 +169,7 @@ function LoginContent() {
       toast({ title: 'Login com Google bem-sucedido!', description: 'Você será redirecionado em breve.' });
       
       await createSession(user.uid);
-      window.location.href = redirectUrl;
+      window.location.href = redirectUrl; // Força um refresh para o middleware pegar o cookie
 
     } catch (error) {
         const firebaseError = error as FirebaseError;
@@ -194,7 +197,7 @@ function LoginContent() {
     }
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
