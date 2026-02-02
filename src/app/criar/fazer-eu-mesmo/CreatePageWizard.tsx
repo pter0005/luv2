@@ -522,49 +522,72 @@ const GalleryStep = () => {
 };
 
 const TimelineStep = () => {
-    const { control, trigger, formState: { errors }, watch } = useFormContext<PageData>();
+    const { control, formState: { errors }, watch, append: appendTimeline } = useFormContext<PageData>();
     const plan = watch('plan');
-    const { fields, append: appendTimeline, remove, update } = useFieldArray({
+    const { fields, remove, update } = useFieldArray({
         control,
         name: "timelineEvents",
     });
 
     const { user } = useUser();
     const { storage } = useFirebase();
-    const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
+    
+    const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || !user || !storage) return;
 
-    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>, index: number) => {
-        if (event.target.files && event.target.files[0] && user && storage) {
-            const file = event.target.files[0];
-            setUploadingIndex(index);
-            
-            try {
+        const availableSlots = MAX_TIMELINE_IMAGES - fields.length;
+        if (availableSlots <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Limite atingido',
+                description: `Você pode adicionar no máximo ${MAX_TIMELINE_IMAGES} momentos.`,
+            });
+            return;
+        }
+
+        const filesToUpload = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+
+        try {
+            const uploadPromises = filesToUpload.map(async file => {
                 const compressedFile = await compressImage(file, 1280, 0.8);
-                const newImageObject = await uploadFile(storage, user.uid, compressedFile, 'timeline');
-                const currentEvent = fields[index];
-                update(index, { ...currentEvent, image: newImageObject });
-                trigger(`timelineEvents.${index}.image`);
-                toast({ title: "Imagem enviada!", description: "A imagem do momento foi atualizada." });
-            } catch (error: any) {
-                console.error("Error uploading timeline image:", error);
-                const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
-                toast({
-                    variant: 'destructive',
-                    title: 'Erro no Upload',
-                    description: (
-                        <div>
-                            <p>Não foi possível enviar a imagem.</p>
-                            <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                        </div>
-                    )
-                });
-            } finally {
-                setUploadingIndex(null);
-            }
+                return uploadFile(storage, user.uid, compressedFile, 'timeline');
+            });
+
+            const uploadedFiles = await Promise.all(uploadPromises);
+
+            const newEvents = uploadedFiles.map(fileData => ({
+                id: new Date().getTime().toString() + Math.random(),
+                image: fileData,
+                description: '',
+                date: new Date(),
+            }));
+
+            appendTimeline(newEvents as any);
+            toast({ title: `${newEvents.length} momento(s) adicionado(s)!`, description: 'Agora você pode descrever e datar cada um.' });
+
+        } catch (error: any) {
+            console.error("Error uploading timeline images:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível enviar as imagens.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+            if(fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
@@ -578,18 +601,14 @@ const TimelineStep = () => {
         remove(index);
     }
 
-    const handleAddNewMoment = () => {
-        if (isLimitReached) return;
-        appendTimeline({ description: "", date: new Date(), id: new Date().toISOString() });
-    }
-
     return (
         <div className="space-y-6">
             <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType="momentos na linha do tempo" />
             {errors.timelineEvents?.root && (
                 <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
             )}
-            <p className="text-sm text-muted-foreground">Adicione momentos importantes. Cada momento terá uma imagem, data e uma breve descrição.</p>
+            <p className="text-sm text-muted-foreground">Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.</p>
+            
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.map((field, index) => {
                     const imagePreview = (field as any).image && (field as any).image.url;
@@ -597,23 +616,16 @@ const TimelineStep = () => {
                     return (
                         <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
                              <div className="flex-shrink-0">
-                                <FormLabel htmlFor={`timeline-image-${index}`}>
-                                    <div className={cn(
-                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary relative",
-                                        imagePreview && "border-solid",
-                                        uploadingIndex === index && "opacity-50 cursor-not-allowed"
-                                    )}>
-                                        {imagePreview ? (
-                                            <Image src={imagePreview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
-                                        ) : (
-                                            <Upload className="w-6 h-6 text-muted-foreground" />
-                                        )}
-                                        {uploadingIndex === index && <Loader2 className="absolute w-6 h-6 text-primary animate-spin" />}
-                                    </div>
-                                </FormLabel>
-                                <FormControl>
-                                    <Input id={`timeline-image-${index}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, index)} disabled={uploadingIndex === index} />
-                                </FormControl>
+                                <div className={cn(
+                                    "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center relative bg-background",
+                                    imagePreview && "border-solid"
+                                )}>
+                                    {imagePreview ? (
+                                        <Image src={imagePreview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
+                                    ) : (
+                                        <Camera className="w-6 h-6 text-muted-foreground" />
+                                    )}
+                                </div>
                             </div>
                             <div className="flex-grow space-y-2">
                                 <FormField
@@ -679,10 +691,32 @@ const TimelineStep = () => {
                         </Card>
                     )
                 })}
+                 {fields.length === 0 && !isUploading && (
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                        <Camera className="w-10 h-10 mb-4" />
+                        <p className="font-semibold">Sua linha do tempo está vazia</p>
+                        <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
+                    </div>
+                 )}
             </div>
-            <Button onClick={handleAddNewMoment} disabled={isLimitReached} className="w-full">
-                <Plus className="mr-2" />
-                Adicionar Momento
+
+            <FormControl>
+              <Input
+                id="timeline-images-upload"
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={handleBulkImageUpload}
+                disabled={isLimitReached || isUploading}
+                ref={fileInputRef}
+              />
+            </FormControl>
+            <Button asChild size="lg" className="w-full" disabled={isLimitReached || isUploading}>
+                <label htmlFor="timeline-images-upload" className={cn("cursor-pointer", (isLimitReached || isUploading) && "cursor-not-allowed")}>
+                    {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
+                    {isUploading ? 'Enviando...' : 'Adicionar Fotos para a Linha do Tempo'}
+                </label>
             </Button>
         </div>
     );
