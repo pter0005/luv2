@@ -18,7 +18,7 @@ export default function Footer() {
           
           {/* Coluna 1: Marca e Tagline */}
           <div className="space-y-6">
-            <Link href="/" className="block w-fit transition-opacity hover:opacity-80">
+            <Link href="/" className="block w-fit transition-transform duration-300 ease-in-out hover:scale-105">
               <Image
                 src={logoUrl}
                 alt="MyCupid Logo"

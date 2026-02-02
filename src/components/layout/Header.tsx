@@ -153,9 +153,9 @@ export default function Header() {
               <Image
                   src={headerLogoUrl}
                   alt="MyCupid Logo"
-                  width={220}
-                  height={220}
-                  className="w-52 h-52 transition-all duration-300"
+                  width={160}
+                  height={42}
+                  className="w-40 h-auto transition-all duration-300"
                   data-ai-hint="logo"
                   priority
               />
@@ -203,9 +203,9 @@ export default function Header() {
                         <Image
                           src={headerLogoUrl}
                           alt="MyCupid Logo"
-                          width={180}
-                          height={180}
-                          className="w-48 h-48"
+                          width={160}
+                          height={42}
+                          className="w-40 h-auto"
                           data-ai-hint="logo"
                         />
                         </SheetTitle>
