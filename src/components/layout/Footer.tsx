@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useTranslation } from "@/lib/i18n";
+import { Instagram, Mail, MessageSquare } from "lucide-react";
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -20,6 +21,19 @@ export default function Footer() {
             data-ai-hint="logo love cupid"
           />
         </Link>
+        
+        <div className="flex items-center gap-6">
+          <a href="https://www.instagram.com/mycupid.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-muted-foreground hover:text-primary transition-colors">
+            <Instagram className="h-6 w-6" />
+          </a>
+          <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="text-muted-foreground hover:text-primary transition-colors">
+            <MessageSquare className="h-6 w-6" />
+          </a>
+          <a href="mailto:contatomycupid@gmail.com" aria-label="Email" className="text-muted-foreground hover:text-primary transition-colors">
+            <Mail className="h-6 w-6" />
+          </a>
+        </div>
+        
         <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
           <div className="flex items-center gap-6">
