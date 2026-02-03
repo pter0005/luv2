@@ -522,9 +522,9 @@ const GalleryStep = () => {
 };
 
 const TimelineStep = () => {
-    const { control, formState: { errors }, watch, append: appendTimeline } = useFormContext<PageData>();
+    const { control, formState: { errors }, watch } = useFormContext<PageData>();
     const plan = watch('plan');
-    const { fields, remove, update } = useFieldArray({
+    const { fields, remove, update, append } = useFieldArray({
         control,
         name: "timelineEvents",
     });
@@ -569,7 +569,7 @@ const TimelineStep = () => {
                 date: new Date(),
             }));
 
-            appendTimeline(newEvents as any);
+            append(newEvents as any);
             toast({ title: `${newEvents.length} momento(s) adicionado(s)!`, description: 'Agora você pode descrever e datar cada um.' });
 
         } catch (error: any) {
