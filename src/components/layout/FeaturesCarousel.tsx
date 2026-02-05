@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react'; // Adicionado useEffect
@@ -124,7 +125,7 @@ const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isAct
 }
 
 export default function FeaturesCarousel() {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const [swiper, setSwiper] = useState<SwiperType | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -135,7 +136,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide1.title'),
           description: t('featuresCarousel.slide1.description'),
           type: 'video', 
-          media: "https://i.imgur.com/FxHuXVb.mp4" 
+          media: locale === 'en' ? "https://res.cloudinary.com/dncoxm1it/video/upload/v1770309853/mmmmmmm_w3cnqn.mp4" : "https://i.imgur.com/FxHuXVb.mp4"
         },
         {
           id: 2,
@@ -153,7 +154,7 @@ export default function FeaturesCarousel() {
           type: 'image',
           media: "https://i.imgur.com/gW8Qc3M.png"
         },
-    ], [t]);
+    ], [t, locale]);
 
     const featureSlides = [...originalSlides, ...originalSlides];
     const realActiveIndex = activeIndex % originalSlides.length;
@@ -299,3 +300,5 @@ export default function FeaturesCarousel() {
         </motion.div>
     );
 }
+
+    

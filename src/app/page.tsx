@@ -98,7 +98,7 @@ const Iphone15Pro = ({ videoSrc, delay = 0, className }: { videoSrc: string, del
 
 // --- SEÇÃO DE DEMONSTRAÇÃO (ESTILO LEQUE 3D) ---
 function DemoSection() {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     return (
         <section className="w-full py-16 px-4 flex justify-center items-center overflow-hidden">
             <div className="relative w-full max-w-[1400px] h-[550px] rounded-[3rem] overflow-hidden flex items-center justify-center border border-white/5 shadow-[0_0_80px_-20px_rgba(109,40,217,0.4)] group">
@@ -132,7 +132,7 @@ function DemoSection() {
                             className="relative group perspective-1000 origin-center rotate-[-40deg] scale-[0.85] lg:scale-90">
                              <div className="relative w-[300px] h-[600px] rounded-[3.5rem] p-[6px] bg-gradient-to-br from-[#4a4a4a] via-[#1a1a1a] to-[#0a0a0a] shadow-2xl ring-1 ring-white/10">
                                 <div className="relative w-full h-full bg-black rounded-[3.2rem] border-[8px] border-black overflow-hidden">
-                                    <video className="w-full h-full object-cover scale-[1.02]" autoPlay loop muted playsInline src="https://i.imgur.com/GHtKVNZ.mp4"></video>
+                                    <video className="w-full h-full object-cover scale-[1.02]" autoPlay loop muted playsInline src={locale === 'en' ? "https://res.cloudinary.com/dncoxm1it/video/upload/v1770309853/mmmmmmm_w3cnqn.mp4" : "https://i.imgur.com/GHtKVNZ.mp4"}></video>
                                 </div>
                             </div>
                         </motion.div>
@@ -199,7 +199,7 @@ function DemoSection() {
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const heroRef = useRef(null);
   const [showTimeline, setShowTimeline] = useState(false);
   
@@ -372,7 +372,7 @@ export default function Home() {
                                     muted 
                                     playsInline 
                                     poster="https://i.imgur.com/GHtKVNZ.png"
-                                    src="https://i.imgur.com/GHtKVNZ.mp4" 
+                                    src={locale === 'en' ? "https://res.cloudinary.com/dncoxm1it/video/upload/v1770309853/mmmmmmm_w3cnqn.mp4" : "https://i.imgur.com/GHtKVNZ.mp4"}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                             </div>
