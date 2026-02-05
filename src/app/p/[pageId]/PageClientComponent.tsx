@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -85,11 +86,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       .map((event: any) => ({
         id: event.id || Math.random().toString(),
         imageUrl: event.image!.url,
-        alt: event.description || 'Timeline image',
+        alt: t('publicpage.alt.timelineImage'),
         title: event.description || '',
         date: event.date ? new Date(event.date._seconds ? event.date._seconds * 1000 : event.date) : undefined,
       }));
-  }, [pageData.timelineEvents]);
+  }, [pageData.timelineEvents, t]);
   
   const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
 

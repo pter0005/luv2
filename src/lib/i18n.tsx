@@ -258,6 +258,14 @@ const translations = {
     'publicpage.puzzle.description': 'Monte o quebra-cabeça para desbloquear sua surpresa.',
     'publicpage.puzzle.complete': 'Desafio Concluído!',
     'publicpage.loading': 'Carregando sua surpresa...',
+    'publicpage.error.title': 'Página não encontrada ou erro',
+    'publicpage.error.description': 'O link que você acessou pode estar quebrado ou a página foi removida.',
+    'publicpage.error.generic': 'Esta página de amor não existe ou não pôde ser encontrada.',
+    'publicpage.error.dbConfig': 'O sistema de banco de dados não está configurado corretamente. Por favor, contate o suporte.',
+    'publicpage.error.fetch': 'Erro ao buscar dados: {message}',
+    'publicpage.error.unknown': 'Ocorreu um erro desconhecido ao buscar os dados da página.',
+    'publicpage.error.processing': 'Ocorreu um erro ao processar os dados da página.',
+    'publicpage.alt.timelineImage': 'Imagem da linha do tempo',
 
     // Privacy & Terms
     'privacy.back': 'Voltar para o início',
@@ -427,7 +435,21 @@ const translations = {
     'toast.payment.pending.description': 'Por favor, tente novamente em alguns instantes.',
     'toast.payment.verify.error': 'Erro na verificação',
     'toast.payment.verify.error.description': 'Não foi possível verificar o pagamento.',
+    
+    // Cookie Banner
+    'cookie.title': 'Aviso de Cookies',
+    'cookie.description': 'Esses cookies não quebram dieta. Só melhoram seu tempo. Nós os usamos para garantir a melhor experiência em nosso site.',
+    'cookie.privacyLink': 'Leia nossa política de privacidade.',
+    'cookie.manage': 'Gerenciar preferências',
+    'cookie.accept': 'Aceitar',
 
+    // Payment Status Pages
+    'payment.success.title': 'Pagamento bem-sucedido!',
+    'payment.success.description': 'Seu pagamento foi processado. Sua página de amor está sendo criada e aparecerá em "Minhas Páginas" em breve. O webhook está processando em segundo plano.',
+    'payment.success.cta': 'Ir para Minhas Páginas',
+    'payment.canceled.title': 'Pagamento Cancelado',
+    'payment.canceled.description': 'Seu pagamento não foi concluído. Você pode voltar e tentar novamente.',
+    'payment.canceled.cta': 'Voltar ao Criador de Páginas',
   },
   en: {
     // Nav (existing)
@@ -683,6 +705,14 @@ const translations = {
     'publicpage.puzzle.description': 'Solve the puzzle to unlock your surprise.',
     'publicpage.puzzle.complete': 'Challenge Completed!',
     'publicpage.loading': 'Loading your surprise...',
+    'publicpage.error.title': 'Page not found or error',
+    'publicpage.error.description': 'The link you followed may be broken, or the page may have been removed.',
+    'publicpage.error.generic': 'This love page does not exist or could not be found.',
+    'publicpage.error.dbConfig': 'The database system is not configured correctly. Please contact support.',
+    'publicpage.error.fetch': 'Error fetching data: {message}',
+    'publicpage.error.unknown': 'An unknown error occurred while fetching the page data.',
+    'publicpage.error.processing': 'An error occurred while processing the page data.',
+    'publicpage.alt.timelineImage': 'Timeline image',
 
     // Privacy & Terms
     'privacy.back': 'Back to home',
@@ -853,6 +883,20 @@ const translations = {
     'toast.payment.verify.error': 'Verification Error',
     'toast.payment.verify.error.description': 'Could not verify the payment.',
 
+    // Cookie Banner
+    'cookie.title': 'Cookie Notice',
+    'cookie.description': 'These cookies won\'t break your diet. They just improve your experience. We use them to ensure the best experience on our site.',
+    'cookie.privacyLink': 'Read our privacy policy.',
+    'cookie.manage': 'Manage preferences',
+    'cookie.accept': 'Accept',
+
+    // Payment Status Pages
+    'payment.success.title': 'Payment Successful!',
+    'payment.success.description': 'Your payment has been processed. Your love page is being created and will appear in "My Pages" shortly. The webhook is processing it in the background.',
+    'payment.success.cta': 'Go to My Pages',
+    'payment.canceled.title': 'Payment Canceled',
+    'payment.canceled.description': 'Your payment was not completed. You can go back and try again.',
+    'payment.canceled.cta': 'Back to Page Creator',
   },
   es: {
     // Nav (existing)
@@ -1107,6 +1151,14 @@ const translations = {
      'publicpage.puzzle.description': 'Resuelve el rompecabezas para desbloquear tu sorpresa.',
      'publicpage.puzzle.complete': '¡Reto Completado!',
      'publicpage.loading': 'Cargando tu sorpresa...',
+     'publicpage.error.title': 'Página no encontrada o error',
+     'publicpage.error.description': 'El enlace que seguiste puede estar roto o la página ha sido eliminada.',
+     'publicpage.error.generic': 'Esta página de amor no existe o no se pudo encontrar.',
+     'publicpage.error.dbConfig': 'El sistema de base de datos no está configurado correctamente. Por favor, contacta a soporte.',
+     'publicpage.error.fetch': 'Error al buscar datos: {message}',
+     'publicpage.error.unknown': 'Ocurrió un error desconocido al buscar los datos de la página.',
+     'publicpage.error.processing': 'Ocurrió un error al procesar los datos de la página.',
+     'publicpage.alt.timelineImage': 'Imagen de la línea de tiempo',
  
      // Privacy & Terms
      'privacy.back': 'Volver al inicio',
@@ -1276,6 +1328,21 @@ const translations = {
      'toast.payment.pending.description': 'Por favor, inténtalo de nuevo en unos momentos.',
      'toast.payment.verify.error': 'Error de Verificación',
      'toast.payment.verify.error.description': 'No se pudo verificar el pago.',
+    
+     // Cookie Banner
+     'cookie.title': 'Aviso de Cookies',
+     'cookie.description': 'Estas cookies no arruinarán tu dieta. Solo mejoran tu experiencia. Las usamos para garantizar la mejor experiencia en nuestro sitio.',
+     'cookie.privacyLink': 'Lee nuestra política de privacidad.',
+     'cookie.manage': 'Gestionar preferencias',
+     'cookie.accept': 'Aceptar',
+
+     // Payment Status Pages
+    'payment.success.title': '¡Pago Exitoso!',
+    'payment.success.description': 'Tu pago ha sido procesado. Tu página de amor se está creando y aparecerá en "Mis Páginas" en breve. El webhook lo está procesando en segundo plano.',
+    'payment.success.cta': 'Ir a Mis Páginas',
+    'payment.canceled.title': 'Pago Cancelado',
+    'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
+    'payment.canceled.cta': 'Volver al Creador de Páginas',
   },
 };
 
@@ -1327,5 +1394,3 @@ export const useTranslation = () => {
   }
   return context;
 };
-
-    
