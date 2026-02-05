@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
   } catch (err: any) {
+    console.error(`Webhook Error: ${err.message}`)
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
@@ -30,6 +31,8 @@ export async function POST(req: Request) {
       console.log(`💰 Pagamento Stripe aprovado para intent: ${intentId}`);
       // Chama a sua função que move as fotos e cria a página final
       await finalizeLovePage(intentId, paymentId);
+    } else {
+        console.error('Stripe Webhook: client_reference_id (intentId) não encontrado na sessão.');
     }
   }
 
