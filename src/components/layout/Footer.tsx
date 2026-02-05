@@ -9,7 +9,7 @@ export default function Footer() {
   const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png'; // Garanta que tem um fallback
 
   return (
-    <footer className="relative border-t border-white/10 bg-[#050505] pt-16 pb-8 overflow-hidden">
+    <footer className="relative border-t border-white/10 bg-transparent pt-16 pb-8 overflow-hidden">
       {/* Efeito de Glow no Topo (Opcional, dá um charme roxo) */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
       

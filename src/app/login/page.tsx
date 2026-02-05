@@ -100,29 +100,27 @@ function LoginContent() {
     if (!auth || !firestore) return;
     setIsLoading(true);
     try {
-        let userCredential;
-        if (isRegister) {
-            userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-            const user = userCredential.user;
-            const userRef = doc(firestore, "users", user.uid);
-            const userDoc = await getDoc(userRef);
+      if (isRegister) {
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
+        const userRef = doc(firestore, "users", user.uid);
+        const userDoc = await getDoc(userRef);
 
-            if (!userDoc.exists()) {
-              await setDoc(userRef, {
-                  id: user.uid,
-                  email: user.email,
-                  name: user.email?.split('@')[0] || 'Usuário'
-              }, { merge: true });
-            }
-
-            toast({ title: 'Conta criada com sucesso!', description: 'Você será redirecionado em breve.' });
-        } else {
-            userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
+        if (!userDoc.exists()) {
+          await setDoc(userRef, {
+            id: user.uid,
+            email: user.email,
+            name: user.email?.split('@')[0] || 'Usuário'
+          }, { merge: true });
         }
-        
-        await handleAuthSuccess(userCredential.user);
 
+        toast({ title: 'Conta criada com sucesso!', description: 'Você será redirecionado em breve.' });
+        await handleAuthSuccess(user);
+      } else {
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
+        await handleAuthSuccess(userCredential.user);
+      }
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Email Auth Error:`, firebaseError.code, firebaseError.message);
