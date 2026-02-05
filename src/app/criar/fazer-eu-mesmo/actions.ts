@@ -7,6 +7,7 @@ import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config'
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
 import "dotenv/config";
+import Stripe from 'stripe';
 
 
 // TRADUTOR UNIVERSAL DE DATAS (MATA O ERRO DE "SECONDS")
@@ -85,8 +86,7 @@ export async function processPixPayment(intentId: string, price: number) {
         const intentData = intentDoc.data();
         if (!intentData) return { error: 'Dados do rascunho de pagamento não encontrados.' };
         
-        const payerEmail = intentData.payment?.payerEmail;
-        if (!payerEmail) return { error: 'E-mail do pagador não encontrado para processar o pagamento.' };
+        const payerEmail = intentData.payment?.payerEmail || intentData.userEmail || 'cliente@mycupid.net';
 
         const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
         const payment = new Payment(client);
@@ -117,43 +117,62 @@ export async function processPixPayment(intentId: string, price: number) {
     }
 }
 
-export async function processCardPayment(intentId: string, price: number, cardData: any) {
-    const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-    if (!MERCADO_PAGO_ACCESS_TOKEN) return { error: "Token do Mercado Pago não configurado no servidor." };
+export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string) {
+    const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+        return { error: 'Stripe secret key not configured on the server.' };
+    }
+
+    const stripe = new Stripe(STRIPE_SECRET_KEY, {
+        apiVersion: '2024-06-20',
+    });
+
+    const prices = {
+        basico: {
+            unit_amount: 1000, // $10.00 in cents
+            name: 'Basic Plan',
+            description: 'A beautiful, temporary page to share your love.'
+        },
+        avancado: {
+            unit_amount: 1500, // $15.00 in cents
+            name: 'Advanced Plan',
+            description: 'A permanent page with all features unlocked.'
+        }
+    };
+    
+    const selectedPrice = prices[plan];
 
     try {
-        const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
-        const payment = new Payment(client);
-
-        const paymentBody = {
-            transaction_amount: price,
-            description: 'Amore Pages - Página de Amor',
-            token: cardData.token,
-            installments: cardData.installments,
-            payment_method_id: cardData.payment_method_id,
-            issuer_id: cardData.issuer_id,
-            payer: {
-                email: cardData.payer.email,
-                identification: {
-                    type: cardData.payer.identification.type,
-                    number: cardData.payer.identification.number,
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: selectedPrice.name,
+                            description: selectedPrice.description,
+                        },
+                        unit_amount: selectedPrice.unit_amount,
+                    },
+                    quantity: 1,
                 },
-            },
-            external_reference: intentId,
-        };
+            ],
+            mode: 'payment',
+            success_url: `${domain}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${domain}/pagamento/cancelado`,
+            client_reference_id: intentId, // THIS IS KEY! Link Stripe session to our intentId
+        });
 
-        const result = await payment.create({ body: paymentBody });
-
-        if (result && result.id && result.status === 'approved') {
-            const finalizationResult = await finalizeLovePage(intentId, result.id.toString());
-            return finalizationResult;
-        } else {
-            console.error("Card payment not approved or failed:", result);
-            return { error: `Pagamento com cartão falhou. Status: ${result.status} - ${result.status_detail}` };
+        if (!session.url) {
+            return { error: "Could not create Stripe session." };
         }
+
+        return { url: session.url };
+
     } catch (error: any) {
-        console.error("Erro no Servidor (processCardPayment):", error);
-        return { error: `Erro ao processar pagamento com cartão: ${error.message}` };
+        console.error("Stripe Session Creation Error:", error);
+        return { error: `Stripe Error: ${error.message}` };
     }
 }
 
