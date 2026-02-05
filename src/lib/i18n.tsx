@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 
 const translations = {
   pt: {
@@ -1135,8 +1135,17 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocale] = useState<Locale>('pt');
 
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      const browserLang = navigator.language.split('-')[0] as Locale;
+      if (browserLang && translations[browserLang]) {
+        setLocale(browserLang);
+      }
+    }
+  }, []);
+
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => {
-    let translation = translations[locale][key] || key;
+    let translation = translations[locale]?.[key] || translations['pt'][key] || key;
     if (vars) {
       Object.keys(vars).forEach(varKey => {
         const regex = new RegExp(`\\{${varKey}\\}`, 'g');
