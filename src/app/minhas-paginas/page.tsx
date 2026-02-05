@@ -2,7 +2,7 @@
 
 import { useUser, useCollection } from '@/firebase';
 import { useEffect, useState } from 'react';
-import { Loader2, Heart, PlusCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Heart, PlusCircle, AlertTriangle, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { collection, query, where } from 'firebase/firestore';
@@ -13,13 +13,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from '@/lib/i18n';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
-const LovePageCard = ({ page, t }: { page: any, t: (key: any) => string }) => {
-  const pageUrl = `/p/${page.id}`;
+const LovePageCard = ({ page, t, onClick }: { page: any, t: (key: any) => string, onClick: () => void }) => {
   const previewImage = page.galleryImages?.[0]?.url || `https://picsum.photos/seed/${page.id}/400/300`;
 
   return (
-    <Link href={pageUrl} target="_blank" className="group">
+    <div onClick={onClick} className="group cursor-pointer">
       <Card className="relative h-64 overflow-hidden rounded-2xl border-none transition-all duration-500 hover:scale-105">
         <Image
           src={previewImage}
@@ -38,7 +39,7 @@ const LovePageCard = ({ page, t }: { page: any, t: (key: any) => string }) => {
           </p>
         </div>
       </Card>
-    </Link>
+    </div>
   );
 };
 
@@ -54,6 +55,8 @@ export default function MinhasPaginasPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { t } = useTranslation();
+  const [selectedPage, setSelectedPage] = useState<any | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const pagesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -74,6 +77,15 @@ export default function MinhasPaginasPage() {
       }
   }, [error]);
 
+  const handleCopy = (url: string) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const pageUrl = selectedPage ? `${window.location.origin}/p/${selectedPage.id}` : '';
+
   if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -84,72 +96,106 @@ export default function MinhasPaginasPage() {
   }
   
   return (
-      <div className="container py-12 md:py-24">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
-          <div>
-              <h1 className="text-3xl font-bold font-headline">{t('mypages.title')}</h1>
-              <p className="text-muted-foreground">{t('mypages.description')}</p>
-          </div>
-          <Button asChild>
-              <Link href="/criar">
-                  <PlusCircle className="mr-2 h-4 w-4"/>
-                  {t('mypages.cta')}
-              </Link>
-          </Button>
-        </div>
-
-        {showIndexWarning && (
-          <Alert variant="destructive" className="mb-8">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{t('mypages.index.title')}</AlertTitle>
-              <AlertDescription>
-                  {t('mypages.index.description')}
-              </AlertDescription>
-          </Alert>
-        )}
-        
-        <AnimatePresence>
-          <motion.div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                  visible: {
-                      transition: {
-                          staggerChildren: 0.1
-                      }
-                  }
-              }}
-          >
-              {arePagesLoading && !showIndexWarning && (
-                  [...Array(3)].map((_, i) => <PageSkeleton key={i} />)
-              )}
-
-              {!arePagesLoading && lovePages && lovePages.length > 0 && (
-                  lovePages.map((page) => (
-                     <motion.div 
-                          key={page.id}
-                          variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                     >
-                          <LovePageCard page={page} t={t} />
-                     </motion.div>
-                  ))
-              )}
-          </motion.div>
-        </AnimatePresence>
-        
-        {!arePagesLoading && (!lovePages || lovePages.length === 0) && !showIndexWarning && (
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-            <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-            <h2 className="text-xl font-semibold">{t('mypages.empty.title')}</h2>
-            <p className="text-muted-foreground mt-2">{t('mypages.empty.description')}</p>
-            <Button asChild variant="outline" className="mt-6">
+      <>
+        <div className="container py-12 md:py-24">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
+            <div>
+                <h1 className="text-3xl font-bold font-headline">{t('mypages.title')}</h1>
+                <p className="text-muted-foreground">{t('mypages.description')}</p>
+            </div>
+            <Button asChild>
                 <Link href="/criar">
-                    {t('mypages.empty.cta')}
+                    <PlusCircle className="mr-2 h-4 w-4"/>
+                    {t('mypages.cta')}
                 </Link>
             </Button>
-          </div>
-        )}
-      </div>
-    );
+            </div>
+
+            {showIndexWarning && (
+            <Alert variant="destructive" className="mb-8">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{t('mypages.index.title')}</AlertTitle>
+                <AlertDescription>
+                    {t('mypages.index.description')}
+                </AlertDescription>
+            </Alert>
+            )}
+            
+            <AnimatePresence>
+            <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                    visible: {
+                        transition: {
+                            staggerChildren: 0.1
+                        }
+                    }
+                }}
+            >
+                {arePagesLoading && !showIndexWarning && (
+                    [...Array(3)].map((_, i) => <PageSkeleton key={i} />)
+                )}
+
+                {!arePagesLoading && lovePages && lovePages.length > 0 && (
+                    lovePages.map((page) => (
+                        <motion.div 
+                            key={page.id}
+                            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                        >
+                            <LovePageCard page={page} t={t} onClick={() => setSelectedPage(page)} />
+                        </motion.div>
+                    ))
+                )}
+            </motion.div>
+            </AnimatePresence>
+            
+            {!arePagesLoading && (!lovePages || lovePages.length === 0) && !showIndexWarning && (
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
+                <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                <h2 className="text-xl font-semibold">{t('mypages.empty.title')}</h2>
+                <p className="text-muted-foreground mt-2">{t('mypages.empty.description')}</p>
+                <Button asChild variant="outline" className="mt-6">
+                    <Link href="/criar">
+                        {t('mypages.empty.cta')}
+                    </Link>
+                </Button>
+            </div>
+            )}
+        </div>
+
+        <Dialog open={!!selectedPage} onOpenChange={(isOpen) => !isOpen && setSelectedPage(null)}>
+            <DialogContent className="sm:max-w-md bg-card/90 backdrop-blur-lg">
+                <DialogHeader>
+                    <DialogTitle>{t('mypages.share.title')}</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="p-4 bg-white rounded-lg border">
+                        <Image 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
+                            alt="QR Code da Página"
+                            width={200}
+                            height={200}
+                        />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                        {t('mypages.share.description')}
+                    </p>
+                    <div className="flex items-center space-x-2 w-full">
+                    <Input id="page-link" value={pageUrl} readOnly className="bg-background" />
+                    <Button onClick={() => handleCopy(pageUrl)} size="icon" variant="outline">
+                        {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    </div>
+                    <Button asChild className="w-full mt-2">
+                    <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+                        {t('mypages.share.cta')} <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                    </Button>
+                </div>
+            </DialogContent>
+      </Dialog>
+    </>
+  );
 }

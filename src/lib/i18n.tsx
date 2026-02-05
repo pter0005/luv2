@@ -247,6 +247,9 @@ const translations = {
     'mypages.card.createdAt': 'Criado em',
     'mypages.card.noTitle': 'Sem Título',
     'mypages.card.recent': 'Recente',
+    'mypages.share.title': 'Compartilhe sua Página',
+    'mypages.share.description': 'Escaneie o QR Code ou copie o link abaixo.',
+    'mypages.share.cta': 'Acessar Página',
 
     // Public Page
     'publicpage.timeline.title': 'Linha do Tempo',
@@ -309,7 +312,7 @@ const translations = {
     'wizard.timeline.empty.description': 'Use o botão abaixo para adicionar seus momentos.',
     'wizard.timeline.add': 'Adicionar Fotos para a Linha do Tempo',
     'wizard.timeline.event.placeholder': 'Descreva este momento...',
-    'wizard.timeline.event.date': 'Escolha a data',
+    'wizard.timeline.event.date': 'Escolha la fecha',
     'wizard.music.label': 'Escolha a trilha sonora',
     'wizard.music.none': 'Nenhum Som',
     'wizard.music.record': 'Gravar Mensagem de Voz',
@@ -669,6 +672,9 @@ const translations = {
     'mypages.card.createdAt': 'Created on',
     'mypages.card.noTitle': 'Untitled',
     'mypages.card.recent': 'Recent',
+    'mypages.share.title': 'Share Your Page',
+    'mypages.share.description': 'Scan the QR Code or copy the link below.',
+    'mypages.share.cta': 'Access Page',
 
     // Public Page
     'publicpage.timeline.title': 'Timeline',
@@ -1090,6 +1096,9 @@ const translations = {
      'mypages.card.createdAt': 'Creado el',
      'mypages.card.noTitle': 'Sin Título',
      'mypages.card.recent': 'Reciente',
+     'mypages.share.title': 'Comparte tu Página',
+     'mypages.share.description': 'Escanea el código QR o copia el enlace de abajo.',
+     'mypages.share.cta': 'Acceder a la Página',
  
      // Public Page
      'publicpage.timeline.title': 'Línea de Tiempo',
