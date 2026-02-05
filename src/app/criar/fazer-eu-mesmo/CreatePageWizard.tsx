@@ -420,7 +420,7 @@ const GalleryStep = () => {
     
     return (
         <div className="space-y-8">
-            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType="fotos na galeria" />
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType={t('wizard.imageLimit.item.gallery')} />
             
             <div className="space-y-2">
                 <FormLabel>{t('wizard.gallery.label')}</FormLabel>
@@ -597,7 +597,7 @@ const TimelineStep = () => {
 
     return (
         <div className="space-y-6">
-            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType="momentos na linha do tempo" />
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType={t('wizard.imageLimit.item.timeline')} />
             {errors.timelineEvents?.root && (
                 <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
             )}
@@ -1275,7 +1275,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            setIsBrazilDomain(window.location.hostname.endsWith('.br') || window.location.hostname.includes('localhost'));
+            const hostname = window.location.hostname;
+            setIsBrazilDomain(hostname.endsWith('.com.br') || hostname.includes('localhost'));
         }
     }, []);
 
@@ -1330,7 +1331,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         setPixData(null);
 
         if (!user) {
-            setError({ message: "Sessão de usuário inválida. Por favor, faça login novamente." });
+            setError({ message: t('toast.payment.session.invalid') });
             return;
         }
 
@@ -1373,7 +1374,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     const handleStripePayment = () => {
       setError(null);
       if (!user) {
-          setError({ message: "Invalid user session. Please log in again." });
+          setError({ message: t('toast.payment.session.invalid') });
           return;
       }
   
