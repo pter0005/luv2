@@ -1,50 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { headers } from 'next/headers';
-import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { finalizeLovePage } from "@/app/criar/fazer-eu-mesmo/actions";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+export async function POST(req: Request) {
+  const body = await req.text();
+  const signature = headers().get("stripe-signature") as string;
 
-export async function POST(req: NextRequest) {
-    const body = await req.text();
-    const signature = headers().get('stripe-signature')!;
+  let event: Stripe.Event;
 
-    let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+  } catch (err: any) {
+    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+  }
 
-    try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err: any) {
-        console.error(`❌ Error message: ${err.message}`);
-        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  // O evento que nos interessa: Checkout Completed
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    
+    // Aqui pegamos o ID que você enviou no actions.ts
+    const intentId = session.client_reference_id;
+    const paymentId = session.payment_intent as string;
+
+    if (intentId) {
+      console.log(`💰 Pagamento Stripe aprovado para intent: ${intentId}`);
+      // Chama a sua função que move as fotos e cria a página final
+      await finalizeLovePage(intentId, paymentId);
     }
+  }
 
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        // Fulfill the purchase...
-        const intentId = session.client_reference_id;
-        const paymentId = session.payment_intent;
-
-        if (!intentId || !paymentId) {
-            console.error('Webhook Error: Missing intentId or paymentId in Stripe session');
-            return NextResponse.json({ error: 'Missing metadata from session' }, { status: 400 });
-        }
-        
-        console.log(`[STRIPE_WEBHOOK_INFO] Processing successful payment for intent: ${intentId}`);
-
-        // Centralized Logic: Call the "brain" function to finalize the page
-        const finalizationResult = await finalizeLovePage(intentId, paymentId.toString());
-
-        if (finalizationResult.error) {
-            console.error(`[STRIPE_WEBHOOK_FINALIZE_ERROR] for intent ${intentId}:`, finalizationResult.error);
-        } else {
-            console.log(`[STRIPE_WEBHOOK_SUCCESS] Page processed for intent ${intentId}. Page ID: ${finalizationResult.pageId}`);
-        }
-    }
-
-    return NextResponse.json({ received: true }, { status: 200 });
+  return new NextResponse(null, { status: 200 });
 }
