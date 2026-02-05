@@ -325,7 +325,7 @@ export default function Home() {
                                     muted 
                                     playsInline 
                                     poster="https://i.imgur.com/FxHuXVb.png"
-                                    src="https://i.imgur.com/FxHuXVb.mp4" 
+                                    src="https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4" 
                                 />
                             </div>
                         </motion.div>

@@ -136,7 +136,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide1.title'),
           description: t('featuresCarousel.slide1.description'),
           type: 'video', 
-          media: locale === 'en' ? "https://res.cloudinary.com/dncoxm1it/video/upload/v1770309853/mmmmmmm_w3cnqn.mp4" : "https://i.imgur.com/FxHuXVb.mp4"
+          media: "https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4"
         },
         {
           id: 2,
