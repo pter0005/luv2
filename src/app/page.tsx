@@ -502,14 +502,14 @@ export default function Home() {
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.avancado.description')}</p>
                     <div className="text-center my-6">
                         <p className="text-4xl font-bold text-foreground">R$24,99</p>
-                        <p className="text-sm text-muted-foreground">Pagamento único</p>
+                        <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_advanced')} />
                         <PlanFeature text={t('home.plans.feature.music')} />
                         <PlanFeature text={t('home.plans.feature.puzzle')} />
                         <PlanFeature text={t('home.plans.feature.timeline_advanced')} />
-                        <PlanFeature text="Página permanente com backup" icon={DatabaseZap} />
+                        <PlanFeature text={t('create.feature.permanente')} icon={DatabaseZap} />
                     </ul>
                     <Button asChild size="lg" className="w-full mt-auto">
                         <Link href="/login?redirect=/criar?plan=avancado&new=true"><TestTube className="mr-2" />{t('home.plans.avancado.cta')}</Link>
@@ -520,12 +520,12 @@ export default function Home() {
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
                     <div className="text-center my-6">
                         <p className="text-4xl font-bold text-foreground">R$14,99</p>
-                        <p className="text-sm text-muted-foreground">Pagamento único</p>
+                        <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_basic')} />
                          <PlanFeature text={t('home.plans.feature.timeline_basic')} />
-                        <PlanFeature text="Página disponível por 12 horas" icon={Hourglass} />
+                        <PlanFeature text={t('create.feature.temp')} icon={Hourglass} />
                         <PlanFeature text={t('home.plans.feature.music')} included={false} />
                         <PlanFeature text={t('home.plans.feature.puzzle')} included={false}/>
                     </ul>

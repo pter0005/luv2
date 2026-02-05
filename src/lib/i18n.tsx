@@ -126,6 +126,7 @@ const translations = {
     'home.plans.feature.gallery_basic': 'Galeria de fotos (até 2)',
     'home.plans.feature.timeline_basic': 'Linha do Tempo 3D (até 5 momentos)',
     'home.plans.basico.cta': 'Testar Plano Básico',
+    'home.plans.payment': 'Pagamento único',
 
     // Footer
     'footer.copyright': '© {year} MyCupid. Todos os direitos reservados.',
@@ -548,6 +549,7 @@ const translations = {
     'home.plans.feature.gallery_basic': 'Photo gallery (up to 2)',
     'home.plans.feature.timeline_basic': '3D Timeline (up to 5 moments)',
     'home.plans.basico.cta': 'Test Basic Plan',
+    'home.plans.payment': 'One-time payment',
 
     // Footer
     'footer.copyright': '© {year} MyCupid. All rights reserved.',
@@ -970,6 +972,7 @@ const translations = {
     'home.plans.feature.gallery_basic': 'Galería de fotos (hasta 2)',
     'home.plans.feature.timeline_basic': 'Línea de Tiempo 3D (hasta 5 momentos)',
     'home.plans.basico.cta': 'Probar Plan Básico',
+    'home.plans.payment': 'Pago único',
 
     // Footer
     'footer.copyright': '© {year} MyCupid. Todos los derechos reservados.',
