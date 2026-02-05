@@ -12,8 +12,9 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useTranslation } from '@/lib/i18n';
 
-const LovePageCard = ({ page }: { page: any }) => {
+const LovePageCard = ({ page, t }: { page: any, t: (key: any) => string }) => {
   const pageUrl = `/p/${page.id}`;
   const previewImage = page.galleryImages?.[0]?.url || `https://picsum.photos/seed/${page.id}/400/300`;
 
@@ -30,10 +31,10 @@ const LovePageCard = ({ page }: { page: any }) => {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
           <CardTitle className="font-handwriting text-3xl text-white drop-shadow-2xl">
-            {page.title || "Sem Título"}
+            {page.title || t('mypages.card.noTitle')}
           </CardTitle>
           <p className="text-white/70 text-xs mt-2 bg-black/20 px-3 py-1 rounded-full md:backdrop-blur-md">
-             Criado em {page.createdAt ? new Date(page.createdAt.seconds * 1000).toLocaleDateString() : 'Recente'}
+             {t('mypages.card.createdAt')} {page.createdAt ? new Date(page.createdAt.seconds * 1000).toLocaleDateString() : t('mypages.card.recent')}
           </p>
         </div>
       </Card>
@@ -52,6 +53,7 @@ const PageSkeleton = () => (
 export default function MinhasPaginasPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { t } = useTranslation();
 
   const pagesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -76,7 +78,7 @@ export default function MinhasPaginasPage() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Verificando sua sessão...</p>
+        <p className="ml-4 text-muted-foreground">{t('mypages.loading')}</p>
       </div>
     );
   }
@@ -85,13 +87,13 @@ export default function MinhasPaginasPage() {
       <div className="container py-12 md:py-24">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
           <div>
-              <h1 className="text-3xl font-bold font-headline">Minhas Páginas de Amor</h1>
-              <p className="text-muted-foreground">Gerencie aqui todas as suas criações.</p>
+              <h1 className="text-3xl font-bold font-headline">{t('mypages.title')}</h1>
+              <p className="text-muted-foreground">{t('mypages.description')}</p>
           </div>
           <Button asChild>
               <Link href="/criar">
                   <PlusCircle className="mr-2 h-4 w-4"/>
-                  Criar Nova Página
+                  {t('mypages.cta')}
               </Link>
           </Button>
         </div>
@@ -99,9 +101,9 @@ export default function MinhasPaginasPage() {
         {showIndexWarning && (
           <Alert variant="destructive" className="mb-8">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Ação Necessária: Criar Índice no Firestore</AlertTitle>
+              <AlertTitle>{t('mypages.index.title')}</AlertTitle>
               <AlertDescription>
-                  A busca por suas páginas requer um índice que não existe no banco de dados. Para corrigir, abra o console do navegador (F12), encontre o erro do Firestore e clique no link fornecido para criar o índice.
+                  {t('mypages.index.description')}
               </AlertDescription>
           </Alert>
         )}
@@ -129,7 +131,7 @@ export default function MinhasPaginasPage() {
                           key={page.id}
                           variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                      >
-                          <LovePageCard page={page} />
+                          <LovePageCard page={page} t={t} />
                      </motion.div>
                   ))
               )}
@@ -139,11 +141,11 @@ export default function MinhasPaginasPage() {
         {!arePagesLoading && (!lovePages || lovePages.length === 0) && !showIndexWarning && (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
             <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-            <h2 className="text-xl font-semibold">Nenhuma página criada ainda</h2>
-            <p className="text-muted-foreground mt-2">Que tal começar a sua primeira obra de arte?</p>
+            <h2 className="text-xl font-semibold">{t('mypages.empty.title')}</h2>
+            <p className="text-muted-foreground mt-2">{t('mypages.empty.description')}</p>
             <Button asChild variant="outline" className="mt-6">
                 <Link href="/criar">
-                    Criar minha primeira página
+                    {t('mypages.empty.cta')}
                 </Link>
             </Button>
           </div>

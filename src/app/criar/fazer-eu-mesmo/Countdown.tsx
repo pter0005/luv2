@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { differenceInYears, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds, addYears, addMonths, addDays, addHours, addMinutes } from 'date-fns';
+import { useTranslation } from '@/lib/i18n';
 
 type CountdownProps = {
   targetDate: string;
@@ -11,6 +11,7 @@ type CountdownProps = {
 };
 
 const Countdown = ({ targetDate, style = 'Padrão', color = '#FFFFFF' }: CountdownProps) => {
+  const { t } = useTranslation();
     
   const calculateTimeLeft = useCallback(() => {
     const target = new Date(targetDate);
@@ -48,7 +49,7 @@ const Countdown = ({ targetDate, style = 'Padrão', color = '#FFFFFF' }: Countdo
     };
   }, [targetDate]);
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -63,30 +64,30 @@ const Countdown = ({ targetDate, style = 'Padrão', color = '#FFFFFF' }: Countdo
     return (
         <div className="w-full max-w-2xl mx-auto text-center p-4 rounded-lg bg-black/30 md:backdrop-blur-sm">
             <p className="text-md md:text-lg leading-relaxed" style={{ color: color }}>
-                <span className="text-muted-foreground">Compartilhando momentos há</span><br/>
-                <span className="font-bold">{String(timeLeft.years).padStart(2, '0')}</span> anos{' '}
-                <span className="font-bold">{String(timeLeft.months).padStart(2, '0')}</span> meses{' '}
-                <span className="font-bold">{String(timeLeft.days).padStart(2, '0')}</span> dias<br/>
-                <span className="font-bold">{String(timeLeft.hours).padStart(2, '0')}</span> horas{' '}
-                <span className="font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span> minutos{' '}
-                <span className="font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span> segundos 💜
+                <span className="text-muted-foreground">{t('countdown.prefix')}</span><br/>
+                <span className="font-bold">{String(timeLeft.years).padStart(2, '0')}</span> {t('countdown.years')}{' '}
+                <span className="font-bold">{String(timeLeft.months).padStart(2, '0')}</span> {t('countdown.months')}{' '}
+                <span className="font-bold">{String(timeLeft.days).padStart(2, '0')}</span> {t('countdown.days')}<br/>
+                <span className="font-bold">{String(timeLeft.hours).padStart(2, '0')}</span> {t('countdown.hours')}{' '}
+                <span className="font-bold">{String(timeLeft.minutes).padStart(2, '0')}</span> {t('countdown.minutes')}{' '}
+                <span className="font-bold">{String(timeLeft.seconds).padStart(2, '0')}</span> {t('countdown.seconds')} 💜
             </p>
         </div>
     );
   }
 
   const timeUnits = [
-    { value: timeLeft.years, label: 'Anos' },
-    { value: timeLeft.months, label: 'Meses' },
-    { value: timeLeft.days, label: 'Dias' },
-    { value: timeLeft.hours, label: 'Horas' },
-    { value: timeLeft.minutes, label: 'Minutos' },
-    { value: timeLeft.seconds, label: 'Segundos' },
+    { value: timeLeft.years, label: t('countdown.labels.years') },
+    { value: timeLeft.months, label: t('countdown.labels.months') },
+    { value: timeLeft.days, label: t('countdown.labels.days') },
+    { value: timeLeft.hours, label: t('countdown.labels.hours') },
+    { value: timeLeft.minutes, label: t('countdown.labels.minutes') },
+    { value: timeLeft.seconds, label: t('countdown.labels.seconds') },
   ];
 
   return (
     <div className="w-full mx-auto">
-        <h3 className="text-base text-center text-muted-foreground mb-4">Compartilhando momentos há</h3>
+        <h3 className="text-base text-center text-muted-foreground mb-4">{t('countdown.prefix')}</h3>
         <div className="grid grid-cols-6 gap-1 md:gap-2 text-center">
           {timeUnits.map(unit => (
             <div key={unit.label} className="p-1 md:p-2 bg-white/5 rounded-lg md:backdrop-blur-sm border border-white/10 shadow-lg">

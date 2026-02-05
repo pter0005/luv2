@@ -1,8 +1,8 @@
-
 import { Suspense } from 'react';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import PageClientComponent from './PageClientComponent';
+import { LanguageProvider } from '@/lib/i18n';
 
 // =================================================================
 // SERVER-SIDE LOGIC
@@ -110,7 +110,9 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
 
   return (
       <Suspense fallback={<LoadingState />}>
+        <LanguageProvider>
           <PageClientComponent pageData={sanitizedData} />
+        </LanguageProvider>
       </Suspense>
   );
 }

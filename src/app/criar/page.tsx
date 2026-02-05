@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -9,11 +8,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/firebase";
 import { PlanFeature } from "@/components/layout/PlanFeature";
+import { useTranslation } from "@/lib/i18n";
 
 export default function CreatePage() {
   const [draftExists, setDraftExists] = useState(false);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("amore-pages-autosave")) {
@@ -29,7 +30,7 @@ export default function CreatePage() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">Verificando sua sessão...</p>
+        <p className="ml-4 text-muted-foreground">{t('mypages.loading')}</p>
       </div>
     );
   }
@@ -39,10 +40,10 @@ export default function CreatePage() {
         <div className="relative z-10 container py-20 flex flex-col items-center justify-center min-h-screen">
           <div className="w-full max-w-2xl text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-headline">
-              Comece sua <span className="gradient-text">obra de arte</span>
+              {t('create.title')} <span className="gradient-text">{t('create.title.highlight')}</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground">
-              Escolha um plano para testar ou continue um rascunho salvo.
+              {t('create.description')}
             </p>
           </div>
 
@@ -52,9 +53,9 @@ export default function CreatePage() {
                   <CardHeader className="flex flex-row items-center justify-center text-center p-6 gap-4">
                     <RotateCcw className="w-6 h-6 text-primary" />
                     <div>
-                      <CardTitle className="text-xl">Continuar de onde parei</CardTitle>
+                      <CardTitle className="text-xl">{t('create.continue')}</CardTitle>
                       <CardDescription>
-                        Você tem um rascunho salvo. Clique para continuar.
+                        {t('create.continue.description')}
                       </CardDescription>
                     </div>
                   </CardHeader>
@@ -66,38 +67,38 @@ export default function CreatePage() {
                {/* Plano Avançado */}
               <div className="card-glow border-primary/50 p-8 rounded-2xl relative flex flex-col">
                   <div className="absolute -top-4 right-8 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-bold flex items-center gap-2">
-                      <Star className="w-4 h-4" /> RECOMENDADO
+                      <Star className="w-4 h-4" /> {t('home.plans.recommended')}
                   </div>
-                  <h3 className="text-2xl font-bold text-primary">Plano Avançado</h3>
-                  <p className="text-muted-foreground text-sm mb-8">Todos os recursos liberados.</p>
+                  <h3 className="text-2xl font-bold text-primary">{t('home.plans.avancado.title')}</h3>
+                  <p className="text-muted-foreground text-sm mb-8">{t('home.plans.avancado.description')}</p>
                   <ul className="space-y-4 mb-10 flex-grow">
-                      <PlanFeature text="Galeria de fotos (até 6)" />
-                      <PlanFeature text="Música de fundo" />
-                      <PlanFeature text="Quebra-cabeça Interativo" />
-                      <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" />
-                      <PlanFeature text="Página permanente com backup" icon={DatabaseZap} />
+                      <PlanFeature text={t('home.plans.feature.gallery_advanced')} />
+                      <PlanFeature text={t('home.plans.feature.music')} />
+                      <PlanFeature text={t('home.plans.feature.puzzle')} />
+                      <PlanFeature text={t('home.plans.feature.timeline_advanced')} />
+                      <PlanFeature text={t('create.feature.permanente')} icon={DatabaseZap} />
                   </ul>
                   <Button onClick={() => handleStartNew('avancado')} size="lg" className="w-full mt-auto">
                       <TestTube2 className="mr-2" />
-                      Testar Plano Avançado
+                      {t('create.avancado.cta')}
                   </Button>
               </div>
               
               {/* Plano Básico */}
               <div className="bg-card/80 backdrop-blur-sm border border-border p-8 rounded-2xl flex flex-col">
-                  <h3 className="text-2xl font-bold">Plano Básico</h3>
-                  <p className="text-muted-foreground text-sm mb-8">Uma opção mais simples para começar.</p>
+                  <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
+                  <p className="text-muted-foreground text-sm mb-8">{t('home.plans.basico.description')}</p>
                   <ul className="space-y-4 mb-10 flex-grow">
-                      <PlanFeature text="Galeria de fotos (até 2)" />
-                      <PlanFeature text="Linha do Tempo 3D (até 5 momentos)" />
-                      <PlanFeature text="Página disponível por 12h" icon={Hourglass} />
-                      <PlanFeature text="Música de fundo" included={false} />
-                      <PlanFeature text="Quebra-cabeça Interativo" included={false}/>
-                      <PlanFeature text="Backup na nuvem" included={false} />
+                      <PlanFeature text={t('home.plans.feature.gallery_basic')} />
+                      <PlanFeature text={t('home.plans.feature.timeline_basic')} />
+                      <PlanFeature text={t('create.feature.temp')} icon={Hourglass} />
+                      <PlanFeature text={t('home.plans.feature.music')} included={false} />
+                      <PlanFeature text={t('home.plans.feature.puzzle')} included={false}/>
+                      <PlanFeature text={t('create.feature.backup')} included={false} />
                   </ul>
                    <Button onClick={() => handleStartNew('basico')} size="lg" className="w-full mt-auto" variant="secondary">
                        <TestTube2 className="mr-2" />
-                      Testar Plano Básico
+                      {t('create.basico.cta')}
                   </Button>
               </div>
           </div>
@@ -105,7 +106,7 @@ export default function CreatePage() {
           <Button asChild variant="outline" className="mt-12 bg-background/50 backdrop-blur-sm">
             <Link href="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para o início
+              {t('create.back')}
             </Link>
           </Button>
         </div>

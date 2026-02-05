@@ -1,17 +1,20 @@
+"use client";
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Shield, Lock, Eye, Server, UserCheck, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from '@/lib/i18n';
 
 export default function PrivacidadePage() {
+  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen">
         <div className="container py-16 md:py-20 max-w-4xl mx-auto">
         <Button asChild variant="outline" className="absolute top-8 left-8 bg-transparent">
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para o início
+            {t('privacy.back')}
           </Link>
         </Button>
         <div className="text-center mb-12 pt-16 md:pt-0">
