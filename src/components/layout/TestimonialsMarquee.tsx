@@ -1,3 +1,4 @@
+
 "use client";
 
 import { motion } from "framer-motion";
@@ -38,7 +39,7 @@ const testimonialImages = [
 const TestimonialCard = ({ image, name, text }: { image: string, name: string, text: string }) => {
     return (
         <figure
-            className="relative w-[320px] md:w-[380px] shrink-0 rounded-2xl border border-white/5 bg-[#121212]/80 p-5 shadow-2xl backdrop-blur-md transition-all duration-300 hover:border-purple-500/40 hover:bg-white/5 hover:-translate-y-1 group"
+            className="relative w-[320px] md:w-[380px] shrink-0 rounded-2xl border border-white/5 bg-[#121212]/80 p-5 backdrop-blur-md transition-all duration-300 hover:border-purple-500/40 hover:bg-white/5 hover:-translate-y-1 group"
         >
             {/* Aspas Decorativas no fundo */}
             <div className="absolute top-3 right-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
@@ -121,7 +122,7 @@ export default function TestimonialsMarquee() {
     const bottomRow = testimonials.slice(10, 20);
 
     return (
-        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8 overflow-hidden mask-image-fade">
+        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8 mask-image-fade">
             
             {/* Efeito de Máscara Lateral (Fade Out) */}
             <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-black to-transparent z-20"></div>

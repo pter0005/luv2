@@ -465,7 +465,7 @@ export default function Home() {
         <DemoSection />
       </AnimatedSection>
       
-      <AnimatedSection id="avaliacoes" className="section-padding bg-transparent overflow-hidden relative">
+      <AnimatedSection id="avaliacoes" className="py-16 md:py-24 bg-transparent relative">
         <div className="container relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
@@ -483,8 +483,8 @@ export default function Home() {
             </h2>
             <p className="text-lg text-muted-foreground">{t('home.testimonials.description')}</p>
           </div>
-          <div className="-mx-4 md:-mx-8 lg:-mx-16"><TestimonialsMarquee /></div>
         </div>
+        <TestimonialsMarquee />
       </AnimatedSection>
       
       <AnimatedSection id="planos" className="section-padding bg-transparent">
