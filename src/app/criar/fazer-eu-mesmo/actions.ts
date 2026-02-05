@@ -81,8 +81,12 @@ export async function processPixPayment(intentId: string, price: number) {
         const db = getAdminFirestore();
         const intentDoc = await db.collection('payment_intents').doc(intentId).get();
         if (!intentDoc.exists) return { error: 'Rascunho da página não encontrado para o pagamento.' };
-        const payer = intentDoc.data()?.payment;
-        if (!payer) return { error: 'Dados do pagador não encontrados no rascunho.' };
+        
+        const intentData = intentDoc.data();
+        if (!intentData) return { error: 'Dados do rascunho de pagamento não encontrados.' };
+        
+        const payerEmail = intentData.payment?.payerEmail;
+        if (!payerEmail) return { error: 'E-mail do pagador não encontrado para processar o pagamento.' };
 
         const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
         const payment = new Payment(client);
@@ -90,13 +94,10 @@ export async function processPixPayment(intentId: string, price: number) {
         const result = await payment.create({
             body: {
                 transaction_amount: price,
-                description: 'Amore Pages - Página de Amor',
+                description: `MyCupid - Plano ${intentData.plan || 'personalizado'}`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: payer.payerEmail,
-                    first_name: payer.payerFirstName,
-                    last_name: payer.payerLastName,
-                    identification: { type: 'CPF', number: payer.payerCpf.replace(/\D/g, '') },
+                    email: payerEmail,
                 },
                 external_reference: intentId,
             }

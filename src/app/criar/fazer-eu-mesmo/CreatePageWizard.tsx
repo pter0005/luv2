@@ -88,10 +88,10 @@ const MAX_TIMELINE_IMAGES_AVANCADO = 20;
 
 
 const paymentSchema = z.object({
-  payerFirstName: z.string().min(1, "Nome é obrigatório."),
-  payerLastName: z.string().min(1, "Sobrenome é obrigatório."),
+  payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
+  payerLastName: z.string().min(1, "Sobrenome é obrigatório.").optional(),
   payerEmail: z.string().email("E-mail inválido."),
-  payerCpf: z.string().min(14, "O CPF é obrigatório e deve ser completo.").max(14, "O CPF deve ter o formato 000.000.000-00."),
+  payerCpf: z.string().optional(),
 });
 
 export const fileWithPreviewSchema = z.object({
@@ -1255,7 +1255,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     setIntentId: (id: string) => void;
     pixData: { qrCode: string; qrCodeBase64: string, paymentId: string } | null
 }) => {
-    const { getValues, control, formState: { isValid }, trigger, watch, setValue } = useFormContext<PageData>();
+    const { getValues, watch, setValue } = useFormContext<PageData>();
     const plan = watch('plan');
     const intentId = watch('intentId');
     const { user } = useUser();
@@ -1266,7 +1266,6 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const price = plan === 'basico' ? 14.99 : 24.99;
-    const originalPrice = plan === 'basico' ? 30.00 : 50.00;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1311,29 +1310,28 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         };
     }, [pixData, intentId, startPolling]);
 
-    const handleGeneratePix = async () => {
+    const handleOneClickPix = () => {
         setError(null);
         setPixData(null);
-    
-        const isPayerDataValid = await trigger("payment");
-        if (!isPayerDataValid) {
-            toast({
-                variant: 'destructive',
-                title: 'Ops!',
-                description: 'Preencha o Nome, E-mail e CPF corretamente.'
-            });
-            return;
-        }
 
         if (!user) {
             setError({ message: "Sessão de usuário inválida. Por favor, faça login novamente." });
             return;
         }
+
+        // Injeta o email do usuário logado silenciosamente
+        if (user.email) {
+            setValue('payment.payerEmail', user.email, { shouldDirty: true });
+        }
     
         startTransition(async () => {
             try {
-                // Get the latest form data and explicitly add the user ID
                 const fullData = { ...getValues(), userId: user.uid };
+
+                if (!fullData.payment) fullData.payment = { payerEmail: '' };
+                if (!fullData.payment.payerEmail && user.email) {
+                    fullData.payment.payerEmail = user.email;
+                }
                 
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
 
@@ -1356,7 +1354,6 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                         qrCodeBase64: paymentResult.qrCodeBase64, 
                         paymentId: paymentResult.paymentId
                     });
-                    // Polling will be started by the useEffect
                 }
             } catch (err) {
                 setError({ message: "Erro ao conectar com o serviço de pagamento." });
@@ -1403,48 +1400,41 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
 
 
     return (
-        <div className="space-y-6">
-            <Alert variant={plan === 'avancado' ? 'default' : 'destructive'} className="border-primary/20 bg-primary/5">
-                <AlertTriangle className="h-4 w-4 text-primary" />
-                <AlertTitle className="text-primary">Plano Selecionado: {plan === 'avancado' ? 'Avançado' : 'Básico'}</AlertTitle>
-                <AlertDescription className="text-primary/80">
-                    {plan === 'avancado'
-                        ? 'Sua página será permanente e ficará salva com segurança.'
-                        : 'Atenção: Sua página ficará disponível por 12 horas após a criação.'}
-                </AlertDescription>
-            </Alert>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Dados do Pagador</CardTitle>
-                    <CardDescription>Essas informações são necessárias para gerar o QR Code do PIX.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="grid grid-cols-2 gap-4">
-                        <FormField control={control} name="payment.payerFirstName" render={({ field }) => <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                        <FormField control={control} name="payment.payerLastName" render={({ field }) => <FormItem><FormLabel>Sobrenome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-                     </div>
-                     <FormField control={control} name="payment.payerEmail" render={({ field }) => <FormItem><FormLabel>E-mail</FormLabel><FormControl><Input {...field} type="email" /></FormControl><FormMessage /></FormItem>} />
-                     <FormField control={control} name="payment.payerCpf" render={({ field: { onChange, ...rest } }) => <FormItem><FormLabel>CPF</FormLabel><FormControl><Input {...rest} onChange={e => onChange(cpfMask(e.target.value))} /></FormControl><FormMessage /></FormItem>} />
-                </CardContent>
-            </Card>
+        <div className="space-y-6 text-center">
+            <div className="mb-8">
+                <h3 className="text-2xl font-bold font-headline mb-2">
+                    Tudo pronto para surpreender! 🎁
+                </h3>
+                <p className="text-muted-foreground">
+                    Sua página foi montada. Finalize para receber o link.
+                </p>
+            </div>
 
-            <Button 
-                type="button" 
-                size="lg" 
-                className="w-full" 
-                disabled={isProcessing}
-                onClick={handleGeneratePix}
-            >
-                {isProcessing ? <Loader2 className="animate-spin" /> : (
-                    <span>
-                        De <span className="line-through">R$ {originalPrice.toFixed(2).replace('.',',')}</span> por apenas R$ {price.toFixed(2).replace('.',',')}
-                    </span>
-                )}
-            </Button>
-            
-             {pixData && (
-                 <div className="flex flex-col items-center text-center gap-6">
-                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
+                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
+                <span className="block text-4xl font-black text-white">R$ {price.toFixed(2).replace('.', ',')}</span>
+                <span className="text-xs text-white/50">Pagamento único • Acesso imediato</span>
+            </div>
+
+            {!pixData ? (
+                <Button 
+                    onClick={handleOneClickPix} 
+                    disabled={isProcessing}
+                    className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                >
+                    {isProcessing ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Gerando QR Code...
+                        </>
+                    ) : (
+                        <>
+                            <QrCode className="mr-2 h-5 w-5" /> Pagar com PIX
+                        </>
+                    )}
+                </Button>
+            ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
+                   <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                     <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
                     <div className="p-4 bg-white rounded-lg border">
                         {pixData.qrCodeBase64 ? (
@@ -1495,6 +1485,9 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                     {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                 </Alert>
             )}
+            <p className="text-xs text-muted-foreground mt-4">
+                Ambiente seguro. Liberação automática.
+            </p>
         </div>
     );
 };
