@@ -41,7 +41,7 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage } from "./actions";
+import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -1268,13 +1268,12 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // Treat localhost as BR domain for development
             setIsBrazilDomain(window.location.hostname.endsWith('.br') || window.location.hostname.includes('localhost'));
         }
     }, []);
 
     const priceBRL = plan === 'basico' ? 14.99 : 24.99;
-    const priceUSD = plan === 'basico' ? 4.99 : 8.99;
+    const priceUSD = plan === 'basico' ? 14.90 : 19.90;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1328,7 +1327,6 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
             return;
         }
 
-        // Injeta o email do usuário logado silenciosamente
         if (user.email) {
             setValue('payment.payerEmail', user.email, { shouldDirty: true });
         }
@@ -1364,6 +1362,41 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
             }
         });
     };
+    
+    const handleStripePayment = () => {
+      setError(null);
+      if (!user) {
+          setError({ message: "Invalid user session. Please log in again." });
+          return;
+      }
+  
+      startTransition(async () => {
+          try {
+              const fullData = { ...getValues(), userId: user.uid };
+              const saveResult = await createOrUpdatePaymentIntent(fullData);
+  
+              if (saveResult.error || !saveResult.intentId) {
+                  setError({ message: saveResult.error || "Could not save draft before payment." });
+                  return;
+              }
+  
+              setIntentId(saveResult.intentId);
+              const planValue = getValues('plan') as 'basico' | 'avancado';
+              const domain = window.location.origin;
+
+              const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
+
+              if (sessionResult.error || !sessionResult.url) {
+                  setError({ message: sessionResult.error || "Could not create Stripe checkout session." });
+              } else {
+                  // Redirect to Stripe checkout
+                  window.location.href = sessionResult.url;
+              }
+          } catch (err) {
+              setError({ message: "Error connecting to the payment service." });
+          }
+      });
+  };
 
     const handleAdminFinalize = async () => {
         if (!user || !intentId) {
@@ -1521,14 +1554,22 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                 </div>
 
                 <Button 
-                    onClick={() => toast({ title: "Stripe Coming Soon!", description: "Credit card payments will be available in a future update." })}
+                    onClick={handleStripePayment}
+                    disabled={isProcessing}
                     className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 transition-all scale-100 hover:scale-[1.02]"
                 >
-                    <CreditCard className="mr-2 h-5 w-5" /> Pay with Card
+                   {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />} 
+                   Pay with Card
                 </Button>
                  <p className="text-xs text-muted-foreground mt-4">
                     Secure environment via Stripe.
                 </p>
+                 {error && (
+                    <Alert variant="destructive" className="mt-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error.message}</AlertTitle>
+                    </Alert>
+                )}
             </div>
         );
     }
@@ -1876,11 +1917,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
-
-    
-
-    
-
-    

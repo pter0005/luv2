@@ -86,7 +86,7 @@ export async function processPixPayment(intentId: string, price: number) {
         const intentData = intentDoc.data();
         if (!intentData) return { error: 'Dados do rascunho de pagamento não encontrados.' };
         
-        const payerEmail = intentData.payment?.payerEmail || intentData.userEmail || 'cliente@mycupid.net';
+        const payerEmail = intentData.userEmail || 'cliente@mycupid.net';
 
         const client = new MercadoPagoConfig({ accessToken: MERCADO_PAGO_ACCESS_TOKEN });
         const payment = new Payment(client);
@@ -129,12 +129,12 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
 
     const prices = {
         basico: {
-            unit_amount: 1000, // $10.00 in cents
+            unit_amount: 1490, // $14.90 in cents
             name: 'Basic Plan',
             description: 'A beautiful, temporary page to share your love.'
         },
         avancado: {
-            unit_amount: 1500, // $15.00 in cents
+            unit_amount: 1990, // $19.90 in cents
             name: 'Advanced Plan',
             description: 'A permanent page with all features unlocked.'
         }
@@ -387,5 +387,3 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
 // Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
-
-    
