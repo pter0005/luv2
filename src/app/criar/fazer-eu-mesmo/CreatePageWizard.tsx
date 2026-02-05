@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -90,7 +90,7 @@ const MAX_TIMELINE_IMAGES_AVANCADO = 20;
 const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
   payerLastName: z.string().min(1, "Sobrenome é obrigatório.").optional(),
-  payerEmail: z.string().email("E-mail inválido."),
+  payerEmail: z.string().email("E-mail inválido.").optional(),
   payerCpf: z.string().optional(),
 });
 
@@ -151,7 +151,7 @@ const steps = [
   { id: "music", title: "Música Dedicada", description: "Escolha uma trilha sonora ou grave sua voz.", fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
   { id: "background", title: "Animação de Fundo", description: "Escolha um efeito especial para o fundo.", fields: ["backgroundAnimation", "heartColor"] },
   { id: "puzzle", title: "Quebra-Cabeça Interativo", description: "Um desafio antes de revelar a surpresa!", fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-  { id: "payment", title: "Finalizar", description: "Pague com PIX para gerar o link e QR Code.", fields: ["payment"] },
+  { id: "payment", title: "Finalizar", description: "Pague para gerar o link e QR Code.", fields: ["payment"] },
 ];
 
 const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
@@ -1264,8 +1264,17 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
 
-    const price = plan === 'basico' ? 14.99 : 24.99;
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Treat localhost as BR domain for development
+            setIsBrazilDomain(window.location.hostname.endsWith('.br') || window.location.hostname.includes('localhost'));
+        }
+    }, []);
+
+    const priceBRL = plan === 'basico' ? 14.99 : 24.99;
+    const priceUSD = plan === 'basico' ? 4.99 : 8.99;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1327,11 +1336,6 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         startTransition(async () => {
             try {
                 const fullData = { ...getValues(), userId: user.uid };
-
-                if (!fullData.payment) fullData.payment = { payerEmail: '' };
-                if (!fullData.payment.payerEmail && user.email) {
-                    fullData.payment.payerEmail = user.email;
-                }
                 
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
 
@@ -1344,7 +1348,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                 }
                 
                 setIntentId(saveResult.intentId);
-                const paymentResult = await processPixPayment(saveResult.intentId, price);
+                const paymentResult = await processPixPayment(saveResult.intentId, priceBRL);
                 
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
@@ -1398,98 +1402,136 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         }
     };
 
+    if (isBrazilDomain === null) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+    
+    if (isBrazilDomain) {
+        return (
+            <div className="space-y-6 text-center">
+                <div className="mb-8">
+                    <h3 className="text-2xl font-bold font-headline mb-2">
+                        Tudo pronto para surpreender! 🎁
+                    </h3>
+                    <p className="text-muted-foreground">
+                        Sua página foi montada. Finalize para receber o link.
+                    </p>
+                </div>
 
-    return (
-        <div className="space-y-6 text-center">
-            <div className="mb-8">
-                <h3 className="text-2xl font-bold font-headline mb-2">
-                    Tudo pronto para surpreender! 🎁
-                </h3>
-                <p className="text-muted-foreground">
-                    Sua página foi montada. Finalize para receber o link.
+                <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
+                    <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
+                    <span className="block text-4xl font-black text-white">R$ {priceBRL.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-xs text-white/50">Pagamento único • Acesso imediato</span>
+                </div>
+
+                {!pixData ? (
+                    <Button 
+                        onClick={handleOneClickPix} 
+                        disabled={isProcessing}
+                        className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                    >
+                        {isProcessing ? (
+                            <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Gerando QR Code...
+                            </>
+                        ) : (
+                            <>
+                                <QrCode className="mr-2 h-5 w-5" /> Pagar com PIX
+                            </>
+                        )}
+                    </Button>
+                ) : (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
+                       <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                        <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
+                        <div className="p-4 bg-white rounded-lg border">
+                            {pixData.qrCodeBase64 ? (
+                                <Image 
+                                    src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                                    alt="PIX QR Code"
+                                    width={256}
+                                    height={256}
+                                    unoptimized
+                                />
+                            ) : (
+                                <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                    <Loader2 className="animate-spin mb-2" />
+                                    <p className="text-xs">Gerando imagem...</p>
+                                </div>
+                            )}
+                        </div>
+                        <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copiar Código PIX
+                        </Button>
+                        <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
+                        <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                                {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                                Verificar Pagamento
+                        </Button>
+                    </div>
+                )}
+                
+                {isAdmin && intentId && (
+                    <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
+                         <Button 
+                            type="button" 
+                            size="lg" 
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
+                            disabled={isProcessing}
+                            onClick={handleAdminFinalize}
+                        >
+                            {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
+                        </Button>
+                    </div>
+                )}
+
+                {error && (
+                    <Alert variant="destructive" className="mt-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error.message}</AlertTitle>
+                        {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                    </Alert>
+                )}
+                <p className="text-xs text-muted-foreground mt-4">
+                    Ambiente seguro. Liberação automática.
                 </p>
             </div>
+        );
+    } else { // Not a Brazil domain
+        return (
+            <div className="space-y-6 text-center">
+                <div className="mb-8">
+                    <h3 className="text-2xl font-bold font-headline mb-2">
+                        Ready to surprise! 🎁
+                    </h3>
+                    <p className="text-muted-foreground">
+                        Your page is assembled. Finalize to get your link.
+                    </p>
+                </div>
 
-            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
-                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
-                <span className="block text-4xl font-black text-white">R$ {price.toFixed(2).replace('.', ',')}</span>
-                <span className="text-xs text-white/50">Pagamento único • Acesso imediato</span>
-            </div>
+                <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-2xl mb-6">
+                    <span className="block text-sm text-blue-300 font-bold uppercase tracking-wider mb-1">Total to Pay</span>
+                    <span className="block text-4xl font-black text-white">$ {priceUSD.toFixed(2)}</span>
+                    <span className="text-xs text-white/50">One-time payment • Immediate access</span>
+                </div>
 
-            {!pixData ? (
                 <Button 
-                    onClick={handleOneClickPix} 
-                    disabled={isProcessing}
-                    className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                    onClick={() => toast({ title: "Stripe Coming Soon!", description: "Credit card payments will be available in a future update." })}
+                    className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 transition-all scale-100 hover:scale-[1.02]"
                 >
-                    {isProcessing ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Gerando QR Code...
-                        </>
-                    ) : (
-                        <>
-                            <QrCode className="mr-2 h-5 w-5" /> Pagar com PIX
-                        </>
-                    )}
+                    <CreditCard className="mr-2 h-5 w-5" /> Pay with Card
                 </Button>
-            ) : (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
-                   <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
-                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".</p>
-                    <div className="p-4 bg-white rounded-lg border">
-                        {pixData.qrCodeBase64 ? (
-                            <Image 
-                                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                                alt="PIX QR Code"
-                                width={256}
-                                height={256}
-                                unoptimized
-                            />
-                        ) : (
-                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
-                                <Loader2 className="animate-spin mb-2" />
-                                <p className="text-xs">Gerando imagem...</p>
-                            </div>
-                        )}
-                    </div>
-                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copiar Código PIX
-                    </Button>
-                    <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
-                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
-                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                            Verificar Pagamento
-                    </Button>
-                </div>
-            )}
-            
-            {isAdmin && intentId && (
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
-                     <Button 
-                        type="button" 
-                        size="lg" 
-                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
-                        disabled={isProcessing}
-                        onClick={handleAdminFinalize}
-                    >
-                        {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
-                    </Button>
-                </div>
-            )}
-
-            {error && (
-                <Alert variant="destructive" className="mt-4">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>{error.message}</AlertTitle>
-                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
-                </Alert>
-            )}
-            <p className="text-xs text-muted-foreground mt-4">
-                Ambiente seguro. Liberação automática.
-            </p>
-        </div>
-    );
+                 <p className="text-xs text-muted-foreground mt-4">
+                    Secure environment via Stripe.
+                </p>
+            </div>
+        );
+    }
 };
 
 // Wizard Internal Logic
@@ -1522,7 +1564,6 @@ const WizardInternal = () => {
         timelineEvents: [],
         enablePuzzle: plan === 'avancado',
         musicOption: plan === 'basico' ? 'none' : 'none',
-        payment: { payerCpf: "", payerEmail: "", payerFirstName: "", payerLastName: "" }
     }
   });
   
