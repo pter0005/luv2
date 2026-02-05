@@ -41,11 +41,11 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
+import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, createPaypalOrder } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase } from "@/firebase";
@@ -62,6 +62,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
+import PaypalButton from "@/components/paypal/PaypalButton";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -1255,21 +1256,17 @@ const stepComponents = [
     PuzzleStep,
 ];
 
-const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
-    setPageId: (id: string) => void;
-    setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
-    setIntentId: (id: string) => void;
-    pixData: { qrCode: string; qrCodeBase64: string, paymentId: string } | null
-}) => {
+const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue } = useFormContext<PageData>();
     const { t } = useTranslation();
-    const plan = watch('plan');
+    const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
     const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
+    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
 
@@ -1353,7 +1350,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                     return;
                 }
                 
-                setIntentId(saveResult.intentId);
+                setValue('intentId', saveResult.intentId);
                 const paymentResult = await processPixPayment(saveResult.intentId, priceBRL);
                 
                 if (paymentResult.error) {
@@ -1388,7 +1385,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                   return;
               }
   
-              setIntentId(saveResult.intentId);
+              setValue('intentId', saveResult.intentId);
               const planValue = getValues('plan') as 'basico' | 'avancado';
               const domain = window.location.origin;
 
@@ -1545,33 +1542,42 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         );
     } else { // Not a Brazil domain
         return (
-            <div className="space-y-6 text-center">
-                <div className="mb-8">
-                    <h3 className="text-2xl font-bold font-headline mb-2">
-                        {t('wizard.payment.title_en')}
-                    </h3>
-                    <p className="text-muted-foreground">
-                        {t('wizard.payment.description_en')}
-                    </p>
+             <div className="space-y-6">
+                <div className="text-center">
+                    <h3 className="text-2xl font-bold font-headline mb-2">{t('wizard.payment.title_en')}</h3>
+                    <p className="text-muted-foreground">{t('wizard.payment.description_en')}</p>
                 </div>
-
-                <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-2xl mb-6">
+                 <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-2xl mb-6 text-center">
                     <span className="block text-sm text-blue-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total_en')}</span>
                     <span className="block text-4xl font-black text-white">$ {priceUSD.toFixed(2)}</span>
                     <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
                 </div>
 
-                <Button 
-                    onClick={handleStripePayment}
-                    disabled={isProcessing}
-                    className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 transition-all scale-100 hover:scale-[1.02]"
-                >
-                   {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />} 
-                   {t('wizard.payment.card_button')}
-                </Button>
-                 <p className="text-xs text-muted-foreground mt-4">
-                    {t('wizard.payment.secure_stripe')}
-                </p>
+                {/* Opção Stripe */}
+                <div className="p-4 border rounded-xl shadow-sm">
+                    <h4 className="text-sm font-medium mb-4">Credit Card</h4>
+                    <Button 
+                        onClick={handleStripePayment}
+                        disabled={isProcessing}
+                        className="w-full h-12 text-lg font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700"
+                    >
+                       {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />} 
+                       {t('wizard.payment.card_button')}
+                    </Button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <hr className="flex-1 border-border" /> 
+                    <span className="text-xs font-semibold text-muted-foreground">OR</span> 
+                    <hr className="flex-1 border-border" />
+                </div>
+
+                {/* Opção PayPal */}
+                <div className="p-4 border rounded-xl shadow-sm">
+                     <h4 className="text-sm font-medium mb-4">PayPal / Other Cards</h4>
+                    {intentId && <PaypalButton intentId={intentId} plan={plan} />}
+                </div>
+
                  {error && (
                     <Alert variant="destructive" className="mt-4">
                         <Terminal className="h-4 w-4" />
@@ -1595,7 +1601,6 @@ const WizardInternal = () => {
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
-  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
   
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
@@ -1794,7 +1799,7 @@ const WizardInternal = () => {
   if (pageId) {
       StepComponent = <SuccessStep pageId={pageId} />;
   } else if (currentStepId === 'payment') {
-      StepComponent = <PaymentStep setPageId={setPageId} setPixData={setPixData} setIntentId={(id) => setValue('intentId', id)} pixData={pixData} />;
+      StepComponent = <PaymentStep setPageId={setPageId} />;
   } else {
       const Comp = stepComponents[currentStep];
       StepComponent = (

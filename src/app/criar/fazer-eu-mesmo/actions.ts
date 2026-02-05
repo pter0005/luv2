@@ -387,3 +387,70 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
 // Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
+
+// --- PAYPAL ACTIONS ---
+const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com"; 
+
+async function getPayPalAccessToken() {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    method: "POST",
+    body: "grant_type=client_credentials",
+    headers: { Authorization: `Basic ${auth}` },
+    cache: 'no-store' // Essencial para não cachear o token de acesso
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("PayPal Auth Error:", errorBody);
+    throw new Error("Failed to get PayPal access token.");
+  }
+  const data = await response.json();
+  return data.access_token;
+}
+
+export async function createPaypalOrder(intentId: string, plan: 'basico' | 'avancado') {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      throw new Error("PayPal client ID or secret is not configured.");
+  }
+
+  const prices = {
+      basico: "14.90",
+      avancado: "19.90"
+  };
+  const price = prices[plan];
+
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [{
+          amount: { currency_code: "USD", value: price },
+          custom_id: intentId, // Vínculo com Firestore
+          description: `MyCupid - Plano ${plan}`
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error("PayPal Create Order Error:", JSON.stringify(errorBody, null, 2));
+        throw new Error("Failed to create PayPal order.");
+    }
+
+    const order = await response.json();
+    return { orderId: order.id };
+  } catch (error) {
+    console.error("PayPal Order Creation Action Error:", error);
+    throw new Error("Error creating order with PayPal");
+  }
+}
