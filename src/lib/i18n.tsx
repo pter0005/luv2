@@ -136,6 +136,7 @@ const translations = {
     'footer.tagline': 'Transformando sentimentos em experiências digitais inesquecíveis. Crie, surpreenda e eternize o seu amor.',
     'footer.madeWith': 'Feito com',
     'footer.forCouples': 'para casais apaixonados.',
+    'footer.follow_us': 'Siga-nos',
 
      // Discount Banner
     'banner.title': 'Oferta de Lançamento: 50% OFF nas próximas',
@@ -551,6 +552,7 @@ const translations = {
     'footer.tagline': 'Transforming feelings into unforgettable digital experiences. Create, surprise, and eternalize your love.',
     'footer.madeWith': 'Made with',
     'footer.forCouples': 'for couples in love.',
+    'footer.follow_us': 'Follow us',
 
     // Discount Banner
     'banner.title': 'Launch Offer: 50% OFF for the next',
@@ -966,6 +968,7 @@ const translations = {
     'footer.tagline': 'Transformando sentimientos en experiencias digitales inolvidables. Crea, sorprende y eterniza tu amor.',
     'footer.madeWith': 'Hecho con',
     'footer.forCouples': 'para parejas enamoradas.',
+    'footer.follow_us': 'Síguenos',
      // Discount Banner
      'banner.title': 'Oferta de Lanzamiento: 50% de descuento durante las próximas',
 

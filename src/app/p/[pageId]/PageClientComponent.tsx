@@ -21,10 +21,11 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
+import { useTranslation } from '@/lib/i18n';
 
 // Imports Dinâmicos
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -60,6 +61,7 @@ const GalleryImage = ({ img, index }: { img: any, index: number }) => {
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const { t } = useTranslation();
   
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
   
@@ -168,7 +170,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
       {/* CAMADA 2: CONTEÚDO PRINCIPAL (COM MUITO ESPAÇO) */}
       <motion.main 
-        className="relative z-10 w-full min-h-screen pb-32" // pb-32 garante espaço extra no final
+        className="relative z-10 w-full min-h-screen pb-24"
         initial={false}
         animate={{ 
           opacity: puzzleRevealed ? 1 : 0.4, 
@@ -176,7 +178,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         }}
         transition={{ duration: 1.0, ease: "easeOut" }}
       >
-        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-20 relative z-20">
+        <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center gap-y-16 relative z-20">
           
           <div className="space-y-8 text-center mt-4">
             <h1 className="text-4xl md:text-7xl font-handwriting leading-tight drop-shadow-lg px-2" style={{ color: pageData.titleColor }}>
@@ -200,7 +202,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                     onClick={() => setShowTimeline(true)} 
                     className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                 >
-                    <View className="mr-2 h-5 w-5" /> Nossa Linha do Tempo
+                    <View className="mr-2 h-5 w-5" /> {t('publicpage.timeline.title')}
                 </Button>
             </div>
           )}
@@ -230,7 +232,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           )}
 
           {/* ÁREA DO PLAYER (ISOLADA E COM ESPAÇO) */}
-          <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-12 mb-12 flex justify-center">
+          <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex justify-center">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
                 <YoutubePlayer 
                   ref={playerRef}
@@ -249,6 +251,20 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           </div>
 
         </div>
+        <footer className="relative z-10 w-full mt-4 text-center">
+            <p className="text-sm text-muted-foreground mb-4">{t('footer.follow_us')}</p>
+            <div className="flex items-center justify-center gap-4">
+            <a href="https://www.instagram.com/mycupid.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-purple-500 hover:text-white transition-all duration-300">
+                <Instagram size={24} />
+            </a>
+            <a href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-purple-500 hover:text-white transition-all duration-300">
+                <MessageSquare size={24} />
+            </a>
+            <a href="mailto:contatomycupid@gmail.com" aria-label="Email" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-purple-500 hover:text-white transition-all duration-300">
+                <Mail size={24} />
+            </a>
+            </div>
+        </footer>
       </motion.main>
 
       {/* OVERLAYS MANTIDOS IGUAIS... */}
@@ -273,9 +289,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                     <Puzzle className="w-8 h-8 text-purple-400" />
                  </div>
                 <h2 className="text-3xl font-bold text-white font-headline">
-                    Um enigma para você...
+                    {t('publicpage.puzzle.title')}
                 </h2>
-                <p className="text-white/60 text-sm">Monte o quebra-cabeça para desbloquear sua surpresa.</p>
+                <p className="text-white/60 text-sm">{t('publicpage.puzzle.description')}</p>
               </div>
 
                <AnimatePresence mode="wait">
@@ -299,7 +315,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
                             <CheckCircle className="w-12 h-12 text-green-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
+                        <h3 className="text-xl font-bold text-white">{t('publicpage.puzzle.complete')}</h3>
                   </motion.div>
                 )}
               </AnimatePresence>
