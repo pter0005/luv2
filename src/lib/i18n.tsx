@@ -1,3 +1,4 @@
+
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 
@@ -25,6 +26,12 @@ const translations = {
 
     'home.hero.description': 'Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.',
     'home.hero.cta': 'Criar minha página',
+    'home.hero.join': 'Junte-se a',
+    'home.hero.couples': '+20.000 Casais',
+    'home.hero.example': 'Ver Exemplo',
+    'home.hero.support': 'Suporte',
+    'home.hero.customDesign': 'Design Personalizado',
+    'home.hero.userRating': 'Avaliação dos usuários',
 
     'home.howitworks.title': 'Crie um presente inesquecível em 4 passos simples',
     'home.howitworks.description': 'Nossa plataforma torna fácil criar uma experiência digital e personalizada que vai emocionar quem você ama.',
@@ -441,6 +448,12 @@ const translations = {
     'home.hero.subtitle.animated.3': 'for who deserves it!',
     'home.hero.description': 'Transform your feelings into a digital work of art. An exclusive experience, created to celebrate moments that deserve to be eternal.',
     'home.hero.cta': 'Create my page',
+    'home.hero.join': 'Join',
+    'home.hero.couples': '+20,000 Couples',
+    'home.hero.example': 'View Example',
+    'home.hero.support': 'Support',
+    'home.hero.customDesign': 'Custom Design',
+    'home.hero.userRating': 'User rating',
 
     'home.howitworks.title': 'Create an unforgettable gift in 4 simple steps',
     'home.howitworks.description': 'Our platform makes it easy to create a digital and personalized experience that will thrill the one you love.',
@@ -857,6 +870,12 @@ const translations = {
     'home.hero.subtitle.animated.3': '¡para quien se lo merece!',
     'home.hero.description': 'Transforma tus sentimientos en una obra de arte digital. Una experiencia exclusiva, creada para celebrar momentos que merecen ser eternos.',
     'home.hero.cta': 'Crear mi página',
+    'home.hero.join': 'Únete a',
+    'home.hero.couples': '+20.000 Parejas',
+    'home.hero.example': 'Ver Ejemplo',
+    'home.hero.support': 'Soporte',
+    'home.hero.customDesign': 'Diseño Personalizado',
+    'home.hero.userRating': 'Valoración de usuarios',
     
     'home.howitworks.title': 'Crea un regalo inolvidable en 4 sencillos pasos',
     'home.howitworks.description': 'Nuestra plataforma facilita la creación de una experiencia digital y personalizada que emocionará a quien amas.',

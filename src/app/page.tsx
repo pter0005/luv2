@@ -256,8 +256,8 @@ export default function Home() {
                         ))}
                     </div>
                     <div className="flex flex-col items-start leading-none">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
-                        <span className="text-sm font-bold text-white">+20.000 Casais</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{t('home.hero.join')}</span>
+                        <span className="text-sm font-bold text-white">{t('home.hero.couples')}</span>
                     </div>
                  </div>
 
@@ -286,7 +286,7 @@ export default function Home() {
                     </Link>
                     <Link href="#demo-section" className="w-full sm:w-auto">
                          <Button variant="ghost" size="xl" className="w-full sm:w-auto text-white border border-white/10 rounded-full px-8 py-6 hover:bg-white/5">
-                            <Play className="w-4 h-4 mr-2 fill-white" /> Ver Exemplo
+                            <Play className="w-4 h-4 mr-2 fill-white" /> {t('home.hero.example')}
                         </Button>
                     </Link>
                 </div>
@@ -303,8 +303,8 @@ export default function Home() {
                         ))}
                     </div>
                     <div className="flex flex-col items-start leading-none">
-                        <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
-                        <span className="text-xs font-bold text-white">+20.000 Casais</span>
+                        <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold">{t('home.hero.join')}</span>
+                        <span className="text-xs font-bold text-white">{t('home.hero.couples')}</span>
                     </div>
                 </div>
 
@@ -398,7 +398,7 @@ export default function Home() {
                                 <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e] border border-black"></div>
                             </div>
                             <div>
-                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{t('home.hero.support')}</p>
                                 <p className="text-sm text-white font-bold">Online 24/7</p>
                             </div>
                         </motion.div>
@@ -411,12 +411,12 @@ export default function Home() {
                             className="absolute -right-[120px] md:-right-[180px] bottom-[10%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform"
                         >
                             <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
-                                <Palette size={10} /> Design Personalizado
+                                <Palette size={10} /> {t('home.hero.customDesign')}
                             </div>
                             <div className="flex items-center gap-1 mb-1">
                                 {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                             </div>
-                            <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
+                            <p className="text-xs text-white font-bold">{t('home.hero.userRating')}</p>
                         </motion.div>
                     </div>
                 </div>
