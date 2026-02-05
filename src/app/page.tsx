@@ -203,7 +203,7 @@ export default function Home() {
   
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
 
-  const phrases = useMemo(() => ["para alguém especial!", "de forma única!", "para quem merece!"], []);
+  const phrases = useMemo(() => [t('home.hero.subtitle.animated.1'), t('home.hero.subtitle.animated.2'), t('home.hero.subtitle.animated.3')], [t]);
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -260,7 +260,7 @@ export default function Home() {
                  </div>
 
                  <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
-                    Declare seu amor <br />
+                    {t('home.hero.title.line1')} <br />
                     <span className="relative inline-block mt-2">
                         <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
                             {typedPhrase}
@@ -273,7 +273,7 @@ export default function Home() {
                 </h1>
 
                 <p className="text-base lg:text-lg text-gray-400 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-light">
-                    Transforme seus sentimentos em uma <strong className="text-white font-medium">obra de arte digital</strong>. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+                    {t('home.hero.description')}
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -306,7 +306,7 @@ export default function Home() {
                     </div>
                 </div>
 
-                <div className="relative h-[500px] sm:h-[600px] lg:h-[650px] w-full flex items-center justify-center perspective-[1200px] mt-0">
+                <div className="relative h-[500px] sm:h-[600px] lg:h-[500px] w-full flex items-center justify-center perspective-[1200px] mt-[-2rem] sm:mt-0">
                     <div className="relative w-full max-w-[500px] h-[600px] flex items-center justify-center scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
                         {/* 1. ESQUERDA (ATRÁS & -15º) */}
                         <motion.div
@@ -470,12 +470,16 @@ export default function Home() {
                 <div className="flex -space-x-2">
                     {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-black bg-gray-500 overflow-hidden"><Image src={`https://picsum.photos/seed/avatar${i}/24/24`} alt="User" width={24} height={24} /></div>)}
                 </div>
-                <span className="text-xs font-semibold text-purple-300 tracking-wide uppercase">+10.000 Casais Felizes</span>
+                <span className="text-xs font-semibold text-purple-300 tracking-wide uppercase">{t('home.testimonials.badge')}</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
-              O que nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">clientes</span> dizem
+              {t('home.testimonials.title.part1')}{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+                {t('home.testimonials.title.part2')}
+              </span>{' '}
+              {t('home.testimonials.title.part3')}
             </h2>
-            <p className="text-lg text-muted-foreground">Histórias reais de pessoas que criaram páginas únicas para surpreender alguém especial com o MyCupid.</p>
+            <p className="text-lg text-muted-foreground">{t('home.testimonials.description')}</p>
           </div>
           <div className="-mx-4 md:-mx-8 lg:-mx-16"><TestimonialsMarquee /></div>
         </div>

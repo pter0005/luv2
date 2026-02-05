@@ -4,36 +4,35 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { Star, Quote, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
+import { useMemo } from "react";
 
 // --- DADOS REAIS & HUMANIZADOS (Gírias + Linguagem Jovem) ---
-const testimonials = [
+const testimonialImages = [
     // --- LINHA DE CIMA ---
-    { name: "Lucas & Mari", text: "Mano, na moral... ela chorou horrores qnd viu kkkk. Ficou mto perfeito, sério!", image: "https://i.imgur.com/cCguFSg.png" },
-    { name: "Bia & Thiago", text: "Gente, o q é essa linha do tempo?? A gente ficou um tempão lembrando dos roles. Surreal.", image: "https://i.imgur.com/FaY4ns0.png" },
-    { name: "Rafa & Ju", text: "Eu sou zero criativo pra presente, mas isso aqui salvou dms. Montei em 20 min e ficou top.", image: "https://i.imgur.com/qhAqK7e.png" },
-    { name: "Gui & Lau", text: "O puzzle no começo é genial, ela ficou tipo 'uai oq é isso?' e dps amou a surpresa.", image: "https://i.imgur.com/cNpWi4g.png" },
-    { name: "Matheus & Isa", text: "Melhor presente, papo reto. Mto melhor que dar só chocolate ou roupa. Ela postou em tudo q é lugar.", image: "https://i.imgur.com/07VjZa7.png" },
-    { name: "Bru & Manu", text: "Achei q ia ser difícil de fazer mas é mó de boa. A musica de fundo deu mó clima 😍", image: "https://i.imgur.com/FRq4i5M.png" },
-    { name: "Fe & Gi", text: "O QR Code funcionou direitinho no jantar. Foi o ponto alto da noite, vlw msm!", image: "https://i.imgur.com/3rZyoEl.png" },
-    { name: "Dani & Lice", text: "Cara, mt foda. É uma parada q fica pra sempre, tlgd? Não é q nem presente q acaba ou quebra.", image: "https://i.imgur.com/8MOjQPN.png" },
-    { name: "Du & Sophia", text: "Nossa história ficou linda demais ali. Chorei junto com ela, admito kkkk.", image: "https://i.imgur.com/aVr6GQy.png" },
-    { name: "Vini & Valen", text: "O suporte me ajudou rapidão com a foto q tava torta. Atendimento 10/10.", image: "https://i.imgur.com/qZDukLz.png" },
-    
+    "https://i.imgur.com/cCguFSg.png",
+    "https://i.imgur.com/FaY4ns0.png",
+    "https://i.imgur.com/qhAqK7e.png",
+    "https://i.imgur.com/cNpWi4g.png",
+    "https://i.imgur.com/07VjZa7.png",
+    "https://i.imgur.com/FRq4i5M.png",
+    "https://i.imgur.com/3rZyoEl.png",
+    "https://i.imgur.com/8MOjQPN.png",
+    "https://i.imgur.com/aVr6GQy.png",
+    "https://i.imgur.com/qZDukLz.png",
     // --- LINHA DE BAIXO ---
-    { name: "Dedé & Lena", text: "Sem palavras... ficou mto profissa! Parece q paguei uma fortuna pra um designer fazer.", image: "https://i.imgur.com/cGnkhbQ.png" },
-    { name: "Léo & Lu", text: "Minha mina ficou chocada. Falou q foi o presente mais criativo q eu já dei. Vcs são brabos!", image: "https://i.imgur.com/cGnkhbQ.png" },
-    { name: "Rô & Liv", text: "As fotos em 3D dão um tchan a mais. Ficamos vendo no celular um tempão.", image: "https://i.imgur.com/3YZF9hP.png" },
-    { name: "Gabs & Clara", text: "Fiz pro dia dos namorados, foi sucesso total. Todo mundo perguntou como eu fiz kkk.", image: "https://i.imgur.com/7uImOdI.png" },
-    { name: "Ale & Gabi", text: "Vale cada centavo, na moral. É mto barato pelo tanto q emociona.", image: "https://i.imgur.com/qW4HUg2.png" },
-    { name: "Di & Yas", text: "Os coraçõezinhos caindo na tela... aff q amor! ❤️ Ela amou demais.", image: "https://i.imgur.com/cCguFSg.png" },
-    { name: "Rick & Lê", text: "Usei a IA pra escrever o texto pq sou péssimo com palavras e ficou lindo dms.", image: "https://i.imgur.com/FaY4ns0.png" },
-    { name: "Serginho & Nick", text: "Simples, rápido e emocionante. O combo perfeito pra quem quer surpreender.", image: "https://i.imgur.com/qhAqK7e.png" },
-    { name: "Fer & Sah", text: "Eu tava sem ideia do q dar e isso salvou meu namoro kkkk brincadeira, mas ajudou mto!", image: "https://i.imgur.com/cNpWi4g.png" },
-    { name: "Will & Carol", text: "Aquele contador de tempo é hipnotizante. A gnt fica olhando os segundos passarem juntinhos.", image: "https://i.imgur.com/07VjZa7.png" },
+    "https://i.imgur.com/cGnkhbQ.png",
+    "https://i.imgur.com/cGnkhbQ.png",
+    "https://i.imgur.com/3YZF9hP.png",
+    "https://i.imgur.com/7uImOdI.png",
+    "https://i.imgur.com/qW4HUg2.png",
+    "https://i.imgur.com/cCguFSg.png",
+    "https://i.imgur.com/FaY4ns0.png",
+    "https://i.imgur.com/qhAqK7e.png",
+    "https://i.imgur.com/cNpWi4g.png",
+    "https://i.imgur.com/07VjZa7.png",
 ];
 
-const topRow = testimonials.slice(0, 10);
-const bottomRow = testimonials.slice(10, 20);
 
 // --- CARD DEPOIMENTO PREMIUM ---
 const TestimonialCard = ({ image, name, text }: { image: string, name: string, text: string }) => {
@@ -82,7 +81,7 @@ const TestimonialCard = ({ image, name, text }: { image: string, name: string, t
 };
 
 // --- MARQUEE INFINITO OTIMIZADO (GPU ACCELERATED) ---
-const Marquee = ({ items, direction = "left", speed }: { items: typeof topRow, direction?: "left" | "right", speed: number }) => {
+const Marquee = ({ items, direction = "left", speed }: { items: { name: string, text: string, image: string }[], direction?: "left" | "right", speed: number }) => {
     return (
         <div className="w-full overflow-hidden flex select-none pointer-events-none">
             {/* Layer de Composição para Performance */}
@@ -110,6 +109,17 @@ const Marquee = ({ items, direction = "left", speed }: { items: typeof topRow, d
 };
 
 export default function TestimonialsMarquee() {
+    const { t } = useTranslation();
+
+    const testimonials = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
+        name: t(`testimonials.t${i + 1}.name` as any),
+        text: t(`testimonials.t${i + 1}.text` as any),
+        image: testimonialImages[i],
+    })), [t]);
+
+    const topRow = testimonials.slice(0, 10);
+    const bottomRow = testimonials.slice(10, 20);
+
     return (
         <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8 overflow-hidden mask-image-fade">
             
