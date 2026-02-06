@@ -25,19 +25,37 @@ export default function PayPalButton({ planType, firebaseIntentId }: Props) {
       <PayPalScriptProvider options={paypalOptions}>
         <PayPalButtons
           style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
-          createOrder={async () => await createPayPalOrder(planType)}
+          createOrder={async () => {
+              try {
+                  console.log("Attempting to create PayPal order for plan:", planType);
+                  const orderId = await createPayPalOrder(planType);
+                  console.log("PayPal Order ID created successfully:", orderId);
+                  return orderId;
+              } catch (error) {
+                  console.error("Client-side error creating PayPal order:", error);
+                  setErrorMsg("Could not initiate PayPal payment. Check console for details.");
+                  throw error;
+              }
+          }}
           onApprove={async (data) => {
+            console.log("PayPal order approved by user. Data:", data);
             try {
               const result = await capturePayPalOrder(data.orderID, firebaseIntentId);
-              if (result.success) {
-                // Redireciona para sucesso
-                router.push(`/pagamento/sucesso?id=${firebaseIntentId}`); 
+              if (result.success && result.pageId) {
+                console.log("Capture successful, redirecting to page:", result.pageId);
+                router.push(`/p/${result.pageId}`); 
               } else {
-                setErrorMsg("Pagamento não processado.");
+                console.error("Server failed to capture PayPal order. Result:", result);
+                setErrorMsg(result.error || "Pagamento não processado pelo servidor.");
               }
-            } catch (err) {
-              setErrorMsg("Erro de conexão.");
+            } catch (err: any) {
+              console.error("Client-side error capturing PayPal order:", err);
+              setErrorMsg(err.message || "Erro de conexão ao finalizar pagamento.");
             }
+          }}
+          onError={(err: any) => {
+              console.error("PayPal Button onError callback:", err);
+              setErrorMsg("Ocorreu um erro com o PayPal. Tente novamente ou use outro método.");
           }}
         />
       </PayPalScriptProvider>
