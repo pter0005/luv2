@@ -390,53 +390,111 @@ export { suggestContent };
 
 
 // --- PAYPAL ACTIONS ---
-export async function capturePaypalOrder(orderId: string, intentId: string) {
+async function generateAccessToken() {
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_SECRET_KEY;
-  const isSandbox = process.env.PAYPAL_ENV === 'sandbox';
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
+    console.error("PayPal credentials not configured.");
+    throw new Error("Credenciais do PayPal não configuradas.");
+  }
 
-  // Se o .env estiver como 'sandbox', ele usa a URL de teste.
-  // Isso mata o erro de about:blank.
-  const base = isSandbox
-    ? "https://api-m.sandbox.paypal.com"
-    : "https://api-m.paypal.com";
+  const auth = Buffer.from(clientId + ":" + clientSecret).toString("base64");
+  const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
 
+  const response = await fetch(`${base}/v1/oauth2/token`, {
+    method: "POST",
+    body: "grant_type=client_credentials",
+    headers: {
+      Authorization: `Basic ${auth}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("Failed to generate PayPal access token:", response.status, errorBody);
+    throw new Error("Failed to generate access token.");
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+export async function createPayPalOrder(planType: string) {
   try {
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+      const accessToken = await generateAccessToken();
+      const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
+      const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
 
-    // 1. Pega o Token
-    const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
-      method: "POST",
-      body: "grant_type=client_credentials",
-      headers: { Authorization: `Basic ${auth}` },
-      cache: 'no-store'
-    });
+      const response = await fetch(`${base}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: "USD",
+                value: value,
+              },
+              description: `MyCupid - ${planType} Plan`,
+            },
+          ],
+        }),
+      });
 
-    const { access_token } = await tokenResponse.json();
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("PayPal Create Order Error:", errorBody);
+        throw new Error("Failed to create PayPal order.");
+      }
 
-    // 2. Captura o pagamento
+      const order = await response.json();
+      console.log("Created PayPal Order ID:", order.id);
+      return order.id;
+  } catch(error) {
+    console.error("[SERVER] createPayPalOrder error:", error);
+    throw error;
+  }
+}
+
+export async function capturePayPalOrder(orderId: string, intentId: string) {
+  try {
+    const accessToken = await generateAccessToken();
+    const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
+
     const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
 
     const data = await captureResponse.json();
+    console.log("PayPal Capture Response:", data);
 
     if (data.status === 'COMPLETED') {
-      // Pega o ID da transação e finaliza a página no Firebase
-      const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
-      const result = await finalizeLovePage(intentId, transactionId);
+      const paymentId = data.id || orderId;
+      const result = await finalizeLovePage(intentId, paymentId);
       
+      if (result.error) {
+          console.error("Error in finalizeLovePage after PayPal capture:", result.error);
+          return { success: false, error: "Internal error finalizing the page." };
+      }
+      
+      console.log("finalizeLovePage successful for intent:", intentId);
       return { success: true, pageId: result.pageId };
     }
     
-    return { success: false, error: 'Payment not completed' };
+    console.error("PayPal payment not completed. Status:", data.status, data);
+    return { success: false, error: `Payment not completed. Status: ${data.status}` };
 
   } catch (error: any) {
-    console.error("PayPal Error:", error);
-    return { success: false, error: error.message };
+    console.error("[SERVER] Error capturing PayPal order:", error);
+    return { success: false, error: "Server error capturing payment." };
   }
 }
