@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -41,7 +41,7 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, createPayPalOrder } from "./actions";
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, createPayPalOrder, capturePayPalOrder } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -1276,11 +1276,22 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             const forceSave = async () => {
                 const data = getValues();
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
-                if (result.intentId) setValue('intentId', result.intentId);
+                if (result.intentId) {
+                    setValue('intentId', result.intentId);
+                } else if (result.error) {
+                    console.error("Autosave failed on initial load:", result);
+                    toast({
+                        variant: 'destructive',
+                        title: "Erro Crítico ao Salvar",
+                        description: result.error,
+                        duration: 9000,
+                    });
+                }
             };
             forceSave();
         }
-    }, [user, intentId, getValues, setValue]);
+    }, [user, intentId, getValues, setValue, toast]);
+
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -1677,11 +1688,15 @@ const WizardInternal = () => {
         const result = await createOrUpdatePaymentIntent(dataToSave);
 
         if (result.error) {
-            console.warn("Autosave failed:", result.error, result.details);
+            console.error("Autosave failed:", result);
+            toast({
+                variant: 'destructive',
+                title: "Erro ao Salvar Rascunho",
+                description: result.error, // Display the detailed server error
+                duration: 9000,
+            });
             const errorString = (result.error || '').toLowerCase();
-            const detailsString = (result.details?.log || '').toLowerCase();
-
-            if (errorString.includes("collection") || errorString.includes("500") || detailsString.includes("collection")) {
+            if (errorString.includes("collection") || errorString.includes("500")) {
                 setValue('intentId', undefined, { shouldDirty: false });
             }
         } else if (result.intentId && !dataToSave.intentId) {
@@ -1693,7 +1708,7 @@ const WizardInternal = () => {
     } catch (e) {
         console.error("Error during autosave:", e);
     }
-  }, [user, isUserLoading, setValue]);
+  }, [user, isUserLoading, setValue, toast]);
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -1825,7 +1840,7 @@ const WizardInternal = () => {
                   <span className="text-xs text-muted-foreground font-sans">{t('wizard.step')} {currentStep + 1} {t('wizard.of')} {steps.length}</span>
                   <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
               </div>
-              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
+              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRightIcon /></Button>
           </div>
 
           <div className="mt-8 space-y-2">

@@ -6,7 +6,6 @@ import type { PageData } from './CreatePageWizard';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
-import "dotenv/config";
 import Stripe from 'stripe';
 
 
@@ -64,12 +63,9 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
             return { intentId: intentDoc.id };
         }
     } catch (error: any) {
-        console.error("ERRO NO SERVIDOR:", error.message);
+        console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
         return { 
-            error: 'Falha no servidor ao salvar rascunho.',
-            details: {
-                 log: `Falha ao salvar dados para o usuário ${restOfPageData.userId} com intentId ${intentId || '(novo)'}. Erro: ${error.code} - ${error.message}`
-            }
+            error: `Falha no servidor ao salvar rascunho: ${error.message}`,
         };
     }
 }
