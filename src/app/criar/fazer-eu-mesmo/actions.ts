@@ -391,50 +391,53 @@ export { suggestContent };
 
 // --- PAYPAL ACTIONS ---
 export async function capturePaypalOrder(orderId: string, intentId: string) {
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_SECRET_KEY;
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_SECRET_KEY;
+    
+    // SE VOCÊ ESTÁ NO SANDBOX, A URL TEM QUE SER ESSA:
+    const base = "https://api-m.sandbox.paypal.com"; 
   
-  // Como é LIVE, a URL é api-m.paypal.com
-  const base = "https://api-m.paypal.com"; 
-
-  try {
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-    
-    // 1. Pega o Token de Acesso
-    const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
-      method: "POST",
-      body: "grant_type=client_credentials",
-      headers: { Authorization: `Basic ${auth}` },
-      cache: 'no-store'
-    });
-    
-    const { access_token } = await tokenResponse.json();
-
-    // 2. Captura o pagamento
-    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
-
-    const data = await captureResponse.json();
-
-    if (data.status === 'COMPLETED') {
-      // ID da transação para o banco de dados
-      const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+    try {
+      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
       
-      // CHAMA SUA FUNÇÃO DE FINALIZAÇÃO (A mesma do PIX)
-      const result = await finalizeLovePage(intentId, transactionId);
+      // 1. Pega o Token
+      const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
+        method: "POST",
+        body: "grant_type=client_credentials",
+        headers: { Authorization: `Basic ${auth}` },
+        cache: 'no-store'
+      });
       
-      return { success: true, pageId: result.pageId };
+      if (!tokenResponse.ok) {
+          const errText = await tokenResponse.text();
+          console.error("Erro de Autenticação PayPal:", errText);
+          return { success: false, error: "Falha na autenticação com PayPal Sandbox" };
+      }
+  
+      const { access_token } = await tokenResponse.json();
+  
+      // 2. Captura o pagamento
+      const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+  
+      const data = await captureResponse.json();
+  
+      if (data.status === 'COMPLETED') {
+        const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+        const result = await finalizeLovePage(intentId, transactionId);
+        return { success: true, pageId: result.pageId };
+      }
+      
+      console.error("Status do PayPal não completado:", data);
+      return { success: false, error: 'Pagamento não aprovado no Sandbox.' };
+  
+    } catch (error: any) {
+      console.error("Erro crítico na Action:", error);
+      return { success: false, error: error.message };
     }
-    
-    return { success: false, error: 'Pagamento não concluído no PayPal.' };
-
-  } catch (error: any) {
-    console.error("Erro PayPal Capture:", error);
-    return { success: false, error: error.message };
   }
-}
