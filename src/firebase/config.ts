@@ -1,5 +1,5 @@
-// This configuration is now loaded from environment variables
-// to allow for different settings in development and production.
+// This configuration now reads from process.env to be consistent
+// with the centralized .env file strategy.
 
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

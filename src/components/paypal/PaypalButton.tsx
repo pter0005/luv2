@@ -1,56 +1,57 @@
 "use client";
-import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
-import { createPaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { capturePaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function PaypalButton({ intentId, plan }: { intentId: string, plan: 'basico' | 'avancado' }) {
   const router = useRouter();
-  const { toast } = useToast();
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) {
-    console.error("PayPal Client ID is not set.");
-    return <p className="text-destructive text-xs">PayPal está indisponível.</p>;
-  }
+  const amount = plan === 'avancado' ? "19.90" : "14.90";
 
   return (
-    <div className="w-full">
-      <PayPalScriptProvider options={{ 
-          "clientId": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
-          currency: "USD",
-          intent: "capture"
-      }}>
-        <PayPalButtons
-          style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay" }}
-          createOrder={async () => {
-            try {
-              const { orderId } = await createPaypalOrder(intentId, plan);
-              return orderId;
-            } catch (error) {
-              console.error("Error creating PayPal order:", error);
-              toast({
-                variant: 'destructive',
-                title: 'Erro no PayPal',
-                description: 'Não foi possível iniciar o pagamento. Tente novamente.',
+    <div className="w-full relative">
+      {/* Se estiver verificando, mostra o loader e esconde o botão */}
+      {isVerifying ? (
+        <div className="flex flex-col items-center justify-center p-4">
+          <Loader2 className="animate-spin text-primary mb-2" />
+          <p className="text-sm">Finalizing payment...</p>
+        </div>
+      ) : (
+        <PayPalScriptProvider options={{ 
+            "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+            currency: "USD",
+            intent: "capture"
+        }}>
+          <PayPalButtons
+            style={{ layout: "vertical", color: "blue", shape: "rect" }}
+            createOrder={(data, actions) => {
+              return actions.order.create({
+                  purchase_units: [{
+                      amount: { currency_code: 'USD', value: amount },
+                      custom_id: intentId,
+                  }],
               });
-              throw error;
-            }
-          }}
-          onApprove={async (data, actions) => {
-            // O pagamento foi aprovado pelo usuário. 
-            // Agora redirecionamos para uma tela de espera enquanto o Webhook processa.
-            router.push(`/criando-pagina?intentId=${intentId}`);
-          }}
-          onError={(err) => {
-            console.error("Erro no PayPal Button:", err);
-            toast({
-              variant: 'destructive',
-              title: 'Erro no PayPal',
-              description: 'Ocorreu um erro ao processar o pagamento com PayPal.',
-            });
-          }}
-        />
-      </PayPalScriptProvider>
+            }}
+            onApprove={async (data, actions) => {
+              setIsVerifying(true); // Começa o loading SÓ DEPOIS que o PayPal aprova
+              const result = await capturePaypalOrder(data.orderID, intentId);
+              if (result.success) {
+                  router.push(`/p/${result.pageId}`);
+              } else {
+                  alert("Error: " + result.error);
+                  setIsVerifying(false);
+              }
+            }}
+            onError={(err) => {
+              console.error("PayPal Script Error:", err);
+              setIsVerifying(false);
+            }}
+          />
+        </PayPalScriptProvider>
+      )}
     </div>
   );
 }

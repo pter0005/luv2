@@ -159,7 +159,7 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
                 },
             ],
             mode: 'payment',
-            success_url: `${domain}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${domain}/pagamento/sucesso`,
             cancel_url: `${domain}/pagamento/cancelado`,
             client_reference_id: intentId, // THIS IS KEY! Link Stripe session to our intentId
         });
@@ -388,7 +388,9 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 // Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
 
+
 // --- PAYPAL ACTIONS ---
+<<<<<<< HEAD
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 const PAYPAL_BASE_URL = process.env.NEXT_PUBLIC_PAYPAL_API_URL; 
@@ -423,35 +425,55 @@ export async function createPaypalOrder(intentId: string, plan: 'basico' | 'avan
       avancado: "19.90"
   };
   const price = prices[plan];
+=======
+export async function capturePaypalOrder(orderId: string, intentId: string) {
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_SECRET_KEY;
+  const isSandbox = process.env.PAYPAL_ENV === 'sandbox';
+
+  // Se o .env estiver como 'sandbox', ele usa a URL de teste. 
+  // Isso mata o erro de about:blank.
+  const base = isSandbox 
+    ? "https://api-m.sandbox.paypal.com" 
+    : "https://api-m.paypal.com";
+>>>>>>> 66de4086a5b0a4bc9c49a2a97e1d3910149e0fd2
 
   try {
-    const accessToken = await getPayPalAccessToken();
-    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    
+    // 1. Pega o Token
+    const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
+      method: "POST",
+      body: "grant_type=client_credentials",
+      headers: { Authorization: `Basic ${auth}` },
+      cache: 'no-store'
+    });
+    
+    const { access_token } = await tokenResponse.json();
+
+    // 2. Captura o pagamento
+    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${access_token}`,
       },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [{
-          amount: { currency_code: "USD", value: price },
-          custom_id: intentId, // Vínculo com Firestore
-          description: `MyCupid - Plano ${plan}`
-        }],
-      }),
     });
 
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error("PayPal Create Order Error:", JSON.stringify(errorBody, null, 2));
-        throw new Error("Failed to create PayPal order.");
-    }
+    const data = await captureResponse.json();
 
-    const order = await response.json();
-    return { orderId: order.id };
-  } catch (error) {
-    console.error("PayPal Order Creation Action Error:", error);
-    throw new Error("Error creating order with PayPal");
+    if (data.status === 'COMPLETED') {
+      // Pega o ID da transação e finaliza a página no Firebase
+      const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+      const result = await finalizeLovePage(intentId, transactionId);
+      
+      return { success: true, pageId: result.pageId };
+    }
+    
+    return { success: false, error: 'Payment not completed' };
+
+  } catch (error: any) {
+    console.error("PayPal Error:", error);
+    return { success: false, error: error.message };
   }
 }
