@@ -391,35 +391,52 @@ export { suggestContent };
 
 // --- PAYPAL ACTIONS ---
 export async function capturePaypalOrder(orderId: string, intentId: string) {
-  // FORÇANDO SANDBOX PORQUE SEU ID É DE SANDBOX
-  const base = "https://api-m.sandbox.paypal.com"; 
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_SECRET_KEY;
+  const isSandbox = process.env.PAYPAL_ENV === 'sandbox';
+
+  // Se o .env estiver como 'sandbox', ele usa a URL de teste. 
+  // Isso mata o erro de about:blank.
+  const base = isSandbox 
+    ? "https://api-m.sandbox.paypal.com" 
+    : "https://api-m.paypal.com";
 
   try {
-    const auth = Buffer.from(`${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET_KEY}`).toString("base64");
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
     
-    const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
+    // 1. Pega o Token
+    const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
       method: "POST",
       body: "grant_type=client_credentials",
       headers: { Authorization: `Basic ${auth}` },
+      cache: 'no-store'
     });
+    
+    const { access_token } = await tokenResponse.json();
 
-    const { access_token } = await tokenRes.json();
-
-    const captureRes = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+    // 2. Captura o pagamento
+    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${access_token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
     });
 
-    const data = await captureRes.json();
+    const data = await captureResponse.json();
 
     if (data.status === 'COMPLETED') {
-      // Usa o finalize que você já tem
+      // Pega o ID da transação e finaliza a página no Firebase
       const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
-      const result = await finalizeLovePage(intentId, transactionId); 
+      const result = await finalizeLovePage(intentId, transactionId);
+      
       return { success: true, pageId: result.pageId };
     }
-    return { success: false, error: "Payment not completed" };
+    
+    return { success: false, error: 'Payment not completed' };
+
   } catch (error: any) {
+    console.error("PayPal Error:", error);
     return { success: false, error: error.message };
   }
 }

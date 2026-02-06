@@ -9,25 +9,25 @@ import { Loader2 } from "lucide-react";
 export default function PaypalButton({ intentId, plan }: { intentId: string, plan: 'basico' | 'avancado' }) {
   const router = useRouter();
   const [isVerifying, setIsVerifying] = useState(false);
+
   const amount = plan === 'avancado' ? "19.90" : "14.90";
 
   return (
     <div className="w-full relative">
-      {isVerifying && (
-        <div className="flex flex-col items-center py-4">
+      {/* Se estiver verificando, mostra o loader e esconde o botão */}
+      {isVerifying ? (
+        <div className="flex flex-col items-center justify-center p-4">
           <Loader2 className="animate-spin text-primary mb-2" />
-          <p className="text-xs">Finalizing your love page...</p>
+          <p className="text-sm">Finalizing payment...</p>
         </div>
-      )}
-
-      {!isVerifying && (
+      ) : (
         <PayPalScriptProvider options={{ 
             "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
             currency: "USD",
             intent: "capture"
         }}>
           <PayPalButtons
-            style={{ layout: "vertical", color: "blue" }}
+            style={{ layout: "vertical", color: "blue", shape: "rect" }}
             createOrder={(data, actions) => {
               return actions.order.create({
                   purchase_units: [{
@@ -37,7 +37,7 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
               });
             }}
             onApprove={async (data, actions) => {
-              setIsVerifying(true); // Só ativa o loading quando o PayPal aprovar o popup
+              setIsVerifying(true); // Começa o loading SÓ DEPOIS que o PayPal aprova
               const result = await capturePaypalOrder(data.orderID, intentId);
               if (result.success && result.pageId) {
                   router.push(`/p/${result.pageId}`);
@@ -45,9 +45,6 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
                   alert("Error: " + result.error);
                   setIsVerifying(false);
               }
-            }}
-            onCancel={() => {
-                setIsVerifying(false); // Se o cara fechar o popup, mata o loading
             }}
             onError={(err) => {
               console.error("PayPal Script Error:", err);
