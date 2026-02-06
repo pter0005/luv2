@@ -1626,7 +1626,7 @@ const WizardInternal = () => {
     defaultValues: { 
         plan: plan,
         title: locale === 'pt' ? "Seu Título Aqui" : "Your Title Here",
-        message: "",
+        message: locale === 'pt' ? "Sua mensagem de amor..." : "Your love message...",
         messageFontSize: "text-base",
         backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
         galleryStyle: "Cube",

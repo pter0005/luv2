@@ -64,6 +64,7 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         }
     } catch (error: any) {
         console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
+        // Retorna a mensagem de erro detalhada para ser exibida no Toast
         return { 
             error: `Falha no servidor ao salvar rascunho: ${error.message}`,
         };
@@ -119,21 +120,11 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
         return { error: 'Stripe secret key not configured on the server.' };
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-        apiVersion: '2024-06-20',
-    });
+    const stripe = new Stripe(STRIPE_SECRET_KEY);
 
     const prices = {
-        basico: {
-            unit_amount: 1490, // $14.90 in cents
-            name: 'Basic Plan',
-            description: 'A beautiful, temporary page to share your love.'
-        },
-        avancado: {
-            unit_amount: 1990, // $19.90 in cents
-            name: 'Advanced Plan',
-            description: 'A permanent page with all features unlocked.'
-        }
+        basico: { unit_amount: 1490, name: 'Basic Plan' },
+        avancado: { unit_amount: 1990, name: 'Advanced Plan' }
     };
     
     const selectedPrice = prices[plan];
@@ -141,33 +132,24 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     try {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: selectedPrice.name,
-                            description: selectedPrice.description,
-                        },
-                        unit_amount: selectedPrice.unit_amount,
-                    },
-                    quantity: 1,
+            line_items: [{
+                price_data: {
+                    currency: 'usd',
+                    product_data: { name: selectedPrice.name },
+                    unit_amount: selectedPrice.unit_amount,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
+            // AQUI ESTÁ A MÁGICA: USA O DOMÍNIO QUE O CLIENTE ESTÁ ACESSANDO
             success_url: `${domain}/pagamento/sucesso`,
             cancel_url: `${domain}/pagamento/cancelado`,
-            client_reference_id: intentId, // THIS IS KEY! Link Stripe session to our intentId
+            client_reference_id: intentId,
         });
-
-        if (!session.url) {
-            return { error: "Could not create Stripe session." };
-        }
 
         return { url: session.url };
 
     } catch (error: any) {
-        console.error("Stripe Session Creation Error:", error);
         return { error: `Stripe Error: ${error.message}` };
     }
 }
