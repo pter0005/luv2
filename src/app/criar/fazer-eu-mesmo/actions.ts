@@ -391,11 +391,12 @@ export { suggestContent };
 // --- PAYPAL ACTIONS ---
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
-const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com"; 
+const PAYPAL_BASE_URL = process.env.NEXT_PUBLIC_PAYPAL_API_URL; 
 
 async function getPayPalAccessToken() {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      throw new Error("PayPal credentials are not configured.");
+  }
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
   const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
     method: "POST",

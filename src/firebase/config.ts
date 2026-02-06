@@ -1,11 +1,12 @@
-// This configuration is now hardcoded to ensure it's always correct,
-// bypassing any potential issues with environment variable loading in development.
+// This configuration is now loaded from environment variables
+// to allow for different settings in development and production.
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyBUCjb5dl-X76juZX7oxXkvoLRs7RO1Fik",
-  authDomain: "amore-pages1-62585403-acd4b.firebaseapp.com",
-  projectId: "amore-pages1-62585403-acd4b",
-  storageBucket: "amore-pages1-62585403-acd4b.firebasestorage.app",
-  messagingSenderId: "232415419422",
-  appId: "1:232415419422:web:29dbacd3ab6bde420d220f"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
