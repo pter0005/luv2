@@ -391,59 +391,50 @@ export { suggestContent };
 
 // --- PAYPAL ACTIONS ---
 export async function capturePaypalOrder(orderId: string, intentId: string) {
-    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_SECRET_KEY;
-    const env = process.env.PAYPAL_ENV || 'sandbox';
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_SECRET_KEY;
   
-    const base = env === 'live' 
-      ? "https://api-m.paypal.com" 
-      : "https://api-m.sandbox.paypal.com";
-  
-    try {
-      // 1. Get Access Token
-      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-      const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
-        method: "POST",
-        body: "grant_type=client_credentials",
-        headers: { Authorization: `Basic ${auth}` },
-        cache: 'no-store'
-      });
-      if (!tokenResponse.ok) {
-          const errorBody = await tokenResponse.text();
-          console.error("PayPal Auth Error:", errorBody);
-          throw new Error("Failed to get PayPal access token.");
-      }
-      const { access_token } = await tokenResponse.json();
-  
-      // 2. Capture the payment for the order
-      const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access_token}`,
-        },
-      });
-  
-      const data = await captureResponse.json();
-  
-      if (data.status === 'COMPLETED') {
-        // 3. PAYMENT APPROVED!
-        const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
-        const finalizationResult = await finalizeLovePage(intentId, transactionId);
-  
-        if (finalizationResult.success && finalizationResult.pageId) {
-          return { success: true, pageId: finalizationResult.pageId };
-        } else {
-          console.error('Error finalizing page after PayPal payment:', finalizationResult.error);
-          return { success: false, error: finalizationResult.error || 'Failed to finalize page after payment.' };
-        }
-      }
+  // Como é LIVE, a URL é api-m.paypal.com
+  const base = "https://api-m.paypal.com"; 
+
+  try {
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    
+    // 1. Pega o Token de Acesso
+    const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
+      method: "POST",
+      body: "grant_type=client_credentials",
+      headers: { Authorization: `Basic ${auth}` },
+      cache: 'no-store'
+    });
+    
+    const { access_token } = await tokenResponse.json();
+
+    // 2. Captura o pagamento
+    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+
+    const data = await captureResponse.json();
+
+    if (data.status === 'COMPLETED') {
+      // ID da transação para o banco de dados
+      const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
       
-      console.error('PayPal payment not completed:', data);
-      return { success: false, error: 'Payment not completed by PayPal.' };
-  
-    } catch (error: any) {
-      console.error("PayPal Capture Action Error:", error);
-      return { success: false, error: error.message || 'Internal server error during PayPal capture.' };
+      // CHAMA SUA FUNÇÃO DE FINALIZAÇÃO (A mesma do PIX)
+      const result = await finalizeLovePage(intentId, transactionId);
+      
+      return { success: true, pageId: result.pageId };
     }
+    
+    return { success: false, error: 'Pagamento não concluído no PayPal.' };
+
+  } catch (error: any) {
+    console.error("Erro PayPal Capture:", error);
+    return { success: false, error: error.message };
   }
+}
