@@ -1,7 +1,7 @@
 
 "use client";
-import { PayPalButtons, PayPalScriptProvider, OnApproveData } from "@paypal/react-paypal-js";
-import { createPaypalOrder, verifyPaypalPayment } from "@/app/criar/fazer-eu-mesmo/actions";
+import { PayPalScriptProvider, PayPalButtons, OnApproveData } from "@paypal/react-paypal-js";
+import { capturePaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -11,6 +11,12 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
   const router = useRouter();
   const { toast } = useToast();
   const [isVerifying, setIsVerifying] = useState(false);
+
+  const prices = {
+      basico: "14.90",
+      avancado: "19.90"
+  };
+  const amount = prices[plan];
 
   if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) {
     console.error("PayPal Client ID is not set.");
@@ -33,18 +39,13 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
           intent: "capture"
       }}>
         <PayPalButtons
-          style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay" }}
-          createOrder={async () => {
-            const prices = {
-                basico: "14.90",
-                avancado: "19.90"
-            };
-            const price = prices[plan];
+          style={{ layout: "vertical", color: "blue", shape: "rect", label: "pay" }}
+          createOrder={async (data, actions) => {
             return actions.order.create({
                 purchase_units: [
                     {
                         amount: {
-                            value: price,
+                            value: amount,
                             currency_code: 'USD',
                         },
                         custom_id: intentId,
@@ -52,20 +53,20 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
                 ],
             });
           }}
-          onApprove={async (data: OnApproveData) => {
+          onApprove={async (data, actions) => {
             setIsVerifying(true);
             try {
-                const result = await verifyPaypalPayment(data.orderID, intentId);
+                const result = await capturePaypalOrder(data.orderID, intentId);
                 
                 if (result.success && result.pageId) {
-                    toast({ title: "Payment confirmed!" });
+                    toast({ title: "Payment confirmed!", description: "Your page is being created..." });
                     router.push(`/p/${result.pageId}`);
                 } else {
                     toast({ variant: "destructive", title: "Payment verification failed.", description: result.error });
+                    setIsVerifying(false);
                 }
             } catch (e: any) {
                 toast({ variant: "destructive", title: "An error occurred", description: e.message });
-            } finally {
                 setIsVerifying(false);
             }
           }}

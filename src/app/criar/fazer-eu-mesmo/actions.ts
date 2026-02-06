@@ -159,7 +159,7 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
                 },
             ],
             mode: 'payment',
-            success_url: `${domain}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${domain}/pagamento/sucesso`,
             cancel_url: `${domain}/pagamento/cancelado`,
             client_reference_id: intentId, // THIS IS KEY! Link Stripe session to our intentId
         });
@@ -388,108 +388,62 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 // Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
 
+
 // --- PAYPAL ACTIONS ---
-const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
-const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com"; 
-
-async function getPayPalAccessToken() {
-  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
-  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
-    method: "POST",
-    body: "grant_type=client_credentials",
-    headers: { Authorization: `Basic ${auth}` },
-    cache: 'no-store' // Essencial para não cachear o token de acesso
-  });
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("PayPal Auth Error:", errorBody);
-    throw new Error("Failed to get PayPal access token.");
-  }
-  const data = await response.json();
-  return data.access_token;
-}
-
-export async function createPaypalOrder(intentId: string, plan: 'basico' | 'avancado') {
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-      throw new Error("PayPal client ID or secret is not configured.");
-  }
-
-  const prices = {
-      basico: "14.90",
-      avancado: "19.90"
-  };
-  const price = prices[plan];
-
-  try {
-    const accessToken = await getPayPalAccessToken();
-    const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [{
-          amount: { currency_code: "USD", value: price },
-          custom_id: intentId, // Vínculo com Firestore
-          description: `MyCupid - Plan ${plan}`
-        }],
-      }),
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error("PayPal Create Order Error:", JSON.stringify(errorBody, null, 2));
-        throw new Error("Failed to create PayPal order.");
-    }
-
-    const order = await response.json();
-    return { orderId: order.id };
-  } catch (error) {
-    console.error("PayPal Order Creation Action Error:", error);
-    throw new Error("Error creating order with PayPal");
-  }
-}
-
-export async function verifyPaypalPayment(orderId: string, intentId: string) {
+export async function capturePaypalOrder(orderId: string, intentId: string) {
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_SECRET_KEY;
+    const env = process.env.PAYPAL_ENV || 'sandbox';
+  
+    const base = env === 'live' 
+      ? "https://api-m.paypal.com" 
+      : "https://api-m.sandbox.paypal.com";
+  
     try {
-        const accessToken = await getPayPalAccessToken();
-
-        const captureRes = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-
-        if (!captureRes.ok) {
-            const errorBody = await captureRes.json();
-            console.error("PayPal Capture Error:", JSON.stringify(errorBody, null, 2));
-            return { success: false, pageId: null, error: `PayPal capture failed: ${errorBody.details?.[0]?.description || 'Unknown error'}` };
+      // 1. Get Access Token
+      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+      const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
+        method: "POST",
+        body: "grant_type=client_credentials",
+        headers: { Authorization: `Basic ${auth}` },
+        cache: 'no-store'
+      });
+      if (!tokenResponse.ok) {
+          const errorBody = await tokenResponse.text();
+          console.error("PayPal Auth Error:", errorBody);
+          throw new Error("Failed to get PayPal access token.");
+      }
+      const { access_token } = await tokenResponse.json();
+  
+      // 2. Capture the payment for the order
+      const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+  
+      const data = await captureResponse.json();
+  
+      if (data.status === 'COMPLETED') {
+        // 3. PAYMENT APPROVED!
+        const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+        const finalizationResult = await finalizeLovePage(intentId, transactionId);
+  
+        if (finalizationResult.success && finalizationResult.pageId) {
+          return { success: true, pageId: finalizationResult.pageId };
+        } else {
+          console.error('Error finalizing page after PayPal payment:', finalizationResult.error);
+          return { success: false, error: finalizationResult.error || 'Failed to finalize page after payment.' };
         }
-
-        const captureData = await captureRes.json();
-        
-        if (captureData.status === 'COMPLETED') {
-            const transactionId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
-            const result = await finalizeLovePage(intentId, transactionId);
-            
-            if (result.success && result.pageId) {
-                return { success: true, pageId: result.pageId };
-            } else {
-                return { success: false, pageId: null, error: result.error };
-            }
-        }
-        
-        return { success: false, pageId: null, error: 'Payment not completed.' };
-
-    } catch(e: any) {
-        console.error("Error verifying PayPal payment:", e);
-        return { success: false, pageId: null, error: e.message };
+      }
+      
+      console.error('PayPal payment not completed:', data);
+      return { success: false, error: 'Payment not completed by PayPal.' };
+  
+    } catch (error: any) {
+      console.error("PayPal Capture Action Error:", error);
+      return { success: false, error: error.message || 'Internal server error during PayPal capture.' };
     }
-}
+  }
