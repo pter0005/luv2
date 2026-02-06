@@ -1,10 +1,9 @@
-
 "use client";
-import { PayPalScriptProvider, PayPalButtons, OnApproveData } from "@paypal/react-paypal-js";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { capturePaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function PaypalButton({ intentId, plan }: { intentId: string, plan: 'basico' | 'avancado' }) {
@@ -18,35 +17,41 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
   };
   const amount = prices[plan];
 
+  // LOG DE DEBUG - Veja se isso aparece no console do seu navegador (F12)
+  useEffect(() => {
+    console.log("PayPal Client ID carregado:", process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? "SIM" : "NÃO");
+  }, []);
+
   if (!process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) {
-    console.error("PayPal Client ID is not set.");
-    return <p className="text-destructive text-xs">PayPal is unavailable.</p>;
+    return <p className="text-destructive text-xs">PayPal Config Error: Missing Client ID</p>;
   }
   
   if (isVerifying) {
       return (
-          <div className="flex items-center justify-center w-full h-12">
+          <div className="flex flex-col items-center justify-center w-full py-4 gap-2">
               <Loader2 className="animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Confirming payment...</p>
           </div>
       )
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full min-h-[150px]"> {/* Altura mínima ajuda a evitar saltos na tela */}
       <PayPalScriptProvider options={{ 
-          "clientId": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+          "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, // CORRIGIDO: use "client-id" com hífen
           currency: "USD",
           intent: "capture"
       }}>
         <PayPalButtons
           style={{ layout: "vertical", color: "blue", shape: "rect", label: "pay" }}
-          createOrder={async (data, actions) => {
+          forceReRender={[amount, intentId]} // Garante que o botão atualize se o plano mudar
+          createOrder={(data, actions) => {
             return actions.order.create({
                 purchase_units: [
                     {
                         amount: {
-                            value: amount,
                             currency_code: 'USD',
+                            value: amount,
                         },
                         custom_id: intentId,
                     },
@@ -62,7 +67,7 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
                     toast({ title: "Payment confirmed!", description: "Your page is being created..." });
                     router.push(`/p/${result.pageId}`);
                 } else {
-                    toast({ variant: "destructive", title: "Payment verification failed.", description: result.error });
+                    toast({ variant: "destructive", title: "Verification failed", description: result.error });
                     setIsVerifying(false);
                 }
             } catch (e: any) {
@@ -71,12 +76,8 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
             }
           }}
           onError={(err) => {
-            console.error("PayPal Button Error:", err);
-            toast({
-              variant: 'destructive',
-              title: 'PayPal Error',
-              description: 'An error occurred while processing the payment with PayPal.',
-            });
+            console.error("ERRO NO BOTÃO DO PAYPAL:", err);
+            toast({ variant: 'destructive', title: "PayPal Button Error", description: "Check console for details."})
           }}
         />
       </PayPalScriptProvider>
