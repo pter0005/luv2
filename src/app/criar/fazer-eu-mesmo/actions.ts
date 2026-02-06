@@ -436,7 +436,7 @@ export async function createPaypalOrder(intentId: string, plan: 'basico' | 'avan
         purchase_units: [{
           amount: { currency_code: "USD", value: price },
           custom_id: intentId, // Vínculo com Firestore
-          description: `MyCupid - Plano ${plan}`
+          description: `MyCupid - Plan ${plan}`
         }],
       }),
     });
@@ -453,4 +453,43 @@ export async function createPaypalOrder(intentId: string, plan: 'basico' | 'avan
     console.error("PayPal Order Creation Action Error:", error);
     throw new Error("Error creating order with PayPal");
   }
+}
+
+export async function verifyPaypalPayment(orderId: string, intentId: string) {
+    try {
+        const accessToken = await getPayPalAccessToken();
+
+        const captureRes = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!captureRes.ok) {
+            const errorBody = await captureRes.json();
+            console.error("PayPal Capture Error:", JSON.stringify(errorBody, null, 2));
+            return { success: false, pageId: null, error: `PayPal capture failed: ${errorBody.details?.[0]?.description || 'Unknown error'}` };
+        }
+
+        const captureData = await captureRes.json();
+        
+        if (captureData.status === 'COMPLETED') {
+            const transactionId = captureData.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+            const result = await finalizeLovePage(intentId, transactionId);
+            
+            if (result.success && result.pageId) {
+                return { success: true, pageId: result.pageId };
+            } else {
+                return { success: false, pageId: null, error: result.error };
+            }
+        }
+        
+        return { success: false, pageId: null, error: 'Payment not completed.' };
+
+    } catch(e: any) {
+        console.error("Error verifying PayPal payment:", e);
+        return { success: false, pageId: null, error: e.message };
+    }
 }
