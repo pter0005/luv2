@@ -1273,7 +1273,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            // Detecção inteligente: Se estiver em .br ou se o idioma do navegador for PT, assume PIX
+            // Detecção robusta para VPN: Se o domínio não for .br e o idioma não for PT, vai pro modo Global
             const isPT = navigator.language.startsWith('pt');
             setIsBrazilDomain(hostname.endsWith('.com.br') || (hostname.includes('localhost') && isPT));
         }
@@ -1312,7 +1312,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }, 3000); // Checa a cada 3 segundos
     }, [handlePaymentSuccess]);
 
-    // Start polling when pixData is available
     useEffect(() => {
         if (pixData?.paymentId && intentId) {
             startPolling(pixData.paymentId, intentId);
@@ -1444,94 +1443,97 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
 
+    // --- VIEW INTERNACIONAL (STRIPE & PAYPAL) ---
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="text-center space-y-2">
                     <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title_en')}</h3>
-                    <p className="text-sm text-zinc-400">Choose your preferred secure payment method.</p>
+                    <p className="text-sm text-zinc-400">Complete your order to generate your unique link.</p>
                 </div>
 
-                {/* Card do Plano Selecionado */}
+                {/* Card de Resumo do Preço */}
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
                     <div className="absolute top-0 right-0 p-2">
-                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">Selected: {plan}</span>
+                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
+                            {plan === 'avancado' ? 'Advanced Plan' : 'Basic Plan'}
+                        </span>
                     </div>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total to pay</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total Amount</p>
                     <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
-                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1">
-                        <Clock size={12} /> ONE-TIME PAYMENT • IMMEDIATE ACCESS
+                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
+                        <Clock size={12} /> One-time payment • Lifetime access
                     </p>
                 </div>
 
-                {/* MÉTODO 1: STRIPE (CARTÃO) */}
+                {/* MÉTODO 1: STRIPE (ESTILO PREMIUM) */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
-                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Secure Credit Card</span>
-                        <div className="flex gap-1 opacity-60">
-                            <div className="w-7 h-4 bg-zinc-800 rounded-sm border border-zinc-700 flex items-center justify-center text-[8px] font-bold">VISA</div>
-                            <div className="w-7 h-4 bg-zinc-800 rounded-sm border border-zinc-700 flex items-center justify-center text-[8px] font-bold">MC</div>
-                            <div className="w-7 h-4 bg-zinc-800 rounded-sm border border-zinc-700 flex items-center justify-center text-[8px] font-bold">AMEX</div>
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
+                        <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
                     
                     <Button 
                         onClick={handleStripePayment}
                         disabled={isProcessing}
-                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95 group"
+                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group"
                     >
                         {isProcessing ? (
                             <Loader2 className="animate-spin" />
                         ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center gap-2">
                                 <CreditCard size={20} />
-                                <span>Pay with Card</span>
+                                <span>{t('wizard.payment.card_button')}</span>
                                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         )}
                     </Button>
-                    <p className="text-[10px] text-center text-zinc-500 flex items-center justify-center gap-1 uppercase tracking-widest">
-                        <Lock size={10} className="text-green-500" /> Powered by Stripe • Encrypted
-                    </p>
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
+                        <Lock size={10} className="text-green-500" />
+                        <span>Secure checkout powered by Stripe</span>
+                    </div>
                 </div>
 
                 <div className="relative flex items-center py-2">
                     <div className="flex-grow border-t border-zinc-800"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or use PayPal</span>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
                     <div className="flex-grow border-t border-zinc-800"></div>
                 </div>
 
-                {/* MÉTODO 2: PAYPAL (COM TRATAMENTO DE CARREGAMENTO) */}
-                <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
+                {/* MÉTODO 2: PAYPAL (SOLUÇÃO PARA O BURACO VAZIO) */}
+                <div className="min-h-[90px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
                     {intentId ? (
-                        <div className="w-full animate-in zoom-in-95 duration-300">
+                        <div className="w-full animate-in zoom-in-95 duration-500">
                              <PayPalButton firebaseIntentId={intentId} planType={plan} />
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center gap-3 py-6">
-                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Synchronizing your page data...</p>
+                        <div className="flex flex-col items-center gap-2 py-4">
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Preparing PayPal Express...</p>
                         </div>
                     )}
                 </div>
 
                 {error && (
-                    <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs text-center font-medium">
+                    <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs text-center">
                         {error.message}
                     </div>
                 )}
 
-                <p className="text-[9px] text-center text-zinc-600 leading-relaxed">
-                    By clicking pay, you agree to our Terms of Service.<br/> 
-                    The link and QR Code will be generated immediately after confirmation.
+                <p className="text-[9px] text-center text-zinc-600 leading-relaxed max-w-[280px] mx-auto">
+                    Transactions are encrypted and secure. <br/> 
+                    Digital content is delivered immediately after payment.
                 </p>
             </div>
         );
     }
 
-    // --- VISÃO BRASIL (PIX) ---
+    // --- VIEW BRASIL (PIX) ---
     return (
-         <div className="space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-6 text-center animate-in fade-in duration-700">
             <div className="space-y-2">
                  <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title')}</h3>
                  <p className="text-sm text-zinc-400">{t('wizard.payment.description')}</p>
@@ -1543,7 +1545,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                  </div>
                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total')}</p>
                  <h2 className="text-5xl font-black text-white mb-1">R$ {priceBRL.toFixed(2).replace('.', ',')}</h2>
-                 <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1">
+                 <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
                      <Clock size={12} /> {t('home.plans.payment')} • {t('wizard.payment.immediate_access')}
                  </p>
             </div>
@@ -1596,29 +1598,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             )}
             
             {isAdmin && intentId && (
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
-                     <Button 
-                        type="button" 
-                        size="lg" 
-                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
-                        disabled={isProcessing}
-                        onClick={handleAdminFinalize}
-                    >
-                        {isProcessing ? <Loader2 className="animate-spin" /> : t('wizard.payment.admin.cta')}
-                    </Button>
-                </div>
+                <Button onClick={handleAdminFinalize} variant="outline" className="mt-4 border-yellow-500 text-yellow-500">
+                    Finalizar como Admin
+                </Button>
             )}
-
-            {error && (
-                <Alert variant="destructive" className="mt-4">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>{error.message}</AlertTitle>
-                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
-                </Alert>
-            )}
-            <p className="text-xs text-muted-foreground mt-4">
-                {t('wizard.payment.secure')}
-            </p>
         </div>
     );
 };
@@ -1979,3 +1962,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
