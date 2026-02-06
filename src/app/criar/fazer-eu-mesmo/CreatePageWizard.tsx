@@ -62,7 +62,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
-import PaypalButton from "@/components/paypal/PaypalButton";
+import PayPalButton from "@/components/PayPalButton";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -1564,6 +1564,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                        {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />} 
                        {t('wizard.payment.card_button')}
                     </Button>
+                     <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1.5">
+                        <Lock size={12} /> {t('wizard.payment.secure_stripe')}
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -1575,7 +1578,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 {/* Opção PayPal */}
                 <div className="p-4 border rounded-xl shadow-sm">
                      <h4 className="text-sm font-medium mb-4">PayPal / Other Cards</h4>
-                    {intentId && <PaypalButton intentId={intentId} plan={plan} />}
+                    {intentId && <PayPalButton firebaseIntentId={intentId} planType={plan} />}
                 </div>
 
                  {error && (
