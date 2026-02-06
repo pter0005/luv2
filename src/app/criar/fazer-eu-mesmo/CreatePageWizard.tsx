@@ -1330,7 +1330,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 handlePaymentSuccess(result.pageId);
             } else if (result.status === 'error') {
                 clearInterval(pollingIntervalRef.current!);
-                setError({ message: result.error });
+                setError({ message: result.error, details: result.details });
             }
         }, 3000);
     }, [handlePaymentSuccess]);
@@ -1386,8 +1386,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         paymentId: paymentResult.paymentId
                     });
                 }
-            } catch (err) {
-                setError({ message: "Erro ao conectar com o serviço de pagamento." });
+            } catch (err: any) {
+                setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
             }
         });
     };
@@ -1405,7 +1405,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
               const saveResult = await createOrUpdatePaymentIntent(fullData);
   
               if (saveResult.error || !saveResult.intentId) {
-                  setError({ message: saveResult.error || "Could not save draft before payment." });
+                  setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
                   return;
               }
   
@@ -1416,12 +1416,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
               const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
 
               if (sessionResult.error || !sessionResult.url) {
-                  setError({ message: sessionResult.error || "Could not create Stripe checkout session." });
+                  setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
               } else {
                   window.location.href = sessionResult.url;
               }
-          } catch (err) {
-              setError({ message: "Error connecting to the payment service." });
+          } catch (err: any) {
+              setError({ message: "Error connecting to the payment service.", details: err });
           }
       });
     };
@@ -1436,12 +1436,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             try {
                 const result = await adminFinalizePage(intentId, user.uid);
                 if (result.error || !result.pageId) {
-                    setError({ message: result.error || "Falha ao finalizar como admin." });
+                    setError({ message: result.error || "Falha ao finalizar como admin.", details: result.details });
                 } else {
                     handlePaymentSuccess(result.pageId);
                 }
-            } catch (e) {
-                setError({ message: "Erro de servidor ao finalizar como admin." });
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar como admin.", details: e });
             }
         });
     }
@@ -1456,7 +1456,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             } else {
                 toast({ variant: 'default', title: t('toast.payment.pending'), description: t('toast.payment.pending.description') });
             }
-        } catch (e) {
+        } catch (e: any) {
             toast({ variant: 'destructive', title: t('toast.payment.verify.error'), description: t('toast.payment.verify.error.description') });
         } finally {
             setIsVerifying(false);
@@ -1464,6 +1464,22 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     };
 
     if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+
+    if (error) {
+        return (
+            <div className="p-4 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-xs text-left font-mono my-6">
+                <p className="font-sans font-bold text-red-200 text-sm mb-2">Payment Error Details</p>
+                <p className="font-sans text-sm mb-4 break-words">{error.message}</p>
+                <div className="bg-black/40 p-3 rounded-md overflow-x-auto">
+                    <pre className="whitespace-pre-wrap break-all text-red-400/90 text-[10px]">
+                        <code>
+                            CMD_LOG: {JSON.stringify(error.details || { info: "No additional details provided." }, null, 2)}
+                        </code>
+                    </pre>
+                </div>
+            </div>
+        )
+    }
 
     if (!isBrazilDomain) {
         return (
@@ -1474,6 +1490,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 </div>
 
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+                    <div className="absolute top-0 right-0 p-2">
+                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
+                            {plan === 'avancado' ? 'Advanced Plan' : 'Basic Plan'}
+                        </span>
+                    </div>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total to Pay</p>
                     <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
@@ -1695,11 +1716,20 @@ const WizardInternal = () => {
             toast({
                 variant: 'destructive',
                 title: "Erro ao Salvar Rascunho",
-                description: result.error, // Display the detailed server error
-                duration: 9000,
+                description: (
+                    <div>
+                        <p>{result.error}</p>
+                        <div className="mt-2 p-2 bg-black/30 rounded-md">
+                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                CMD_LOG: {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                ),
+                duration: 20000,
             });
             const errorString = (result.error || '').toLowerCase();
-            if (errorString.includes("collection") || errorString.includes("500")) {
+            if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
                 setValue('intentId', undefined, { shouldDirty: false });
             }
         } else if (result.intentId && !dataToSave.intentId) {

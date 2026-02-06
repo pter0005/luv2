@@ -64,9 +64,12 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         }
     } catch (error: any) {
         console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
-        // Retorna a mensagem de erro detalhada para ser exibida no Toast
         return { 
             error: `Falha no servidor ao salvar rascunho: ${error.message}`,
+            details: {
+                code: error.code || 'UNKNOWN_SERVER_ERROR',
+                stack: process.env.NODE_ENV === 'development' ? error.stack : 'Stack trace available in development mode.',
+            }
         };
     }
 }
@@ -110,7 +113,10 @@ export async function processPixPayment(intentId: string, price: number) {
         throw new Error('Erro ao gerar PIX junto ao Mercado Pago.');
     } catch (error: any) { 
         console.error("Erro no Servidor (processPixPayment):", error);
-        return { error: `Erro ao processar pagamento: ${error.message}` }; 
+        return { 
+            error: `Erro ao processar pagamento: ${error.message}`,
+            details: { code: error.code || 'MERCADO_PAGO_ERROR', response: error.response?.data }
+        }; 
     }
 }
 
@@ -141,8 +147,7 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
                 quantity: 1,
             }],
             mode: 'payment',
-            // AQUI ESTÁ A MÁGICA: USA O DOMÍNIO QUE O CLIENTE ESTÁ ACESSANDO
-            success_url: `${domain}/pagamento/sucesso`,
+            success_url: `${domain}/criando-pagina?intentId={CHECKOUT_SESSION_ID}`,
             cancel_url: `${domain}/pagamento/cancelado`,
             client_reference_id: intentId,
         });
@@ -150,7 +155,10 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
         return { url: session.url };
 
     } catch (error: any) {
-        return { error: `Stripe Error: ${error.message}` };
+        return { 
+            error: `Stripe Error: ${error.message}`,
+            details: { code: error.code || 'STRIPE_ERROR' }
+        };
     }
 }
 
@@ -317,7 +325,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         return { success: true, pageId: newPageId };
     } catch (error: any) { 
         console.error("Erro no Servidor (finalizeLovePage):", error);
-        return { error: `Erro ao finalizar a página: ${error.message}` };
+        return { 
+            error: `Erro ao finalizar a página: ${error.message}`,
+            details: { code: error.code || 'FINALIZE_ERROR' }
+        };
     }
 }
 
@@ -351,7 +362,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
             const result = await finalizeLovePage(intentId, paymentId);
             if (result.error) {
                 console.error(`Erro na finalização pós-pagamento: ${result.error}`);
-                return { status: 'error', error: result.error }; // Retorna o erro específico da finalização
+                return { status: 'error', error: result.error, details: result.details }; // Retorna o erro específico da finalização
             }
             return { status: 'approved', pageId: result.pageId };
         }
@@ -359,7 +370,11 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         return { status: paymentInfo.status };
     } catch (error: any) {
         console.error("Erro no Servidor (verifyPaymentWithMercadoPago):", error);
-        return { status: 'error', error: `Falha na verificação com Mercado Pago: ${error.message}` };
+        return { 
+            status: 'error', 
+            error: `Falha na verificação com Mercado Pago: ${error.message}`,
+            details: { code: error.code || 'MERCADO_PAGO_VERIFY_ERROR' }
+        };
     }
 }
 
@@ -433,9 +448,12 @@ export async function createPayPalOrder(planType: string) {
       const order = await response.json();
       console.log("Created PayPal Order ID:", order.id);
       return order.id;
-  } catch(error) {
+  } catch(error: any) {
     console.error("[SERVER] createPayPalOrder error:", error);
-    throw error;
+    throw {
+        message: error.message,
+        details: { code: 'PAYPAL_CREATE_ORDER_FAILED' }
+    };
   }
 }
 
@@ -461,7 +479,7 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
       
       if (result.error) {
           console.error("Error in finalizeLovePage after PayPal capture:", result.error);
-          return { success: false, error: "Internal error finalizing the page." };
+          return { success: false, error: "Internal error finalizing the page.", details: result.details };
       }
       
       console.log("finalizeLovePage successful for intent:", intentId);
@@ -469,10 +487,18 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
     }
     
     console.error("PayPal payment not completed. Status:", data.status, data);
-    return { success: false, error: `Payment not completed. Status: ${data.status}` };
+    return { 
+        success: false, 
+        error: `Payment not completed. Status: ${data.status}`,
+        details: data 
+    };
 
   } catch (error: any) {
     console.error("[SERVER] Error capturing PayPal order:", error);
-    return { success: false, error: "Server error capturing payment." };
+    return { 
+        success: false, 
+        error: "Server error capturing payment.",
+        details: { code: 'PAYPAL_CAPTURE_ERROR', message: error.message }
+    };
   }
 }
