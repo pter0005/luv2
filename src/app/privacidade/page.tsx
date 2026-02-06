@@ -30,7 +30,7 @@ export default function PrivacidadePage() {
             {/* Introdução */}
             <section className="space-y-4">
             <p className="text-gray-300 leading-relaxed">
-                O <strong>MyCupid</strong> (doravante "Plataforma"), desenvolvido e operado com foco na criação de páginas digitais personalizadas, está comprometido com a proteção da sua privacidade. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                O <strong>MyCupid</strong> (doravante "Plataforma"), operado por G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 64.966.299/0001-16, está comprometido com a proteção da sua privacidade. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
             </p>
             </section>
 

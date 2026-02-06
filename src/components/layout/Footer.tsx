@@ -83,12 +83,16 @@ export default function Footer() {
 
         {/* Rodapé Inferior: Copyright */}
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-          <p>
-            {t('footer.copyright', { year: new Date().getFullYear() })}
-          </p>
-          <p className="flex items-center gap-1">
-            {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
-          </p>
+            <div className="flex flex-col md:flex-row items-center gap-x-4 gap-y-2 text-center md:text-left">
+                <p>
+                    {t('footer.copyright', { year: new Date().getFullYear() })}
+                </p>
+                <span className="hidden md:inline">|</span>
+                <p>CNPJ: 64.966.299/0001-16</p>
+            </div>
+            <p className="flex items-center gap-1">
+                {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
+            </p>
         </div>
       </div>
     </footer>
