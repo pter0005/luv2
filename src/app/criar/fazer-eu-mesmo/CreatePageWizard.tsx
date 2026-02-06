@@ -1269,6 +1269,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
+    const router = useRouter();
+
 
     // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
     useEffect(() => {
@@ -1515,7 +1517,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         );
     }
 
-    return ( 
+    return (
         <div className="space-y-6 text-center animate-in fade-in duration-700">
             <div className="space-y-2">
                  <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title')}</h3>
@@ -1597,7 +1599,7 @@ const WizardInternal = () => {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
@@ -1623,7 +1625,8 @@ const WizardInternal = () => {
     mode: 'onChange',
     defaultValues: { 
         plan: plan,
-        title: "Seu Título Aqui",
+        title: locale === 'pt' ? "Seu Título Aqui" : "Your Title Here",
+        message: "",
         messageFontSize: "text-base",
         backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
         galleryStyle: "Cube",
@@ -1824,11 +1827,12 @@ const WizardInternal = () => {
             <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
-                onShowTimeline={() => setShowTimelinePreview(true)}
+                onShowTimeline={() => setShowTimeline(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
                 setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                locale={locale}
             />
         </div>
 
@@ -1862,11 +1866,12 @@ const WizardInternal = () => {
                 <PreviewContent 
                     formData={formData} 
                     isClient={isClient}
-                    onShowTimeline={() => setShowTimelinePreview(true)}
+                    onShowTimeline={() => setShowTimeline(true)}
                     hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
                     setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                    locale={locale}
                 />
             </div>
           </div>
