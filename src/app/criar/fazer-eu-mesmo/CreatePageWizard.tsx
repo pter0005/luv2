@@ -1270,10 +1270,21 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
 
+    // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
+    useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.intentId) setValue('intentId', result.intentId);
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue]);
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            // Detecção robusta para VPN: Se o domínio não for .br e o idioma não for PT, vai pro modo Global
             const isPT = navigator.language.startsWith('pt');
             setIsBrazilDomain(hostname.endsWith('.com.br') || (hostname.includes('localhost') && isPT));
         }
@@ -1293,11 +1304,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
     }, [setPageId, toast, t]);
-    
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
-    
+
         pollingIntervalRef.current = setInterval(async () => {
             const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
             console.log("Status do pagamento:", result.status);
@@ -1309,7 +1319,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 clearInterval(pollingIntervalRef.current!);
                 setError({ message: result.error });
             }
-        }, 3000); // Checa a cada 3 segundos
+        }, 3000);
     }, [handlePaymentSuccess]);
 
     useEffect(() => {
@@ -1395,7 +1405,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
               if (sessionResult.error || !sessionResult.url) {
                   setError({ message: sessionResult.error || "Could not create Stripe checkout session." });
               } else {
-                  // Redirect to Stripe checkout
                   window.location.href = sessionResult.url;
               }
           } catch (err) {
@@ -1403,7 +1412,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
           }
       });
     };
-
+    
     const handleAdminFinalize = async () => {
         if (!user || !intentId) {
             toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' });
@@ -1443,96 +1452,59 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
 
-    // --- VIEW INTERNACIONAL (STRIPE & PAYPAL) ---
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="text-center space-y-2">
                     <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title_en')}</h3>
-                    <p className="text-sm text-zinc-400">Complete your order to generate your unique link.</p>
+                    <p className="text-sm text-zinc-400">Secure checkout for your digital gift.</p>
                 </div>
 
-                {/* Card de Resumo do Preço */}
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
-                    <div className="absolute top-0 right-0 p-2">
-                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
-                            {plan === 'avancado' ? 'Advanced Plan' : 'Basic Plan'}
-                        </span>
-                    </div>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total Amount</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total to Pay</p>
                     <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
-                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
-                        <Clock size={12} /> One-time payment • Lifetime access
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                        One-time payment • Lifetime access
                     </p>
                 </div>
 
-                {/* MÉTODO 1: STRIPE (ESTILO PREMIUM) */}
+                {/* STRIPE */}
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
-                        <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
-                            <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
-                            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
-                        </div>
-                    </div>
-                    
                     <Button 
                         onClick={handleStripePayment}
                         disabled={isProcessing}
-                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group"
+                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95"
                     >
-                        {isProcessing ? (
-                            <Loader2 className="animate-spin" />
-                        ) : (
-                            <div className="flex items-center justify-center gap-2">
+                        {isProcessing ? <Loader2 className="animate-spin" /> : (
+                            <div className="flex items-center gap-2">
                                 <CreditCard size={20} />
                                 <span>{t('wizard.payment.card_button')}</span>
-                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         )}
                     </Button>
-                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
-                        <Lock size={10} className="text-green-500" />
-                        <span>Secure checkout powered by Stripe</span>
-                    </div>
+                    <p className="text-[10px] text-center text-zinc-500 flex items-center justify-center gap-1 uppercase">
+                        <Lock size={10} className="text-green-500" /> {t('wizard.payment.secure_stripe')}
+                    </p>
                 </div>
 
-                <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-zinc-800"></div>
-                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
-                    <div className="flex-grow border-t border-zinc-800"></div>
-                </div>
-
-                {/* MÉTODO 2: PAYPAL (SOLUÇÃO PARA O BURACO VAZIO) */}
-                <div className="min-h-[90px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
+                {/* PAYPAL */}
+                <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
                     {intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
                              <PayPalButton firebaseIntentId={intentId} planType={plan} />
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center gap-2 py-4">
-                            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Preparing PayPal Express...</p>
+                        <div className="flex flex-col items-center gap-3 py-6">
+                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Sincronizing with PayPal...</p>
                         </div>
                     )}
                 </div>
-
-                {error && (
-                    <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs text-center">
-                        {error.message}
-                    </div>
-                )}
-
-                <p className="text-[9px] text-center text-zinc-600 leading-relaxed max-w-[280px] mx-auto">
-                    Transactions are encrypted and secure. <br/> 
-                    Digital content is delivered immediately after payment.
-                </p>
             </div>
         );
     }
 
-    // --- VIEW BRASIL (PIX) ---
-    return (
+    return ( 
         <div className="space-y-6 text-center animate-in fade-in duration-700">
             <div className="space-y-2">
                  <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title')}</h3>
@@ -1962,5 +1934,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
