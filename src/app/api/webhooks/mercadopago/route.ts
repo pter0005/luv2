@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
-import "dotenv/config";
 import crypto from 'crypto';
 
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
