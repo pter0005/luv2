@@ -6,7 +6,6 @@ import type { PageData } from './CreatePageWizard';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
-import "dotenv/config";
 import Stripe from 'stripe';
 
 
@@ -123,9 +122,7 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
         return { error: 'Stripe secret key not configured on the server.' };
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-        apiVersion: '2024-06-20',
-    });
+    const stripe = new Stripe(STRIPE_SECRET_KEY);
 
     const prices = {
         basico: {
@@ -304,7 +301,7 @@ export async function createPayPalOrder(planType: string) {
     console.log("Creating PayPal order for plan:", planType);
     try {
         const accessToken = await generatePayPalToken();
-        const value = planType === 'avancado' ? "19.90" : "14.90";
+        const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders`, {
             method: "POST",

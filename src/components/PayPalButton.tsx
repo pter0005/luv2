@@ -1,3 +1,4 @@
+
 'use client'
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { createPayPalOrder, capturePayPalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
