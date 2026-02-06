@@ -31,3 +31,4 @@ export function getAdminApp() {
 export const getAdminFirestore = () => getAdminFirestoreInstance(getAdminApp());
 export const getAdminStorage = () => getAdminStorageInstance(getAdminApp()).bucket();
 export { FieldValue };
+

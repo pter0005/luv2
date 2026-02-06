@@ -1,4 +1,3 @@
-
 "use client";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { capturePaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
@@ -39,7 +38,7 @@ export default function PaypalButton({ intentId, plan }: { intentId: string, pla
             onApprove={async (data, actions) => {
               setIsVerifying(true); // Começa o loading SÓ DEPOIS que o PayPal aprova
               const result = await capturePaypalOrder(data.orderID, intentId);
-              if (result.success && result.pageId) {
+              if (result.success) {
                   router.push(`/p/${result.pageId}`);
               } else {
                   alert("Error: " + result.error);
