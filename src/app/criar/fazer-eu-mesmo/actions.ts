@@ -281,6 +281,102 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
 }
 
 
+// --- Lógica PayPal ---
+async function generatePayPalToken() {
+    try {
+        const auth = Buffer.from(`${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
+        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v1/oauth2/token`, {
+            method: "POST",
+            body: "grant_type=client_credentials",
+            headers: {
+                Authorization: `Basic ${auth}`,
+            },
+        });
+        const data = await response.json();
+        return data.access_token;
+    } catch (error) {
+        console.error("Failed to generate PayPal access token:", error);
+        throw new Error("Could not generate PayPal access token.");
+    }
+}
+
+export async function createPayPalOrder(planType: string) {
+    console.log("Creating PayPal order for plan:", planType);
+    try {
+        const accessToken = await generatePayPalToken();
+        const value = planType === 'avancado' ? "19.90" : "14.90";
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+                intent: "CAPTURE",
+                purchase_units: [
+                    {
+                        amount: {
+                            currency_code: "USD",
+                            value: value,
+                        },
+                        description: `MyCupid - ${planType} Plan`,
+                    },
+                ],
+            }),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("PayPal Create Order API Error:", errorBody);
+            throw new Error(`Failed to create PayPal order. Status: ${response.status}`);
+        }
+
+        const order = await response.json();
+        console.log("PayPal order created successfully:", order.id);
+        return order.id;
+    } catch (error) {
+        console.error("[Server Action] Error creating PayPal order:", error);
+        throw error;
+    }
+}
+
+export async function capturePayPalOrder(orderId: string, intentId: string) {
+    console.log(`Capturing PayPal order ${orderId} for intent ${intentId}`);
+    try {
+        const accessToken = await generatePayPalToken();
+        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders/${orderId}/capture`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("PayPal Capture Order API Error:", errorBody);
+            return { success: false, error: "Failed to capture payment from PayPal." };
+        }
+
+        const captureData = await response.json();
+        console.log("PayPal capture successful:", captureData);
+
+        if (captureData.status === 'COMPLETED') {
+            console.log("Payment completed. Finalizing love page...");
+            const finalizationResult = await finalizeLovePage(intentId, orderId);
+            console.log("Finalization result:", finalizationResult);
+            return finalizationResult;
+        } else {
+            return { success: false, error: "Payment not completed." };
+        }
+    } catch (error) {
+        console.error("[Server Action] Error capturing PayPal order:", error);
+        return { success: false, error: "An unexpected server error occurred during payment capture." };
+    }
+}
+
+
 // ----------------------------------------------------------------
 // LÓGICA PRINCIPAL DE FINALIZAÇÃO (ATUALIZADA)
 // ----------------------------------------------------------------

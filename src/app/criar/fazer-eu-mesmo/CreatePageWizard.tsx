@@ -62,6 +62,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
+import PayPalButton from "@/components/PayPalButton";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -147,7 +148,7 @@ const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode
     const { watch } = useFormContext<PageData>();
     const { t } = useTranslation();
     const plan = watch('plan');
-    const isLocked = requiredPlan && plan !== plan;
+    const isLocked = requiredPlan && plan !== requiredPlan;
 
     if (isLocked) {
         return (
@@ -1274,6 +1275,23 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
 
     useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.intentId) {
+                    setValue('intentId', result.intentId, { shouldDirty: false });
+                    console.log("Forced intent creation, ID:", result.intentId);
+                } else if (result.error) {
+                    console.error("Failed to force create intent:", result.error, result.details);
+                    setError({message: result.error, details: result.details});
+                }
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue]);
+
+    useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
             setIsBrazilDomain(hostname.endsWith('.com.br') || hostname.includes('localhost'));
@@ -1451,85 +1469,73 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         );
     }
     
-    if (isBrazilDomain) {
+    if (!isBrazilDomain) {
         return (
-            <div className="space-y-6 text-center">
-                <div className="mb-8">
-                    <h3 className="text-2xl font-bold font-headline mb-2">
-                        {t('wizard.payment.title')}
-                    </h3>
-                    <p className="text-muted-foreground">
-                        {t('wizard.payment.description')}
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                 <div className="text-center space-y-2">
+                    <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title_en')}</h3>
+                    <p className="text-sm text-zinc-400">Complete your order to generate your unique link.</p>
+                </div>
+                <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+                    <div className="absolute top-0 right-0 p-2">
+                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
+                             {plan === 'avancado' ? 'Advanced Plan' : 'Basic Plan'}
+                        </span>
+                    </div>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total_en')}</p>
+                    <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
+                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
+                        <Clock size={12} /> {t('wizard.payment.immediate_access')}
                     </p>
                 </div>
 
-                <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
-                    <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
-                    <span className="block text-4xl font-black text-white">R$ {priceBRL.toFixed(2).replace('.', ',')}</span>
-                    <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
-                </div>
-
-                {!pixData ? (
+                <div className="space-y-3">
+                     <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
+                        <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
+                        </div>
+                    </div>
                     <Button 
-                        onClick={handleOneClickPix} 
+                        onClick={handleStripePayment}
                         disabled={isProcessing}
-                        className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group"
                     >
                         {isProcessing ? (
-                            <>
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
-                            </>
+                            <Loader2 className="animate-spin" />
                         ) : (
-                            <>
-                                <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')}
-                            </>
+                            <div className="flex items-center justify-center gap-2">
+                                <CreditCard size={20} />
+                                <span>{t('wizard.payment.card_button')}</span>
+                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
                         )}
                     </Button>
-                ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
-                       <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
-                        <p className="text-muted-foreground max-w-sm">{t('wizard.payment.pix.description')}</p>
-                        <div className="p-4 bg-white rounded-lg border">
-                            {pixData.qrCodeBase64 ? (
-                                <Image 
-                                    src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                                    alt="PIX QR Code"
-                                    width={256}
-                                    height={256}
-                                    unoptimized
-                                />
-                            ) : (
-                                <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
-                                    <Loader2 className="animate-spin mb-2" />
-                                    <p className="text-xs">{t('wizard.payment.pix.generating_qr')}</p>
-                                </div>
-                            )}
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
+                        <Lock size={10} className="text-green-500" />
+                        <span>{t('wizard.payment.secure_stripe')}</span>
+                    </div>
+                </div>
+
+                <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                </div>
+
+                <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
+                    {intentId ? (
+                        <div className="w-full animate-in zoom-in-95 duration-500">
+                             <PayPalButton firebaseIntentId={intentId} planType={plan} />
                         </div>
-                        <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
-                            <Copy className="mr-2 h-4 w-4" />
-                            {t('wizard.payment.pix.copy')}
-                        </Button>
-                        <p className="text-xs text-muted-foreground">{t('wizard.payment.pix.waiting')}</p>
-                        <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
-                                {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                                {t('wizard.payment.pix.verify')}
-                        </Button>
-                    </div>
-                )}
-                
-                {isAdmin && intentId && (
-                    <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
-                         <Button 
-                            type="button" 
-                            size="lg" 
-                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
-                            disabled={isProcessing}
-                            onClick={handleAdminFinalize}
-                        >
-                            {isProcessing ? <Loader2 className="animate-spin" /> : t('wizard.payment.admin.cta')}
-                        </Button>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex flex-col items-center gap-3 py-6">
+                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Synchronizing with PayPal...</p>
+                        </div>
+                    )}
+                </div>
 
                 {error && (
                     <Alert variant="destructive" className="mt-4">
@@ -1538,49 +1544,102 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                         {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                     </Alert>
                 )}
-                <p className="text-xs text-muted-foreground mt-4">
-                    {t('wizard.payment.secure')}
-                </p>
-            </div>
-        );
-    } else { // Not a Brazil domain
-        return (
-            <div className="space-y-6 text-center">
-                <div className="mb-8">
-                    <h3 className="text-2xl font-bold font-headline mb-2">
-                        {t('wizard.payment.title_en')}
-                    </h3>
-                    <p className="text-muted-foreground">
-                        {t('wizard.payment.description_en')}
-                    </p>
-                </div>
-
-                <div className="p-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20 rounded-2xl mb-6">
-                    <span className="block text-sm text-blue-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total_en')}</span>
-                    <span className="block text-4xl font-black text-white">$ {priceUSD.toFixed(2)}</span>
-                    <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
-                </div>
-
-                <Button 
-                    onClick={handleStripePayment}
-                    disabled={isProcessing}
-                    className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 transition-all scale-100 hover:scale-[1.02]"
-                >
-                   {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />} 
-                   {t('wizard.payment.card_button')}
-                </Button>
-                 <p className="text-xs text-muted-foreground mt-4">
-                    {t('wizard.payment.secure_stripe')}
-                </p>
-                 {error && (
-                    <Alert variant="destructive" className="mt-4">
-                        <Terminal className="h-4 w-4" />
-                        <AlertTitle>{error.message}</AlertTitle>
-                    </Alert>
-                )}
             </div>
         );
     }
+    
+    // --- VIEW BRASIL (PIX) ---
+    return (
+        <div className="space-y-6 text-center">
+            <div className="mb-8">
+                <h3 className="text-2xl font-bold font-headline mb-2">
+                    {t('wizard.payment.title')}
+                </h3>
+                <p className="text-muted-foreground">
+                    {t('wizard.payment.description')}
+                </p>
+            </div>
+
+            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
+                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
+                <span className="block text-4xl font-black text-white">R$ {priceBRL.toFixed(2).replace('.', ',')}</span>
+                <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
+            </div>
+
+            {!pixData ? (
+                <Button 
+                    onClick={handleOneClickPix} 
+                    disabled={isProcessing}
+                    className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                >
+                    {isProcessing ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
+                        </>
+                    ) : (
+                        <>
+                            <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')}
+                        </>
+                    )}
+                </Button>
+            ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
+                   <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
+                    <p className="text-muted-foreground max-w-sm">{t('wizard.payment.pix.description')}</p>
+                    <div className="p-4 bg-white rounded-lg border">
+                        {pixData.qrCodeBase64 ? (
+                            <Image 
+                                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                                alt="PIX QR Code"
+                                width={256}
+                                height={256}
+                                unoptimized
+                            />
+                        ) : (
+                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                <Loader2 className="animate-spin mb-2" />
+                                <p className="text-xs">{t('wizard.payment.pix.generating_qr')}</p>
+                            </div>
+                        )}
+                    </div>
+                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
+                        <Copy className="mr-2 h-4 w-4" />
+                        {t('wizard.payment.pix.copy')}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">{t('wizard.payment.pix.waiting')}</p>
+                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                            {t('wizard.payment.pix.verify')}
+                    </Button>
+                </div>
+            )}
+            
+            {isAdmin && intentId && (
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
+                     <Button 
+                        type="button" 
+                        size="lg" 
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
+                        disabled={isProcessing}
+                        onClick={handleAdminFinalize}
+                    >
+                        {isProcessing ? <Loader2 className="animate-spin" /> : t('wizard.payment.admin.cta')}
+                    </Button>
+                </div>
+            )}
+
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                </Alert>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
+                {t('wizard.payment.secure')}
+            </p>
+        </div>
+    );
 };
 
 // Wizard Internal Logic
