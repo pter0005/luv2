@@ -391,53 +391,35 @@ export { suggestContent };
 
 // --- PAYPAL ACTIONS ---
 export async function capturePaypalOrder(orderId: string, intentId: string) {
-    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_SECRET_KEY;
+  // FORÇANDO SANDBOX PORQUE SEU ID É DE SANDBOX
+  const base = "https://api-m.sandbox.paypal.com"; 
+
+  try {
+    const auth = Buffer.from(`${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET_KEY}`).toString("base64");
     
-    // SE VOCÊ ESTÁ NO SANDBOX, A URL TEM QUE SER ESSA:
-    const base = "https://api-m.sandbox.paypal.com"; 
-  
-    try {
-      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-      
-      // 1. Pega o Token
-      const tokenResponse = await fetch(`${base}/v1/oauth2/token`, {
-        method: "POST",
-        body: "grant_type=client_credentials",
-        headers: { Authorization: `Basic ${auth}` },
-        cache: 'no-store'
-      });
-      
-      if (!tokenResponse.ok) {
-          const errText = await tokenResponse.text();
-          console.error("Erro de Autenticação PayPal:", errText);
-          return { success: false, error: "Falha na autenticação com PayPal Sandbox" };
-      }
-  
-      const { access_token } = await tokenResponse.json();
-  
-      // 2. Captura o pagamento
-      const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access_token}`,
-        },
-      });
-  
-      const data = await captureResponse.json();
-  
-      if (data.status === 'COMPLETED') {
-        const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
-        const result = await finalizeLovePage(intentId, transactionId);
-        return { success: true, pageId: result.pageId };
-      }
-      
-      console.error("Status do PayPal não completado:", data);
-      return { success: false, error: 'Pagamento não aprovado no Sandbox.' };
-  
-    } catch (error: any) {
-      console.error("Erro crítico na Action:", error);
-      return { success: false, error: error.message };
+    const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
+      method: "POST",
+      body: "grant_type=client_credentials",
+      headers: { Authorization: `Basic ${auth}` },
+    });
+
+    const { access_token } = await tokenRes.json();
+
+    const captureRes = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${access_token}` },
+    });
+
+    const data = await captureRes.json();
+
+    if (data.status === 'COMPLETED') {
+      // Usa o finalize que você já tem
+      const transactionId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id || orderId;
+      const result = await finalizeLovePage(intentId, transactionId); 
+      return { success: true, pageId: result.pageId };
     }
+    return { success: false, error: "Payment not completed" };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
+}
