@@ -81,18 +81,17 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Rodapé Inferior: Copyright */}
-        <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-            <div className="flex flex-col md:flex-row items-center gap-x-4 gap-y-2 text-center md:text-left">
-                <p>
+        {/* Rodapé Inferior: Copyright & CNPJ */}
+        <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-500 space-y-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2">
+                 <p>
                     {t('footer.copyright', { year: new Date().getFullYear() })}
                 </p>
-                <span className="hidden md:inline">|</span>
-                <p>CNPJ: 64.966.299/0001-16</p>
+                <p className="flex items-center gap-1.5">
+                    {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
+                </p>
             </div>
-            <p className="flex items-center gap-1">
-                {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
-            </p>
+            <p className="text-sm text-gray-400 font-semibold tracking-wider">CNPJ: 64.966.299/0001-16</p>
         </div>
       </div>
     </footer>
