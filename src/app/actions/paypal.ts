@@ -31,10 +31,11 @@ async function generateAccessToken() {
   return data.access_token;
 }
 
-export async function createPayPalOrder(planType: 'basic' | 'advanced') {
+export async function createPayPalOrder(planType: string) {
   try {
       const accessToken = await generateAccessToken();
-      const value = planType === 'advanced' ? "19.99" : "9.99";
+      // Ajuste aqui: Agora ele entende 'avancado' ou 'basico'
+      const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders`, {
         method: "POST",
@@ -58,7 +59,7 @@ export async function createPayPalOrder(planType: 'basic' | 'advanced') {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error("Failed to create PayPal order:", response.status, errorBody);
+        console.error("PayPal Error:", errorBody);
         throw new Error("Failed to create order.");
       }
 
@@ -66,7 +67,7 @@ export async function createPayPalOrder(planType: 'basic' | 'advanced') {
       console.log("Created PayPal Order:", order.id);
       return order.id;
   } catch(error) {
-    console.error("[SERVER] Error creating PayPal order:", error);
+    console.error("[SERVER] PayPal order error:", error);
     throw error;
   }
 }

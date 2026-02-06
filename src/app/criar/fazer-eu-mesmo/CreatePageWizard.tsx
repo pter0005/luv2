@@ -1270,15 +1270,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
 
-    // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
+    // FORÇAR O SALVAMENTO PARA LIBERAR O PAYPAL IMEDIATAMENTE
     useEffect(() => {
         if (user && !intentId) {
-            const forceSave = async () => {
+            const syncData = async () => {
                 const data = getValues();
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
-                if (result.intentId) setValue('intentId', result.intentId);
+                if (result.intentId) {
+                    setValue('intentId', result.intentId);
+                }
             };
-            forceSave();
+            syncData();
         }
     }, [user, intentId, getValues, setValue]);
 
