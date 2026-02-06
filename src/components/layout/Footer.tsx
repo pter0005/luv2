@@ -3,21 +3,10 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useTranslation } from "@/lib/i18n";
 import { Instagram, Mail, MessageSquare, Heart, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export default function Footer() {
   const { t } = useTranslation();
-  const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png'; // Garanta que tem um fallback
-  const [isBrazil, setIsBrazil] = useState(false);
-
-  useEffect(() => {
-    // This runs only on the client, where window is available
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      // Show for .com.br domains or during local development
-      setIsBrazil(hostname.endsWith('.com.br') || hostname.includes('localhost'));
-    }
-  }, []);
+  const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png';
 
   return (
     <footer className="relative border-t border-white/10 bg-transparent pt-16 pb-8 overflow-hidden">
@@ -102,13 +91,6 @@ export default function Footer() {
                     {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
                 </p>
             </div>
-            {isBrazil && (
-              <div className="pt-2 text-gray-400 text-[11px] leading-relaxed">
-                  <p>G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA</p>
-                  <p>CNPJ: 64.966.299/0001-16</p>
-                  <p>Rua Fictícia, 123 - São Paulo, SP, Brasil</p>
-              </div>
-            )}
         </div>
       </div>
     </footer>
