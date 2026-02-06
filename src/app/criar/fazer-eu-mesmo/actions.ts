@@ -63,11 +63,12 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
             return { intentId: intentDoc.id };
         }
     } catch (error: any) {
-        console.error("ERRO NO SERVIDOR:", error.message);
+        console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
         return { 
-            error: 'Falha no servidor ao salvar rascunho.',
+            error: `Falha no servidor ao salvar rascunho: ${error.message}`,
             details: {
-                 log: `Falha ao salvar dados para o usuário ${restOfPageData.userId} com intentId ${intentId || '(novo)'}. Erro: ${error.code} - ${error.message}`
+                code: error.code || 'UNKNOWN_SERVER_ERROR',
+                stack: process.env.NODE_ENV === 'development' ? error.stack : 'Stack trace available in development mode.',
             }
         };
     }
@@ -112,7 +113,10 @@ export async function processPixPayment(intentId: string, price: number) {
         throw new Error('Erro ao gerar PIX junto ao Mercado Pago.');
     } catch (error: any) { 
         console.error("Erro no Servidor (processPixPayment):", error);
-        return { error: `Erro ao processar pagamento: ${error.message}` }; 
+        return { 
+            error: `Erro ao processar pagamento: ${error.message}`,
+            details: { code: error.code || 'MERCADO_PAGO_ERROR', response: error.response?.data }
+        }; 
     }
 }
 
@@ -125,16 +129,8 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     const stripe = new Stripe(STRIPE_SECRET_KEY);
 
     const prices = {
-        basico: {
-            unit_amount: 1490, // $14.90 in cents
-            name: 'Basic Plan',
-            description: 'A beautiful, temporary page to share your love.'
-        },
-        avancado: {
-            unit_amount: 1990, // $19.90 in cents
-            name: 'Advanced Plan',
-            description: 'A permanent page with all features unlocked.'
-        }
+        basico: { unit_amount: 1490, name: 'Basic Plan' },
+        avancado: { unit_amount: 1990, name: 'Advanced Plan' }
     };
     
     const selectedPrice = prices[plan];
@@ -142,34 +138,27 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     try {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: selectedPrice.name,
-                            description: selectedPrice.description,
-                        },
-                        unit_amount: selectedPrice.unit_amount,
-                    },
-                    quantity: 1,
+            line_items: [{
+                price_data: {
+                    currency: 'usd',
+                    product_data: { name: selectedPrice.name },
+                    unit_amount: selectedPrice.unit_amount,
                 },
-            ],
+                quantity: 1,
+            }],
             mode: 'payment',
-            success_url: `${domain}/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${domain}/criando-pagina?intentId={CHECKOUT_SESSION_ID}`,
             cancel_url: `${domain}/pagamento/cancelado`,
-            client_reference_id: intentId, // THIS IS KEY! Link Stripe session to our intentId
+            client_reference_id: intentId,
         });
-
-        if (!session.url) {
-            return { error: "Could not create Stripe session." };
-        }
 
         return { url: session.url };
 
     } catch (error: any) {
-        console.error("Stripe Session Creation Error:", error);
-        return { error: `Stripe Error: ${error.message}` };
+        return { 
+            error: `Stripe Error: ${error.message}`,
+            details: { code: error.code || 'STRIPE_ERROR' }
+        };
     }
 }
 
@@ -298,81 +287,94 @@ async function generatePayPalToken() {
 }
 
 export async function createPayPalOrder(planType: string) {
-    console.log("Creating PayPal order for plan:", planType);
-    try {
-        const accessToken = await generatePayPalToken();
-        const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
+  try {
+      const accessToken = await generatePayPalToken();
+      const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
+      const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
+      const response = await fetch(`${base}/v2/checkout/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: "USD",
+                value: value,
+              },
+              description: `MyCupid - ${planType} Plan`,
             },
-            body: JSON.stringify({
-                intent: "CAPTURE",
-                purchase_units: [
-                    {
-                        amount: {
-                            currency_code: "USD",
-                            value: value,
-                        },
-                        description: `MyCupid - ${planType} Plan`,
-                    },
-                ],
-            }),
-        });
+          ],
+        }),
+      });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error("PayPal Create Order API Error:", errorBody);
-            throw new Error(`Failed to create PayPal order. Status: ${response.status}`);
-        }
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("PayPal Create Order Error:", errorBody);
+        throw new Error("Failed to create PayPal order.");
+      }
 
-        const order = await response.json();
-        console.log("PayPal order created successfully:", order.id);
-        return order.id;
-    } catch (error) {
-        console.error("[Server Action] Error creating PayPal order:", error);
-        throw error;
-    }
+      const order = await response.json();
+      console.log("Created PayPal Order ID:", order.id);
+      return order.id;
+  } catch(error: any) {
+    console.error("[SERVER] createPayPalOrder error:", error);
+    throw {
+        message: error.message,
+        details: { code: 'PAYPAL_CREATE_ORDER_FAILED' }
+    };
+  }
 }
 
 export async function capturePayPalOrder(orderId: string, intentId: string) {
-    console.log(`Capturing PayPal order ${orderId} for intent ${intentId}`);
-    try {
-        const accessToken = await generatePayPalToken();
-        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v2/checkout/orders/${orderId}/capture`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
+  try {
+    const accessToken = await generatePayPalToken();
+    const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error("PayPal Capture Order API Error:", errorBody);
-            return { success: false, error: "Failed to capture payment from PayPal." };
-        }
+    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
-        const captureData = await response.json();
-        console.log("PayPal capture successful:", captureData);
+    const data = await captureResponse.json();
+    console.log("PayPal Capture Response:", data);
 
-        if (captureData.status === 'COMPLETED') {
-            console.log("Payment completed. Finalizing love page...");
-            const finalizationResult = await finalizeLovePage(intentId, orderId);
-            console.log("Finalization result:", finalizationResult);
-            return finalizationResult;
-        } else {
-            return { success: false, error: "Payment not completed." };
-        }
-    } catch (error) {
-        console.error("[Server Action] Error capturing PayPal order:", error);
-        return { success: false, error: "An unexpected server error occurred during payment capture." };
+    if (data.status === 'COMPLETED') {
+      const paymentId = data.id || orderId;
+      const result = await finalizeLovePage(intentId, paymentId);
+      
+      if (result.error) {
+          console.error("Error in finalizeLovePage after PayPal capture:", result.error);
+          return { success: false, error: "Internal error finalizing the page.", details: result.details };
+      }
+      
+      console.log("finalizeLovePage successful for intent:", intentId);
+      return { success: true, pageId: result.pageId };
     }
-}
+    
+    console.error("PayPal payment not completed. Status:", data.status, data);
+    return { 
+        success: false, 
+        error: `Payment not completed. Status: ${data.status}`,
+        details: data 
+    };
 
+  } catch (error: any) {
+    console.error("[SERVER] Error capturing PayPal order:", error);
+    return { 
+        success: false, 
+        error: "Server error capturing payment.",
+        details: { code: 'PAYPAL_CAPTURE_ERROR', message: error.message }
+    };
+  }
+}
 
 // ----------------------------------------------------------------
 // LÓGICA PRINCIPAL DE FINALIZAÇÃO (ATUALIZADA)
@@ -432,7 +434,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         return { success: true, pageId: newPageId };
     } catch (error: any) { 
         console.error("Erro no Servidor (finalizeLovePage):", error);
-        return { error: `Erro ao finalizar a página: ${error.message}` };
+        return { 
+            error: `Erro ao finalizar a página: ${error.message}`,
+            details: { code: error.code || 'FINALIZE_ERROR' }
+        };
     }
 }
 
@@ -466,7 +471,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
             const result = await finalizeLovePage(intentId, paymentId);
             if (result.error) {
                 console.error(`Erro na finalização pós-pagamento: ${result.error}`);
-                return { status: 'error', error: result.error }; // Retorna o erro específico da finalização
+                return { status: 'error', error: result.error, details: result.details }; // Retorna o erro específico da finalização
             }
             return { status: 'approved', pageId: result.pageId };
         }
@@ -474,7 +479,11 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         return { status: paymentInfo.status };
     } catch (error: any) {
         console.error("Erro no Servidor (verifyPaymentWithMercadoPago):", error);
-        return { status: 'error', error: `Falha na verificação com Mercado Pago: ${error.message}` };
+        return { 
+            status: 'error', 
+            error: `Falha na verificação com Mercado Pago: ${error.message}`,
+            details: { code: error.code || 'MERCADO_PAGO_VERIFY_ERROR' }
+        };
     }
 }
 

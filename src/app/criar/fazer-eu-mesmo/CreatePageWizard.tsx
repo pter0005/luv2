@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -41,11 +41,11 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { handleSuggestContent, createOrUpdatePaymentIntent, processPixPayment, checkFinalPageStatus, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, createPayPalOrder, capturePayPalOrder } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase } from "@/firebase";
@@ -1256,23 +1256,44 @@ const stepComponents = [
     PuzzleStep,
 ];
 
-const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
-    setPageId: (id: string) => void;
-    setPixData: (data: { qrCode: string; qrCodeBase64: string, paymentId: string } | null) => void;
-    setIntentId: (id: string) => void;
-    pixData: { qrCode: string; qrCodeBase64: string, paymentId: string } | null
-}) => {
+const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue } = useFormContext<PageData>();
     const { t } = useTranslation();
-    const plan = watch('plan');
+    const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
     const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState<{ message: string, details?: any } | null>(null);
     const { toast } = useToast();
+    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
+    const router = useRouter();
+
+
+    // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
+    useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.intentId) {
+                    setValue('intentId', result.intentId);
+                } else if (result.error) {
+                    console.error("Autosave failed on initial load:", result);
+                    toast({
+                        variant: 'destructive',
+                        title: "Erro Crítico ao Salvar",
+                        description: result.error,
+                        duration: 9000,
+                    });
+                }
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue, toast]);
+
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1294,12 +1315,13 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            setIsBrazilDomain(hostname.endsWith('.com.br') || hostname.includes('localhost'));
+            const isPT = navigator.language.startsWith('pt');
+            setIsBrazilDomain(hostname.endsWith('.com.br') || (hostname.includes('localhost') && isPT));
         }
     }, []);
 
-    const priceBRL = plan === 'basico' ? 14.99 : 24.99;
     const priceUSD = plan === 'basico' ? 14.90 : 19.90;
+    const priceBRL = plan === 'basico' ? 14.99 : 24.99;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1312,11 +1334,10 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
     }, [setPageId, toast, t]);
-    
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
-    
+
         pollingIntervalRef.current = setInterval(async () => {
             const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
             console.log("Status do pagamento:", result.status);
@@ -1326,12 +1347,11 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                 handlePaymentSuccess(result.pageId);
             } else if (result.status === 'error') {
                 clearInterval(pollingIntervalRef.current!);
-                setError({ message: result.error });
+                setError({ message: result.error, details: result.details });
             }
-        }, 3000); // Checa a cada 3 segundos
+        }, 3000);
     }, [handlePaymentSuccess]);
 
-    // Start polling when pixData is available
     useEffect(() => {
         if (pixData?.paymentId && intentId) {
             startPolling(pixData.paymentId, intentId);
@@ -1371,7 +1391,7 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                     return;
                 }
                 
-                setIntentId(saveResult.intentId);
+                setValue('intentId', saveResult.intentId);
                 const paymentResult = await processPixPayment(saveResult.intentId, priceBRL);
                 
                 if (paymentResult.error) {
@@ -1383,8 +1403,8 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
                         paymentId: paymentResult.paymentId
                     });
                 }
-            } catch (err) {
-                setError({ message: "Erro ao conectar com o serviço de pagamento." });
+            } catch (err: any) {
+                setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
             }
         });
     };
@@ -1402,28 +1422,27 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
               const saveResult = await createOrUpdatePaymentIntent(fullData);
   
               if (saveResult.error || !saveResult.intentId) {
-                  setError({ message: saveResult.error || "Could not save draft before payment." });
+                  setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
                   return;
               }
   
-              setIntentId(saveResult.intentId);
+              setValue('intentId', saveResult.intentId);
               const planValue = getValues('plan') as 'basico' | 'avancado';
               const domain = window.location.origin;
 
               const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
 
               if (sessionResult.error || !sessionResult.url) {
-                  setError({ message: sessionResult.error || "Could not create Stripe checkout session." });
+                  setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
               } else {
-                  // Redirect to Stripe checkout
                   window.location.href = sessionResult.url;
               }
-          } catch (err) {
-              setError({ message: "Error connecting to the payment service." });
+          } catch (err: any) {
+              setError({ message: "Error connecting to the payment service.", details: err });
           }
       });
-  };
-
+    };
+    
     const handleAdminFinalize = async () => {
         if (!user || !intentId) {
             toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' });
@@ -1434,12 +1453,12 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
             try {
                 const result = await adminFinalizePage(intentId, user.uid);
                 if (result.error || !result.pageId) {
-                    setError({ message: result.error || "Falha ao finalizar como admin." });
+                    setError({ message: result.error || "Falha ao finalizar como admin.", details: result.details });
                 } else {
                     handlePaymentSuccess(result.pageId);
                 }
-            } catch (e) {
-                setError({ message: "Erro de servidor ao finalizar como admin." });
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar como admin.", details: e });
             }
         });
     }
@@ -1454,19 +1473,29 @@ const PaymentStep = ({ setPageId, setPixData, setIntentId, pixData }: {
             } else {
                 toast({ variant: 'default', title: t('toast.payment.pending'), description: t('toast.payment.pending.description') });
             }
-        } catch (e) {
+        } catch (e: any) {
             toast({ variant: 'destructive', title: t('toast.payment.verify.error'), description: t('toast.payment.verify.error.description') });
         } finally {
             setIsVerifying(false);
         }
     };
 
-    if (isBrazilDomain === null) {
+    if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+
+    if (error) {
         return (
-            <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin" />
+            <div className="p-4 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-xs text-left font-mono my-6">
+                <p className="font-sans font-bold text-red-200 text-sm mb-2">Payment Error Details</p>
+                <p className="font-sans text-sm mb-4 break-words">{error.message}</p>
+                <div className="bg-black/40 p-3 rounded-md overflow-x-auto">
+                    <pre className="whitespace-pre-wrap break-all text-red-400/90 text-[10px]">
+                        <code>
+                            CMD_LOG: {JSON.stringify(error.details || { info: "No additional details provided." }, null, 2)}
+                        </code>
+                    </pre>
+                </div>
             </div>
-        );
+        )
     }
     
     if (!isBrazilDomain) {
@@ -1650,11 +1679,10 @@ const WizardInternal = () => {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
-  const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
   
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
@@ -1677,7 +1705,8 @@ const WizardInternal = () => {
     mode: 'onChange',
     defaultValues: { 
         plan: plan,
-        title: "Seu Título Aqui",
+        title: locale === 'pt' ? "Seu Título Aqui" : "Your Title Here",
+        message: locale === 'pt' ? "Sua mensagem de amor..." : "Your love message...",
         messageFontSize: "text-base",
         backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
         galleryStyle: "Cube",
@@ -1742,11 +1771,24 @@ const WizardInternal = () => {
         const result = await createOrUpdatePaymentIntent(dataToSave);
 
         if (result.error) {
-            console.warn("Autosave failed:", result.error, result.details);
+            console.error("Autosave failed:", result);
+            toast({
+                variant: 'destructive',
+                title: "Erro ao Salvar Rascunho",
+                description: (
+                    <div>
+                        <p>{result.error}</p>
+                        <div className="mt-2 p-2 bg-black/30 rounded-md">
+                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                CMD_LOG: {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                ),
+                duration: 20000,
+            });
             const errorString = (result.error || '').toLowerCase();
-            const detailsString = (result.details?.log || '').toLowerCase();
-
-            if (errorString.includes("collection") || errorString.includes("500") || detailsString.includes("collection")) {
+            if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
                 setValue('intentId', undefined, { shouldDirty: false });
             }
         } else if (result.intentId && !dataToSave.intentId) {
@@ -1758,7 +1800,7 @@ const WizardInternal = () => {
     } catch (e) {
         console.error("Error during autosave:", e);
     }
-  }, [user, isUserLoading, setValue]);
+  }, [user, isUserLoading, setValue, toast]);
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -1853,7 +1895,7 @@ const WizardInternal = () => {
   if (pageId) {
       StepComponent = <SuccessStep pageId={pageId} />;
   } else if (currentStepId === 'payment') {
-      StepComponent = <PaymentStep setPageId={setPageId} setPixData={setPixData} setIntentId={(id) => setValue('intentId', id)} pixData={pixData} />;
+      StepComponent = <PaymentStep setPageId={setPageId} />;
   } else {
       const Comp = stepComponents[currentStep];
       StepComponent = (
@@ -1874,11 +1916,12 @@ const WizardInternal = () => {
             <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
-                onShowTimeline={() => setShowTimelinePreview(true)}
+                onShowTimeline={() => setShowTimeline(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
                 setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                locale={locale}
             />
         </div>
 
@@ -1890,7 +1933,7 @@ const WizardInternal = () => {
                   <span className="text-xs text-muted-foreground font-sans">{t('wizard.step')} {currentStep + 1} {t('wizard.of')} {steps.length}</span>
                   <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
               </div>
-              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
+              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRightIcon /></Button>
           </div>
 
           <div className="mt-8 space-y-2">
@@ -1912,11 +1955,12 @@ const WizardInternal = () => {
                 <PreviewContent 
                     formData={formData} 
                     isClient={isClient}
-                    onShowTimeline={() => setShowTimelinePreview(true)}
+                    onShowTimeline={() => setShowTimeline(true)}
                     hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
                     setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                    locale={locale}
                 />
             </div>
           </div>
@@ -1999,5 +2043,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    

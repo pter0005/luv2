@@ -6,7 +6,7 @@ import { Instagram, Mail, MessageSquare, Heart, ExternalLink } from "lucide-reac
 
 export default function Footer() {
   const { t } = useTranslation();
-  const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png'; // Garanta que tem um fallback
+  const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png';
 
   return (
     <footer className="relative border-t border-white/10 bg-transparent pt-16 pb-8 overflow-hidden">
@@ -81,14 +81,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Rodapé Inferior: Copyright */}
-        <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-          <p>
-            {t('footer.copyright', { year: new Date().getFullYear() })}
-          </p>
-          <p className="flex items-center gap-1">
-            {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
-          </p>
+        {/* Rodapé Inferior: Copyright & CNPJ */}
+        <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-500 space-y-4">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2">
+                 <p>
+                    {t('footer.copyright', { year: new Date().getFullYear() })}
+                </p>
+                <p className="flex items-center gap-1.5">
+                    {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
+                </p>
+            </div>
         </div>
       </div>
     </footer>

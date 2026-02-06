@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -33,6 +34,7 @@ type PreviewContentProps = {
     showPuzzlePreview: boolean;
     previewPuzzleRevealed: boolean;
     setPreviewPuzzleRevealed: (revealed: boolean) => void;
+    locale: 'pt' | 'en' | 'es';
 };
 
 export default function PreviewContent({
@@ -42,7 +44,8 @@ export default function PreviewContent({
     hasValidTimelineEvents,
     showPuzzlePreview,
     previewPuzzleRevealed,
-    setPreviewPuzzleRevealed
+    setPreviewPuzzleRevealed,
+    locale,
 }: PreviewContentProps) {
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
@@ -153,7 +156,7 @@ export default function PreviewContent({
                                     className="text-3xl font-handwriting break-words"
                                     style={{ color: formData.titleColor }}
                                 >
-                                    {formData.title || 'Seu Título Aqui'}
+                                    {formData.title || (locale === 'pt' ? 'Seu Título Aqui' : 'Your Title Here')}
                                 </h1>
                                 <p className={cn(
                                     "text-white/80 whitespace-pre-wrap break-words text-base",
@@ -162,7 +165,7 @@ export default function PreviewContent({
                                     formData.messageFormatting?.includes("italic") && "italic",
                                     formData.messageFormatting?.includes("strikethrough") && "line-through"
                                 )}>
-                                    {formData.message || 'Sua mensagem de amor...'}
+                                    {formData.message || (locale === 'pt' ? 'Sua mensagem de amor...' : 'Your love message...')}
                                 </p>
                             </div>
                             
