@@ -4,18 +4,24 @@ import { getFirestore as getAdminFirestoreInstance, FieldValue } from 'firebase-
 import { getStorage as getAdminStorageInstance } from 'firebase-admin/storage';
 import { ServiceAccount } from 'firebase-admin';
 
-// This function now correctly reads from process.env as requested.
+// This function now provides granular error messages to pinpoint configuration issues.
 const getServiceAccount = (): ServiceAccount => {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    // The private key from .env.local needs its literal '\n' replaced with actual newlines.
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
 
-    if (!projectId || !clientEmail || !privateKey) {
-        const errorMessage = 'As variáveis de ambiente do Firebase Admin (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) não estão configuradas corretamente no ambiente de deploy. Verifique as configurações do seu provedor de hospedagem.';
-        console.error(`ERRO DE CONFIGURAÇÃO FIREBASE ADMIN: ${errorMessage}`);
-        throw new Error(errorMessage);
+    if (!projectId) {
+        throw new Error('A variável de ambiente FIREBASE_PROJECT_ID não foi encontrada. Verifique suas configurações de deploy.');
     }
+    if (!clientEmail) {
+        throw new Error('A variável de ambiente FIREBASE_CLIENT_EMAIL não foi encontrada. Verifique suas configurações de deploy.');
+    }
+    if (!privateKeyRaw) {
+        throw new Error('A variável de ambiente FIREBASE_PRIVATE_KEY não foi encontrada. Verifique suas configurações de deploy.');
+    }
+
+    // The private key from .env needs its literal '\\n' replaced with actual newlines.
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
     
     return {
         projectId,
@@ -38,8 +44,7 @@ export function getAdminApp(): App {
         }, ADMIN_NAME);
     } catch (error: any) {
         console.error('Falha CRÍTICA ao inicializar Firebase Admin:', error.message);
-        // Em um cenário de produção, você pode querer lançar o erro
-        // para interromper o processo se o Firebase for essencial.
+        // This will now propagate the more specific error from getServiceAccount
         throw new Error(`Falha na inicialização do Firebase Admin. Verifique as credenciais. Erro original: ${error.message}`);
     }
 }
