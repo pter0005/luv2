@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from 'react'; // Adicionado useEffect
+import React, { useState, useMemo, useEffect } from 'react'; // Adicionado useEffect
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 // --- PARTÍCULAS DE CORAÇÃO ULTRA SMOOTH (GPU BASED) ---
-const FloatingHeart = ({ index }: { index: number }) => {
+const FloatingHeart = React.memo(({ index }: { index: number }) => {
     // Geramos valores aleatórios APENAS uma vez na montagem para evitar "hydration mismatch"
     const randomDuration = useMemo(() => 4 + Math.random() * 4, []); // Entre 4s e 8s (lento e suave)
     const randomDelay = useMemo(() => Math.random() * 3, []);
@@ -56,9 +56,10 @@ const FloatingHeart = ({ index }: { index: number }) => {
             <Heart fill="currentColor" strokeWidth={0} size={randomSize} className="drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
         </motion.div>
     );
-};
+});
+FloatingHeart.displayName = 'FloatingHeart';
 
-const HeartEmitter = ({ isActive }: { isActive: boolean }) => {
+const HeartEmitter = React.memo(({ isActive }: { isActive: boolean }) => {
     // Só renderiza se for o slide ativo para economizar processamento
     if (!isActive) return null;
 
@@ -72,7 +73,8 @@ const HeartEmitter = ({ isActive }: { isActive: boolean }) => {
             ))}
         </div>
     );
-};
+});
+HeartEmitter.displayName = 'HeartEmitter';
 
 // --- COMPONENTE CELULAR ---
 const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isActive?: boolean }) => {

@@ -34,7 +34,7 @@ const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
 
-const GalleryImage = ({ img, index }: { img: any, index: number }) => {
+const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     return (
         <div className="relative w-full h-full bg-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex items-center justify-center">
@@ -57,7 +57,8 @@ const GalleryImage = ({ img, index }: { img: any, index: number }) => {
             />
         </div>
     )
-}
+});
+GalleryImage.displayName = 'GalleryImage';
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);

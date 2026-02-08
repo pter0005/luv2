@@ -37,6 +37,31 @@ type PreviewContentProps = {
     locale: 'pt' | 'en' | 'es';
 };
 
+const MemoizedSwiper = React.memo(({ galleryImages, galleryStyle }: { galleryImages: any[], galleryStyle: string }) => {
+    return (
+        <Swiper
+            key={galleryStyle}
+            effect={(galleryStyle || 'Cube').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+            grabCursor={true}
+            centeredSlides={galleryStyle === 'Coverflow'}
+            slidesPerView={'auto'}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            pagination={{ clickable: true }}
+            modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
+            className="mySwiper-small"
+        >
+            {galleryImages.map((image: any, index: number) => (
+                <SwiperSlide key={image.path || index} className="bg-transparent">
+                    <div className="relative w-full aspect-square">
+                        <Image src={image.url} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" sizes="(max-width: 640px) 90vw, 384px"/>
+                    </div>
+                </SwiperSlide>
+            ))}
+        </Swiper>
+    );
+});
+MemoizedSwiper.displayName = 'MemoizedSwiper';
+
 export default function PreviewContent({
     formData,
     isClient,
@@ -185,25 +210,7 @@ export default function PreviewContent({
 
                             {formData.galleryImages.length > 0 && (
                             <div className="w-full max-w-sm mx-auto">
-                                <Swiper
-                                    key={formData.galleryStyle}
-                                    effect={(formData.galleryStyle || 'Cube').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
-                                    grabCursor={true}
-                                    centeredSlides={formData.galleryStyle === 'Coverflow'}
-                                    slidesPerView={'auto'}
-                                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                                    pagination={{ clickable: true }}
-                                    modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
-                                    className="mySwiper-small"
-                                >
-                                    {formData.galleryImages.map((image: any, index: number) => (
-                                        <SwiperSlide key={image.path || index} className="bg-transparent">
-                                            <div className="relative w-full aspect-square">
-                                                <Image src={image.url} alt={`Pré-visualização da imagem ${index + 1}`} fill className="object-cover" sizes="(max-width: 640px) 90vw, 384px"/>
-                                            </div>
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
+                                <MemoizedSwiper galleryImages={formData.galleryImages} galleryStyle={formData.galleryStyle} />
                             </div>
                             )}
                             

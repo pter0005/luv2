@@ -122,18 +122,12 @@ export default function TestimonialsMarquee() {
     const bottomRow = testimonials.slice(10, 20);
 
     return (
-        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8 mask-image-fade">
-            
-            {/* Efeito de Máscara Lateral (Fade Out) */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-black to-transparent z-20"></div>
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-black to-transparent z-20"></div>
-
+        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8">
             {/* Linha Superior (Esquerda) - Mais lenta */}
             <Marquee items={topRow} direction="left" speed={80} />
             
             {/* Linha Inferior (Direita) - Um pouco mais rápida para dinamismo */}
             <Marquee items={bottomRow} direction="right" speed={70} />
-            
         </div>
     );
 }

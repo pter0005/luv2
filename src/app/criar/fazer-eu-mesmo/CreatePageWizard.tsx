@@ -144,7 +144,7 @@ const pageSchema = z.object({
 
 export type PageData = z.infer<typeof pageSchema>;
 
-const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
+const PlanLockWrapper = React.memo(({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
     const { watch } = useFormContext<PageData>();
     const { t } = useTranslation();
     const plan = watch('plan');
@@ -162,11 +162,12 @@ const PlanLockWrapper = ({ children, requiredPlan }: { children: React.ReactNode
         );
     }
     return <>{children}</>;
-}
+});
+PlanLockWrapper.displayName = 'PlanLockWrapper';
 
 
 // Componentes de Passo simplificados para o Wizard
-const TitleStep = () => {
+const TitleStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     const { t } = useTranslation();
     return (
@@ -192,9 +193,10 @@ const TitleStep = () => {
             )} />
         </div>
     );
-};
+});
+TitleStep.displayName = 'TitleStep';
 
-const MessageStep = () => {
+const MessageStep = React.memo(() => {
   const form = useFormContext<PageData>();
   const { t } = useTranslation();  
     return (
@@ -214,10 +216,11 @@ const MessageStep = () => {
             </div>
         </div>
     );
-};
+});
+MessageStep.displayName = 'MessageStep';
 
 
-const SpecialDateStep = () => {
+const SpecialDateStep = React.memo(() => {
   const { control, setValue, watch } = useFormContext<PageData>();
   const { t } = useTranslation();
   const countdownStyle = watch("countdownStyle");
@@ -330,7 +333,8 @@ const SpecialDateStep = () => {
       </div>
     </div>
   );
-};
+});
+SpecialDateStep.displayName = 'SpecialDateStep';
 
 // Helper function to upload a file to Firebase Storage
 const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
@@ -358,7 +362,7 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
 };
 
 
-const GalleryStep = () => {
+const GalleryStep = React.memo(() => {
     const { control, formState: { errors }, watch } = useFormContext<PageData>();
     const plan = watch('plan');
     const { fields, append, remove } = useFieldArray({
@@ -513,9 +517,10 @@ const GalleryStep = () => {
             </div>
         </div>
     );
-};
+});
+GalleryStep.displayName = 'GalleryStep';
 
-const TimelineStep = () => {
+const TimelineStep = React.memo(() => {
     const { control, formState: { errors }, watch } = useFormContext<PageData>();
     const plan = watch('plan');
     const { fields, remove, update, append } = useFieldArray({
@@ -715,9 +720,10 @@ const TimelineStep = () => {
             </Button>
         </div>
     );
-};
+});
+TimelineStep.displayName = 'TimelineStep';
 
-const MusicStep = () => {
+const MusicStep = React.memo(() => {
     const { control, setValue, getValues } = useFormContext<PageData>();
     const { user, storage } = useFirebase();
     const { toast } = useToast();
@@ -990,7 +996,8 @@ const MusicStep = () => {
       )}
     </div>
   );
-};
+});
+MusicStep.displayName = 'MusicStep';
 
 
 const animationOptions = [
@@ -1002,7 +1009,7 @@ const animationOptions = [
     { id: "clouds", name: "Nuvens", requiredPlan: "avancado" },
 ];
 
-const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
+const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const { t } = useTranslation();
     const backgroundAnimation = watch("backgroundAnimation");
@@ -1125,9 +1132,10 @@ const BackgroundStep = ({ isVisible }: { isVisible: boolean }) => {
             )}
         </div>
     );
-};
+});
+BackgroundStep.displayName = 'BackgroundStep';
 
-const PuzzleStep = () => {
+const PuzzleStep = React.memo(() => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const { user, storage } = useFirebase();
     const enablePuzzle = watch("enablePuzzle");
@@ -1243,7 +1251,8 @@ const PuzzleStep = () => {
             )}
         </div>
     );
-};
+});
+PuzzleStep.displayName = 'PuzzleStep';
 
 const stepComponents = [
     TitleStep,
@@ -1973,7 +1982,7 @@ const WizardInternal = () => {
 
 
 
-const ImageLimitWarning = ({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
+const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
     const { t } = useTranslation();
     if (currentCount > limit) {
          return (
@@ -1991,7 +2000,8 @@ const ImageLimitWarning = ({ currentCount, limit, itemType }: { currentCount: nu
             <AlertDescription>{t('wizard.imageLimit.description', { currentCount, limit, itemType })}</AlertDescription>
         </Alert>
     )
-};
+});
+ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 const SuccessStep = ({ pageId }: { pageId: string }) => {
     const { t } = useTranslation();
