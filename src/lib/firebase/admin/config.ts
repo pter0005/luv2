@@ -4,25 +4,26 @@ import { getFirestore as getAdminFirestoreInstance, FieldValue } from 'firebase-
 import { getStorage as getAdminStorageInstance } from 'firebase-admin/storage';
 import { ServiceAccount } from 'firebase-admin';
 
-// This function now provides granular error messages to pinpoint configuration issues.
 const getServiceAccount = (): ServiceAccount => {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-    if (!projectId) {
-        throw new Error('A variável de ambiente FIREBASE_PROJECT_ID não foi encontrada. Verifique suas configurações de deploy.');
-    }
-    if (!clientEmail) {
-        throw new Error('A variável de ambiente FIREBASE_CLIENT_EMAIL não foi encontrada. Verifique suas configurações de deploy.');
-    }
-    if (!privateKeyRaw) {
-        throw new Error('A variável de ambiente FIREBASE_PRIVATE_KEY não foi encontrada. Verifique suas configurações de deploy.');
+    if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Variáveis de ambiente do Firebase Admin faltando.');
     }
 
-    // The private key from .env needs its literal '\\n' replaced with actual newlines.
-    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+    // --- LIMPEZA DA CHAVE (O SEGREDINHO) ---
     
+    // 1. Se a chave estiver entre aspas duplas (erro comum no Netlify), remove elas.
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
+    }
+
+    // 2. Converte os "\n" literais em quebras de linha reais
+    // Isso resolve tanto se você colou em uma linha quanto se colou formatado
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
     return {
         projectId,
         clientEmail,
@@ -44,8 +45,7 @@ export function getAdminApp(): App {
         }, ADMIN_NAME);
     } catch (error: any) {
         console.error('Falha CRÍTICA ao inicializar Firebase Admin:', error.message);
-        // This will now propagate the more specific error from getServiceAccount
-        throw new Error(`Falha na inicialização do Firebase Admin. Verifique as credenciais. Erro original: ${error.message}`);
+        throw new Error(`Erro na inicialização: ${error.message}`);
     }
 }
 
