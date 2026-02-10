@@ -245,7 +245,7 @@ function getPayPalClient() {
         throw new Error("Credenciais do PayPal não configuradas no servidor.");
     }
 
-    const environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
+    const environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
     return new paypal.core.PayPalHttpClient(environment);
 }
 
