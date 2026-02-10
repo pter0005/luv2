@@ -8,8 +8,8 @@ import { Timestamp } from 'firebase-admin/firestore';
 import Stripe from 'stripe';
 import paypal from '@paypal/checkout-server-sdk';
 
+// --- UTILITÁRIOS ---
 
-// TRADUTOR UNIVERSAL DE DATAS (MATA O ERRO DE "SECONDS")
 function ensureTimestamp(dateValue: any): any {
     if (!dateValue) return null;
     if (typeof dateValue === 'object' && (dateValue.seconds || dateValue._seconds)) {
@@ -37,6 +37,7 @@ function sanitizeForFirebase(obj: any): any {
     return obj;
 }
 
+// --- LOGICA DE BANCO E STORAGE ---
 
 export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
     const { intentId, ...restOfPageData } = fullPageData;
@@ -163,91 +164,58 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     }
 }
 
-// ----------------------------------------------------------------
-// NOVA LÓGICA DE MOVIMENTAÇÃO DE ARQUIVOS (ROBUSTA)
-// ----------------------------------------------------------------
-
-/**
- * Move um único arquivo da pasta temporária para a permanente e retorna os novos dados.
- * É idempotente: se o processo falhar e for re-executado, ele não quebra.
- */
 async function moveFile(
     fileData: { url: string, path: string }, 
     pageId: string, 
     targetFolder: string
 ): Promise<{ url: string; path: string }> {
-    // IDEMPOTÊNCIA 1: Se o arquivo NÃO estiver na pasta 'temp/', assume que já foi movido e retorna os dados originais.
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
         return fileData; 
     }
-
     try {
         const storage = getAdminStorage();
         const oldPath = fileData.path;
         const fileName = oldPath.split('/').pop();
-        
         if (!fileName) {
             console.error(`Nome do arquivo inválido para o caminho: ${oldPath}`);
-            return fileData; // Retorna original se não conseguir extrair o nome
+            return fileData;
         }
-        
-        // O novo caminho agora é `lovepages/{pageId}/{tipo_do_arquivo}/{nome_do_arquivo}`
         const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
-        
         const oldFile = storage.file(oldPath);
         const newFile = storage.file(newPath);
-
-        // Copia o arquivo para o novo local
         await oldFile.copy(newFile);
-        
-        // Torna o novo arquivo público (ESSENCIAL!)
         await newFile.makePublic();
-
-        // Deleta o arquivo antigo da pasta temp
         await oldFile.delete();
-
-        // Retorna os novos dados com a URL pública permanente
         return {
             url: newFile.publicUrl(),
             path: newPath,
         };
     } catch (error: any) {
-        // IDEMPOTÊNCIA 2 (Tratamento de Erro): Se o arquivo de origem não existir (404),
-        // pode ser que o processo tenha sido interrompido após a cópia mas antes da deleção.
         if (error.code === 404) {
             const newFile = getAdminStorage().file(`lovepages/${pageId}/${targetFolder}/${fileData.path.split('/').pop()}`);
             const [exists] = await newFile.exists();
             if (exists) {
                 console.warn(`Arquivo temporário não encontrado, mas arquivo final existe. Assumindo que já foi movido: ${newFile.name}`);
-                // Garante que o arquivo de destino seja público e retorna sua URL
                 await newFile.makePublic();
                 return { url: newFile.publicUrl(), path: newFile.name };
             }
         }
-        
         console.error(`Falha ao mover arquivo de ${fileData.path} para ${targetFolder}:`, error);
-        return fileData; // Em caso de erro, mantém os dados antigos para não quebrar
+        return fileData;
     }
 }
 
-
-/**
- * Orquestra a movimentação de todos os arquivos de uma página para o armazenamento permanente.
- */
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
-
     const filesToMove = [
         ... (pageData.galleryImages || []).map((img: any) => ({ file: img, folder: 'gallery' })),
         ... (pageData.timelineEvents || []).map((evt: any) => ({ file: evt.image, folder: 'timeline' })).filter((item: any) => item.file),
     ];
     if (pageData.puzzleImage) filesToMove.push({ file: pageData.puzzleImage, folder: 'puzzle' });
     if (pageData.audioRecording) filesToMove.push({ file: pageData.audioRecording, folder: 'audio' });
-
     const movedFiles = await Promise.all(
         filesToMove.map(item => moveFile(item.file, pageId, item.folder))
     );
-    
     let movedIndex = 0;
     if (updatedData.galleryImages) {
         updatedData.galleryImages = movedFiles.slice(movedIndex, movedIndex + updatedData.galleryImages.length);
@@ -263,20 +231,18 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     }
     if (updatedData.puzzleImage) updatedData.puzzleImage = movedFiles[movedIndex++];
     if (updatedData.audioRecording) updatedData.audioRecording = movedFiles[movedIndex];
-
     return updatedData;
 }
 
 
-// --- Lógica PayPal SEGURA ---
+// --- PAYPAL (SEGURANÇA MÁXIMA) ---
 
 function getPayPalClient() {
-    // Lendo do process.env
     const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-        throw new Error("Credenciais do PayPal não configuradas no servidor. Verifique o .env.local");
+        throw new Error("Credenciais do PayPal não configuradas no servidor.");
     }
 
     const environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
@@ -284,127 +250,100 @@ function getPayPalClient() {
 }
 
 export async function createPayPalOrder(planType: string, intentId: string) {
-  try {
-      const client = getPayPalClient();
-      const request = new paypal.orders.OrdersCreateRequest();
-      request.prefer("return=representation");
-      
-      const value = "100.00"; 
+    try {
+        const client = getPayPalClient();
+        const request = new paypal.orders.OrdersCreateRequest();
+        request.prefer("return=representation");
+        
+        // Valor fixo de R$ 100,00 conforme solicitado
+        request.requestBody({
+            intent: "CAPTURE",
+            purchase_units: [{
+                amount: {
+                    currency_code: "BRL",
+                    value: "100.00",
+                },
+                description: `MyCupid - Plano ${planType}`,
+                custom_id: intentId, // ID do rascunho para o webhook saber quem pagou
+            }],
+        });
 
-      request.requestBody({
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: "BRL",
-              value: value,
-            },
-            description: `MyCupid - Plano ${planType}`,
-            custom_id: intentId, 
-          },
-        ],
-      });
-
-      const response = await client.execute(request);
-      const order = response.result;
-      
-      console.log("PayPal Order Criada ID:", order.id);
-      return order.id;
-
-  } catch(error: any) {
-    console.error("[SERVER] Erro ao criar pedido PayPal:", error);
-    throw new Error("Erro ao iniciar pagamento com PayPal.");
-  }
+        const response = await client.execute(request);
+        return response.result.id;
+    } catch (error: any) {
+        console.error("Erro PayPal Create:", error);
+        throw new Error("Não foi possível iniciar o PayPal.");
+    }
 }
 
 export async function capturePayPalOrder(orderId: string, intentId: string) {
-  try {
-    const client = getPayPalClient();
-    const request = new paypal.orders.OrdersCaptureRequest(orderId);
-    request.requestBody({});
+    try {
+        const client = getPayPalClient();
+        const request = new paypal.orders.OrdersCaptureRequest(orderId);
+        request.requestBody({});
 
-    const capture = await client.execute(request);
-    const captureData = capture.result;
-    
-    if (captureData.status === 'COMPLETED') {
-      const paymentId = captureData.id || orderId;
-      
-      const result = await finalizeLovePage(intentId, paymentId);
-      
-      if (result.error) {
-          console.error("Erro ao finalizar página pós-PayPal:", result.error);
-          return { success: false, error: "Pagamento aprovado, mas erro ao gerar página." };
-      }
-      
-      return { success: true, pageId: result.pageId };
+        const response = await client.execute(request);
+        const captureData = response.result;
+
+        if (captureData.status === 'COMPLETED') {
+            const paymentId = captureData.id || orderId;
+            const result = await finalizeLovePage(intentId, paymentId);
+            if (result.error) {
+                return { success: false, error: "Pagamento aprovado, mas erro ao gerar página." };
+            }
+            return { success: true, pageId: result.pageId };
+        }
+        return { success: false, error: "Pagamento não concluído." };
+    } catch (error: any) {
+        console.error("Erro PayPal Capture:", error);
+        return { success: false, error: "Erro ao processar captura do PayPal." };
     }
-    
-    return { success: false, error: `Pagamento não completado. Status: ${captureData.status}` };
-
-  } catch (error: any) {
-    console.error("[SERVER] Erro na captura PayPal:", error);
-    return { success: false, error: error.message || "Erro ao processar captura." };
-  }
 }
 
-// ----------------------------------------------------------------
-// LÓGICA PRINCIPAL DE FINALIZAÇÃO (ATUALIZADA)
-// ----------------------------------------------------------------
+// --- FINALIZAÇÃO DA PÁGINA ---
 
 export async function finalizeLovePage(intentId: string, paymentId: string) {
     const db = getAdminFirestore();
     const intentRef = db.collection('payment_intents').doc(intentId);
+    
     try {
         const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) return { error: `Rascunho com ID ${intentId} não encontrado.` };
+        if (!data) return { error: `Rascunho ${intentId} não encontrado.` };
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
 
         const newPageId = db.collection('lovepages').doc().id;
-        
-        // 1. Sanitiza os dados e normaliza as datas
         const sanitized = sanitizeForFirebase(data);
+        
         if (sanitized.timelineEvents) {
             sanitized.timelineEvents = sanitized.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
         }
-        if (sanitized.specialDate) {
-            sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
-        }
-        
-        // 2. Separa os dados e define o ID e a data de criação
+        if (sanitized.specialDate) sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
+
         const { payment, aiPrompt, ...finalPageData } = sanitized;
         finalPageData.id = newPageId;
         finalPageData.createdAt = Timestamp.now();
-        finalPageData.paymentId = paymentId; // Guarda o ID do pagamento para referência
+        finalPageData.paymentId = paymentId;
 
-        // LÓGICA DE EXPIRAÇÃO
         if (finalPageData.plan === 'basico') {
             const twelveHoursInMillis = 12 * 60 * 60 * 1000;
             finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twelveHoursInMillis);
         }
 
-        // 3. (ETAPA CRUCIAL) Move os arquivos para o local permanente ANTES de salvar no DB
         const dataWithPermanentFiles = await moveFilesToPermanentStorage(finalPageData, newPageId);
 
-        // 4. Salva a versão final da página com as URLs permanentes
         await db.collection('lovepages').doc(newPageId).set(dataWithPermanentFiles);
         
-        // 5. Cria uma referência no perfil do usuário
         if (data.userId) {
             await db.collection('users').doc(data.userId).collection('love_pages').doc(newPageId).set({ 
-                title: finalPageData.title, 
-                pageId: newPageId, 
-                createdAt: Timestamp.now() 
+                title: finalPageData.title, pageId: newPageId, createdAt: Timestamp.now() 
             });
         }
 
-
-        // 6. Atualiza o rascunho como 'completed'
         await intentRef.update({ status: 'completed', lovePageId: newPageId });
-        
         return { success: true, pageId: newPageId };
-    } catch (error: any) { 
-        console.error("Erro no Servidor (finalizeLovePage):", error);
+    } catch (error: any) {
+        console.error("Erro finalizeLovePage:", error);
         return { 
             error: `Erro ao finalizar a página: ${error.message}`,
             details: { code: error.code || 'FINALIZE_ERROR' }
@@ -442,7 +381,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
             const result = await finalizeLovePage(intentId, paymentId);
             if (result.error) {
                 console.error(`Erro na finalização pós-pagamento: ${result.error}`);
-                return { status: 'error', error: result.error, details: result.details }; // Retorna o erro específico da finalização
+                return { status: 'error', error: result.error, details: result.details };
             }
             return { status: 'approved', pageId: result.pageId };
         }
@@ -458,5 +397,4 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
     }
 }
 
-// Manter a função de sugestão de conteúdo que já estava aqui
 export { suggestContent };
