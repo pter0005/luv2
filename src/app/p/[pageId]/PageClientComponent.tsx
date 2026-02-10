@@ -286,14 +286,19 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-sm"
           >
             <div className="w-full max-w-lg space-y-8 animate-in fade-in zoom-in duration-500">
-              <div className="text-center space-y-3">
-                 <div className="inline-block p-3 bg-white/5 rounded-full mb-2">
-                    <Puzzle className="w-8 h-8 text-purple-400" />
-                 </div>
-                <h2 className="text-3xl font-bold text-white font-headline">
-                    {t('publicpage.puzzle.title')}
-                </h2>
-                <p className="text-white/60 text-sm">{t('publicpage.puzzle.description')}</p>
+              <div className="text-center space-y-4">
+                  <div className="inline-block p-4 bg-primary/10 rounded-full border-2 border-primary/20 shadow-lg shadow-primary/20">
+                      <Puzzle className="w-10 h-10 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                      <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
+                          {t('publicpage.puzzle.title.part1')}{' '}
+                          <span className="gradient-text">{t('publicpage.puzzle.title.part2')}</span>
+                      </h2>
+                      <p className="text-white/70 text-sm max-w-xs mx-auto">
+                          {t('publicpage.puzzle.description')}
+                      </p>
+                  </div>
               </div>
 
                <AnimatePresence mode="wait">
