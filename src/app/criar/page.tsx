@@ -84,7 +84,7 @@ export default function CreatePage() {
                   </Button>
               </div>
               
-              {/* Plano Básico */}
+              {/* Plano Econômico */}
               <div className="bg-card/80 backdrop-blur-sm border border-border p-8 rounded-2xl flex flex-col">
                   <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
                   <p className="text-muted-foreground text-sm mb-8">{t('home.plans.basico.description')}</p>

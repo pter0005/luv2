@@ -1324,13 +1324,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            const isPT = navigator.language.startsWith('pt');
-            setIsBrazilDomain(hostname.endsWith('.com.br') || (hostname.includes('localhost') && isPT));
+            setIsBrazilDomain(hostname.endsWith('.com.br'));
         }
     }, []);
 
-    const priceUSD = plan === 'basico' ? 14.90 : 19.90;
-    const priceBRL = plan === 'basico' ? 14.99 : 24.99;
+    const priceUSD = plan === 'basico' ? 19.90 : 24.99;
+    const priceBRL = plan === 'basico' ? 19.90 : 24.90;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1517,7 +1516,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
                     <div className="absolute top-0 right-0 p-2">
                         <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
-                             {plan === 'avancado' ? 'Advanced Plan' : 'Basic Plan'}
+                             {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
                         </span>
                     </div>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total_en')}</p>

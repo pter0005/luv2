@@ -115,17 +115,17 @@ const translations = {
     'home.plans.description': 'Temos a opção ideal para eternizar seu momento, com a flexibilidade que você precisa.',
     'home.plans.recommended': 'RECOMENDADO',
     'home.plans.avancado.title': 'Plano Avançado',
-    'home.plans.avancado.description': 'Todos os recursos liberados.',
+    'home.plans.avancado.description': 'Todos os recursos liberados para a melhor experiência.',
     'home.plans.feature.gallery_advanced': 'Galeria de fotos (até 6)',
     'home.plans.feature.music': 'Música de fundo',
     'home.plans.feature.puzzle': 'Quebra-cabeça Interativo',
     'home.plans.feature.timeline_advanced': 'Linha do Tempo 3D (até 20 momentos)',
     'home.plans.avancado.cta': 'Testar Plano Avançado',
-    'home.plans.basico.title': 'Plano Básico',
-    'home.plans.basico.description': 'Uma opção mais simples para começar.',
+    'home.plans.basico.title': 'Plano Econômico',
+    'home.plans.basico.description': 'Ideal para uma surpresa mais direta e emocionante.',
     'home.plans.feature.gallery_basic': 'Galeria de fotos (até 2)',
     'home.plans.feature.timeline_basic': 'Linha do Tempo 3D (até 5 momentos)',
-    'home.plans.basico.cta': 'Testar Plano Básico',
+    'home.plans.basico.cta': 'Testar Plano Econômico',
     'home.plans.payment': 'Pagamento único',
 
     // Footer
@@ -169,7 +169,7 @@ const translations = {
     'create.continue': 'Continuar de onde parei',
     'create.continue.description': 'Você tem um rascunho salvo. Clique para continuar.',
     'create.avancado.cta': 'Testar Plano Avançado',
-    'create.basico.cta': 'Testar Plano Básico',
+    'create.basico.cta': 'Testar Plano Econômico',
     'create.back': 'Voltar para o início',
     'create.feature.permanente': 'Página permanente com backup',
     'create.feature.temp': 'Página disponível por 12h',
@@ -562,17 +562,17 @@ const translations = {
     'home.plans.description': 'We have the ideal option to eternalize your moment, with the flexibility you need.',
     'home.plans.recommended': 'RECOMMENDED',
     'home.plans.avancado.title': 'Advanced Plan',
-    'home.plans.avancado.description': 'All features unlocked.',
+    'home.plans.avancado.description': 'All features unlocked for the best experience.',
     'home.plans.feature.gallery_advanced': 'Photo gallery (up to 6)',
     'home.plans.feature.music': 'Background music',
     'home.plans.feature.puzzle': 'Interactive Puzzle',
     'home.plans.feature.timeline_advanced': '3D Timeline (up to 20 moments)',
     'home.plans.avancado.cta': 'Test Advanced Plan',
-    'home.plans.basico.title': 'Basic Plan',
-    'home.plans.basico.description': 'A simpler option to get started.',
+    'home.plans.basico.title': 'Economic Plan',
+    'home.plans.basico.description': 'Ideal for a more direct and exciting surprise.',
     'home.plans.feature.gallery_basic': 'Photo gallery (up to 2)',
     'home.plans.feature.timeline_basic': '3D Timeline (up to 5 moments)',
-    'home.plans.basico.cta': 'Test Basic Plan',
+    'home.plans.basico.cta': 'Test Economic Plan',
     'home.plans.payment': 'One-time payment',
 
     // Footer
@@ -616,7 +616,7 @@ const translations = {
     'create.continue': 'Continue where I left off',
     'create.continue.description': 'You have a saved draft. Click to continue.',
     'create.avancado.cta': 'Test Advanced Plan',
-    'create.basico.cta': 'Test Basic Plan',
+    'create.basico.cta': 'Test Economic Plan',
     'create.back': 'Back to home',
     'create.feature.permanente': 'Permanent page with backup',
     'create.feature.temp': 'Page available for 12h',
@@ -948,11 +948,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
 
-      if (hostname.endsWith('.com.br') || hostname.includes('localhost')) {
+      if (hostname.endsWith('.com.br')) {
         setLocale('pt');
-      } else { // For .net, etc.
+      } else { // For .net, localhost, etc.
         const browserLang = navigator.language.split('-')[0] as Locale;
-        // For non-br domains, we prioritize 'es' and 'en', defaulting to 'en'.
         if (browserLang === 'es') {
           setLocale('es');
         } else {

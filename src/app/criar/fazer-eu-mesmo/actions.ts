@@ -131,8 +131,8 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     const stripe = new Stripe(STRIPE_SECRET_KEY);
 
     const prices = {
-        basico: { unit_amount: 1490, name: 'Basic Plan' },
-        avancado: { unit_amount: 1990, name: 'Advanced Plan' }
+        basico: { unit_amount: 1990, name: 'Economic Plan' },
+        avancado: { unit_amount: 2499, name: 'Advanced Plan' }
     };
     
     const selectedPrice = prices[plan];
@@ -249,22 +249,28 @@ function getPayPalClient() {
     return new paypal.core.PayPalHttpClient(environment);
 }
 
-export async function createPayPalOrder(planType: string, intentId: string) {
+export async function createPayPalOrder(planType: 'basico' | 'avancado', intentId: string) {
     try {
         const client = getPayPalClient();
         const request = new paypal.orders.OrdersCreateRequest();
         request.prefer("return=representation");
         
-        // Valor fixo de R$ 100,00 conforme solicitado
+        const prices = {
+            basico: "19.90",
+            avancado: "24.99"
+        };
+        const value = prices[planType];
+        const description = planType === 'basico' ? 'MyCupid - Economic Plan' : 'MyCupid - Advanced Plan';
+
         request.requestBody({
             intent: "CAPTURE",
             purchase_units: [{
                 amount: {
-                    currency_code: "BRL",
-                    value: "100.00",
+                    currency_code: "USD",
+                    value: value,
                 },
-                description: `MyCupid - Plano ${planType}`,
-                custom_id: intentId, // ID do rascunho para o webhook saber quem pagou
+                description: description,
+                custom_id: intentId,
             }],
         });
 

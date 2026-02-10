@@ -501,7 +501,7 @@ export default function Home() {
                     <h3 className="text-2xl font-bold text-primary">{t('home.plans.avancado.title')}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.avancado.description')}</p>
                     <div className="text-center my-6">
-                        <p className="text-4xl font-bold text-foreground">R$24,99</p>
+                        <p className="text-4xl font-bold text-foreground">R$24,90</p>
                         <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
@@ -519,7 +519,7 @@ export default function Home() {
                     <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
                     <div className="text-center my-6">
-                        <p className="text-4xl font-bold text-foreground">R$14,99</p>
+                        <p className="text-4xl font-bold text-foreground">R$19,90</p>
                         <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
