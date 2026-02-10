@@ -1,3 +1,4 @@
+
 'use server';
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
@@ -327,8 +328,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         finalPageData.paymentId = paymentId;
 
         if (finalPageData.plan === 'basico') {
-            const twelveHoursInMillis = 12 * 60 * 60 * 1000;
-            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twelveHoursInMillis);
+            const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
         }
 
         const dataWithPermanentFiles = await moveFilesToPermanentStorage(finalPageData, newPageId);

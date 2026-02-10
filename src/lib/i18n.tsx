@@ -171,8 +171,8 @@ const translations = {
     'create.avancado.cta': 'Testar Plano Avançado',
     'create.basico.cta': 'Testar Plano Econômico',
     'create.back': 'Voltar para o início',
-    'create.feature.permanente': 'Página permanente com backup',
-    'create.feature.temp': 'Página disponível por 12h',
+    'create.feature.permanente': 'Página permanente com backup infinito',
+    'create.feature.temp': 'Página disponível por 24h',
     'create.feature.backup': 'Backup na nuvem',
 
     // Create Page (Do it yourself)
@@ -618,8 +618,8 @@ const translations = {
     'create.avancado.cta': 'Test Advanced Plan',
     'create.basico.cta': 'Test Economic Plan',
     'create.back': 'Back to home',
-    'create.feature.permanente': 'Permanent page with backup',
-    'create.feature.temp': 'Page available for 12h',
+    'create.feature.permanente': 'Permanent page with infinite backup',
+    'create.feature.temp': 'Page available for 24h',
     'create.feature.backup': 'Cloud backup',
 
     // Create Page (Do it yourself)

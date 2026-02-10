@@ -1,3 +1,4 @@
+
 "use client";
 import React from 'react';
 import Link from 'next/link';
@@ -112,7 +113,7 @@ export default function PrivacidadePage() {
                         <strong>Rascunhos:</strong> Dados inseridos durante a criação de uma página são salvos temporariamente para que você possa continuar depois. Rascunhos inativos por mais de 30 dias podem ser excluídos.
                     </li>
                     <li>
-                        <strong>Páginas Publicadas:</strong> Páginas do <strong>Plano Avançado</strong> são mantidas permanentemente. Páginas do <strong>Plano Básico</strong> ficam disponíveis por 12 horas após a criação.
+                        <strong>Páginas Publicadas:</strong> Páginas do <strong>Plano Avançado</strong> são mantidas permanentemente. Páginas do <strong>Plano Básico</strong> ficam disponíveis por 24 horas após a criação.
                     </li>
                 </ul>
             </PolicySection>
