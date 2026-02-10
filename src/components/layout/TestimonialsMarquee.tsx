@@ -122,7 +122,7 @@ export default function TestimonialsMarquee() {
     const bottomRow = testimonials.slice(10, 20);
 
     return (
-        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8">
+        <div className="relative flex w-full flex-col items-center justify-center gap-4 py-8 overflow-hidden">
             {/* Linha Superior (Esquerda) - Mais lenta */}
             <Marquee items={topRow} direction="left" speed={80} />
             

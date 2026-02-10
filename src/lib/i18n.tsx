@@ -810,7 +810,7 @@ const translations = {
     'wizard.puzzle.preview.description': 'Assemble the image to test the great reveal.',
     'wizard.puzzle.preview.complete': 'Challenge Completed!',
     'wizard.payment.title': 'Ready to surprise! 🎁',
-    'wizard.payment.description': 'Your page is ready. Finalize to get your link.',
+    'wizard.payment.description': 'Your page is assembled. Finalize to get your link.',
     'wizard.payment.total': 'Total to Pay',
     'wizard.payment.immediate_access': 'Immediate access',
     'wizard.payment.card_button': 'Pay with Card',
@@ -945,10 +945,19 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocale] = useState<Locale>('pt');
 
   useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      const browserLang = navigator.language.split('-')[0] as Locale;
-      if (browserLang && translations[browserLang]) {
-        setLocale(browserLang);
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+
+      if (hostname.endsWith('.com.br') || hostname.includes('localhost')) {
+        setLocale('pt');
+      } else { // For .net, etc.
+        const browserLang = navigator.language.split('-')[0] as Locale;
+        // For non-br domains, we prioritize 'es' and 'en', defaulting to 'en'.
+        if (browserLang === 'es') {
+          setLocale('es');
+        } else {
+          setLocale('en'); 
+        }
       }
     }
   }, []);
