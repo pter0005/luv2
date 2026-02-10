@@ -5,7 +5,7 @@ import { useTranslation } from "@/lib/i18n";
 import { Instagram, Mail, MessageSquare, Heart, ExternalLink } from "lucide-react";
 
 export default function Footer() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png';
 
   return (
@@ -91,6 +91,11 @@ export default function Footer() {
                     {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
                 </p>
             </div>
+            {locale === 'pt' && (
+              <p>
+                G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA | CNPJ: 64.966.299/0001-16
+              </p>
+            )}
         </div>
       </div>
     </footer>
