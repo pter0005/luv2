@@ -7,12 +7,20 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 // Credencial de produção do PayPal para o frontend
-const PAYPAL_CLIENT_ID = "AX8Y67Q-tBWpAiroiCd0go5-YOYww_7YG6cAadO4-7yA5D8mYrDaVObydpkSmsfUxwPpEVMq_wJTYNeT";
+const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
 export default function PayPalButton({ planType, firebaseIntentId }: { planType: string, firebaseIntentId: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  if (!PAYPAL_CLIENT_ID) {
+    return (
+      <div className="flex items-center justify-center p-4 text-sm text-destructive bg-destructive/10 rounded-lg">
+        A chave do cliente PayPal não está configurada.
+      </div>
+    )
+  }
 
   const handleApprove = async (data: any) => {
     setIsProcessing(true);

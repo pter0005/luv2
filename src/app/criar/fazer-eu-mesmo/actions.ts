@@ -272,8 +272,13 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
 // --- Lógica PayPal ---
 // Helper function to get PayPal client
 function getPayPalClient() {
-    const clientId = "AX8Y67Q-tBWpAiroiCd0go5-YOYww_7YG6cAadO4-7yA5D8mYrDaVObydpkSmsfUxwPpEVMq_wJTYNeT";
-    const clientSecret = "EMn4wmgZMxq4egLmHc8AWUykSx9IAWBPCxn3qxwLgRqr_Iagf7GEjloLbtBGJ7uApbw0F0aj8qs14idN";
+    const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        throw new Error("Credenciais do PayPal não encontradas no ambiente. Verifique as variáveis PAYPAL_CLIENT_SECRET e NEXT_PUBLIC_PAYPAL_CLIENT_ID.");
+    }
+
     const environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
     return new paypal.core.PayPalHttpClient(environment);
 }
