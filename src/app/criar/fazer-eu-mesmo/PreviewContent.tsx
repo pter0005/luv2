@@ -18,6 +18,7 @@ import Countdown from './Countdown';
 import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
+import { useTranslation } from '@/lib/i18n';
 
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
@@ -72,6 +73,7 @@ export default function PreviewContent({
     setPreviewPuzzleRevealed,
     locale,
 }: PreviewContentProps) {
+    const { t } = useTranslation();
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
     const youtubePlayerRef = useRef<{ play: () => void }>(null);
@@ -242,13 +244,17 @@ export default function PreviewContent({
                             className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-lg rounded-[2rem]"
                         >
                              <div className="w-full max-w-lg space-y-8 text-center">
-                                {/* ... (Cabeçalho do puzzle) ... */}
                                 <div className="inline-block p-4 bg-primary/10 rounded-full border-2 border-primary/20 shadow-lg shadow-primary/20">
                                     <Puzzle className="w-10 h-10 text-primary" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-white font-headline">Um Enigma de Amor</h2>
-                                    <p className="text-white/70 text-sm max-w-xs mx-auto">Monte a imagem para testar a grande revelação.</p>
+                                    <h2 className="text-3xl font-bold text-white font-headline tracking-tighter">
+                                        {t('publicpage.puzzle.title.part1')}{' '}
+                                        <span className="gradient-text">{t('publicpage.puzzle.title.part2')}</span>
+                                    </h2>
+                                    <p className="text-white/70 text-sm max-w-xs mx-auto">
+                                        {t('publicpage.puzzle.description')}
+                                    </p>
                                 </div>
                                 
                                 <AnimatePresence mode="wait">
@@ -272,7 +278,7 @@ export default function PreviewContent({
                                             <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
                                                 <CheckCircle className="w-12 h-12 text-green-400" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
+                                            <h3 className="text-xl font-bold text-white">{t('publicpage.puzzle.complete')}</h3>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

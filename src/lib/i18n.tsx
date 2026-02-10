@@ -1,6 +1,6 @@
 
 'use client';
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo } from 'react';
 
 const translations = {
   pt: {
@@ -296,6 +296,8 @@ const translations = {
     'wizard.step': 'Passo',
     'wizard.of': 'de',
     'wizard.preview.title': 'Ou veja como está ficando',
+    'wizard.puzzle.preview.title': 'Um Enigma de Amor',
+    'wizard.puzzle.preview.description': 'Monte a imagem para testar a grande revelação.',
     'wizard.plan.locked': 'Recurso do Plano Avançado.',
     'wizard.title.label': 'Título',
     'wizard.title.placeholder': 'Ex: João & Maria',
@@ -360,9 +362,6 @@ const translations = {
     'wizard.puzzle.image.description': 'A imagem será transformada em quebra-cabeça.',
     'wizard.puzzle.image.processing': 'Processando...',
     'wizard.puzzle.image.remove': 'Remover Imagem',
-    'wizard.puzzle.preview.title': 'Um Enigma de Amor',
-    'wizard.puzzle.preview.description': 'Monte a imagem para testar a grande revelação.',
-    'wizard.puzzle.preview.complete': 'Desafio Concluído!',
     'wizard.payment.title': 'Tudo pronto para surpreender! 🎁',
     'wizard.payment.description': 'Sua página foi montada. Finalize para receber o link.',
     'wizard.payment.total': 'Total a Pagar',
@@ -744,6 +743,8 @@ const translations = {
     'wizard.step': 'Step',
     'wizard.of': 'of',
     'wizard.preview.title': 'Or see how it\'s looking',
+    'wizard.puzzle.preview.title': 'A Puzzle of Love',
+    'wizard.puzzle.preview.description': 'Assemble the image to test the great reveal.',
     'wizard.plan.locked': 'Advanced Plan Feature.',
     'wizard.title.label': 'Title',
     'wizard.title.placeholder': 'Ex: John & Mary',
@@ -808,9 +809,6 @@ const translations = {
     'wizard.puzzle.image.description': 'The image will be turned into a puzzle.',
     'wizard.puzzle.image.processing': 'Processing...',
     'wizard.puzzle.image.remove': 'Remove Image',
-    'wizard.puzzle.preview.title': 'A Puzzle of Love',
-    'wizard.puzzle.preview.description': 'Assemble the image to test the great reveal.',
-    'wizard.puzzle.preview.complete': 'Challenge Completed!',
     'wizard.payment.title': 'Ready to surprise! 🎁',
     'wizard.payment.description': 'Your page is assembled. Finalize to get your link.',
     'wizard.payment.total': 'Total to Pay',
@@ -949,6 +947,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocale] = useState<Locale>('pt');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -964,6 +963,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           setLocale('en'); 
         }
       }
+      setIsInitialized(true);
     }
   }, []);
 
@@ -977,9 +977,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
     return translation;
   }, [locale]);
+  
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, t]);
+
+  if (!isInitialized) {
+    return null; // Render nothing until the locale is determined
+  }
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );
