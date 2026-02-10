@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { differenceInYears, differenceInMonths, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds, addYears, addMonths, addDays, addHours, addMinutes } from 'date-fns';
 import { useTranslation } from '@/lib/i18n';
 
@@ -103,3 +104,5 @@ const Countdown = ({ targetDate, style = 'Padrão', color = '#FFFFFF' }: Countdo
 };
 
 export default Countdown;
+
+    

@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import HeartIcon from "@/components/icons/HeartIcon";
 
 interface Heart {
@@ -55,3 +56,5 @@ export default function FallingHearts({ count = 50, color = 'hsl(var(--primary))
     </div>
   );
 }
+
+    
