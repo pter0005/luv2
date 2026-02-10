@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
+// Credencial de produção do PayPal para o frontend
+const PAYPAL_CLIENT_ID = "AX8Y67Q-tBWpAiroiCd0go5-YOYww_7YG6cAadO4-7yA5D8mYrDaVObydpkSmsfUxwPpEVMq_wJTYNeT";
+
 export default function PayPalButton({ planType, firebaseIntentId }: { planType: string, firebaseIntentId: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -16,18 +19,22 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
     setError(null);
     try {
       console.log("PayPal onApprove data:", data);
+      
+      // A Server Action 'capturePayPalOrder' agora lida com a captura do pagamento.
       const result = await capturePayPalOrder(data.orderID, firebaseIntentId);
-      console.log("Capture result from server:", result);
+      console.log("Resultado da captura no servidor:", result);
+
       if (result.success && result.pageId) {
-        // Redirect to the newly created page
-        router.push(`/p/${result.pageId}`);
+        // Após a captura e finalização da página, redireciona o usuário.
+        // A página 'criando-pagina' mostrará um status de loading enquanto o webhook finaliza.
+        router.push(`/criando-pagina?intentId=${data.orderID}`);
       } else {
-        setError(result.error || "An error occurred while processing your payment.");
-        console.error("PayPal Capture Error:", result.error);
+        setError(result.error || "Ocorreu um erro ao processar seu pagamento.");
+        console.error("Erro na captura do PayPal:", result.details || result.error);
       }
     } catch (err: any) {
-      setError("Connection error. Please try again.");
-      console.error("PayPal OnApprove Error:", err);
+      setError("Erro de conexão. Por favor, tente novamente.");
+      console.error("Erro no onApprove do PayPal:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -35,33 +42,34 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
 
   return (
     <div className="w-full relative min-h-[100px]">
-      <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!, currency: "USD" }}>
+      <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: "BRL", intent: "capture" }}>
         <PayPalButtons
           style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
           createOrder={async () => {
             setError(null);
-            console.log("Creating PayPal order for plan:", planType);
+            console.log("Criando pedido no PayPal para o plano:", planType);
             try {
-              const orderId = await createPayPalOrder(planType);
-              console.log("PayPal Order ID created:", orderId);
+              // A Server Action cria o pedido e retorna o ID.
+              const orderId = await createPayPalOrder(planType, firebaseIntentId);
+              console.log("ID do Pedido PayPal criado:", orderId);
               return orderId;
-            } catch (err) {
-              console.error("PayPal Create Order Error:", err);
-              setError("Could not initiate PayPal transaction. Please try again.");
+            } catch (err: any) {
+              console.error("Erro ao criar pedido no PayPal:", err);
+              setError(err.message || "Não foi possível iniciar a transação com o PayPal. Tente novamente.");
               throw err;
             }
           }}
           onApprove={handleApprove}
           onError={(err) => {
-            console.error("PayPal Button Error:", err);
-            setError("An unexpected error occurred with PayPal. Please reload the page.");
+            console.error("Erro no botão do PayPal:", err);
+            setError("Ocorreu um erro inesperado com o PayPal. Por favor, recarregue a página.");
           }}
         />
       </PayPalScriptProvider>
       {isProcessing && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 rounded-lg z-10">
           <Loader2 className="animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Processing payment...</p>
+          <p className="text-sm text-muted-foreground">Processando pagamento...</p>
         </div>
       )}
       {error && <p className="text-destructive text-xs text-center mt-2">{error}</p>}

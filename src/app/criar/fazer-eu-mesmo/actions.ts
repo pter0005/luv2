@@ -7,6 +7,7 @@ import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config'
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
 import Stripe from 'stripe';
+import paypal from '@paypal/checkout-server-sdk';
 
 
 // TRADUTOR UNIVERSAL DE DATAS (MATA O ERRO DE "SECONDS")
@@ -64,8 +65,9 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         }
     } catch (error: any) {
         console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
+        const errorMessage = `Falha no servidor ao salvar rascunho. Por favor, verifique a configuração do Firebase Admin em suas variáveis de ambiente. Detalhes: ${error.message}`;
         return { 
-            error: `Falha no servidor ao salvar rascunho: ${error.message}`,
+            error: errorMessage,
             details: {
                 code: error.code || 'UNKNOWN_SERVER_ERROR',
                 stack: process.env.NODE_ENV === 'development' ? error.stack : 'Stack trace available in development mode.',
@@ -268,86 +270,60 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
 
 
 // --- Lógica PayPal ---
-async function generatePayPalToken() {
-    try {
-        const auth = Buffer.from(`${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
-        const response = await fetch(`${process.env.NEXT_PUBLIC_PAYPAL_API_URL}/v1/oauth2/token`, {
-            method: "POST",
-            body: "grant_type=client_credentials",
-            headers: {
-                Authorization: `Basic ${auth}`,
-            },
-        });
-        const data = await response.json();
-        return data.access_token;
-    } catch (error) {
-        console.error("Failed to generate PayPal access token:", error);
-        throw new Error("Could not generate PayPal access token.");
-    }
+// Helper function to get PayPal client
+function getPayPalClient() {
+    const clientId = "AX8Y67Q-tBWpAiroiCd0go5-YOYww_7YG6cAadO4-7yA5D8mYrDaVObydpkSmsfUxwPpEVMq_wJTYNeT";
+    const clientSecret = "EMn4wmgZMxq4egLmHc8AWUykSx9IAWBPCxn3qxwLgRqr_Iagf7GEjloLbtBGJ7uApbw0F0aj8qs14idN";
+    const environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
+    return new paypal.core.PayPalHttpClient(environment);
 }
 
-export async function createPayPalOrder(planType: string) {
+export async function createPayPalOrder(planType: string, intentId: string) {
   try {
-      const accessToken = await generatePayPalToken();
-      const value = (planType === 'advanced' || planType === 'avancado') ? "19.90" : "14.90";
-      const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
-
-      const response = await fetch(`${base}/v2/checkout/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          intent: "CAPTURE",
-          purchase_units: [
-            {
-              amount: {
-                currency_code: "USD",
-                value: value,
-              },
-              description: `MyCupid - ${planType} Plan`,
+      const client = getPayPalClient();
+      const request = new paypal.orders.OrdersCreateRequest();
+      request.prefer("return=representation");
+      request.requestBody({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              currency_code: "BRL",
+              value: "100.00",
             },
-          ],
-        }),
+            description: `MyCupid - Pagamento Personalizado`,
+            custom_id: intentId, // Associando o rascunho ao pedido do PayPal
+          },
+        ],
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("PayPal Create Order Error:", errorBody);
-        throw new Error("Failed to create PayPal order.");
-      }
-
-      const order = await response.json();
-      console.log("Created PayPal Order ID:", order.id);
+      const response = await client.execute(request);
+      const order = response.result;
+      
+      console.log("Created PayPal Order ID:", order.id, "for intentId:", intentId);
       return order.id;
+
   } catch(error: any) {
-    console.error("[SERVER] createPayPalOrder error:", error);
-    throw {
-        message: error.message,
-        details: { code: 'PAYPAL_CREATE_ORDER_FAILED' }
-    };
+    console.error("[SERVER] createPayPalOrder error:", error.message);
+    const errorMessage = error.message || "Failed to create PayPal order.";
+    // Lançando um erro para ser pego pelo try/catch no frontend
+    throw new Error(errorMessage);
   }
 }
 
 export async function capturePayPalOrder(orderId: string, intentId: string) {
   try {
-    const accessToken = await generatePayPalToken();
-    const base = process.env.NEXT_PUBLIC_PAYPAL_API_URL || 'https://api-m.paypal.com';
+    const client = getPayPalClient();
+    const request = new paypal.orders.OrdersCaptureRequest(orderId);
+    request.requestBody({});
 
-    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const capture = await client.execute(request);
+    const captureData = capture.result;
+    
+    console.log("PayPal Capture Response:", captureData);
 
-    const data = await captureResponse.json();
-    console.log("PayPal Capture Response:", data);
-
-    if (data.status === 'COMPLETED') {
-      const paymentId = data.id || orderId;
+    if (captureData.status === 'COMPLETED') {
+      const paymentId = captureData.id || orderId;
       const result = await finalizeLovePage(intentId, paymentId);
       
       if (result.error) {
@@ -359,18 +335,19 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
       return { success: true, pageId: result.pageId };
     }
     
-    console.error("PayPal payment not completed. Status:", data.status, data);
+    console.error("PayPal payment not completed. Status:", captureData.status, captureData);
     return { 
         success: false, 
-        error: `Payment not completed. Status: ${data.status}`,
-        details: data 
+        error: `Payment not completed. Status: ${captureData.status}`,
+        details: captureData 
     };
 
   } catch (error: any) {
     console.error("[SERVER] Error capturing PayPal order:", error);
+    const errorMessage = error.message || "Server error capturing payment.";
     return { 
         success: false, 
-        error: "Server error capturing payment.",
+        error: errorMessage,
         details: { code: 'PAYPAL_CAPTURE_ERROR', message: error.message }
     };
   }
