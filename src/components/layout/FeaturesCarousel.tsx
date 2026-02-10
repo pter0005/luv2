@@ -146,7 +146,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide2.title'),
           description: t('featuresCarousel.slide2.description'),
           type: 'image',
-          media: "https://i.imgur.com/hvUUFYV.png"
+          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png"
         },
         {
           id: 3,
@@ -154,7 +154,7 @@ export default function FeaturesCarousel() {
           title: t('featuresCarousel.slide3.title'),
           description: t('featuresCarousel.slide3.description'),
           type: 'image',
-          media: "https://i.imgur.com/gW8Qc3M.png"
+          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750174/cavddawsvdfsxvcfdsaAfASFsafSA_z4pdvd.png"
         },
     ], [t, locale]);
 
