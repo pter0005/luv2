@@ -1,4 +1,3 @@
-
 'use client'
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { createPayPalOrder, capturePayPalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
@@ -6,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-// Credencial de produção do PayPal para o frontend
+// Lê a credencial do environment.
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
 export default function PayPalButton({ planType, firebaseIntentId }: { planType: string, firebaseIntentId: string }) {
@@ -17,7 +16,7 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
   if (!PAYPAL_CLIENT_ID) {
     return (
       <div className="flex items-center justify-center p-4 text-sm text-destructive bg-destructive/10 rounded-lg">
-        A chave do cliente PayPal não está configurada.
+        A chave do cliente PayPal não está configurada. Verifique a variável NEXT_PUBLIC_PAYPAL_CLIENT_ID.
       </div>
     )
   }
@@ -28,13 +27,11 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
     try {
       console.log("PayPal onApprove data:", data);
       
-      // A Server Action 'capturePayPalOrder' agora lida com a captura do pagamento.
       const result = await capturePayPalOrder(data.orderID, firebaseIntentId);
       console.log("Resultado da captura no servidor:", result);
 
       if (result.success && result.pageId) {
-        // Após a captura e finalização da página, redireciona o usuário.
-        // A página 'criando-pagina' mostrará um status de loading enquanto o webhook finaliza.
+        // Redireciona para uma página de status intermediária
         router.push(`/criando-pagina?intentId=${data.orderID}`);
       } else {
         setError(result.error || "Ocorreu um erro ao processar seu pagamento.");
@@ -57,7 +54,6 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
             setError(null);
             console.log("Criando pedido no PayPal para o plano:", planType);
             try {
-              // A Server Action cria o pedido e retorna o ID.
               const orderId = await createPayPalOrder(planType, firebaseIntentId);
               console.log("ID do Pedido PayPal criado:", orderId);
               return orderId;

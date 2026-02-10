@@ -1,4 +1,3 @@
-
 'use server';
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
@@ -269,14 +268,15 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
 }
 
 
-// --- Lógica PayPal ---
-// Helper function to get PayPal client
+// --- Lógica PayPal SEGURA ---
+
 function getPayPalClient() {
+    // Lendo do process.env
     const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-        throw new Error("Credenciais do PayPal não encontradas no ambiente. Verifique as variáveis PAYPAL_CLIENT_SECRET e NEXT_PUBLIC_PAYPAL_CLIENT_ID.");
+        throw new Error("Credenciais do PayPal não configuradas no servidor. Verifique o .env.local");
     }
 
     const environment = new paypal.core.LiveEnvironment(clientId, clientSecret);
@@ -288,16 +288,19 @@ export async function createPayPalOrder(planType: string, intentId: string) {
       const client = getPayPalClient();
       const request = new paypal.orders.OrdersCreateRequest();
       request.prefer("return=representation");
+      
+      const value = "100.00"; 
+
       request.requestBody({
         intent: "CAPTURE",
         purchase_units: [
           {
             amount: {
               currency_code: "BRL",
-              value: "100.00",
+              value: value,
             },
-            description: `MyCupid - Pagamento Personalizado`,
-            custom_id: intentId, // Associando o rascunho ao pedido do PayPal
+            description: `MyCupid - Plano ${planType}`,
+            custom_id: intentId, 
           },
         ],
       });
@@ -305,14 +308,12 @@ export async function createPayPalOrder(planType: string, intentId: string) {
       const response = await client.execute(request);
       const order = response.result;
       
-      console.log("Created PayPal Order ID:", order.id, "for intentId:", intentId);
+      console.log("PayPal Order Criada ID:", order.id);
       return order.id;
 
   } catch(error: any) {
-    console.error("[SERVER] createPayPalOrder error:", error.message);
-    const errorMessage = error.message || "Failed to create PayPal order.";
-    // Lançando um erro para ser pego pelo try/catch no frontend
-    throw new Error(errorMessage);
+    console.error("[SERVER] Erro ao criar pedido PayPal:", error);
+    throw new Error("Erro ao iniciar pagamento com PayPal.");
   }
 }
 
@@ -325,36 +326,24 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
     const capture = await client.execute(request);
     const captureData = capture.result;
     
-    console.log("PayPal Capture Response:", captureData);
-
     if (captureData.status === 'COMPLETED') {
       const paymentId = captureData.id || orderId;
+      
       const result = await finalizeLovePage(intentId, paymentId);
       
       if (result.error) {
-          console.error("Error in finalizeLovePage after PayPal capture:", result.error);
-          return { success: false, error: "Internal error finalizing the page.", details: result.details };
+          console.error("Erro ao finalizar página pós-PayPal:", result.error);
+          return { success: false, error: "Pagamento aprovado, mas erro ao gerar página." };
       }
       
-      console.log("finalizeLovePage successful for intent:", intentId);
       return { success: true, pageId: result.pageId };
     }
     
-    console.error("PayPal payment not completed. Status:", captureData.status, captureData);
-    return { 
-        success: false, 
-        error: `Payment not completed. Status: ${captureData.status}`,
-        details: captureData 
-    };
+    return { success: false, error: `Pagamento não completado. Status: ${captureData.status}` };
 
   } catch (error: any) {
-    console.error("[SERVER] Error capturing PayPal order:", error);
-    const errorMessage = error.message || "Server error capturing payment.";
-    return { 
-        success: false, 
-        error: errorMessage,
-        details: { code: 'PAYPAL_CAPTURE_ERROR', message: error.message }
-    };
+    console.error("[SERVER] Erro na captura PayPal:", error);
+    return { success: false, error: error.message || "Erro ao processar captura." };
   }
 }
 
