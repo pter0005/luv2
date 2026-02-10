@@ -25,7 +25,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS, es } from "date-fns/locale";
 import Countdown from "./Countdown";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -222,9 +222,16 @@ MessageStep.displayName = 'MessageStep';
 
 const SpecialDateStep = React.memo(() => {
   const { control, setValue, watch } = useFormContext<PageData>();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const countdownStyle = watch("countdownStyle");
   const titleColor = watch("titleColor");
+
+  const dateLocales: { [key: string]: Locale } = {
+    pt: ptBR,
+    en: enUS,
+    es: es,
+  };
+  const fnsLocale = dateLocales[locale] || ptBR;
 
   return (
     <div className="space-y-12">
@@ -241,7 +248,7 @@ const SpecialDateStep = React.memo(() => {
                 selected={field.value}
                 onSelect={field.onChange}
                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                locale={ptBR}
+                locale={fnsLocale}
                 className="rounded-md border"
                 captionLayout="dropdown-buttons"
                 fromYear={1960}
@@ -532,8 +539,15 @@ const TimelineStep = React.memo(() => {
     const { storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const dateLocales: { [key: string]: Locale } = {
+      pt: ptBR,
+      en: enUS,
+      es: es,
+    };
+    const fnsLocale = dateLocales[locale] || ptBR;
 
     const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
@@ -656,7 +670,7 @@ const TimelineStep = React.memo(() => {
                                                 )}
                                             >
                                                 {field.value ? (
-                                                    format(new Date(field.value), "PPP", { locale: ptBR })
+                                                    format(new Date(field.value), "PPP", { locale: fnsLocale })
                                                 ) : (
                                                     <span>{t('wizard.timeline.event.date')}</span>
                                                 )}
@@ -673,7 +687,7 @@ const TimelineStep = React.memo(() => {
                                                     date > new Date() || date < new Date("1900-01-01")
                                                 }
                                                 initialFocus
-                                                locale={ptBR}
+                                                locale={fnsLocale}
                                                 captionLayout="dropdown-buttons"
                                                 fromYear={1960}
                                                 toYear={new Date().getFullYear()}
@@ -2052,3 +2066,5 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
+
+    
