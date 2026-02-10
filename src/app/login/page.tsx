@@ -19,6 +19,7 @@ import { FirebaseError } from 'firebase/app';
 import Link from 'next/link';
 import { createSession } from '@/app/auth-actions';
 import { useTranslation } from '@/lib/i18n';
+import DevAuthDomainHelper from '@/components/layout/DevAuthDomainHelper';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um e-mail válido.' }),
@@ -246,8 +247,11 @@ function LoginContent() {
 export default function LoginPage() {
   const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-muted-foreground">{t('login.loading')}</p></div>}>
-      <LoginContent />
-    </Suspense>
+    <>
+      <DevAuthDomainHelper />
+      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-muted-foreground">{t('login.loading')}</p></div>}>
+        <LoginContent />
+      </Suspense>
+    </>
   );
 }
