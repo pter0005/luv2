@@ -270,7 +270,7 @@ const translations = {
     // Privacy & Terms
     'privacy.back': 'Voltar para o início',
     'terms.title': 'Termos de Uso',
-    'terms.description': 'Nossos termos de uso serão detalhados aqui. Conteúdo em breve!',
+    'terms.description': 'Ao usar nossos serviços, você concorda com estas regras.',
     'terms.back': 'Voltar para o início',
 
     // Wizard
@@ -717,7 +717,7 @@ const translations = {
     // Privacy & Terms
     'privacy.back': 'Back to home',
     'terms.title': 'Terms of Use',
-    'terms.description': 'Our terms of use will be detailed here. Content coming soon!',
+    'terms.description': 'By using our services, you agree to these rules.',
     'terms.back': 'Back to home',
 
     // Wizard
