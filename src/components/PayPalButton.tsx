@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 // Lê a credencial do environment.
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
-export default function PayPalButton({ planType, firebaseIntentId }: { planType: string, firebaseIntentId: string }) {
+export default function PayPalButton({ planType, firebaseIntentId }: { planType: 'basico' | 'avancado', firebaseIntentId: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,7 +35,7 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
         router.push(`/criando-pagina?intentId=${data.orderID}`);
       } else {
         setError(result.error || "Ocorreu um erro ao processar seu pagamento.");
-        console.error("Erro na captura do PayPal:", result.details || result.error);
+        console.error("Erro na captura do PayPal:", result.error);
       }
     } catch (err: any) {
       setError("Erro de conexão. Por favor, tente novamente.");
@@ -47,7 +47,7 @@ export default function PayPalButton({ planType, firebaseIntentId }: { planType:
 
   return (
     <div className="w-full relative min-h-[100px]">
-      <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: "BRL", intent: "capture" }}>
+      <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, currency: "USD", intent: "capture" }}>
         <PayPalButtons
           style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
           createOrder={async () => {

@@ -255,12 +255,7 @@ export async function createPayPalOrder(planType: 'basico' | 'avancado', intentI
         const request = new paypal.orders.OrdersCreateRequest();
         request.prefer("return=representation");
         
-        const prices = {
-            basico: "19.90",
-            avancado: "24.99"
-        };
-        const value = prices[planType];
-        const description = planType === 'basico' ? 'MyCupid - Economic Plan' : 'MyCupid - Advanced Plan';
+        const value = planType === 'avancado' ? "24.99" : "19.90";
 
         request.requestBody({
             intent: "CAPTURE",
@@ -269,7 +264,7 @@ export async function createPayPalOrder(planType: 'basico' | 'avancado', intentI
                     currency_code: "USD",
                     value: value,
                 },
-                description: description,
+                description: `MyCupid - ${planType === 'avancado' ? 'Advanced' : 'Economic'} Plan`,
                 custom_id: intentId,
             }],
         });
