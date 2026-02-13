@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react'; // Adicionado useEffect
+import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,37 +19,35 @@ import 'swiper/css/effect-coverflow';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-// --- PARTÍCULAS DE CORAÇÃO ULTRA SMOOTH (GPU BASED) ---
 const FloatingHeart = React.memo(({ index }: { index: number }) => {
-    // Geramos valores aleatórios APENAS uma vez na montagem para evitar "hydration mismatch"
-    const randomDuration = useMemo(() => 4 + Math.random() * 4, []); // Entre 4s e 8s (lento e suave)
+    const randomDuration = useMemo(() => 4 + Math.random() * 4, []);
     const randomDelay = useMemo(() => Math.random() * 3, []);
-    const randomXStart = useMemo(() => (Math.random() - 0.5) * 100, []); // Começa perto do centro
-    const randomXEnd = useMemo(() => (Math.random() - 0.5) * 300, []);   // Termina longe (espalhado)
-    const randomSize = useMemo(() => 30 + Math.random() * 40, []);       // Grandes: 30px a 70px
-    const randomRotate = useMemo(() => (Math.random() - 0.5) * 90, []);  // Rotação inicial
+    const randomXStart = useMemo(() => (Math.random() - 0.5) * 100, []);
+    const randomXEnd = useMemo(() => (Math.random() - 0.5) * 300, []);
+    const randomSize = useMemo(() => 30 + Math.random() * 40, []);
+    const randomRotate = useMemo(() => (Math.random() - 0.5) * 90, []);
 
     return (
         <motion.div
             className="absolute top-1/2 left-1/2 text-purple-500/40 pointer-events-none will-change-transform"
             initial={{ 
                 x: randomXStart, 
-                y: 100, // Começa em baixo
+                y: 100,
                 opacity: 0, 
                 scale: 0,
                 rotate: randomRotate 
             }}
             animate={{ 
                 x: randomXEnd,
-                y: -400, // Sobe bastante
-                opacity: [0, 0.8, 0], // Aparece e some no topo
+                y: -400,
+                opacity: [0, 0.8, 0],
                 scale: [0, 1, 0.8], 
-                rotate: randomRotate + 45 // Gira levemente enquanto sobe
+                rotate: randomRotate + 45
             }}
             transition={{ 
                 duration: randomDuration,
                 repeat: Infinity,
-                ease: "easeInOut", // Movimento natural
+                ease: "easeInOut",
                 delay: randomDelay,
             }}
         >
@@ -60,10 +58,7 @@ const FloatingHeart = React.memo(({ index }: { index: number }) => {
 FloatingHeart.displayName = 'FloatingHeart';
 
 const HeartEmitter = React.memo(({ isActive }: { isActive: boolean }) => {
-    // Só renderiza se for o slide ativo para economizar processamento
     if (!isActive) return null;
-
-    // 12 Corações flutuando ao mesmo tempo
     const hearts = Array.from({ length: 12 });
 
     return (
@@ -76,48 +71,38 @@ const HeartEmitter = React.memo(({ isActive }: { isActive: boolean }) => {
 });
 HeartEmitter.displayName = 'HeartEmitter';
 
-// --- COMPONENTE CELULAR ---
 const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isActive?: boolean }) => {
     return (
         <div className={cn(
             "relative mx-auto transition-all duration-700 ease-out select-none",
-            // IMPORTANTE: overflow-visible para os corações saírem do celular
             "h-[500px] w-[260px] md:h-[620px] md:w-[310px] overflow-visible", 
             isActive 
                 ? "scale-100 z-50 brightness-100" 
                 : "scale-90 z-0 brightness-[0.5] opacity-80 grayscale-[30%] blur-[1px]" 
         )}>
             
-            {/* Corações ficam ATRÁS do celular (z-0) mas visíveis fora dele */}
             <HeartEmitter isActive={!!isActive} />
             
-            {/* Glow Traseiro para destacar o celular ativo */}
             {isActive && (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[90%] bg-purple-600/20 blur-[60px] rounded-full -z-10" />
             )}
 
-            {/* Estrutura do Celular (Z-Index alto para ficar na frente dos corações) */}
             <div className="relative w-full h-full border-zinc-900 bg-black border-[8px] md:border-[10px] rounded-[3.5rem] md:rounded-[4rem] shadow-2xl flex flex-col justify-start overflow-hidden ring-1 ring-white/10 z-20">
                 
-                {/* Botões Laterais */}
                 <div className="absolute top-[100px] -left-[10px] h-[35px] w-[4px] bg-zinc-800 rounded-l-md shadow-inner"></div>
                 <div className="absolute top-[150px] -left-[10px] h-[60px] w-[4px] bg-zinc-800 rounded-l-md shadow-inner"></div>
                 <div className="absolute top-[140px] -right-[10px] h-[90px] w-[4px] bg-zinc-800 rounded-r-md shadow-inner"></div>
                 
-                {/* Dynamic Island */}
                 <div className="absolute top-6 left-1/2 transform -translate-x-1/2 h-[28px] w-[90px] md:h-[34px] md:w-[120px] bg-black rounded-full z-30 ring-1 ring-white/10 pointer-events-none flex items-center justify-center">
                     <div className="w-2/3 h-2/3 bg-zinc-900/40 rounded-full blur-[2px]"></div>
                 </div>
                 
-                {/* Tela / Conteúdo */}
                 <div className="w-full h-full bg-zinc-950 relative z-10 overflow-hidden rounded-[3rem] md:rounded-[3.5rem]">
                     {children}
-                    {/* Sombra interna e gradiente */}
                     <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] z-20"></div>
                     <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-20"></div>
                 </div>
                 
-                {/* Reflexo Vidro */}
                 <div className="absolute inset-0 pointer-events-none z-40 rounded-[3.5rem] md:rounded-[4rem] ring-1 ring-white/5">
                     <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent skew-x-12 opacity-30 mix-blend-overlay"></div>
                 </div>
@@ -170,7 +155,6 @@ export default function FeaturesCarousel() {
             className="w-full flex flex-col items-center justify-center py-12 md:py-24 overflow-hidden bg-transparent"
         >
             
-            {/* Header Texto */}
             <div className="text-center w-full max-w-4xl mx-auto mb-10 px-4 relative z-10 min-h-[180px]">
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -194,7 +178,6 @@ export default function FeaturesCarousel() {
                 </AnimatePresence>
             </div>
             
-            {/* CARROSSEL */}
             <div className="relative w-full max-w-[1600px] perspective-[2000px]">
                  <Swiper
                     onSwiper={setSwiper}
@@ -261,7 +244,6 @@ export default function FeaturesCarousel() {
                     ))}
                  </Swiper>
 
-                 {/* Controles Laterais */}
                  <div className="hidden lg:flex justify-between w-full absolute top-1/2 -translate-y-1/2 px-20 pointer-events-none z-30">
                     <Button onClick={() => swiper?.slidePrev()} variant="ghost" size="icon" className="pointer-events-auto h-20 w-20 rounded-full bg-white/5 border border-white/10 hover:bg-purple-500/20 hover:border-purple-500/50 backdrop-blur-xl transition-all duration-300 group shadow-2xl">
                         <ChevronLeft className="h-10 w-10 text-white/70 group-hover:text-white group-hover:-translate-x-1 transition-all"/>
@@ -272,7 +254,6 @@ export default function FeaturesCarousel() {
                  </div>
             </div>
             
-            {/* Paginação */}
             <div className="flex gap-3 mt-6 z-20">
                 {originalSlides.map((_, index) => (
                     <button 
@@ -303,5 +284,3 @@ export default function FeaturesCarousel() {
         </motion.div>
     );
 }
-
-    
