@@ -7,10 +7,11 @@ import { OrbitControls, Html, Stars } from "@react-three/drei"
 import { X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR, enUS, es } from "date-fns/locale"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
 import { useTranslation } from "@/lib/i18n"
+import Image from 'next/image';
 
 /* =========================
    Types & Context
@@ -51,7 +52,7 @@ function useIsMobile() {
 }
 
 /* =========================
-   Floating Card (CORREÇÃO DE Z-INDEX)
+   Floating Card
    ========================= */
 function FloatingCard({
   card,
@@ -63,16 +64,9 @@ function FloatingCard({
   isMobile: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const occludeRef = useRef<THREE.Mesh>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const { locale } = useTranslation();
   
-  const baseScale = isMobile ? 1.25 : 1.44;
-  const cardWidthPx = isMobile ? 140 : 220; 
-  // Aumentei um pouquinho a largura da máscara (1.26) para garantir bloqueio total das bordas
-  const planeWidth = (cardWidthPx / 100) * 1.26 
-  const planeHeight = planeWidth / (3/4)
-
   useFrame(({ camera }) => {
     if (groupRef.current) groupRef.current.lookAt(camera.position)
   })
@@ -93,31 +87,10 @@ function FloatingCard({
   }, [card.date]);
 
   return (
-    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={baseScale}>
-      
-      {/* MÁSCARA DE BLOQUEIO (Invisível, mas sólida para o Renderizador) */}
-      <mesh 
-        ref={occludeRef}
-        renderOrder={-1} // Renderiza primeiro para criar o "buraco" no buffer
-      >
-         {/* Geometria levemente maior para cobrir bordas HTML */}
-         <planeGeometry args={[planeWidth, planeHeight]} />
-         <meshBasicMaterial 
-            colorWrite={false}     // Não desenha cor
-            depthWrite={true}      // Escreve na profundidade (CRUCIAL)
-            depthTest={true}       
-            side={THREE.DoubleSide}
-            transparent={false}    // Opaco para o motor de física da luz
-         />
-      </mesh>
-
+    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={isMobile ? 1.25 : 1.44}>
       <Html
         transform
-        occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0.05]} // Bem próximo da malha para não flutuar muito
-        // AQUI ESTÁ A CORREÇÃO DA "BOMBA":
-        // Range gigante garante que 0.001 de diferença no 3D vire 1 ponto inteiro no Z-Index do CSS
         zIndexRange={[100000, 0]}  
         style={{ 
             pointerEvents: 'none',
@@ -126,53 +99,59 @@ function FloatingCard({
         }} 
       >
         <div
-          className="relative flex flex-col text-center select-none rounded-xl overflow-hidden"
+          className="relative text-center select-none rounded-xl overflow-hidden"
           style={{
-            width: `${cardWidthPx}px`,
-            background: 'transparent',
-            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.5)', 
-            border: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            width: isMobile ? `140px` : `220px`,
+            aspectRatio: '3/4',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'translateZ(0)', 
           }}
         >
-            <div className="relative w-full aspect-[3/4] bg-zinc-900/90 overflow-hidden rounded-xl border border-white/5">
-                {!isLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 z-0">
-                    <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
-                  </div>
+            {!isLoaded && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900">
+                <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
+              </div>
+            )}
+
+            <Image
+                src={card.imageUrl}
+                alt={card.alt}
+                fill
+                unoptimized
+                className={cn(
+                    "object-cover transition-opacity duration-500",
+                    isLoaded ? 'opacity-100' : 'opacity-0'
                 )}
-                
-                <img
-                    src={card.imageUrl}
-                    alt={card.alt}
-                    className={cn(
-                        "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
-                        isLoaded ? "opacity-100" : "opacity-0"
-                    )}
-                    onLoad={() => setIsLoaded(true)}
-                    loading="lazy"
-                />
-                
-                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-10 pb-3 px-2">
-                    {card.title && (
-                       <p className={`text-white/95 font-semibold text-sm leading-tight drop-shadow-lg mb-1 line-clamp-2 [text-wrap:balance]`}>
-                          {card.title}
-                       </p>
-                    )}
-                    
-                    {dateObj && (
-                        <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                            <div className="h-[1px] w-3 bg-purple-500/60"></div>
-                            <p className="text-purple-300 font-bold text-xs tracking-wider uppercase font-sans drop-shadow-md">
-                                {format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}
-                            </p>
-                            <div className="h-[1px] w-3 bg-purple-500/60"></div>
-                        </div>
-                    )}
-                </div>
-            </div>
+                onLoadingComplete={() => setIsLoaded(true)}
+            />
+            
+            <AnimatePresence>
+            {isLoaded && (
+              <motion.div
+                className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-10 pb-3 px-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                  {card.title && (
+                     <p className={`text-white/95 font-semibold text-sm leading-tight drop-shadow-lg mb-1 line-clamp-2 [text-wrap:balance]`}>
+                        {card.title}
+                     </p>
+                  )}
+                  
+                  {dateObj && (
+                      <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                          <div className="h-[1px] w-3 bg-purple-500/60"></div>
+                          <p className="text-purple-300 font-bold text-xs tracking-wider uppercase font-sans drop-shadow-md">
+                              {format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}
+                          </p>
+                          <div className="h-[1px] w-3 bg-purple-500/60"></div>
+                      </div>
+                  )}
+              </motion.div>
+            )}
+            </AnimatePresence>
         </div>
       </Html>
     </group>
@@ -193,7 +172,6 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
     
-    // Raio dinâmico para evitar que as imagens fiquem muito juntas
     const baseRadius = isMobile ? 5.8 : 9.7;
     const radius = baseRadius + (Math.sqrt(numCards) * 0.5);
 
@@ -307,7 +285,6 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
 
-  // Pixel Ratio: Segura a onda no iPhone para não travar
   const dpr = useMemo(() => isMobile ? [1, 1.5] : [1, 2], [isMobile]);
 
   useEffect(() => {
@@ -355,14 +332,12 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
             <Canvas
               dpr={dpr as any} 
               gl={{ 
-                  antialias: false,
+                  antialias: true, // Ligar para melhor qualidade de imagem
                   powerPreference: 'high-performance', 
                   alpha: false,
                   stencil: false,
                   depth: true,
-                  // ISSO AQUI AJUDA A RESOLVER SOBREPOSIÇÃO DE OBJETOS PRÓXIMOS
                   logarithmicDepthBuffer: true,
-                  precision: 'mediump'
               }}
               resize={{ debounce: 200 }} 
               className="absolute inset-0 z-10 block"
