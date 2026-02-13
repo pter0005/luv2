@@ -1,10 +1,11 @@
+
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, Html, Stars } from "@react-three/drei"
-import { X, Loader2 } from "lucide-react"
+import { X, Loader2, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR, enUS, es } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
@@ -51,6 +52,54 @@ function useIsMobile() {
     return isMobile;
 }
 
+
+/* =========================
+   Image Component with Status
+   ========================= */
+const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
+    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+
+    useEffect(() => {
+        console.log(`[3D Gallery] Rendering image: ${img.imageUrl}`);
+    }, [img.imageUrl]);
+
+    return (
+        <div className="relative w-full h-full bg-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex items-center justify-center">
+            {status === 'loading' && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900/50">
+                    <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
+                </div>
+            )}
+            {status === 'error' && (
+                 <div className="absolute inset-0 z-10 flex flex-col gap-1 items-center justify-center bg-red-500/10 text-white p-2">
+                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                    <p className="text-[10px] font-mono font-bold text-red-300">LOAD_ERROR</p>
+                </div>
+            )}
+            <Image
+                src={img.imageUrl}
+                alt={img.alt}
+                fill
+                unoptimized
+                className={cn(
+                    "object-cover transition-opacity duration-500 z-0",
+                    status === 'loaded' ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => {
+                    console.log(`[3D Gallery] LOAD SUCCESS: ${img.imageUrl}`);
+                    setStatus('loaded');
+                }}
+                onError={() => {
+                    console.error(`[3D Gallery] CMD_LOG: LOAD FAILED! Check if this URL is valid and public: ${img.imageUrl}`);
+                    setStatus('error');
+                }}
+            />
+        </div>
+    );
+});
+GalleryImage.displayName = "GalleryImage";
+
+
 /* =========================
    Floating Card
    ========================= */
@@ -64,7 +113,6 @@ function FloatingCard({
   isMobile: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
   const { locale } = useTranslation();
   
   useFrame(({ camera }) => {
@@ -108,26 +156,9 @@ function FloatingCard({
             transform: 'translateZ(0)', 
           }}
         >
-            {!isLoaded && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900">
-                <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
-              </div>
-            )}
-
-            <Image
-                src={card.imageUrl}
-                alt={card.alt}
-                fill
-                unoptimized
-                className={cn(
-                    "object-cover transition-opacity duration-500",
-                    isLoaded ? 'opacity-100' : 'opacity-0'
-                )}
-                onLoadingComplete={() => setIsLoaded(true)}
-            />
+            <GalleryImage img={card} index={0} />
             
             <AnimatePresence>
-            {isLoaded && (
               <motion.div
                 className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent pt-10 pb-3 px-2"
                 initial={{ opacity: 0 }}
@@ -150,7 +181,6 @@ function FloatingCard({
                       </div>
                   )}
               </motion.div>
-            )}
             </AnimatePresence>
         </div>
       </Html>
@@ -332,7 +362,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
             <Canvas
               dpr={dpr as any} 
               gl={{ 
-                  antialias: true, // Ligar para melhor qualidade de imagem
+                  antialias: true,
                   powerPreference: 'high-performance', 
                   alpha: false,
                   stencil: false,
