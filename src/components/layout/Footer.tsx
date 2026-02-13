@@ -45,6 +45,7 @@ export default function Footer() {
               <li><FooterLink href="/minhas-paginas">{t('footer.myCreations')}</FooterLink></li>
               <li><FooterLink href="/login">{t('footer.login')}</FooterLink></li>
               <li><FooterLink href="/#planos">{t('footer.plans')}</FooterLink></li>
+              <li><FooterLink href="/admin/login">Área Admin</FooterLink></li>
             </ul>
           </div>
 

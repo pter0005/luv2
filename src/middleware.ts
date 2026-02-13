@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 
 // Rotas que precisam de login
 const protectedRoutes = ['/criar', '/minhas-paginas'];
+// Rotas de admin
+const adminRoutes = ['/admin'];
 // Rotas que usuário logado não deve acessar
 const authRoutes = ['/login'];
 
@@ -36,17 +38,26 @@ export function middleware(request: NextRequest) {
   }
 
   // --- LÓGICA DE PROTEÇÃO DE ROTAS (JÁ EXISTENTE) ---
-  const session = request.cookies.get('session_user')?.value;
+  const userSession = request.cookies.get('session_user')?.value;
+  const adminSession = request.cookies.get('session_admin')?.value;
 
-  // 1. Se tentar acessar rota protegida sem cookie -> Manda pro Login
-  if (protectedRoutes.some((route) => pathname.startsWith(route)) && !session) {
+  // 1. Se tentar acessar rota protegida de usuário sem cookie -> Manda pro Login
+  if (protectedRoutes.some((route) => pathname.startsWith(route)) && !userSession) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname); // Salva onde ele queria ir
     return NextResponse.redirect(loginUrl);
   }
+  
+  // 2. Se tentar acessar rota de admin sem cookie de admin -> Manda pro Login do Admin
+  if (adminRoutes.some((route) => pathname.startsWith(route)) && !adminSession) {
+    const adminLoginUrl = new URL('/admin/login', request.url);
+    adminLoginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(adminLoginUrl);
+  }
 
-  // 2. Se já tem cookie e tenta acessar login -> Manda direto pra criar
-  if (authRoutes.includes(pathname) && session) {
+
+  // 3. Se já tem cookie e tenta acessar login -> Manda direto pra criar
+  if (authRoutes.includes(pathname) && userSession) {
     return NextResponse.redirect(new URL('/criar', request.url));
   }
 
