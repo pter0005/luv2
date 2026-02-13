@@ -395,7 +395,7 @@ const GalleryStep = React.memo(() => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.95);
+                const compressedFile = await compressImage(file, 1280, 0.85);
                 return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
 
@@ -569,8 +569,8 @@ const TimelineStep = React.memo(() => {
 
         try {
             const uploadPromises = filesToUpload.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.95);
-                return uploadFile(storage, user.uid, compressedFile, 'timeline');
+                // Remove compression for original quality
+                return uploadFile(storage, user.uid, file, 'timeline');
             });
 
             const uploadedFiles = await Promise.all(uploadPromises);
@@ -1162,7 +1162,7 @@ const PuzzleStep = React.memo(() => {
             const file = event.target.files[0];
             setIsProcessing(true);
             try {
-                const compressedBlob = await compressImage(file, 1280, 0.95);
+                const compressedBlob = await compressImage(file, 1280, 0.85);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
                 toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
