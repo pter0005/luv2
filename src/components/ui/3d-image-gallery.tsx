@@ -137,6 +137,7 @@ function FloatingCard({
                     src={card.imageUrl}
                     alt={card.alt}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                     onError={() => {
                         console.error(`[CMD_LOG]: LOAD FAILED! Could not load image: ${card.imageUrl}`);
                         setImageError(true);
@@ -233,8 +234,8 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
             <Stars
                 radius={80} 
                 depth={60} 
-                count={isMobile ? 800 : 3500} 
-                factor={4} 
+                count={isMobile ? 1200 : 4000} 
+                factor={isMobile ? 5 : 4} 
                 saturation={0} 
                 fade={true} 
                 speed={0.4} 
@@ -325,3 +326,5 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     document.body
   )
 }
+
+    

@@ -173,19 +173,13 @@ async function moveFile(
     fileData: { url: string; path: string },
     pageId: string,
     targetFolder: string
-): Promise<{ url: string; path: string } | null> {
+): Promise<{ url: string; path: string }> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
         return fileData;
     }
 
     const oldPath = fileData.path;
-    const fileName = oldPath.split('/').pop();
-    
-    if (!fileName) {
-        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Caminho inválido, sem nome de arquivo: ${oldPath}`);
-        return null;
-    }
-
+    const fileName = oldPath.split('/').pop()!;
     const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
     
     const storage = getAdminStorage();
@@ -193,26 +187,16 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        const [sourceExists] = await oldFile.exists();
-        if (sourceExists) {
-            await oldFile.move(newFile);
-        } else {
-            const [destExists] = await newFile.exists();
-            if (!destExists) {
-                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Arquivo ${fileName} é um fantasma. Não encontrado em ${oldPath} ou ${newPath}.`);
-                return null;
-            }
-            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Arquivo ${oldPath} não encontrado, mas já existe em ${newPath}. Recuperando.`);
-        }
-
+        // A pre-flight check em `finalizeLovePage` garante que `oldFile` existe.
+        await oldFile.move(newFile);
         await newFile.makePublic();
         const finalUrl = newFile.publicUrl();
         console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] Arquivo finalizado em: ${newPath}`);
         return { url: finalUrl, path: newPath };
-
     } catch (error: any) {
-        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha crítica movendo ${oldPath} para ${newPath}`, error);
-        return null;
+        // Este erro agora é mais sério, pois o pre-check deveria ter prevenido.
+        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha movendo ${oldPath} para ${newPath}.`, error);
+        throw new Error(`Falha crítica ao mover o arquivo: ${fileName}. A finalização será interrompida.`);
     }
 }
 
@@ -222,9 +206,7 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
 
     const processImageList = async (imageList: any[], folder: string) => {
         if (!imageList || !Array.isArray(imageList)) return [];
-        const movePromises = imageList.map(img => moveFile(img, pageId, folder));
-        const results = await Promise.all(movePromises);
-        return results.filter(res => res !== null);
+        return Promise.all(imageList.map(img => moveFile(img, pageId, folder)));
     };
 
     if (updatedData.galleryImages) {
@@ -232,18 +214,13 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     }
 
     if (updatedData.timelineEvents && Array.isArray(updatedData.timelineEvents)) {
-        const processedEvents = await Promise.all(updatedData.timelineEvents.map(async (event: any) => {
+        updatedData.timelineEvents = await Promise.all(updatedData.timelineEvents.map(async (event: any) => {
             if (event.image) {
                 const movedImage = await moveFile(event.image, pageId, 'timeline');
-                if (movedImage) {
-                    return { ...event, image: movedImage };
-                }
-                const { image, ...eventWithoutImage } = event;
-                return eventWithoutImage;
+                return { ...event, image: movedImage };
             }
             return event;
         }));
-        updatedData.timelineEvents = processedEvents; 
     }
     
     if (updatedData.puzzleImage) {
@@ -328,17 +305,55 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
 
 export async function finalizeLovePage(intentId: string, paymentId: string) {
     const db = getAdminFirestore();
+    const storage = getAdminStorage();
     const intentRef = db.collection('payment_intents').doc(intentId);
     
     try {
         const intentDoc = await intentRef.get();
-        const data = intentDoc.data();
+        let data = intentDoc.data();
+
         if (!data) {
             const errorMessage = `Rascunho ${intentId} não encontrado.`;
             console.error(`[CMD_LOG][FINALIZE_ERROR] ${errorMessage}`);
             return { error: errorMessage };
         }
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
+
+        // --- PRE-FLIGHT CHECK PARA ELIMINAR ARQUIVOS FANTASMAS ---
+        const fileExists = async (path: string | undefined) => {
+            if (!path || !path.includes('temp/')) return true; // Já é permanente ou não tem caminho
+            try {
+                const [exists] = await storage.file(path).exists();
+                if (!exists) console.warn(`[CMD_LOG][PRE-CHECK_FAIL] Arquivo fantasma detectado e será purgado: ${path}`);
+                return exists;
+            } catch (e) {
+                console.error(`[CMD_LOG][PRE-CHECK_ERROR] Erro ao verificar existência do arquivo ${path}`, e);
+                return false; // Trata como não existente em caso de erro na verificação
+            }
+        };
+
+        // Limpa a galeria
+        if (data.galleryImages && Array.isArray(data.galleryImages)) {
+            const checks = await Promise.all(data.galleryImages.map(img => fileExists(img?.path)));
+            data.galleryImages = data.galleryImages.filter((_, i) => checks[i]);
+        }
+
+        // Limpa a linha do tempo
+        if (data.timelineEvents && Array.isArray(data.timelineEvents)) {
+            const checks = await Promise.all(data.timelineEvents.map(evt => fileExists(evt?.image?.path)));
+            data.timelineEvents = data.timelineEvents.filter((_, i) => checks[i]);
+        }
+        
+        // Limpa imagem do puzzle
+        if (data.puzzleImage && !(await fileExists(data.puzzleImage.path))) {
+            data.puzzleImage = null;
+        }
+
+        // Limpa gravação de áudio
+        if (data.audioRecording && !(await fileExists(data.audioRecording.path))) {
+            data.audioRecording = null;
+        }
+        // --- FIM DO PRE-FLIGHT CHECK ---
 
         const newPageId = db.collection('lovepages').doc().id;
         const sanitized = sanitizeForFirebase(data);
