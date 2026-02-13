@@ -176,7 +176,7 @@ async function moveFile(
     targetFolder: string
 ): Promise<{ url: string; path: string }> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
-        return fileData;
+        return fileData; // Not a temporary file, no action needed.
     }
 
     const oldPath = fileData.path;
@@ -194,40 +194,36 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        // Tenta copiar o arquivo diretamente. Esta é a operação principal.
-        await oldFile.copy(newFile);
-    } catch (error: any) {
-        // Se a cópia falhar, verifica o motivo.
-        if (error.code === 404) { // Erro "Not Found"
-            // O arquivo de origem não foi encontrado. Pode já ter sido movido.
-            const [destinationExists] = await newFile.exists();
-            if (destinationExists) {
-                // Se o destino existe, a operação provavelmente já foi feita. Sucesso.
-                console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Origem ${oldPath} não encontrada, mas destino ${newPath} já existe. Assumindo sucesso.`);
-                await newFile.makePublic();
-                return { url: newFile.publicUrl(), path: newPath };
-            } else {
-                // Se nem origem nem destino existem, é um erro crítico.
-                console.error(`[CMD_LOG][MOVE_FILE_FAIL] ERRO CRÍTICO: Origem ${oldPath} E destino ${newPath} não encontrados. Arquivo perdido.`);
-                throw new Error(`Arquivo de rascunho ${fileName} não foi encontrado para mover.`);
-            }
+        const [destinationExists] = await newFile.exists();
+        if (destinationExists) {
+            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Destino ${newPath} já existe. Assumindo sucesso sem mover.`);
+            await newFile.makePublic(); // Ensure it's public
+            return { url: newFile.publicUrl(), path: newPath };
         }
-        // Se for outro tipo de erro (permissão, etc.), lança o erro original.
-        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Falha na cópia do arquivo de ${oldPath} para ${newPath}`, error);
-        throw error;
-    }
+        
+        const [sourceExists] = await oldFile.exists();
+        if (!sourceExists) {
+             console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Origem ${oldPath} não encontrada e destino ${newPath} não existe. Arquivo perdido.`);
+             throw new Error(`Arquivo de rascunho ${fileName} não foi encontrado para mover.`);
+        }
 
-    // Se a cópia funcionou, continua o processo.
-    try {
+        await oldFile.move(newFile);
         await newFile.makePublic();
-        await oldFile.delete();
+        
         const finalUrl = newFile.publicUrl();
         console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] ${oldPath} -> ${newPath}`);
         return { url: finalUrl, path: newPath };
-    } catch (postCopyError: any) {
-        console.error(`[CMD_LOG][MOVE_FILE_WARN] Arquivo copiado para ${newPath}, mas falhou ao deletar a origem ${oldPath}. Continuando...`, postCopyError);
-        // Mesmo que a exclusão falhe, a cópia foi feita, então retornamos sucesso.
-        return { url: newFile.publicUrl(), path: newPath };
+
+    } catch (error: any) {
+        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Falha na movimentação do arquivo de ${oldPath} para ${newPath}`, error);
+        // If move fails, maybe destination already exists from a race condition. Let's check one last time.
+        const [destinationExists] = await newFile.exists();
+        if (destinationExists) {
+            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER_ON_FAIL] Move falhou, mas destino ${newPath} foi encontrado. Recuperando...`);
+            await newFile.makePublic();
+            return { url: newFile.publicUrl(), path: newPath };
+        }
+        throw error; // Re-throw the original error if recovery fails.
     }
 }
 
