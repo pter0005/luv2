@@ -25,18 +25,23 @@ const SectionSkeleton = () => (
 // This splits the code into smaller chunks, improving initial load time.
 const HowItWorksSection = dynamic(() => import('@/components/layout/HowItWorksSection'), {
   loading: () => <SectionSkeleton />,
+  ssr: false,
 });
 const FeaturesSection = dynamic(() => import('@/components/layout/FeaturesSection'), {
   loading: () => <SectionSkeleton />,
+  ssr: false,
 });
 const DemoSection = dynamic(() => import('@/components/layout/DemoSection'), {
   loading: () => <SectionSkeleton />,
+  ssr: false,
 });
 const TestimonialsSection = dynamic(() => import('@/components/layout/TestimonialsSection'), {
   loading: () => <SectionSkeleton />,
+  ssr: false,
 });
 const PlansSection = dynamic(() => import('@/components/layout/PlansSection'), {
   loading: () => <SectionSkeleton />,
+  ssr: false,
 });
 
 // This wrapper component handles the fade-in animation as sections scroll into view.
