@@ -1,3 +1,4 @@
+
 'use server';
 
 import { cookies } from 'next/headers';
@@ -6,7 +7,7 @@ import { redirect } from 'next/navigation';
 const ADMIN_USER = 'admin123';
 const ADMIN_PASS = '12345678a';
 
-export async function createAdminSession(data: FormData) {
+export async function createAdminSession(prevState: { error: string }, data: FormData) {
   const username = data.get('username');
   const password = data.get('password');
 
