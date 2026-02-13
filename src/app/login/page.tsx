@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useFirebase, useUser } from '@/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
@@ -65,7 +65,8 @@ function LoginContent() {
           await setDoc(userRef, {
             id: user.uid,
             email: user.email,
-            name: user.email?.split('@')[0] || 'Usuário'
+            name: user.email?.split('@')[0] || 'Usuário',
+            createdAt: serverTimestamp()
           }, { merge: true });
         }
 
@@ -115,7 +116,8 @@ function LoginContent() {
             id: user.uid,
             email: user.email,
             name: user.displayName,
-            photoURL: user.photoURL
+            photoURL: user.photoURL,
+            createdAt: serverTimestamp()
         }, { merge: true });
       }
 

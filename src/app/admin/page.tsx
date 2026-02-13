@@ -2,16 +2,39 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, DollarSign, LogOut } from 'lucide-react';
+import { 
+  Users, 
+  FileText, 
+  DollarSign, 
+  LogOut, 
+  TrendingUp, 
+  AlertTriangle, 
+  Music, 
+  Calendar, 
+  ImageIcon,
+  Smartphone
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+// Função auxiliar para formatar moeda
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
 
 async function getStats() {
   const db = getAdminFirestore();
-  const usersSnapshot = await db.collection('users').get();
-  const pagesSnapshot = await db.collection('lovepages').get();
+  
+  const usersQuery = db.collection('users');
+  const pagesQuery = db.collection('lovepages');
+
+  // Usando .get() para buscar todos os documentos.
+  const usersSnapshot = await usersQuery.get();
+  const pagesSnapshot = await pagesQuery.get();
   
   let avancadoCount = 0;
   let basicoCount = 0;
-
+  
   pagesSnapshot.forEach(doc => {
     const pageData = doc.data();
     if (pageData.plan === 'avancado') {

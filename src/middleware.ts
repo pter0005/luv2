@@ -49,7 +49,10 @@ export function middleware(request: NextRequest) {
   }
   
   // 2. Se tentar acessar rota de admin sem cookie de admin -> Manda pro Login do Admin
-  if (adminRoutes.some((route) => pathname.startsWith(route)) && !adminSession) {
+  const isTryingToAccessAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
+  const isTryingToAccessAdminLogin = pathname === '/admin/login';
+
+  if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin && !adminSession) {
     const adminLoginUrl = new URL('/admin/login', request.url);
     adminLoginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(adminLoginUrl);
