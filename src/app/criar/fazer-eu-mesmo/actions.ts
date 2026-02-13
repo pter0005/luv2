@@ -114,7 +114,7 @@ export async function processPixPayment(intentId: string, price: number) {
         if (result && result.id && result.point_of_interaction?.transaction_data) {
             const { qr_code, qr_code_base64 } = result.point_of_interaction.transaction_data;
             await db.collection('payment_intents').doc(intentId).update({ paymentId: result.id!.toString() });
-            return { qrCode: qr_code, qrCodeBase64: qr_code_base64, paymentId: result.id!.toString() };
+            return { qrCode: qr_code, qrCodeBase64: qr_code_base_64, paymentId: result.id!.toString() };
         }
         
         console.error("Resposta inesperada do Mercado Pago:", result);
@@ -171,8 +171,8 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
 }
 
 async function moveFile(
-    fileData: { url: string, path: string }, 
-    pageId: string, 
+    fileData: { url: string; path: string },
+    pageId: string,
     targetFolder: string
 ): Promise<{ url: string; path: string }> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
@@ -189,38 +189,45 @@ async function moveFile(
 
     const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
     
-    try {
-        const storage = getAdminStorage();
-        const oldFile = storage.file(oldPath);
-        const newFile = storage.file(newPath);
+    const storage = getAdminStorage();
+    const oldFile = storage.file(oldPath);
+    const newFile = storage.file(newPath);
 
-        const [exists] = await oldFile.exists();
-        if (!exists) {
-            const [newExists] = await newFile.exists();
-            if (newExists) {
-                console.warn(`[CMD_LOG][MOVE_FILE_WARN] Source file missing, but destination exists. Assuming already moved: ${oldPath}`);
+    try {
+        // Tenta copiar o arquivo diretamente. Esta é a operação principal.
+        await oldFile.copy(newFile);
+    } catch (error: any) {
+        // Se a cópia falhar, verifica o motivo.
+        if (error.code === 404) { // Erro "Not Found"
+            // O arquivo de origem não foi encontrado. Pode já ter sido movido.
+            const [destinationExists] = await newFile.exists();
+            if (destinationExists) {
+                // Se o destino existe, a operação provavelmente já foi feita. Sucesso.
+                console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Origem ${oldPath} não encontrada, mas destino ${newPath} já existe. Assumindo sucesso.`);
                 await newFile.makePublic();
                 return { url: newFile.publicUrl(), path: newPath };
+            } else {
+                // Se nem origem nem destino existem, é um erro crítico.
+                console.error(`[CMD_LOG][MOVE_FILE_FAIL] ERRO CRÍTICO: Origem ${oldPath} E destino ${newPath} não encontrados. Arquivo perdido.`);
+                throw new Error(`Arquivo de rascunho ${fileName} não foi encontrado para mover.`);
             }
-            throw new Error(`Arquivo de origem não encontrado e não existe no destino: ${oldPath}`);
         }
+        // Se for outro tipo de erro (permissão, etc.), lança o erro original.
+        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Falha na cópia do arquivo de ${oldPath} para ${newPath}`, error);
+        throw error;
+    }
 
-        await oldFile.copy(newFile);
+    // Se a cópia funcionou, continua o processo.
+    try {
         await newFile.makePublic();
         await oldFile.delete();
-        
         const finalUrl = newFile.publicUrl();
         console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] ${oldPath} -> ${newPath}`);
-
         return { url: finalUrl, path: newPath };
-    } catch (error: any) {
-        console.error("====================== MOVE FILE CRITICAL ERROR ======================");
-        console.error(`[CMD_LOG] Falha catastrófica ao mover arquivo do rascunho para a pasta final.`);
-        console.error(`  > DE: ${oldPath}`);
-        console.error(`  > PARA: ${newPath}`);
-        console.error(`  > ERRO: ${error.message}`);
-        console.error("======================================================================");
-        throw new Error(`Falha ao processar o arquivo ${fileName}. A finalização foi interrompida.`);
+    } catch (postCopyError: any) {
+        console.error(`[CMD_LOG][MOVE_FILE_WARN] Arquivo copiado para ${newPath}, mas falhou ao deletar a origem ${oldPath}. Continuando...`, postCopyError);
+        // Mesmo que a exclusão falhe, a cópia foi feita, então retornamos sucesso.
+        return { url: newFile.publicUrl(), path: newPath };
     }
 }
 
