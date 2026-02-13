@@ -81,9 +81,17 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [pageData.enablePuzzle, pageData.puzzleImage]);
 
   const timelineEventsForDisplay = useMemo(() => {
-    if (!pageData.timelineEvents) return [];
+    if (!Array.isArray(pageData.timelineEvents)) {
+      return [];
+    }
     return pageData.timelineEvents
-      .filter((event: any) => event.image?.url && !event.image.path.includes('temp/'))
+      .filter((event: any) =>
+        event &&
+        event.image &&
+        typeof event.image.url === 'string' &&
+        typeof event.image.path === 'string' &&
+        !event.image.path.includes('temp/')
+      )
       .map((event: any) => ({
         id: event.id || Math.random().toString(),
         imageUrl: event.image!.url,
@@ -333,5 +341,3 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     </div>
   );
 }
-
-    

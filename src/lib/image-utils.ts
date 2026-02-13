@@ -36,7 +36,7 @@ export const base64ToBlob = (base64: string): Blob => {
 
 
 // Helper to compress and resize an image file
-export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.85): Promise<Blob> => {
+export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.95): Promise<Blob> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
