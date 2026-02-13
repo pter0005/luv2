@@ -92,13 +92,29 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         typeof event.image.path === 'string' &&
         !event.image.path.includes('temp/')
       )
-      .map((event: any) => ({
-        id: event.id || Math.random().toString(),
-        imageUrl: event.image!.url,
-        alt: t('publicpage.alt.timelineImage'),
-        title: event.description || '',
-        date: event.date ? new Date(event.date._seconds ? event.date._seconds * 1000 : event.date) : undefined,
-      }));
+      .map((event: any) => {
+        let dateObj;
+        if (event.date) {
+            // Handle Firestore Timestamp from server-side rendering (JSON serialized)
+            if (event.date._seconds !== undefined) {
+                dateObj = new Date(event.date._seconds * 1000);
+            } 
+            // Handle standard Date strings or Date objects from form state
+            else {
+                dateObj = new Date(event.date);
+            }
+        } else {
+            dateObj = undefined;
+        }
+
+        return {
+            id: event.id || Math.random().toString(),
+            imageUrl: event.image!.url,
+            alt: t('publicpage.alt.timelineImage'),
+            title: event.description || '',
+            date: dateObj,
+        };
+      });
   }, [pageData.timelineEvents, t]);
   
   const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
