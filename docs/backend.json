@@ -162,7 +162,7 @@
       "schema": {
         "$ref": "#/entities/LovePage"
       },
-      "description": "Temporarily stores page data during payment process. Automatically deleted after 30 minutes.",
+      "description": "Temporarily stores page data (drafts) during the creation process. Automatically deleted after 24 hours.",
       "ttl": {
         "field": "expireAt"
       }

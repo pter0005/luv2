@@ -48,9 +48,14 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         const db = getAdminFirestore(); 
         const paymentIntentsRef = db.collection('payment_intents');
         
+        // Rascunhos expiram em 24 horas para não poluir o banco
+        const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+        const expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
+
         const dataToSave = { 
             ...sanitizeForFirebase(restOfPageData), 
-            updatedAt: Timestamp.now() 
+            updatedAt: Timestamp.now(),
+            expireAt: expireAt // Adiciona o campo de expiração
         };
 
         if (intentId) {
