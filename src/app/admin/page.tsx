@@ -60,6 +60,7 @@ async function getAdminData() {
 
     return {
       id: doc.id,
+      slug: data.slug || doc.id, // O link da página
       plan: data.plan || 'gratis',
       price: data.plan === 'avancado' ? 24.90 : (data.plan === 'basico' ? 19.90 : 0),
       createdAt: createdAtDate,
@@ -198,7 +199,7 @@ export default async function AdminDashboard() {
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <Button asChild variant="outline" size="sm" className="h-8">
-                                        <Link href={`/p/${sale.id}`} target="_blank">
+                                        <Link href={`/p/${sale.slug}`} target="_blank">
                                             Ver Página <ExternalLink className="w-3 h-3 ml-2" />
                                         </Link>
                                     </Button>
