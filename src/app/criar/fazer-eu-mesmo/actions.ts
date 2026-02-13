@@ -48,14 +48,13 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         const db = getAdminFirestore(); 
         const paymentIntentsRef = db.collection('payment_intents');
         
-        // Rascunhos expiram em 24 horas para não poluir o banco
         const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
         const expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
 
         const dataToSave = { 
             ...sanitizeForFirebase(restOfPageData), 
             updatedAt: Timestamp.now(),
-            expireAt: expireAt // Adiciona o campo de expiração
+            expireAt: expireAt
         };
 
         if (intentId) {
@@ -174,9 +173,9 @@ async function moveFile(
     fileData: { url: string; path: string },
     pageId: string,
     targetFolder: string
-): Promise<{ url: string; path: string }> {
+): Promise<{ url: string; path: string } | null> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
-        return fileData; // Not a temporary file, no action needed.
+        return fileData; 
     }
 
     const oldPath = fileData.path;
@@ -184,7 +183,7 @@ async function moveFile(
     
     if (!fileName) {
         console.error(`[CMD_LOG][MOVE_FILE_FAIL] Invalid path, no filename: ${oldPath}`);
-        throw new Error(`Caminho de arquivo inválido, impossível mover: ${oldPath}`);
+        return null;
     }
 
     const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
@@ -194,17 +193,10 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        const [destinationExists] = await newFile.exists();
-        if (destinationExists) {
-            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Destino ${newPath} já existe. Assumindo sucesso sem mover.`);
-            await newFile.makePublic(); // Ensure it's public
-            return { url: newFile.publicUrl(), path: newPath };
-        }
-        
         const [sourceExists] = await oldFile.exists();
         if (!sourceExists) {
-             console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Origem ${oldPath} não encontrada e destino ${newPath} não existe. Arquivo perdido.`);
-             throw new Error(`Arquivo de rascunho ${fileName} não foi encontrado para mover.`);
+             console.warn(`[CMD_LOG][MOVE_FILE_SKIP] Arquivo de rascunho ${fileName} não foi encontrado em ${oldPath}. Pulando este arquivo.`);
+             return null;
         }
 
         await oldFile.move(newFile);
@@ -216,14 +208,7 @@ async function moveFile(
 
     } catch (error: any) {
         console.error(`[CMD_LOG][MOVE_FILE_FAIL] Falha na movimentação do arquivo de ${oldPath} para ${newPath}`, error);
-        // If move fails, maybe destination already exists from a race condition. Let's check one last time.
-        const [destinationExists] = await newFile.exists();
-        if (destinationExists) {
-            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER_ON_FAIL] Move falhou, mas destino ${newPath} foi encontrado. Recuperando...`);
-            await newFile.makePublic();
-            return { url: newFile.publicUrl(), path: newPath };
-        }
-        throw error; // Re-throw the original error if recovery fails.
+        return null;
     }
 }
 
@@ -232,21 +217,24 @@ async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
 
     if (pageData.galleryImages && Array.isArray(pageData.galleryImages)) {
-        updatedData.galleryImages = await Promise.all(
-            pageData.galleryImages.map((img: any) => moveFile(img, pageId, 'gallery'))
-        );
+        const movePromises = pageData.galleryImages.map((img: any) => moveFile(img, pageId, 'gallery'));
+        const movedImages = await Promise.all(movePromises);
+        updatedData.galleryImages = movedImages.filter(img => img !== null);
     }
 
     if (pageData.timelineEvents && Array.isArray(pageData.timelineEvents)) {
-        updatedData.timelineEvents = await Promise.all(
-            pageData.timelineEvents.map(async (event: any) => {
-                if (event.image) {
-                    const movedImage = await moveFile(event.image, pageId, 'timeline');
+        const movePromises = pageData.timelineEvents.map(async (event: any) => {
+            if (event.image) {
+                const movedImage = await moveFile(event.image, pageId, 'timeline');
+                if (movedImage) {
                     return { ...event, image: movedImage };
                 }
-                return event;
-            })
-        );
+                return null; // Discard event if image move fails
+            }
+            return event;
+        });
+        const movedEvents = await Promise.all(movePromises);
+        updatedData.timelineEvents = movedEvents.filter(event => event !== null);
     }
     
     if (pageData.puzzleImage) {
@@ -425,3 +413,5 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 }
 
 export { suggestContent };
+
+    
