@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -12,7 +11,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
 import { useTranslation } from "@/lib/i18n"
-import Image from 'next/image';
 
 /* =========================
    Types & Context
@@ -54,86 +52,52 @@ function useIsMobile() {
 
 
 /* =========================
-   Floating Card (RESTAURADO E BLINDADO)
+   Floating Card (NITIDEZ E LISURA)
    ========================= */
-function FloatingCard({
-  card,
-  position,
-  isMobile,
-}: {
-  card: Card
-  position: { x: number; y: number; z: number }
-  isMobile: boolean
-}) {
+function FloatingCard({ card, position, isMobile }: { card: Card, position: any, isMobile: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
   const { locale } = useTranslation();
   const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-      console.log(`[3D Gallery] Rendering image: ${card.imageUrl}`);
-  }, [card.imageUrl]);
   
-  // LookAt suave para a câmera
   useFrame(({ camera }) => {
     if (groupRef.current) groupRef.current.lookAt(camera.position)
   })
 
-  const dateLocales: { [key: string]: Locale } = { pt: ptBR, en: enUS, es: es };
+  const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
   const fnsLocale = dateLocales[locale] || ptBR;
 
   const dateObj = useMemo(() => {
       if (!card.date) return null;
-      if (card.date instanceof Date) return card.date;
       const seconds = (card.date as any)._seconds || (card.date as any).seconds;
-      return seconds ? new Date(seconds * 1000) : null;
+      return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
   }, [card.date]);
 
   const cardWidthPx = isMobile ? 140 : 220;
-  const planeWidth = (cardWidthPx / 100) * 1.26;
-  const planeHeight = planeWidth / (3/4);
 
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]} scale={isMobile ? 1.25 : 1.44}>
-      
-      {/* MÁSCARA DE PROFUNDIDADE (Garante que um card não atravesse o outro) */}
       <mesh ref={occludeRef} renderOrder={-1}>
-         <planeGeometry args={[planeWidth, planeHeight]} />
-         <meshBasicMaterial 
-            colorWrite={false} 
-            depthWrite={true} 
-            transparent={false} 
-            side={THREE.DoubleSide} 
-         />
+         <planeGeometry args={[(cardWidthPx/100)*1.26, (cardWidthPx/100)*1.26/(3/4)]} />
+         <meshBasicMaterial colorWrite={false} depthWrite={true} transparent={false} side={THREE.DoubleSide} />
       </mesh>
 
       <Html
         transform
         occlude={[occludeRef]}
         distanceFactor={8} 
-        position={[0, 0, 0.08]} // Offset leve para evitar cintilação (flicker)
-        zIndexRange={[200000, 0]} // Range massivo para precisão de camadas
-        style={{ 
-            pointerEvents: 'none',
-            transformStyle: 'preserve-3d', 
-            willChange: 'transform', 
-        }} 
+        position={[0, 0, 0.1]} 
+        zIndexRange={[200000, 0]} 
+        style={{ pointerEvents: 'none', transformStyle: 'preserve-3d' }} 
       >
-        <div
-          className="relative rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10"
-          style={{
-            width: `${cardWidthPx}px`,
-            aspectRatio: '3/4',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-          }}
-        >
+        <div className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10"
+             style={{ width: `${cardWidthPx}px`, aspectRatio: '3/4' }}>
             {imageError ? (
                 <div className="w-full h-full bg-red-900/50 flex items-center justify-center">
                     <AlertTriangle className="w-8 h-8 text-red-400" />
                 </div>
             ) : (
-                <img
+                 <img
                     src={card.imageUrl}
                     alt={card.alt}
                     className="w-full h-full object-cover"
@@ -144,18 +108,9 @@ function FloatingCard({
                     }}
                 />
             )}
-            
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
-                {card.title && (
-                    <p className="text-white font-bold text-sm leading-tight line-clamp-2 mb-1 drop-shadow-md">
-                        {card.title}
-                    </p>
-                )}
-                {dateObj && (
-                    <p className="text-purple-400 font-black text-[10px] uppercase tracking-tighter">
-                        {format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}
-                    </p>
-                )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent flex flex-col justify-end p-3">
+                <p className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md mb-1">{card.title}</p>
+                {dateObj && <p className="text-purple-400 font-black text-[10px] uppercase">{format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}</p>}
             </div>
         </div>
       </Html>
@@ -212,7 +167,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 
 
 /* =========================
-   Scene (VISUAL PREMIUM)
+   Scene (EQUILIBRADO)
    ========================= */
 function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
     const { camera } = useThree();
@@ -228,20 +183,18 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
     return (
         <>
             <color attach="background" args={['#020202']} />
-            <fog attach="fog" args={['#020202', 10, 50]} />
             
-            {/* Estrelas com maior contagem para beleza visual */}
             <Stars
                 radius={80} 
                 depth={60} 
-                count={isMobile ? 1200 : 4000} 
-                factor={isMobile ? 5 : 4} 
+                count={isMobile ? 1000 : 3000} // Estrelas bonitas mas sem lag
+                factor={4} 
                 saturation={0} 
                 fade={true} 
-                speed={0.4} 
+                speed={0.3} 
             />
             
-            <ambientLight intensity={1.2} />
+            <ambientLight intensity={1.5} />
             <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
             
             <CardGalaxy isMobile={isMobile} />
@@ -249,12 +202,12 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
             <OrbitControls
                 makeDefault
                 enableDamping
-                dampingFactor={0.05}
+                dampingFactor={0.07}
                 enablePan={false}
                 minDistance={5}
                 maxDistance={45}
                 autoRotate
-                autoRotateSpeed={0.4}
+                autoRotateSpeed={0.5}
             />
         </>
     );
@@ -284,7 +237,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => {
 
 
 /* =========================
-   Main Wrapper (LISO E OTIMIZADO)
+   Main Wrapper
    ========================= */
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
@@ -307,11 +260,11 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
-          dpr={isMobile ? [1, 1.5] : [1, 2]} // Evita processamento inútil no iPhone
+          dpr={isMobile ? [1, 1.5] : [1, 2]}
           gl={{ 
-              antialias: false, // Otimização para Android 120hz
+              antialias: false,
               powerPreference: 'high-performance', 
-              logarithmicDepthBuffer: true, // Crucial para não ter erro de sobreposição
+              logarithmicDepthBuffer: true,
               stencil: false,
               depth: true
           }}

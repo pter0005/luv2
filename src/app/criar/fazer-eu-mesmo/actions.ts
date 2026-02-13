@@ -1,4 +1,3 @@
-
 'use server';
 
 import { suggestContent } from '@/ai/flows/ai-powered-content-suggestion';
@@ -22,8 +21,7 @@ function ensureTimestamp(dateValue: any): any {
 }
 
 function sanitizeForFirebase(obj: any): any {
-    if (obj === undefined) return null;
-    if (obj === null) return null;
+    if (obj === undefined || obj === null) return null;
     if (obj instanceof Date || (typeof obj === 'object' && (obj.seconds || obj._seconds))) return obj;
     if (Array.isArray(obj)) return obj.map(sanitizeForFirebase);
     if (typeof obj === 'object') {
@@ -173,19 +171,13 @@ async function moveFile(
     fileData: { url: string; path: string },
     pageId: string,
     targetFolder: string
-): Promise<{ url: string; path: string } | null> {
+): Promise<{ url: string; path: string }> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
         return fileData;
     }
 
     const oldPath = fileData.path;
-    const fileName = oldPath.split('/').pop();
-    
-    if (!fileName) {
-        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Caminho inválido, sem nome de arquivo: ${oldPath}`);
-        return null;
-    }
-
+    const fileName = oldPath.split('/').pop()!;
     const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
     
     const storage = getAdminStorage();
@@ -193,73 +185,47 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        await oldFile.move(newFile);
-        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] Arquivo movido de ${oldPath} para ${newPath}`);
-    } catch (error: any) {
-        if (error.code === 404 || error.message.includes('No such object')) {
-            console.warn(`[CMD_LOG][MOVE_FILE_WARN] Arquivo de origem ${oldPath} não encontrado. Verificando destino...`);
-            const [destExists] = await newFile.exists();
-            if (destExists) {
-                console.log(`[CMD_LOG][MOVE_FILE_RECOVER] Arquivo já existe em ${newPath}. Recuperando com sucesso.`);
-            } else {
-                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Arquivo ${fileName} é um fantasma. Não encontrado na origem nem no destino.`);
-                return null;
-            }
-        } else {
-            console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha crítica ao mover ${oldPath} para ${newPath}`, error);
-            return null;
+        const [exists] = await oldFile.exists();
+        if (exists) {
+            await oldFile.move(newFile);
+            await newFile.makePublic();
+            return { url: newFile.publicUrl(), path: newPath };
         }
-    }
-
-    try {
-        await newFile.makePublic();
-        const finalUrl = newFile.publicUrl();
-        return { url: finalUrl, path: newPath };
-    } catch (error: any) {
-        console.error(`[CMD_LOG][MAKE_PUBLIC_FAIL] Falha ao tornar público o arquivo ${newPath}`, error);
-        return null;
+        // Se já existir no destino (idempotência)
+        const [destExists] = await newFile.exists();
+        if (destExists) {
+            return { url: newFile.publicUrl(), path: newPath };
+        }
+        return fileData; 
+    } catch (error) {
+        console.error(`[MOVE_FAIL] Ignorando erro de arquivo: ${oldPath}`);
+        return fileData; // Não interrompe a criação da página por causa de uma imagem
     }
 }
 
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
 
-    const processImageList = async (imageList: any[], folder: string) => {
-        if (!imageList || !Array.isArray(imageList)) return [];
-        const movePromises = imageList.map(img => moveFile(img, pageId, folder));
-        const results = await Promise.all(movePromises);
-        return results.filter(res => res !== null);
-    };
-
     if (updatedData.galleryImages) {
-        updatedData.galleryImages = await processImageList(updatedData.galleryImages, 'gallery');
+        updatedData.galleryImages = await Promise.all(
+            updatedData.galleryImages.map((img: any) => moveFile(img, pageId, 'gallery'))
+        );
     }
 
-    if (updatedData.timelineEvents && Array.isArray(updatedData.timelineEvents)) {
-        const movePromises = updatedData.timelineEvents.map(async (event: any) => {
-            if (event.image) {
-                const movedImage = await moveFile(event.image, pageId, 'timeline');
-                if (movedImage) {
+    if (updatedData.timelineEvents) {
+        updatedData.timelineEvents = await Promise.all(
+            updatedData.timelineEvents.map(async (event: any) => {
+                if (event.image) {
+                    const movedImage = await moveFile(event.image, pageId, 'timeline');
                     return { ...event, image: movedImage };
                 }
-                // Se a imagem for um fantasma (moveFile retornou null), retorna null para o evento todo.
-                return null;
-            }
-            return event;
-        });
-
-        const results = await Promise.all(movePromises);
-        // Filtra os eventos nulos (aqueles cujas imagens eram fantasmas).
-        updatedData.timelineEvents = results.filter(event => event !== null);
+                return event;
+            })
+        );
     }
     
-    if (updatedData.puzzleImage) {
-        updatedData.puzzleImage = await moveFile(updatedData.puzzleImage, pageId, 'puzzle');
-    }
-    
-    if (updatedData.audioRecording) {
-        updatedData.audioRecording = await moveFile(updatedData.audioRecording, pageId, 'audio');
-    }
+    if (updatedData.puzzleImage) updatedData.puzzleImage = await moveFile(updatedData.puzzleImage, pageId, 'puzzle');
+    if (updatedData.audioRecording) updatedData.audioRecording = await moveFile(updatedData.audioRecording, pageId, 'audio');
 
     return updatedData;
 }
@@ -340,53 +306,32 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
     try {
         const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) {
-            const errorMessage = `Rascunho ${intentId} não encontrado.`;
-            console.error(`[CMD_LOG][FINALIZE_ERROR] ${errorMessage}`);
-            return { error: errorMessage, details: { code: 'INTENT_NOT_FOUND' } };
-        }
+
+        if (!data) return { error: "Rascunho não encontrado." };
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
-        
+
         const newPageId = db.collection('lovepages').doc().id;
-
-        // Pré-validação de dados para garantir a integridade da linha do tempo
-        let timelineEvents = data.timelineEvents || [];
-        if (timelineEvents.length > 0) {
-            const storage = getAdminStorage();
-            const checkPromises = timelineEvents.map(async (event: any) => {
-                if (!event.image || !event.image.path) return true; // Evento sem imagem é válido
-                const file = storage.file(event.image.path);
-                const [exists] = await file.exists();
-                if (!exists) {
-                    console.warn(`[CMD_LOG][PREFLIGHT_CHECK] Imagem fantasma detectada e removida ANTES da finalização: ${event.image.path}`);
-                }
-                return exists;
-            });
-            const results = await Promise.all(checkPromises);
-            timelineEvents = timelineEvents.filter((_: any, index: number) => results[index]);
-        }
         
-        const finalPageDataRaw = { 
-            ...data, 
-            timelineEvents: timelineEvents,
-            id: newPageId,
-            createdAt: Timestamp.now(),
-            paymentId: paymentId,
-        };
-
-        if (finalPageDataRaw.plan === 'basico') {
-            const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
-            finalPageDataRaw.expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
-        }
-
-        const sanitized = sanitizeForFirebase(finalPageDataRaw);
-        if (sanitized.specialDate) sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
+        const sanitized = sanitizeForFirebase(data);
+        
         if (sanitized.timelineEvents) {
-            sanitized.timelineEvents = sanitized.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
+            sanitized.timelineEvents = sanitized.timelineEvents.map((e: any) => ({
+                ...e, 
+                date: ensureTimestamp(e.date)
+            }));
         }
-        
+        if (sanitized.specialDate) sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
+
         const { payment, aiPrompt, ...finalPageData } = sanitized;
-        
+        finalPageData.id = newPageId;
+        finalPageData.createdAt = Timestamp.now();
+        finalPageData.paymentId = paymentId;
+
+        if (finalPageData.plan === 'basico') {
+            const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
+        }
+
         const dataWithPermanentFiles = await moveFilesToPermanentStorage(finalPageData, newPageId);
 
         await db.collection('lovepages').doc(newPageId).set(dataWithPermanentFiles);
@@ -400,9 +345,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         await intentRef.update({ status: 'completed', lovePageId: newPageId });
         return { success: true, pageId: newPageId };
     } catch (error: any) {
-        console.error(`[CMD_LOG][FINALIZE_ERROR] Erro crítico ao finalizar a página para o rascunho ${intentId}.`, error);
+        console.error(`[FINALIZE_ERROR]`, error);
         return { 
-            error: `Erro ao finalizar a página: ${error.message}`,
+            error: error.message,
             details: { code: error.code || 'FINALIZE_ERROR' }
         };
     }
