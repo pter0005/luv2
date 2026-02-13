@@ -2,13 +2,44 @@
 
 import { useRef } from 'react';
 import { motion, useInView } from "framer-motion";
-import HeroSection from '@/components/layout/HeroSection';
-import HowItWorksSection from '@/components/layout/HowItWorksSection';
-import FeaturesSection from '@/components/layout/FeaturesSection';
-import TestimonialsSection from '@/components/layout/TestimonialsSection';
-import PlansSection from '@/components/layout/PlansSection';
-import DemoSection from '@/components/layout/DemoSection';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
+// Hero is above the fold, so we can import it statically for faster LCP.
+import HeroSection from '@/components/layout/HeroSection';
+
+// A generic skeleton for loading sections
+const SectionSkeleton = () => (
+  <div className="container section-padding">
+    <Skeleton className="h-10 w-1/2 mx-auto mb-6" />
+    <Skeleton className="h-6 w-3/4 mx-auto mb-12" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <Skeleton className="h-64 rounded-xl" />
+      <Skeleton className="h-64 rounded-xl" />
+      <Skeleton className="h-64 rounded-xl" />
+    </div>
+  </div>
+);
+
+// Dynamically import sections that are below the fold.
+// This splits the code into smaller chunks, improving initial load time.
+const HowItWorksSection = dynamic(() => import('@/components/layout/HowItWorksSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const FeaturesSection = dynamic(() => import('@/components/layout/FeaturesSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const DemoSection = dynamic(() => import('@/components/layout/DemoSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const TestimonialsSection = dynamic(() => import('@/components/layout/TestimonialsSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const PlansSection = dynamic(() => import('@/components/layout/PlansSection'), {
+  loading: () => <SectionSkeleton />,
+});
+
+// This wrapper component handles the fade-in animation as sections scroll into view.
 const AnimatedSection = ({ children, className, id }: { children: React.ReactNode, className?: string, id?: string }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.1 });
@@ -30,19 +61,26 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
 export default function Home() {
   return (
     <>
+      {/* HeroSection is loaded statically for a fast Largest Contentful Paint (LCP) */}
       <HeroSection />
+
+      {/* The rest of the sections are loaded dynamically as the user scrolls down */}
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <HowItWorksSection />
       </AnimatedSection>
+      
       <AnimatedSection className="section-padding bg-transparent">
         <FeaturesSection />
       </AnimatedSection>
+      
       <AnimatedSection id="demo-section" className="section-padding bg-transparent">
         <DemoSection />
       </AnimatedSection>
+      
       <AnimatedSection id="avaliacoes" className="py-16 md:py-24 bg-transparent relative">
         <TestimonialsSection />
       </AnimatedSection>
+      
       <AnimatedSection id="planos" className="section-padding bg-transparent">
         <PlansSection />
       </AnimatedSection>

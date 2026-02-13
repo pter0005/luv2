@@ -235,7 +235,6 @@ export default function FeaturesCarousel() {
                                             fill
                                             className="object-contain"
                                             sizes="(max-width: 768px) 260px, 310px"
-                                            quality={100}
                                         />
                                     )}
                                 </IphoneMockup>
