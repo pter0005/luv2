@@ -1,47 +1,81 @@
 import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 
-// --- CONFIGURAÇÃO MANUAL DAS CHAVES (COPIE TUDO ISSO) ---
 
-const PROJECT_ID = "amore-pages1-62585403-acd4b";
-const CLIENT_EMAIL = "firebase-adminsdk-fbsvc@amore-pages1-62585403-acd4b.iam.gserviceaccount.com";
+// =========================================================================
+// CHAVE DE SEGURANÇA: Esta é a forma CORRETA e SEGURA.
+// A chave privada é lida do ambiente (process.env) e nunca fica no código.
+// O .replace é uma "trava de segurança" para corrigir formatação se a chave
+// for copiada errada para a variável de ambiente.
+// =========================================================================
+const privateKey = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
 
-// A chave privada foi formatada para remover quebras de linha erradas
-const PRIVATE_KEY_RAW = "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCkzuMcWSnzQJkY\\njYGeV86pGghfJ5j3b1BQXviNNi+Ltc08+9rhyWX6eDwiBH5O4L06B/RAo2I15Hqb\\nQIR2vwfIfHXtjkDfjyKuME94ggORweqIiJHVq/MSU/MMGhvGBvGzusut3R57U9z8\\nIly5oLEUzj2DTLlxLx6j4FAd71AuD3C6EZKIvY3uKhaJvFFgVSyjwrEB1w0TqPLw\\nvFMVoFhVLqAERXkdWJDbEby1Sike/F5MTXx/uulpNPJuZllGdZ3EdzDVdP8Ajsn/\\nEOFgWixbBA8/YGyxhgb5GEJAznwwSRkot0vNmN6RcjusC6UTR3X5L7mh7h1laoI5\\nB4bDOfHhAgMBAAECggEAB+nzV+okLI0ejOJGph7bSp14Z3FUVBVhSuq0jrtaXyAU\\nwefqI8ty/SsG4C9NDWaXT5EQNoZh8eqNxKS9d6JGsmbfls+s589MwAaL2mKL31Tr\\neTDtp9AA9RFY62zZhpHQy2ud2jRzAUMOqoDP6Q4BUtlwdLybbwbvNrlPv5A9TmjV\\nqwc0csUrZhQ1JO3qwQ3ZrvBWdMZtNj2K3IT6LDq4rDFh4URiXN5vT/e6leg6ZiGr\\nDOPdqkA5drXq/Hg2bRApuGP+xtJaYqdbw2CJaNBJJB0PQFZ5jJZO/m/36BwuaKe8\\nSZFKd1oP3m1PeoVznINwTw5ZVAhDwNq9y6Y2qvUm3QKBgQDRKVV64sV5TDr2jfyq\\nAVcz2bBtzyhqPOmr6tY08Q3M+qlExGjhmX0DuWMLTZqvyLE1vrc7LKKAmkASpTq+\\nZek7oiuVUmEbfUkLVk0k2TxecQRasYTM86Hh5MJeftWKC7sVjpb1pERsWH1V2Zbq\\nJ9Jxmrn666vkuUQ8p18jadNWUwKBgQDJtuWfQZ4YwtSWafgic6+8sNoZyHO93418\\nDnQYBma0xC/F7J80adfLaS7uxUAA1RvMqqJ+U1kvYeuLPAQ9yxsqXbO36sjzdNA+\\nzYJZvmBEz7UUgvrKCY5GslCnzGCz7ObExvulbDxZdAAMzRe9SBuMqrXQvXNKjyZM\\n28Ox6rOoewKBgQDOK8gukUnF/vZAAkWD7j5exb26/+/+iHxtEdaD6PiJjKs9Nb2M\\nYxdvjFWs1pobm9/R8mP62Ex2J5Xwyx3Uf/Ae8AO19LXzutM9cZwpLljrXsvD+ifF\\nPoHbgPp22t7ybA3FegAjsgAgLDmfXhP8S7SMds/MHnIZyuUQRIrrBW1kMQKBgGRU\\nUU/uHkmoln6eBKp2KiHLQR/z4QW+7KuYsMvGW01sC2sBr4otXwUwswRWHeiMFwCs\\nmpgEsuZraPHfDykBHejrpFlFMWBOaMnkBALJOy7etO2X3E+jgx3M0Ws0r6Cuo3Wa\\nl04HUNkZZnD3jeg6tmE4A6joojCilOVDpcmXuHaDAoGAVFKpydgUEu0LbxbNBKus\\nU/8y7313YvQWKRVjPhmF/NBznB1xC4HM85b8mB4SkvhAtaaOJfQ22J27REP2stRA\\nl0WW594ieO9Gw86S/HK28tLwjKpjLz1843F8cnyyp72i2Kr+/B7gd1S4JvMzqAz2\\nwAU6fFmyhqgJbcU0lSZkkAQ=\\n-----END PRIVATE KEY-----\\n";
+// =========================================================================
+// VERIFICAÇÃO DE CONFIGURAÇÃO
+// Garante que o app não quebre se as variáveis não estiverem definidas.
+// =========================================================================
+const adminSdkConfig = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey,
+};
 
-// Limpa a chave para o formato que o Node.js aceita
-const privateKey = PRIVATE_KEY_RAW.replace(/\\n/g, '\n');
+const isConfigured = adminSdkConfig.projectId && adminSdkConfig.clientEmail && adminSdkConfig.privateKey;
 
-// --------------------------------------------------------
+if (process.env.NODE_ENV !== 'development' && !isConfigured) {
+    console.error("CONFIGURAÇÃO INCOMPLETA: As variáveis de ambiente do Firebase Admin não foram definidas. O aplicativo não pode iniciar em produção.");
+}
+
 
 export function getAdminApp() {
   if (getApps().length > 0) {
     return getApp();
   }
 
+  if (!isConfigured) {
+    throw new Error('CONFIGURAÇÃO AUSENTE: As variáveis de ambiente do Firebase Admin (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY) não foram encontradas. Verifique seu arquivo .env ou as configurações do seu provedor de hospedagem.');
+  }
+
+  // Validação extra para garantir que a chave tem o formato esperado
+  if (!adminSdkConfig.privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
+    throw new Error('CONFIGURAÇÃO INVÁLIDA: A variável de ambiente FIREBASE_PRIVATE_KEY não parece conter uma chave privada válida. Verifique se copiou o valor completo do arquivo JSON.');
+  }
+  
   try {
     return initializeApp({
-      credential: cert({
-        projectId: PROJECT_ID,
-        clientEmail: CLIENT_EMAIL,
-        privateKey: privateKey,
-      }),
+      credential: cert(adminSdkConfig),
+      storageBucket: `${adminSdkConfig.projectId}.appspot.com`,
     });
   } catch (error: any) {
-    console.error('Falha ao inicializar Firebase Admin:', error.message);
-    // Se falhar por concorrência, tenta pegar o app existente
+    console.error('Falha CRÍTICA ao inicializar Firebase Admin:', error.message);
     if (getApps().length > 0) return getApp();
     throw new Error(`Erro na inicialização: ${error.message}`);
   }
 }
 
 export function getAdminFirestore() {
+  if (!isConfigured) {
+      throw new Error("Admin SDK não configurado para acessar o Firestore.");
+  }
   const app = getAdminApp();
   return getFirestore(app);
 }
 
 export function getAdminAuth() {
+   if (!isConfigured) {
+      throw new Error("Admin SDK não configurado para acessar o Auth.");
+  }
   const app = getAdminApp();
   return getAuth(app);
+}
+
+export function getAdminStorage() {
+  if (!isConfigured) {
+      throw new Error("Admin SDK não configurado para acessar o Storage.");
+  }
+  const app = getAdminApp();
+  // Retorna a instância do bucket padrão
+  return getStorage(app).bucket();
 }
