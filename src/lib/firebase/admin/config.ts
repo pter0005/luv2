@@ -13,6 +13,13 @@ const getServiceAccount = (): ServiceAccount => {
         throw new Error('Variáveis de ambiente do Firebase Admin faltando.');
     }
 
+    // --- VALIDAÇÃO ADICIONAL ---
+    // Checa se a chave privada tem o formato mínimo esperado.
+    // Isso evita erros criptográficos confusos se o valor da variável estiver errado (ex: CNPJ colado por engano).
+    if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error('A variável de ambiente FIREBASE_PRIVATE_KEY não parece conter uma chave privada válida. Ela deve começar com "-----BEGIN PRIVATE KEY-----". Verifique o valor copiado do arquivo JSON do Firebase.');
+    }
+
     // --- LIMPEZA DA CHAVE (O SEGREDINHO) ---
     
     // 1. Se a chave estiver entre aspas duplas (erro comum no Netlify), remove elas.
