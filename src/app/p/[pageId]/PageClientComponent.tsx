@@ -77,7 +77,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   const hasPuzzle = useMemo(() => {
     if (!pageData.enablePuzzle || !pageData.puzzleImage?.url) return false;
-    return !pageData.puzzleImage.path.includes('temp/');
+    return pageData.puzzleImage.path && !pageData.puzzleImage.path.includes('temp/');
   }, [pageData.enablePuzzle, pageData.puzzleImage]);
 
   const timelineEventsForDisplay = useMemo(() => {
@@ -88,9 +88,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       .filter((event: any) =>
         event &&
         event.image &&
-        typeof event.image.url === 'string' &&
-        typeof event.image.path === 'string' &&
-        !event.image.path.includes('temp/')
+        typeof event.image.url === 'string'
       )
       .map((event: any) => {
         let dateObj;

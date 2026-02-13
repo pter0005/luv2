@@ -111,7 +111,7 @@ export async function processPixPayment(intentId: string, price: number) {
         });
         
         if (result && result.id && result.point_of_interaction?.transaction_data) {
-            const { qr_code, qr_code_base64 } = result.point_of_interaction.transaction_data;
+            const { qr_code, qr_code_base_64 } = result.point_of_interaction.transaction_data;
             await db.collection('payment_intents').doc(intentId).update({ paymentId: result.id!.toString() });
             return { qrCode: qr_code, qrCodeBase64: qr_code_base_64, paymentId: result.id!.toString() };
         }
@@ -173,13 +173,19 @@ async function moveFile(
     fileData: { url: string; path: string },
     pageId: string,
     targetFolder: string
-): Promise<{ url: string; path: string }> {
+): Promise<{ url: string; path: string } | null> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
-        return fileData;
+        return fileData; // Already permanent, nothing to do.
     }
 
     const oldPath = fileData.path;
-    const fileName = oldPath.split('/').pop()!;
+    const fileName = oldPath.split('/').pop();
+    
+    if (!fileName) {
+        console.error(`[CMD_LOG][MOVE_FILE_ERROR] Invalid path with no filename: ${oldPath}`);
+        return null;
+    }
+
     const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
     
     const storage = getAdminStorage();
@@ -187,16 +193,33 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        // A pre-flight check em `finalizeLovePage` garante que `oldFile` existe.
-        await oldFile.move(newFile);
+        const [sourceExists] = await oldFile.exists();
+
+        if (sourceExists) {
+            // The file exists in the temp location, so move it.
+            await oldFile.move(newFile);
+        } else {
+            // The file does NOT exist in the temp location.
+            // Let's check if it already exists in the destination (e.g., from a failed previous run).
+            const [destExists] = await newFile.exists();
+            if (destExists) {
+                console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Source ${oldPath} not found, but file already exists at ${newPath}. Recovering.`);
+            } else {
+                // The file is a true ghost. It's nowhere to be found.
+                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Ghost file detected. Not found at source or destination: ${fileName}`);
+                return null; // Signal to the caller that this file is lost.
+            }
+        }
+        
+        // Ensure the file is public and get its permanent URL.
         await newFile.makePublic();
         const finalUrl = newFile.publicUrl();
-        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] Arquivo finalizado em: ${newPath}`);
+        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] File processed successfully: ${newPath}`);
         return { url: finalUrl, path: newPath };
+
     } catch (error: any) {
-        // Este erro agora é mais sério, pois o pre-check deveria ter prevenido.
-        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha movendo ${oldPath} para ${newPath}.`, error);
-        throw new Error(`Falha crítica ao mover o arquivo: ${fileName}. A finalização será interrompida.`);
+        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Critical error moving ${oldPath} to ${newPath}`, error);
+        return null; // Return null on any critical failure.
     }
 }
 
@@ -204,29 +227,45 @@ async function moveFile(
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
 
-    const processImageList = async (imageList: any[], folder: string) => {
-        if (!imageList || !Array.isArray(imageList)) return [];
-        return Promise.all(imageList.map(img => moveFile(img, pageId, folder)));
-    };
-
-    if (updatedData.galleryImages) {
-        updatedData.galleryImages = await processImageList(updatedData.galleryImages, 'gallery');
+    // Process Gallery Images
+    if (Array.isArray(updatedData.galleryImages)) {
+        const newImages = [];
+        for (const image of updatedData.galleryImages) {
+            const movedImage = await moveFile(image, pageId, 'gallery');
+            if (movedImage) {
+                newImages.push(movedImage);
+            }
+        }
+        updatedData.galleryImages = newImages;
     }
 
-    if (updatedData.timelineEvents && Array.isArray(updatedData.timelineEvents)) {
-        updatedData.timelineEvents = await Promise.all(updatedData.timelineEvents.map(async (event: any) => {
+    // Process Timeline Events
+    if (Array.isArray(updatedData.timelineEvents)) {
+        const newEvents = [];
+        for (const event of updatedData.timelineEvents) {
             if (event.image) {
                 const movedImage = await moveFile(event.image, pageId, 'timeline');
-                return { ...event, image: movedImage };
+                if (movedImage) {
+                    newEvents.push({ ...event, image: movedImage });
+                } else {
+                    // If image move fails, keep the event but without the image property.
+                    const { image, ...eventWithoutImage } = event;
+                    newEvents.push(eventWithoutImage);
+                    console.warn(`[CMD_LOG][FINALIZE_SKIP] Kept event "${event.description}" but discarded its ghost image.`);
+                }
+            } else {
+                newEvents.push(event); // Keep events that never had an image.
             }
-            return event;
-        }));
+        }
+        updatedData.timelineEvents = newEvents;
     }
     
+    // Process Puzzle Image
     if (updatedData.puzzleImage) {
         updatedData.puzzleImage = await moveFile(updatedData.puzzleImage, pageId, 'puzzle');
     }
     
+    // Process Audio Recording
     if (updatedData.audioRecording) {
         updatedData.audioRecording = await moveFile(updatedData.audioRecording, pageId, 'audio');
     }
@@ -305,55 +344,17 @@ export async function capturePayPalOrder(orderId: string, intentId: string) {
 
 export async function finalizeLovePage(intentId: string, paymentId: string) {
     const db = getAdminFirestore();
-    const storage = getAdminStorage();
     const intentRef = db.collection('payment_intents').doc(intentId);
     
     try {
         const intentDoc = await intentRef.get();
-        let data = intentDoc.data();
-
+        const data = intentDoc.data();
         if (!data) {
             const errorMessage = `Rascunho ${intentId} não encontrado.`;
             console.error(`[CMD_LOG][FINALIZE_ERROR] ${errorMessage}`);
             return { error: errorMessage };
         }
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
-
-        // --- PRE-FLIGHT CHECK PARA ELIMINAR ARQUIVOS FANTASMAS ---
-        const fileExists = async (path: string | undefined) => {
-            if (!path || !path.includes('temp/')) return true; // Já é permanente ou não tem caminho
-            try {
-                const [exists] = await storage.file(path).exists();
-                if (!exists) console.warn(`[CMD_LOG][PRE-CHECK_FAIL] Arquivo fantasma detectado e será purgado: ${path}`);
-                return exists;
-            } catch (e) {
-                console.error(`[CMD_LOG][PRE-CHECK_ERROR] Erro ao verificar existência do arquivo ${path}`, e);
-                return false; // Trata como não existente em caso de erro na verificação
-            }
-        };
-
-        // Limpa a galeria
-        if (data.galleryImages && Array.isArray(data.galleryImages)) {
-            const checks = await Promise.all(data.galleryImages.map(img => fileExists(img?.path)));
-            data.galleryImages = data.galleryImages.filter((_, i) => checks[i]);
-        }
-
-        // Limpa a linha do tempo
-        if (data.timelineEvents && Array.isArray(data.timelineEvents)) {
-            const checks = await Promise.all(data.timelineEvents.map(evt => fileExists(evt?.image?.path)));
-            data.timelineEvents = data.timelineEvents.filter((_, i) => checks[i]);
-        }
-        
-        // Limpa imagem do puzzle
-        if (data.puzzleImage && !(await fileExists(data.puzzleImage.path))) {
-            data.puzzleImage = null;
-        }
-
-        // Limpa gravação de áudio
-        if (data.audioRecording && !(await fileExists(data.audioRecording.path))) {
-            data.audioRecording = null;
-        }
-        // --- FIM DO PRE-FLIGHT CHECK ---
 
         const newPageId = db.collection('lovepages').doc().id;
         const sanitized = sanitizeForFirebase(data);
@@ -441,5 +442,3 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 }
 
 export { suggestContent };
-
-    
