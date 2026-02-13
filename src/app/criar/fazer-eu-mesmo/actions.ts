@@ -175,14 +175,14 @@ async function moveFile(
     targetFolder: string
 ): Promise<{ url: string; path: string } | null> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
-        return fileData; // Already permanent, nothing to do.
+        return fileData;
     }
 
     const oldPath = fileData.path;
     const fileName = oldPath.split('/').pop();
     
     if (!fileName) {
-        console.error(`[CMD_LOG][MOVE_FILE_ERROR] Invalid path with no filename: ${oldPath}`);
+        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Caminho inválido, sem nome de arquivo: ${oldPath}`);
         return null;
     }
 
@@ -193,79 +193,70 @@ async function moveFile(
     const newFile = storage.file(newPath);
 
     try {
-        const [sourceExists] = await oldFile.exists();
-
-        if (sourceExists) {
-            // The file exists in the temp location, so move it.
-            await oldFile.move(newFile);
-        } else {
-            // The file does NOT exist in the temp location.
-            // Let's check if it already exists in the destination (e.g., from a failed previous run).
+        await oldFile.move(newFile);
+        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] Arquivo movido de ${oldPath} para ${newPath}`);
+    } catch (error: any) {
+        if (error.code === 404 || error.message.includes('No such object')) {
+            console.warn(`[CMD_LOG][MOVE_FILE_WARN] Arquivo de origem ${oldPath} não encontrado. Verificando destino...`);
             const [destExists] = await newFile.exists();
             if (destExists) {
-                console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Source ${oldPath} not found, but file already exists at ${newPath}. Recovering.`);
+                console.log(`[CMD_LOG][MOVE_FILE_RECOVER] Arquivo já existe em ${newPath}. Recuperando com sucesso.`);
             } else {
-                // The file is a true ghost. It's nowhere to be found.
-                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Ghost file detected. Not found at source or destination: ${fileName}`);
-                return null; // Signal to the caller that this file is lost.
+                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Arquivo ${fileName} é um fantasma. Não encontrado na origem nem no destino.`);
+                return null;
             }
+        } else {
+            console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha crítica ao mover ${oldPath} para ${newPath}`, error);
+            return null;
         }
-        
-        // Ensure the file is public and get its permanent URL.
+    }
+
+    try {
         await newFile.makePublic();
         const finalUrl = newFile.publicUrl();
-        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] File processed successfully: ${newPath}`);
         return { url: finalUrl, path: newPath };
-
     } catch (error: any) {
-        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Critical error moving ${oldPath} to ${newPath}`, error);
-        return null; // Return null on any critical failure.
+        console.error(`[CMD_LOG][MAKE_PUBLIC_FAIL] Falha ao tornar público o arquivo ${newPath}`, error);
+        return null;
     }
 }
-
 
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
 
-    // Process Gallery Images
-    if (Array.isArray(updatedData.galleryImages)) {
-        const newImages = [];
-        for (const image of updatedData.galleryImages) {
-            const movedImage = await moveFile(image, pageId, 'gallery');
-            if (movedImage) {
-                newImages.push(movedImage);
-            }
-        }
-        updatedData.galleryImages = newImages;
+    const processImageList = async (imageList: any[], folder: string) => {
+        if (!imageList || !Array.isArray(imageList)) return [];
+        const movePromises = imageList.map(img => moveFile(img, pageId, folder));
+        const results = await Promise.all(movePromises);
+        return results.filter(res => res !== null);
+    };
+
+    if (updatedData.galleryImages) {
+        updatedData.galleryImages = await processImageList(updatedData.galleryImages, 'gallery');
     }
 
-    // Process Timeline Events
-    if (Array.isArray(updatedData.timelineEvents)) {
-        const newEvents = [];
-        for (const event of updatedData.timelineEvents) {
+    if (updatedData.timelineEvents && Array.isArray(updatedData.timelineEvents)) {
+        const movePromises = updatedData.timelineEvents.map(async (event: any) => {
             if (event.image) {
                 const movedImage = await moveFile(event.image, pageId, 'timeline');
                 if (movedImage) {
-                    newEvents.push({ ...event, image: movedImage });
-                } else {
-                    // If image move fails, keep the event but without the image property.
-                    const { image, ...eventWithoutImage } = event;
-                    newEvents.push(eventWithoutImage);
-                    console.warn(`[CMD_LOG][FINALIZE_SKIP] Kept event "${event.description}" but discarded its ghost image.`);
+                    return { ...event, image: movedImage };
                 }
-            } else {
-                newEvents.push(event); // Keep events that never had an image.
+                // Se a imagem for um fantasma (moveFile retornou null), retorna null para o evento todo.
+                return null;
             }
-        }
-        updatedData.timelineEvents = newEvents;
+            return event;
+        });
+
+        const results = await Promise.all(movePromises);
+        // Filtra os eventos nulos (aqueles cujas imagens eram fantasmas).
+        updatedData.timelineEvents = results.filter(event => event !== null);
     }
     
-    // Process Puzzle Image
     if (updatedData.puzzleImage) {
         updatedData.puzzleImage = await moveFile(updatedData.puzzleImage, pageId, 'puzzle');
     }
     
-    // Process Audio Recording
     if (updatedData.audioRecording) {
         updatedData.audioRecording = await moveFile(updatedData.audioRecording, pageId, 'audio');
     }
@@ -352,28 +343,50 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         if (!data) {
             const errorMessage = `Rascunho ${intentId} não encontrado.`;
             console.error(`[CMD_LOG][FINALIZE_ERROR] ${errorMessage}`);
-            return { error: errorMessage };
+            return { error: errorMessage, details: { code: 'INTENT_NOT_FOUND' } };
         }
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
-
-        const newPageId = db.collection('lovepages').doc().id;
-        const sanitized = sanitizeForFirebase(data);
         
+        const newPageId = db.collection('lovepages').doc().id;
+
+        // Pré-validação de dados para garantir a integridade da linha do tempo
+        let timelineEvents = data.timelineEvents || [];
+        if (timelineEvents.length > 0) {
+            const storage = getAdminStorage();
+            const checkPromises = timelineEvents.map(async (event: any) => {
+                if (!event.image || !event.image.path) return true; // Evento sem imagem é válido
+                const file = storage.file(event.image.path);
+                const [exists] = await file.exists();
+                if (!exists) {
+                    console.warn(`[CMD_LOG][PREFLIGHT_CHECK] Imagem fantasma detectada e removida ANTES da finalização: ${event.image.path}`);
+                }
+                return exists;
+            });
+            const results = await Promise.all(checkPromises);
+            timelineEvents = timelineEvents.filter((_: any, index: number) => results[index]);
+        }
+        
+        const finalPageDataRaw = { 
+            ...data, 
+            timelineEvents: timelineEvents,
+            id: newPageId,
+            createdAt: Timestamp.now(),
+            paymentId: paymentId,
+        };
+
+        if (finalPageDataRaw.plan === 'basico') {
+            const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+            finalPageDataRaw.expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
+        }
+
+        const sanitized = sanitizeForFirebase(finalPageDataRaw);
+        if (sanitized.specialDate) sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
         if (sanitized.timelineEvents) {
             sanitized.timelineEvents = sanitized.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
         }
-        if (sanitized.specialDate) sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
-
+        
         const { payment, aiPrompt, ...finalPageData } = sanitized;
-        finalPageData.id = newPageId;
-        finalPageData.createdAt = Timestamp.now();
-        finalPageData.paymentId = paymentId;
-
-        if (finalPageData.plan === 'basico') {
-            const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
-            finalPageData.expireAt = Timestamp.fromMillis(Date.now() + twentyFourHoursInMillis);
-        }
-
+        
         const dataWithPermanentFiles = await moveFilesToPermanentStorage(finalPageData, newPageId);
 
         await db.collection('lovepages').doc(newPageId).set(dataWithPermanentFiles);

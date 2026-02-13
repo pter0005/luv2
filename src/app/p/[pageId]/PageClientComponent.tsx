@@ -76,8 +76,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const cookieName = `puzzle_solved_${pageData.id}`;
 
   const hasPuzzle = useMemo(() => {
-    if (!pageData.enablePuzzle || !pageData.puzzleImage?.url) return false;
-    return pageData.puzzleImage.path && !pageData.puzzleImage.path.includes('temp/');
+    return !!(pageData.enablePuzzle && pageData.puzzleImage?.url);
   }, [pageData.enablePuzzle, pageData.puzzleImage]);
 
   const timelineEventsForDisplay = useMemo(() => {
@@ -93,12 +92,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       .map((event: any) => {
         let dateObj;
         if (event.date) {
-            // Handle Firestore Timestamp from server-side rendering (JSON serialized)
             if (event.date._seconds !== undefined) {
                 dateObj = new Date(event.date._seconds * 1000);
-            } 
-            // Handle standard Date strings or Date objects from form state
-            else {
+            } else {
                 dateObj = new Date(event.date);
             }
         } else {
