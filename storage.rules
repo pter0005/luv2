@@ -3,24 +3,36 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // --- FUNÇÕES DE SEGURANÇA ---
     function isAuthenticated() { return request.auth != null; }
     
-    // 1. PASTA TEMPORÁRIA (Rascunho)
-    // Simplificamos: Se o cara tá logado e tá salvando na pasta com o ID dele, deixa passar.
-    // Tiramos a validação de media/size por enquanto pra destravar o erro.
+    // Rascunhos temporários: apenas o usuário logado pode mexer na sua própria pasta.
     match /temp/{userId}/{allPaths=**} {
       allow read, write, delete: if isAuthenticated() && request.auth.uid == userId;
     }
     
-    // 2. PASTA DO PRODUTO FINAL (Produção)
-    // Leitura pública (site final), escrita só backend (Admin).
-    match /lovepages/{allPaths=**} {
+    // Pasta final de produção: Subpastas explícitas para leitura pública.
+    // Isso é mais robusto do que um wildcard genérico.
+    match /lovepages/{pageId}/gallery/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /lovepages/{pageId}/timeline/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+     match /lovepages/{pageId}/puzzle/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+     match /lovepages/{pageId}/audio/{fileName} {
       allow read: if true;
       allow write: if false;
     }
     
-    // Legado (Opcional)
-    match /gallery-images/{allPaths=**} { allow read: if true; allow write: if false; }
+    // Regra legado (mantida por segurança, mas o ideal é não usar mais)
+    match /gallery-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
   }
 }

@@ -153,9 +153,8 @@ function FloatingCard({
                         "object-cover transition-opacity duration-300",
                         isLoaded ? "opacity-100" : "opacity-0"
                     )}
-                    unoptimized={true} 
+                    unoptimized={true}
                     sizes="(max-width: 768px) 150px, 250px"
-                    priority={true}
                     onLoadingComplete={() => setIsLoaded(true)}
                 />
                 
