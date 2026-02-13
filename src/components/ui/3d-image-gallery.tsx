@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
 import { useTranslation } from "@/lib/i18n"
+import Image from 'next/image';
 
 /* =========================
    Types & Context
@@ -58,7 +59,6 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
   const { locale } = useTranslation();
-  const [imageError, setImageError] = useState(false);
   
   useFrame(({ camera }) => {
     if (groupRef.current) groupRef.current.lookAt(camera.position)
@@ -92,25 +92,16 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
       >
         <div className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10"
              style={{ width: `${cardWidthPx}px`, aspectRatio: '3/4' }}>
-            {imageError ? (
-                <div className="w-full h-full bg-red-900/50 flex items-center justify-center">
-                    <AlertTriangle className="w-8 h-8 text-red-400" />
-                </div>
-            ) : (
-                 <img
-                    src={card.imageUrl}
-                    alt={card.alt}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={() => {
-                        console.error(`[CMD_LOG]: LOAD FAILED! Could not load image: ${card.imageUrl}`);
-                        setImageError(true);
-                    }}
-                />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent flex flex-col justify-end p-3">
-                <p className="text-white font-bold text-sm leading-tight line-clamp-2 drop-shadow-md mb-1">{card.title}</p>
-                {dateObj && <p className="text-purple-400 font-black text-[10px] uppercase">{format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}</p>}
+            {/* img nativa para máxima performance no canvas 3D */}
+            <img
+                src={card.imageUrl}
+                alt={card.alt}
+                className="w-full h-full object-cover"
+                loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-4">
+                <p className="text-white font-bold text-base leading-tight line-clamp-2 drop-shadow-md mb-1">{card.title}</p>
+                {dateObj && <p className="text-purple-300 font-semibold text-xs tracking-tight">{format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}</p>}
             </div>
         </div>
       </Html>
