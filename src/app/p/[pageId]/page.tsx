@@ -15,7 +15,7 @@ async function getPageData(pageId: string) {
         const docSnap = await docRef.get();
 
         if (!docSnap.exists) {
-            return { error: 'publicpage.error.generic' };
+            return { error: 'publicpage.error.notfound' };
         }
         
         return toPlainObject(docSnap.data());
@@ -23,6 +23,10 @@ async function getPageData(pageId: string) {
     } catch (error) {
         console.error("Error fetching page data:", error);
         if (error instanceof Error) {
+            // Specific check for the UNAUTHENTICATED error
+            if ((error as any).code === 16 || error.message.includes("UNAUTHENTICATED")) {
+                return { error: 'publicpage.error.unauthenticated' };
+            }
             if (error.message.includes("initializeApp")) {
                 return { error: 'publicpage.error.dbConfig' };
             }
