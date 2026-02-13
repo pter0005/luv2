@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -396,7 +395,7 @@ const GalleryStep = React.memo(() => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.8);
+                const compressedFile = await compressImage(file, 1280, 0.95);
                 return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
 
@@ -570,7 +569,7 @@ const TimelineStep = React.memo(() => {
 
         try {
             const uploadPromises = filesToUpload.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.8);
+                const compressedFile = await compressImage(file, 1280, 0.95);
                 return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
 
@@ -1163,7 +1162,7 @@ const PuzzleStep = React.memo(() => {
             const file = event.target.files[0];
             setIsProcessing(true);
             try {
-                const compressedBlob = await compressImage(file, 1280, 0.8);
+                const compressedBlob = await compressImage(file, 1280, 0.95);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
                 toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
@@ -1938,7 +1937,7 @@ const WizardInternal = () => {
             <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
-                onShowTimeline={() => setShowTimeline(true)}
+                onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
@@ -1977,7 +1976,7 @@ const WizardInternal = () => {
                 <PreviewContent 
                     formData={formData} 
                     isClient={isClient}
-                    onShowTimeline={() => setShowTimeline(true)}
+                    onShowTimeline={() => setShowTimelinePreview(true)}
                     hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
@@ -2066,5 +2065,3 @@ export default function CreatePageWizard() {
     </React.Suspense>
   )
 }
-
-    
