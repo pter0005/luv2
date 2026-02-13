@@ -66,7 +66,7 @@ export async function createOrUpdatePaymentIntent(fullPageData: PageData) {
         }
     } catch (error: any) {
         console.error("CREATE_OR_UPDATE_PAYMENT_INTENT FAILED:", error);
-        const errorMessage = `Falha no servidor ao salvar rascunho. Por favor, verifique a configuração do Firebase Admin em suas variáveis de ambiente. Detalhes: ${error.message}`;
+        const errorMessage = `Falha no servidor ao salvar rascunho. Por favor, verifique a configuração do Firebase Admin em suas variáveis de ambiente. Detalhes: ${'${error.message}'}`;
         return { 
             error: errorMessage,
             details: {
@@ -97,7 +97,7 @@ export async function processPixPayment(intentId: string, price: number) {
         const result = await payment.create({
             body: {
                 transaction_amount: price,
-                description: `MyCupid - Plano ${intentData.plan || 'personalizado'}`,
+                description: `MyCupid - Plano ${'${intentData.plan || \'personalizado\'}'}`,
                 payment_method_id: 'pix',
                 payer: {
                     email: payerEmail,
@@ -117,7 +117,7 @@ export async function processPixPayment(intentId: string, price: number) {
     } catch (error: any) { 
         console.error("Erro no Servidor (processPixPayment):", error);
         return { 
-            error: `Erro ao processar pagamento: ${error.message}`,
+            error: `Erro ao processar pagamento: ${'${error.message}'}`,
             details: { code: error.code || 'MERCADO_PAGO_ERROR', response: error.response?.data }
         }; 
     }
@@ -150,8 +150,8 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${domain}/criando-pagina?intentId={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${domain}/pagamento/cancelado`,
+            success_url: `${'${domain}'}/criando-pagina?intentId={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${'${domain}'}/pagamento/cancelado`,
             client_reference_id: intentId,
         });
 
@@ -159,7 +159,7 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
 
     } catch (error: any) {
         return { 
-            error: `Stripe Error: ${error.message}`,
+            error: `Stripe Error: ${'${error.message}'}`,
             details: { code: error.code || 'STRIPE_ERROR' }
         };
     }
@@ -178,10 +178,10 @@ async function moveFile(
         const oldPath = fileData.path;
         const fileName = oldPath.split('/').pop();
         if (!fileName) {
-            console.error(`Nome do arquivo inválido para o caminho: ${oldPath}`);
+            console.error(`Nome do arquivo inválido para o caminho: ${'${oldPath}'}`);
             return fileData;
         }
-        const newPath = `lovepages/${pageId}/${targetFolder}/${fileName}`;
+        const newPath = `lovepages/${'${pageId}'}/${'${targetFolder}'}/${'${fileName}'}`;
         const oldFile = storage.file(oldPath);
         const newFile = storage.file(newPath);
         await oldFile.copy(newFile);
@@ -193,45 +193,52 @@ async function moveFile(
         };
     } catch (error: any) {
         if (error.code === 404) {
-            const newFile = getAdminStorage().file(`lovepages/${pageId}/${targetFolder}/${fileData.path.split('/').pop()}`);
+            const newFile = getAdminStorage().file(`lovepages/${'${pageId}'}/${'${targetFolder}'}/${'${fileData.path.split(\'/\').pop()}'}`);
             const [exists] = await newFile.exists();
             if (exists) {
-                console.warn(`Arquivo temporário não encontrado, mas arquivo final existe. Assumindo que já foi movido: ${newFile.name}`);
+                console.warn(`Arquivo temporário não encontrado, mas arquivo final existe. Assumindo que já foi movido: ${'${newFile.name}'}`);
                 await newFile.makePublic();
                 return { url: newFile.publicUrl(), path: newFile.name };
             }
         }
-        console.error(`Falha ao mover arquivo de ${fileData.path} para ${targetFolder}:`, error);
+        console.error(`Falha ao mover arquivo de ${'${fileData.path}'} para ${'${targetFolder}'}:`, error);
         return fileData;
     }
 }
 
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
-    const filesToMove = [
-        ... (pageData.galleryImages || []).map((img: any) => ({ file: img, folder: 'gallery' })),
-        ... (pageData.timelineEvents || []).map((evt: any) => ({ file: evt.image, folder: 'timeline' })).filter((item: any) => item.file),
-    ];
-    if (pageData.puzzleImage) filesToMove.push({ file: pageData.puzzleImage, folder: 'puzzle' });
-    if (pageData.audioRecording) filesToMove.push({ file: pageData.audioRecording, folder: 'audio' });
-    const movedFiles = await Promise.all(
-        filesToMove.map(item => moveFile(item.file, pageId, item.folder))
-    );
-    let movedIndex = 0;
-    if (updatedData.galleryImages) {
-        updatedData.galleryImages = movedFiles.slice(movedIndex, movedIndex + updatedData.galleryImages.length);
-        movedIndex += updatedData.galleryImages.length;
+
+    // Move gallery images
+    if (pageData.galleryImages && Array.isArray(pageData.galleryImages)) {
+        updatedData.galleryImages = await Promise.all(
+            pageData.galleryImages.map((img: any) => moveFile(img, pageId, 'gallery'))
+        );
     }
-    if (updatedData.timelineEvents) {
-        updatedData.timelineEvents = updatedData.timelineEvents.map((event: any) => {
-            if (event.image) {
-                event.image = movedFiles[movedIndex++];
-            }
-            return event;
-        });
+
+    // Move timeline images
+    if (pageData.timelineEvents && Array.isArray(pageData.timelineEvents)) {
+        updatedData.timelineEvents = await Promise.all(
+            pageData.timelineEvents.map(async (event: any) => {
+                if (event.image) {
+                    const movedImage = await moveFile(event.image, pageId, 'timeline');
+                    return { ...event, image: movedImage };
+                }
+                return event;
+            })
+        );
     }
-    if (updatedData.puzzleImage) updatedData.puzzleImage = movedFiles[movedIndex++];
-    if (updatedData.audioRecording) updatedData.audioRecording = movedFiles[movedIndex];
+    
+    // Move puzzle image
+    if (pageData.puzzleImage) {
+        updatedData.puzzleImage = await moveFile(pageData.puzzleImage, pageId, 'puzzle');
+    }
+    
+    // Move audio recording
+    if (pageData.audioRecording) {
+        updatedData.audioRecording = await moveFile(pageData.audioRecording, pageId, 'audio');
+    }
+
     return updatedData;
 }
 
@@ -265,7 +272,7 @@ export async function createPayPalOrder(planType: 'basico' | 'avancado', intentI
                     currency_code: "USD",
                     value: value,
                 },
-                description: `MyCupid - ${planType === 'avancado' ? 'Advanced' : 'Economic'} Plan`,
+                description: `MyCupid - ${'${planType === \'avancado\' ? \'Advanced\' : \'Economic\'}'} Plan`,
                 custom_id: intentId,
             }],
         });
@@ -311,7 +318,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
     try {
         const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) return { error: `Rascunho ${intentId} não encontrado.` };
+        if (!data) return { error: `Rascunho ${'${intentId}'} não encontrado.` };
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
 
         const newPageId = db.collection('lovepages').doc().id;
@@ -347,7 +354,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
     } catch (error: any) {
         console.error("Erro finalizeLovePage:", error);
         return { 
-            error: `Erro ao finalizar a página: ${error.message}`,
+            error: `Erro ao finalizar a página: ${'${error.message}'}`,
             details: { code: error.code || 'FINALIZE_ERROR' }
         };
     }
@@ -364,7 +371,7 @@ export async function adminFinalizePage(intentId: string, adminUserId: string) {
         return { error: 'Acesso negado. Ação restrita ao administrador.' };
     }
 
-    return finalizeLovePage(intentId, `admin_override_${Date.now()}`);
+    return finalizeLovePage(intentId, `admin_override_${'${Date.now()}'}`);
 }
 
 
@@ -382,7 +389,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         if (paymentInfo.status === 'approved' || paymentInfo.status === 'authorized') {
             const result = await finalizeLovePage(intentId, paymentId);
             if (result.error) {
-                console.error(`Erro na finalização pós-pagamento: ${result.error}`);
+                console.error(`Erro na finalização pós-pagamento: ${'${result.error}'}`);
                 return { status: 'error', error: result.error, details: result.details };
             }
             return { status: 'approved', pageId: result.pageId };
@@ -393,7 +400,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
         console.error("Erro no Servidor (verifyPaymentWithMercadoPago):", error);
         return { 
             status: 'error', 
-            error: `Falha na verificação com Mercado Pago: ${error.message}`,
+            error: `Falha na verificação com Mercado Pago: ${'${error.message}'}`,
             details: { code: error.code || 'MERCADO_PAGO_VERIFY_ERROR' }
         };
     }
