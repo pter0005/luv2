@@ -68,6 +68,11 @@ function FloatingCard({
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
   const { locale } = useTranslation();
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+      console.log(`[3D Gallery] Rendering image: ${card.imageUrl}`);
+  }, [card.imageUrl]);
   
   // LookAt suave para a câmera
   useFrame(({ camera }) => {
@@ -123,17 +128,21 @@ function FloatingCard({
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-            {/* Qualidade reduzida em 15% (de 85 para 70) para fluidez total */}
-            <Image
-                src={card.imageUrl}
-                alt={card.alt}
-                fill
-                unoptimized
-                quality={70} 
-                className="object-cover"
-                sizes="(max-width: 768px) 150px, 300px"
-                priority
-            />
+            {imageError ? (
+                <div className="w-full h-full bg-red-900/50 flex items-center justify-center">
+                    <AlertTriangle className="w-8 h-8 text-red-400" />
+                </div>
+            ) : (
+                <img
+                    src={card.imageUrl}
+                    alt={card.alt}
+                    className="w-full h-full object-cover"
+                    onError={() => {
+                        console.error(`[CMD_LOG]: LOAD FAILED! Could not load image: ${card.imageUrl}`);
+                        setImageError(true);
+                    }}
+                />
+            )}
             
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3">
                 {card.title && (

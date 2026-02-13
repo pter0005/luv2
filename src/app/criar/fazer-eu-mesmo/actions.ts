@@ -175,14 +175,14 @@ async function moveFile(
     targetFolder: string
 ): Promise<{ url: string; path: string } | null> {
     if (!fileData || !fileData.path || !fileData.path.includes('temp/')) {
-        return fileData; 
+        return fileData;
     }
 
     const oldPath = fileData.path;
     const fileName = oldPath.split('/').pop();
     
     if (!fileName) {
-        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Invalid path, no filename: ${oldPath}`);
+        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Caminho inválido, sem nome de arquivo: ${oldPath}`);
         return null;
     }
 
@@ -194,20 +194,24 @@ async function moveFile(
 
     try {
         const [sourceExists] = await oldFile.exists();
-        if (!sourceExists) {
-             console.warn(`[CMD_LOG][MOVE_FILE_SKIP] Arquivo de rascunho ${fileName} não foi encontrado em ${oldPath}. Pulando este arquivo.`);
-             return null;
+        if (sourceExists) {
+            await oldFile.move(newFile);
+        } else {
+            const [destExists] = await newFile.exists();
+            if (!destExists) {
+                console.error(`[CMD_LOG][MOVE_FILE_FAIL] Arquivo ${fileName} é um fantasma. Não encontrado em ${oldPath} ou ${newPath}.`);
+                return null;
+            }
+            console.warn(`[CMD_LOG][MOVE_FILE_RECOVER] Arquivo ${oldPath} não encontrado, mas já existe em ${newPath}. Recuperando.`);
         }
 
-        await oldFile.move(newFile);
         await newFile.makePublic();
-        
         const finalUrl = newFile.publicUrl();
-        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] ${oldPath} -> ${newPath}`);
+        console.log(`[CMD_LOG][MOVE_FILE_SUCCESS] Arquivo finalizado em: ${newPath}`);
         return { url: finalUrl, path: newPath };
 
     } catch (error: any) {
-        console.error(`[CMD_LOG][MOVE_FILE_FAIL] Falha na movimentação do arquivo de ${oldPath} para ${newPath}`, error);
+        console.error(`[CMD_LOG][MOVE_FILE_CRITICAL_ERROR] Falha crítica movendo ${oldPath} para ${newPath}`, error);
         return null;
     }
 }
@@ -216,33 +220,38 @@ async function moveFile(
 async function moveFilesToPermanentStorage(pageData: any, pageId: string) {
     const updatedData = { ...pageData };
 
-    if (pageData.galleryImages && Array.isArray(pageData.galleryImages)) {
-        const movePromises = pageData.galleryImages.map((img: any) => moveFile(img, pageId, 'gallery'));
-        const movedImages = await Promise.all(movePromises);
-        updatedData.galleryImages = movedImages.filter(img => img !== null);
+    const processImageList = async (imageList: any[], folder: string) => {
+        if (!imageList || !Array.isArray(imageList)) return [];
+        const movePromises = imageList.map(img => moveFile(img, pageId, folder));
+        const results = await Promise.all(movePromises);
+        return results.filter(res => res !== null);
+    };
+
+    if (updatedData.galleryImages) {
+        updatedData.galleryImages = await processImageList(updatedData.galleryImages, 'gallery');
     }
 
-    if (pageData.timelineEvents && Array.isArray(pageData.timelineEvents)) {
-        const movePromises = pageData.timelineEvents.map(async (event: any) => {
+    if (updatedData.timelineEvents && Array.isArray(updatedData.timelineEvents)) {
+        const processedEvents = await Promise.all(updatedData.timelineEvents.map(async (event: any) => {
             if (event.image) {
                 const movedImage = await moveFile(event.image, pageId, 'timeline');
                 if (movedImage) {
                     return { ...event, image: movedImage };
                 }
-                return null; // Discard event if image move fails
+                const { image, ...eventWithoutImage } = event;
+                return eventWithoutImage;
             }
             return event;
-        });
-        const movedEvents = await Promise.all(movePromises);
-        updatedData.timelineEvents = movedEvents.filter(event => event !== null);
+        }));
+        updatedData.timelineEvents = processedEvents; 
     }
     
-    if (pageData.puzzleImage) {
-        updatedData.puzzleImage = await moveFile(pageData.puzzleImage, pageId, 'puzzle');
+    if (updatedData.puzzleImage) {
+        updatedData.puzzleImage = await moveFile(updatedData.puzzleImage, pageId, 'puzzle');
     }
     
-    if (pageData.audioRecording) {
-        updatedData.audioRecording = await moveFile(pageData.audioRecording, pageId, 'audio');
+    if (updatedData.audioRecording) {
+        updatedData.audioRecording = await moveFile(updatedData.audioRecording, pageId, 'audio');
     }
 
     return updatedData;
@@ -324,7 +333,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
     try {
         const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) return { error: `Rascunho ${intentId} não encontrado.` };
+        if (!data) {
+            const errorMessage = `Rascunho ${intentId} não encontrado.`;
+            console.error(`[CMD_LOG][FINALIZE_ERROR] ${errorMessage}`);
+            return { error: errorMessage };
+        }
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
 
         const newPageId = db.collection('lovepages').doc().id;
@@ -358,7 +371,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         await intentRef.update({ status: 'completed', lovePageId: newPageId });
         return { success: true, pageId: newPageId };
     } catch (error: any) {
-        console.error(`[CMD_LOG][FINALIZE_ERROR] Erro crítico ao finalizar a página para o rascunho ${intentId}. O processo foi abortado.`, error);
+        console.error(`[CMD_LOG][FINALIZE_ERROR] Erro crítico ao finalizar a página para o rascunho ${intentId}.`, error);
         return { 
             error: `Erro ao finalizar a página: ${error.message}`,
             details: { code: error.code || 'FINALIZE_ERROR' }
