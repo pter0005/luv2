@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -17,8 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, ShieldCheck } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -41,7 +40,7 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, finalizeLovePage } from "./actions";
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -62,8 +61,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
-import PaypalButton from "@/components/paypal/PaypalButton";
-
+import PayPalButton from "@/components/paypal/PaypalButton";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -73,12 +71,29 @@ const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
 
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 
+const cpfMask = (v: string) => {
+    v = v.replace(/\D/g, ""); // Remove tudo que não é número
+    if (v.length > 11) v = v.slice(0, 11); // Limita aos 11 dígitos do CPF
+    
+    return v
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
 
 const MAX_GALLERY_IMAGES_BASICO = 2;
 const MAX_GALLERY_IMAGES_AVANCADO = 6;
 const MAX_TIMELINE_IMAGES_BASICO = 5;
 const MAX_TIMELINE_IMAGES_AVANCADO = 20;
 
+
+const paymentSchema = z.object({
+  payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
+  payerLastName: z.string().min(1, "Sobrenome é obrigatório.").optional(),
+  payerEmail: z.string().email("E-mail inválido.").optional(),
+  payerCpf: z.string().optional(),
+});
 
 export const fileWithPreviewSchema = z.object({
     url: z.string().url({ message: "URL de pré-visualização inválida." }),
@@ -101,8 +116,6 @@ const pageSchema = z.object({
   plan: z.string().default('avancado'),
   intentId: z.string().optional(),
   userId: z.string().optional(),
-  userEmail: z.string().email().optional(),
-  userName: z.string().optional(),
   title: z.string().default("Seu Título Aqui"),
   titleColor: z.string().default("#FFFFFF"),
   message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
@@ -124,6 +137,7 @@ const pageSchema = z.object({
   backgroundVideo: fileWithPreviewSchema.optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
+  payment: paymentSchema.optional(),
 });
 
 
@@ -261,7 +275,7 @@ const SpecialDateStep = React.memo(() => {
             >
               <FormItem>
                 <FormControl>
-                  <RadioGroupItem value="Padrão" id="countdown-style-default" className="sr-only" />
+                  <RadioGroupItem value="Padrão" id="countdown-style-default" className="peer sr-only" />
                 </FormControl>
                 <Label
                   htmlFor="countdown-style-default"
@@ -381,7 +395,7 @@ const GalleryStep = React.memo(() => {
         
         try {
             const uploadPromises = filesArray.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.7);
+                const compressedFile = await compressImage(file, 1280, 0.9);
                 return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
 
@@ -488,7 +502,7 @@ const GalleryStep = React.memo(() => {
                                 >
                                     {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
                                         <div key={style}>
-                                            <RadioGroupItem value={style} id={`style-${style}`} className="sr-only" />
+                                            <RadioGroupItem value={style} id={`style-${style}`} className="peer sr-only" />
                                             <Label
                                                 htmlFor={`style-${style}`}
                                                 className={cn(
@@ -555,8 +569,8 @@ const TimelineStep = React.memo(() => {
 
         try {
             const uploadPromises = filesToUpload.map(async file => {
-                const compressedFile = await compressImage(file, 1024, 0.6);
-                return uploadFile(storage, user.uid, compressedFile, 'timeline');
+                // Remove compression for original quality
+                return uploadFile(storage, user.uid, file, 'timeline');
             });
 
             const uploadedFiles = await Promise.all(uploadPromises);
@@ -1148,7 +1162,7 @@ const PuzzleStep = React.memo(() => {
             const file = event.target.files[0];
             setIsProcessing(true);
             try {
-                const compressedBlob = await compressImage(file, 1280, 0.7);
+                const compressedBlob = await compressImage(file, 1280, 0.9);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
                 toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
@@ -1267,254 +1281,416 @@ const stepComponents = [
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue } = useFormContext<PageData>();
     const { t } = useTranslation();
-    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'waiting' | 'success' | 'error'>('idle');
-    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
-    const { user } = useUser();
-    const { toast } = useToast();
-    const [isAdmin, setIsAdmin] = useState(false);
+    const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
-    const [isAdminProcessing, setIsAdminProcessing] = useState(false);
-    const [domain, setDomain] = useState<'br' | 'net' | null>(null);
+    const { user } = useUser();
+    const [isProcessing, startTransition] = useTransition();
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [error, setError] = useState<{ message: string, details?: any } | null>(null);
+    const { toast } = useToast();
+    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
+    const router = useRouter();
 
+
+    // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
+    useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.intentId) {
+                    setValue('intentId', result.intentId);
+                } else if (result.error) {
+                    console.error("Autosave failed on initial load:", result);
+                    toast({
+                        variant: 'destructive',
+                        title: "Erro Crítico ao Salvar",
+                        description: result.error,
+                        duration: 9000,
+                    });
+                }
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue, toast]);
+
+
+    useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.intentId) {
+                    setValue('intentId', result.intentId, { shouldDirty: false });
+                    console.log("Forced intent creation, ID:", result.intentId);
+                } else if (result.error) {
+                    console.error("Failed to force create intent:", result.error, result.details);
+                    setError({message: result.error, details: result.details});
+                }
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            if (hostname.includes('mycupid.com.br')) {
-                setDomain('br');
-            } else {
-                setDomain('net');
+            setIsBrazilDomain(hostname.endsWith('.com.br'));
+        }
+    }, []);
+
+    const priceUSD = plan === 'basico' ? 19.90 : 24.99;
+    const priceBRL = plan === 'basico' ? 19.90 : 24.90;
+
+    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+    const isAdmin = user?.email && adminEmails.includes(user.email);
+
+    const handlePaymentSuccess = useCallback((pageId: string) => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
+        toast({ title: t('toast.payment.success'), description: t('toast.payment.success.description') });
+        setPageId(pageId);
+        localStorage.removeItem('amore-pages-autosave');
+    }, [setPageId, toast, t]);
+
+    const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
+
+        pollingIntervalRef.current = setInterval(async () => {
+            const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
+            console.log("Status do pagamento:", result.status);
+            
+            if (result.status === 'approved' && result.pageId) {
+                clearInterval(pollingIntervalRef.current!);
+                handlePaymentSuccess(result.pageId);
+            } else if (result.status === 'error') {
+                clearInterval(pollingIntervalRef.current!);
+                setError({ message: result.error, details: result.details });
             }
-        }
+        }, 3000);
+    }, [handlePaymentSuccess]);
 
-        const adminEmails = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
-        if (user && user.email && adminEmails.includes(user.email)) {
-            setIsAdmin(true);
-        }
-    }, [user]);
-
-    // Rastreamento simples do Checkout
     useEffect(() => {
-        if (paymentStatus === 'idle' && typeof window !== 'undefined' && (window as any).fbq) {
-            (window as any).fbq('track', 'InitiateCheckout');
+        if (pixData?.paymentId && intentId) {
+            startPolling(pixData.paymentId, intentId);
         }
-    }, [paymentStatus]);
 
-    const handleGeneratePix = async () => {
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
+    }, [pixData, intentId, startPolling]);
+
+    const handleOneClickPix = () => {
+        setError(null);
+        setPixData(null);
+
         if (!user) {
-            toast({ variant: "destructive", title: t('toast.payment.session.invalid') });
+            setError({ message: t('toast.payment.session.invalid') });
             return;
         }
-        setPaymentStatus('processing');
-        try {
-            const pageData = getValues();
-            const saveResult = await createOrUpdatePaymentIntent({ 
-                ...pageData, 
-                userId: user.uid, 
-                userEmail: user.email, 
-                userName: user.displayName 
-            });
-            
-            if (saveResult.error) throw new Error(saveResult.error);
-            
-            const finalIntentId = saveResult.intentId!;
-            setValue('intentId', finalIntentId, { shouldDirty: false });
 
-            const price = pageData.plan === 'basico' ? 19.90 : 24.90;
-            const paymentResult = await processPixPayment(finalIntentId, price);
+        if (user.email) {
+            setValue('payment.payerEmail', user.email, { shouldDirty: true });
+        }
+    
+        startTransition(async () => {
+            try {
+                const fullData = { ...getValues(), userId: user.uid };
+                
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
 
-            if (paymentResult.error) {
-                // Agora o details é garantido ser uma string
-                console.error("API Error Log:", paymentResult.details);
-                throw new Error(paymentResult.error + (paymentResult.details ? `\nLog: ${paymentResult.details}` : ""));
-            }
-
-            setPixData(paymentResult as any);
-            setPaymentStatus('waiting');
-
-            const interval = setInterval(async () => {
-                try {
-                    const check = await verifyPaymentWithMercadoPago(paymentResult.paymentId!, finalIntentId);
-                    if (check.status === 'approved') {
-                        clearInterval(interval);
-                        setPaymentStatus('success');
-                        toast({ title: t('toast.payment.success'), description: t('toast.payment.success.description') });
-                        setTimeout(() => { if (check.pageId) setPageId(check.pageId); }, 1000);
+                if (saveResult.error || !saveResult.intentId) {
+                    setError({ message: saveResult.error || "Não foi possível salvar o rascunho antes do pagamento.", details: saveResult.details });
+                    if (saveResult.error?.includes("NOT_FOUND")) {
+                      setValue('intentId', undefined, { shouldDirty: false });
                     }
-                } catch (e) {
-                    clearInterval(interval);
+                    return;
                 }
-            }, 4000);
-        } catch (err: any) {
-            setPaymentStatus('error');
-            toast({
-                variant: "destructive",
-                title: "Erro no Pagamento",
-                description: err.message.substring(0, 100) + "...", // Corta msg muito longa
-                duration: 10000,
-            });
-        }
+                
+                setValue('intentId', saveResult.intentId);
+                const paymentResult = await processPixPayment(saveResult.intentId, priceBRL);
+                
+                if (paymentResult.error) {
+                    setError({ message: paymentResult.error, details: paymentResult.details || {} });
+                } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
+                    setPixData({ 
+                        qrCode: paymentResult.qrCode, 
+                        qrCodeBase64: paymentResult.qrCodeBase64, 
+                        paymentId: paymentResult.paymentId
+                    });
+                }
+            } catch (err: any) {
+                setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
+            }
+        });
     };
+    
+    const handleStripePayment = () => {
+      setError(null);
+      if (!user) {
+          setError({ message: t('toast.payment.session.invalid') });
+          return;
+      }
+  
+      startTransition(async () => {
+          try {
+              const fullData = { ...getValues(), userId: user.uid };
+              const saveResult = await createOrUpdatePaymentIntent(fullData);
+  
+              if (saveResult.error || !saveResult.intentId) {
+                  setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
+                  return;
+              }
+  
+              setValue('intentId', saveResult.intentId);
+              const planValue = getValues('plan') as 'basico' | 'avancado';
+              const domain = window.location.origin;
 
+              const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
+
+              if (sessionResult.error || !sessionResult.url) {
+                  setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
+              } else {
+                  window.location.href = sessionResult.url;
+              }
+          } catch (err: any) {
+              setError({ message: "Error connecting to the payment service.", details: err });
+          }
+      });
+    };
+    
     const handleAdminFinalize = async () => {
-        if (!user) return;
-        setIsAdminProcessing(true);
+        if (!user || !intentId) {
+            toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' });
+            return;
+        }
+
+        startTransition(async () => {
+            try {
+                const result = await adminFinalizePage(intentId, user.uid);
+                if (result.error || !result.pageId) {
+                    setError({ message: result.error || "Falha ao finalizar como admin.", details: result.details });
+                } else {
+                    handlePaymentSuccess(result.pageId);
+                }
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar como admin.", details: e });
+            }
+        });
+    }
+
+    const handleManualVerification = async () => {
+        if (!pixData?.paymentId || !intentId) return;
+        setIsVerifying(true);
         try {
-            const pageData = getValues();
-            // Garante que o rascunho está salvo antes de finalizar
-            const result = await createOrUpdatePaymentIntent({ 
-                ...pageData,
-                userId: user.uid,
-                userEmail: user.email,
-                userName: user.displayName,
-            });
-            
-            if (result.error) throw new Error(result.error);
-            
-            const finalIntentId = result.intentId!;
-            setValue('intentId', finalIntentId, { shouldDirty: false });
-
-            const finalizationResult = await finalizeLovePage(finalIntentId, `ADMIN_BYPASS_${user.email}`);
-            if (finalizationResult.error) throw new Error(finalizationResult.error);
-            if (finalizationResult.pageId) setPageId(finalizationResult.pageId);
-
-        } catch (err: any) {
-            toast({ variant: "destructive", title: "Erro Admin", description: err.message });
+            const result = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
+            if (result.status === 'approved' && result.pageId) {
+                handlePaymentSuccess(result.pageId);
+            } else {
+                toast({ variant: 'default', title: t('toast.payment.pending'), description: t('toast.payment.pending.description') });
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: t('toast.payment.verify.error'), description: t('toast.payment.verify.error.description') });
         } finally {
-            setIsAdminProcessing(false);
+            setIsVerifying(false);
         }
     };
 
-    if (domain === null) {
-        return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
+    if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+
+    if (error) {
+        return (
+            <div className="p-4 rounded-lg bg-red-900/40 border border-red-500/30 text-red-300 text-xs text-left font-mono my-6">
+                <p className="font-sans font-bold text-red-200 text-sm mb-2">Payment Error Details</p>
+                <p className="font-sans text-sm mb-4 break-words">{error.message}</p>
+                <div className="bg-black/40 p-3 rounded-md overflow-x-auto">
+                    <pre className="whitespace-pre-wrap break-all text-red-400/90 text-[10px]">
+                        <code>
+                            CMD_LOG: {JSON.stringify(error.details || { info: "No additional details provided." }, null, 2)}
+                        </code>
+                    </pre>
+                </div>
+            </div>
+        )
     }
     
-    // UI para BRASIL (.com.br)
-    if (domain === 'br') {
+    if (!isBrazilDomain) {
         return (
-            <div className="space-y-6 text-center max-w-md mx-auto">
-                <h2 className="text-3xl font-bold font-headline">{t('wizard.payment.title')}</h2>
-                <p className="text-muted-foreground">{t('wizard.payment.description')}</p>
-                
-                <Card className="p-6 bg-card border-border rounded-2xl shadow-inner">
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground font-medium">{t('wizard.payment.total')}</span>
-                        <span className="text-2xl font-black text-foreground">
-                            {watch('plan') === 'basico' ? 'R$ 19,90' : 'R$ 24,90'}
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                 <div className="text-center space-y-2">
+                    <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title_en')}</h3>
+                    <p className="text-sm text-zinc-400">Complete your order to generate your unique link.</p>
+                </div>
+                <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+                    <div className="absolute top-0 right-0 p-2">
+                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
+                             {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
                         </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 text-right">{t('wizard.payment.immediate_access')}</p>
-                </Card>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total_en')}</p>
+                    <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
+                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
+                        <Clock size={12} /> {t('wizard.payment.immediate_access')}
+                    </p>
+                </div>
 
-                <div className="p-6 bg-card border-border/50 rounded-2xl space-y-4">
-                     <div className="flex items-center gap-3">
-                        <Image src="https://i.imgur.com/8dDf3lB.png" alt="Mercado Pago" width={32} height={32} />
-                        <div>
-                            <h3 className="font-semibold text-foreground text-left">Pagar com PIX</h3>
-                            <p className="text-xs text-muted-foreground text-left">Liberação imediata.</p>
+                <div className="space-y-3">
+                     <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
+                        <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
+                    <Button 
+                        onClick={handleStripePayment}
+                        disabled={isProcessing}
+                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group"
+                    >
+                        {isProcessing ? (
+                            <Loader2 className="animate-spin" />
+                        ) : (
+                            <div className="flex items-center justify-center gap-2">
+                                <CreditCard size={20} />
+                                <span>{t('wizard.payment.card_button')}</span>
+                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        )}
+                    </Button>
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
+                        <Lock size={10} className="text-green-500" />
+                        <span>{t('wizard.payment.secure_stripe')}</span>
+                    </div>
+                </div>
 
-                    {paymentStatus === 'idle' || paymentStatus === 'error' ? (
-                        <Button 
-                            onClick={handleGeneratePix} 
-                            disabled={paymentStatus === 'processing'}
-                            className="w-full h-14 text-lg bg-[#00AEEF] hover:bg-[#0099cc] text-white font-bold"
-                        >
-                            {paymentStatus === 'processing' ? <><Loader2 className="mr-2 animate-spin"/> Gerando PIX...</> : "Gerar QR Code PIX"}
-                        </Button>
+                <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                </div>
+
+                <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
+                    {intentId ? (
+                        <div className="w-full animate-in zoom-in-95 duration-500">
+                             <PayPalButton firebaseIntentId={intentId} planType={plan} />
+                        </div>
                     ) : (
-                        <div className="space-y-4 pt-4 border-t border-border animate-in fade-in">
-                            {pixData && (
-                                <>
-                                    <div className="p-2 bg-white rounded-lg mx-auto w-fit border-4 border-primary">
-                                        <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={200} height={200} unoptimized />
-                                    </div>
-                                    <div className="relative">
-                                        <Input value={pixData.qrCode} readOnly className="pr-12 text-xs bg-input"/>
-                                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={() => {
-                                            navigator.clipboard.writeText(pixData.qrCode);
-                                            toast({ title: "Copiado!" });
-                                        }}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground animate-pulse">Aguardando confirmação do banco...</p>
-                                </>
-                            )}
+                        <div className="flex flex-col items-center gap-3 py-6">
+                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Synchronizing with PayPal...</p>
                         </div>
                     )}
                 </div>
 
-                {isAdmin && (
-                    <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
-                        <Button
-                            onClick={handleAdminFinalize}
-                            disabled={isAdminProcessing}
-                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
-                        >
-                            {isAdminProcessing ? <Loader2 className="animate-spin" /> : <ShieldCheck className="mr-2" />}
-                            FINALIZAR COMO ADMINISTRADOR
-                        </Button>
-                        <p className="text-[10px] text-yellow-500/70 mt-2">Apenas visível para giibrossini@gmail.com e inesvalentim45@gmail.com</p>
-                    </div>
+                {error && (
+                    <Alert variant="destructive" className="mt-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error.message}</AlertTitle>
+                        {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                    </Alert>
                 )}
-                
-                <p className="text-xs text-muted-foreground pt-4">{t('wizard.payment.secure')}</p>
             </div>
         );
     }
     
-    // UI para INTERNACIONAL (.net)
-    if (domain === 'net') {
-        const plan = watch('plan');
-        const priceUSD = plan === 'basico' ? "19.90" : "24.90";
-
-        return (
-            <div className="space-y-6 text-center max-w-md mx-auto">
-                <h2 className="text-3xl font-bold font-headline">{t('wizard.payment.title_en')}</h2>
-                <p className="text-muted-foreground">{t('wizard.payment.description_en')}</p>
-                
-                <Card className="p-6 bg-card border-border rounded-2xl shadow-inner">
-                    <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground font-medium">{t('wizard.payment.total_en')}</span>
-                        <span className="text-2xl font-black text-foreground">
-                            ${priceUSD}
-                        </span>
-                    </div>
-                     <p className="text-xs text-muted-foreground mt-1 text-right">USD</p>
-                </Card>
-
-                <div className="p-6 bg-card border-border/50 rounded-2xl space-y-4">
-                    <PaypalButton intentId={intentId!} plan={plan as 'basico' | 'avancado'} />
-                    <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">OR</span>
-                        </div>
-                    </div>
-                    <Button disabled className="w-full h-12 text-lg" >{t('wizard.payment.card_button')}</Button>
-                    <p className="text-xs text-muted-foreground">{t('wizard.payment.secure_stripe')}</p>
-                </div>
-
-                 {isAdmin && (
-                    <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
-                        <Button onClick={handleAdminFinalize} disabled={isAdminProcessing} className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
-                            {isAdminProcessing ? <Loader2 className="animate-spin" /> : <ShieldCheck className="mr-2" />} FINALIZE AS ADMIN
-                        </Button>
-                    </div>
-                )}
+    // --- VIEW BRASIL (PIX) ---
+    return (
+        <div className="space-y-6 text-center">
+            <div className="mb-8">
+                <h3 className="text-2xl font-bold font-headline mb-2">
+                    {t('wizard.payment.title')}
+                </h3>
+                <p className="text-muted-foreground">
+                    {t('wizard.payment.description')}
+                </p>
             </div>
-        );
-    }
 
-    return null;
+            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
+                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
+                <span className="block text-4xl font-black text-white">R$ {priceBRL.toFixed(2).replace('.', ',')}</span>
+                <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
+            </div>
+
+            {!pixData ? (
+                <Button 
+                    onClick={handleOneClickPix} 
+                    disabled={isProcessing}
+                    className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                >
+                    {isProcessing ? (
+                        <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
+                        </>
+                    ) : (
+                        <>
+                            <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')}
+                        </>
+                    )}
+                </Button>
+            ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
+                   <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
+                    <p className="text-muted-foreground max-w-sm">{t('wizard.payment.pix.description')}</p>
+                    <div className="p-4 bg-white rounded-lg border">
+                        {pixData.qrCodeBase64 ? (
+                            <Image 
+                                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                                alt="PIX QR Code"
+                                width={256}
+                                height={256}
+                                unoptimized
+                            />
+                        ) : (
+                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                <Loader2 className="animate-spin mb-2" />
+                                <p className="text-xs">{t('wizard.payment.pix.generating_qr')}</p>
+                            </div>
+                        )}
+                    </div>
+                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
+                        <Copy className="mr-2 h-4 w-4" />
+                        {t('wizard.payment.pix.copy')}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">{t('wizard.payment.pix.waiting')}</p>
+                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
+                            {t('wizard.payment.pix.verify')}
+                    </Button>
+                </div>
+            )}
+            
+            {isAdmin && intentId && (
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
+                     <Button 
+                        type="button" 
+                        size="lg" 
+                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
+                        disabled={isProcessing}
+                        onClick={handleAdminFinalize}
+                    >
+                        {isProcessing ? <Loader2 className="animate-spin" /> : t('wizard.payment.admin.cta')}
+                    </Button>
+                </div>
+            )}
+
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
+                </Alert>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
+                {t('wizard.payment.secure')}
+            </p>
+        </div>
+    );
 };
-
-
-
 
 // Wizard Internal Logic
 const WizardInternal = () => {
@@ -1542,7 +1718,7 @@ const WizardInternal = () => {
     { id: "music", title: t('wizard.steps.6.title'), description: t('wizard.steps.6.description'), fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
     { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
     { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-    { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: [] },
+    { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment"] },
   ], [t]);
 
   const methods = useForm<PageData>({
@@ -1610,7 +1786,7 @@ const WizardInternal = () => {
     if (!user || isUserLoading) return; // Don't save if no user or still loading
     
     // Explicitly add user ID to the data being saved
-    const dataToSave = { ...data, userId: user.uid, userEmail: user.email, userName: user.displayName };
+    const dataToSave = { ...data, userId: user.uid };
 
     try {
         const result = await createOrUpdatePaymentIntent(dataToSave);
@@ -1623,6 +1799,11 @@ const WizardInternal = () => {
                 description: (
                     <div>
                         <p>{result.error}</p>
+                        <div className="mt-2 p-2 bg-black/30 rounded-md">
+                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                CMD_LOG: {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                            </pre>
+                        </div>
                     </div>
                 ),
                 duration: 20000,
@@ -1696,7 +1877,7 @@ const WizardInternal = () => {
     
     if (steps[nextStepIndex]?.id === 'payment' && user) {
         toast({ title: t('toast.payment.autosave'), description: t('toast.payment.autosave.description') });
-        await handleAutosave({ ...getValues(), userId: user.uid, userEmail: user.email, userName: user.displayName });
+        await handleAutosave({ ...getValues(), userId: user.uid });
     }
     
     setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
@@ -1773,7 +1954,7 @@ const WizardInternal = () => {
                   <span className="text-xs text-muted-foreground font-sans">{t('wizard.step')} {currentStep + 1} {t('wizard.of')} {steps.length}</span>
                   <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
               </div>
-              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRight /></Button>
+              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRightIcon /></Button>
           </div>
 
           <div className="mt-8 space-y-2">
@@ -1836,17 +2017,8 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 const SuccessStep = ({ pageId }: { pageId: string }) => {
     const { t } = useTranslation();
-    const { getValues } = useFormContext<PageData>();
     const pageUrl = `${window.location.origin}/p/${pageId}`;
     const [copied, setCopied] = useState(false);
-    
-    useEffect(() => {
-      if (typeof (window as any).fbq === 'function') {
-        const pageData = getValues();
-        const price = pageData.plan === 'basico' ? 19.90 : 24.90;
-        (window as any).fbq('track', 'Purchase', { currency: 'BRL', value: price });
-      } 
-    }, []); // Runs once
 
     const handleCopy = () => {
         navigator.clipboard.writeText(pageUrl).then(() => {
@@ -1873,7 +2045,6 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
                     alt="QR Code da Página"
                     width={200}
                     height={200}
-                    unoptimized
                 />
             </div>
             <p className="text-xs text-muted-foreground mt-2">{t('wizard.success.qr.description')}</p>
