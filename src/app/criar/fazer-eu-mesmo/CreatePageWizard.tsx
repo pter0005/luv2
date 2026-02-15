@@ -502,7 +502,7 @@ const GalleryStep = React.memo(() => {
                                 >
                                     {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
                                         <div key={style}>
-                                            <RadioGroupItem value={style} id={`style-${style}`} className="peer sr-only" />
+                                            <RadioGroupItem value={style} id={`style-${style}`} className="sr-only" />
                                             <Label
                                                 htmlFor={`style-${style}`}
                                                 className={cn(
@@ -1905,9 +1905,6 @@ const WizardInternal = () => {
         }));
     }, [isClient, formData.timelineEvents]);
 
-  if (showTimelinePreview) {
-      return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimelinePreview(false)} />;
-  }
 
   const currentStepInfo = steps[currentStep];
   const currentStepId = currentStepInfo?.id;
@@ -1937,7 +1934,6 @@ const WizardInternal = () => {
             <PreviewContent 
                 formData={formData} 
                 isClient={isClient}
-                onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
@@ -1976,7 +1972,6 @@ const WizardInternal = () => {
                 <PreviewContent 
                     formData={formData} 
                     isClient={isClient}
-                    onShowTimeline={() => setShowTimelinePreview(true)}
                     hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
