@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() { return request.auth != null; }
+    
+    // Rascunhos temporários: apenas o usuário logado pode mexer na sua própria pasta.
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write, delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Pasta final de produção: Subpastas explícitas para leitura pública.
+    // Isso é mais robusto do que um wildcard genérico.
+    match /lovepages/{pageId}/gallery/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /lovepages/{pageId}/timeline/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+     match /lovepages/{pageId}/puzzle/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+     match /lovepages/{pageId}/audio/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Regra legado (mantida por segurança, mas o ideal é não usar mais)
+    match /gallery-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+  }
+}
