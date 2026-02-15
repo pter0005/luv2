@@ -1,14 +1,14 @@
-rm -rf .next
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Ignora erros pra economizar memória e buildar rápido
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Suas configurações de imagens (copiei do seu print)
   images: {
     dangerouslyAllowSVG: true,
     remotePatterns: [
@@ -29,4 +29,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-ghb
