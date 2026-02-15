@@ -1,16 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Ignora erros pra economizar memória e buildar rápido
+  // Ignora erros de Typescript pra economizar memória
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Ignora erros de Lint pra economizar memória
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Desativa a geração de source maps para reduzir uso de memória no build
+  // Desativa mapas pesados pra economizar memória
   productionBrowserSourceMaps: false,
-  // Suas configurações de imagens (copiei do seu print)
+  
   images: {
     dangerouslyAllowSVG: true,
     remotePatterns: [
