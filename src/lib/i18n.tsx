@@ -387,6 +387,7 @@ const translations = {
     'wizard.payment.pix.description': 'Escaneie o QR Code com o app do seu banco ou use o código "Copia e Cola".',
     'wizard.payment.pix.copy': 'Copiar Código PIX',
     'wizard.payment.pix.waiting': 'Aguardando pagamento... A página será liberada automaticamente.',
+    'wizard.payment.pix.verify': 'Verificar Pagamento',
     'wizard.payment.secure': 'Ambiente seguro. Liberação automática.',
     'wizard.payment.title_en': 'Ready to surprise! 🎁',
     'wizard.payment.description_en': 'Your page is assembled. Finalize to get your link.',
@@ -449,11 +450,11 @@ const translations = {
      'toast.payment.verify.error.description': 'Could not verify the payment.',
     
      // Cookie Banner
-     'cookie.title': 'Cookie Notice',
-     'cookie.description': 'These cookies won\'t break your diet. They just improve your time. We use them to ensure the best experience on our site.',
-     'cookie.privacyLink': 'Read our privacy policy.',
-     'cookie.manage': 'Manage preferences',
-     'cookie.accept': 'Accept',
+     'cookie.title': 'Aviso de Cookies',
+     'cookie.description': 'Estas cookies não vão quebrar a sua dieta. Elas apenas melhoram o seu tempo. Nós as usamos para garantir a melhor experiência em nosso site.',
+     'cookie.privacyLink': 'Leia nossa política de privacidade.',
+     'cookie.manage': 'Gerenciar preferências',
+     'cookie.accept': 'Aceitar',
 
     // Payment Status Pages
     'payment.success.title': 'Pagamento bem-sucedido!',
@@ -823,6 +824,7 @@ const translations = {
     'wizard.payment.pix.description': 'Scan the QR Code with your bank\'s app or use the "Copy and Paste" code.',
     'wizard.payment.pix.copy': 'Copy PIX Code',
     'wizard.payment.pix.waiting': 'Awaiting payment... The page will be released automatically.',
+    'wizard.payment.pix.verify': 'Verify Payment',
     'wizard.payment.secure': 'Secure environment. Automatic release.',
     'wizard.payment.title_en': 'Ready to surprise! 🎁',
     'wizard.payment.description_en': 'Your page is assembled. Finalize to get your link.',
@@ -961,6 +963,7 @@ const translations = {
     'wizard.payment.pix.description': 'Escanea el Código QR con la app de tu banco o usa el código "Copiar y Pegar".',
     'wizard.payment.pix.copy': 'Copiar Código PIX',
     'wizard.payment.pix.waiting': 'Esperando pago... La página se liberará automáticamente.',
+    'wizard.payment.pix.verify': 'Verificar Pago',
     'wizard.payment.secure': 'Entorno seguro. Liberación automática.',
     'wizard.payment.title_en': '¡Listo para sorprender! 🎁',
     'wizard.payment.description_en': 'Tu página está montada. Finaliza para obtener tu enlace.',
