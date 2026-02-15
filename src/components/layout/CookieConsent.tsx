@@ -14,12 +14,18 @@ export default function CookieConsent() {
   const { t } = useTranslation();
 
   useEffect(() => {
+    // Check if the cookie consent has already been given.
+    // If not, make the banner visible after a short delay.
     if (!hasCookie('cookie_consent')) {
-      setIsVisible(true);
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, []);
 
   const handleAccept = () => {
+    // Set cookie to expire in 1 year.
     setCookie('cookie_consent', 'true', { maxAge: 60 * 60 * 24 * 365, path: '/' });
     setIsVisible(false);
   };
@@ -28,30 +34,31 @@ export default function CookieConsent() {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: '100%' }}
+          animate={{ opacity: 1, y: '0%' }}
+          exit={{ opacity: 0, y: '100%' }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="fixed bottom-4 inset-x-0 z-[200] px-4"
+          className="fixed bottom-0 inset-x-0 z-[200] md:bottom-4 md:px-4"
         >
-          <div className="max-w-lg mx-auto bg-background/80 backdrop-blur-md text-foreground rounded-xl border border-border/20 p-6 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <Cookie className="h-5 w-5 shrink-0" />
-              <h3 className="font-semibold text-base">{t('cookie.title')}</h3>
+          <div className="w-full bg-background/80 backdrop-blur-md text-foreground p-5 md:p-6 shadow-lg border-t border-border/20 md:max-w-lg md:mx-auto md:rounded-xl md:border">
+            <div className="flex items-start md:items-center gap-4">
+              <Cookie className="h-6 w-6 shrink-0 mt-1 md:mt-0" />
+              <div>
+                <h3 className="font-semibold text-base">{t('cookie.title')}</h3>
+                 <p className="mt-2 text-sm text-muted-foreground">
+                  {t('cookie.description')}{' '}
+                  <Link href="/privacidade" className="underline hover:text-primary">
+                    {t('cookie.privacyLink')}
+                  </Link>
+                </p>
+              </div>
             </div>
-
-            <p className="mt-4 text-sm text-muted-foreground">
-              {t('cookie.description')}{' '}
-              <Link href="/privacidade" className="underline hover:text-primary">
-                {t('cookie.privacyLink')}
-              </Link>
-            </p>
             
-            <div className="mt-6 flex items-center justify-between gap-4">
-              <Button variant="link" className="p-0 text-muted-foreground hover:no-underline">
+            <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
+               <Button onClick={handleAccept} className="w-full sm:w-auto">{t('cookie.accept')}</Button>
+               <Button variant="ghost" className="w-full sm:w-auto text-muted-foreground hover:text-foreground">
                 {t('cookie.manage')}
               </Button>
-              <Button onClick={handleAccept}>{t('cookie.accept')}</Button>
             </div>
           </div>
         </motion.div>

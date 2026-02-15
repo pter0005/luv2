@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
@@ -53,7 +54,7 @@ function useIsMobile() {
 
 
 /* =========================
-   Floating Card (NITIDEZ E LISURA)
+   Floating Card (PERFORMANCE & UI UPDATE)
    ========================= */
 function FloatingCard({ card, position, isMobile }: { card: Card, position: any, isMobile: boolean }) {
   const groupRef = useRef<THREE.Group>(null)
@@ -69,7 +70,7 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
       // Make card always face the camera
       groupRef.current.lookAt(camera.position);
 
-      // Simple Level of Detail (LOD): Hide card if it's too far away
+      // PERFORMANCE: Simple Level of Detail (LOD). Hide card if it's too far away
       const distance = groupRef.current.position.distanceTo(camera.position);
       const shouldBeVisible = distance < distanceThreshold;
       if (shouldBeVisible !== isVisible) {
@@ -113,9 +114,10 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
                 className="w-full h-full object-cover"
                 loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-5">
-                <p className="text-white font-semibold text-xl leading-tight line-clamp-2 drop-shadow-lg mb-1.5">{card.title}</p>
-                {dateObj && <p className="text-purple-300 font-bold text-sm tracking-wide">{format(dateObj, "dd MMMM yyyy", { locale: fnsLocale })}</p>}
+            {/* UI UPDATE: Darker gradient, better font styles and colors */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col justify-end p-4">
+                <p className="text-white font-bold text-lg leading-tight line-clamp-3 drop-shadow-lg">{card.title}</p>
+                {dateObj && <p className="text-purple-400 font-semibold text-xs tracking-wide mt-1">{format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}</p>}
             </div>
         </div>
       </Html>
