@@ -8,6 +8,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Desativa a geração de source maps para reduzir uso de memória no build
+  productionBrowserSourceMaps: false,
   // Suas configurações de imagens (copiei do seu print)
   images: {
     dangerouslyAllowSVG: true,
