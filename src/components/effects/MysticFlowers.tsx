@@ -134,38 +134,34 @@ export default function MysticFlowers() {
   return (
     <>
     <style jsx global>{`
-      :root {
-        --dark-color: #05000a;
-        --purple-dark: #240046;
-        --purple-mid: #5a189a;
-        --purple-light: #9d4edd;
-        --purple-neon: #e0aaff;
-        --stem-color: #3c096c;
-        --grass-color: #10002b;
-        --glow-color: #ff007f;
-      }
-
       .night {
-        position: fixed;
+        position: absolute; /* MUDADO */
         left: 0;
         top: 0;
         width: 100%;
         height: 100%;
         background: radial-gradient(circle at center bottom, #2a003b 0%, #0d001a 60%, #000000 100%);
-        z-index: -1;
+        z-index: 0; /* MUDADO */
       }
       .rain-container {
-        position: absolute;
+        position: absolute; /* MUDADO */
         width: 100%;
         height: 100%;
         top: 0;
         left: 0;
         pointer-events: none;
-        z-index: 100;
+        z-index: 5; /* MUDADO */
       }
       .flowers {
-        position: relative;
-        transform: scale(0.9);
+        position: absolute; /* MUDADO */
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%) scale(0.6);
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
       }
 
       .flower {
@@ -354,8 +350,7 @@ export default function MysticFlowers() {
       
       .long-g .leaf {
         --w: 15vmin;
-        --h: 40vmin;
-        --c: #1a0025;
+        --h: calc(var(--w) + 2vmin);
         position: absolute;
         bottom: 0;
         width: var(--w);
@@ -367,7 +362,7 @@ export default function MysticFlowers() {
         mask-image: linear-gradient(to top, transparent 10%, var(--purple-dark));
         transform-origin: bottom center;
       }
-
+      
       .long-g--0 { left: -50vmin; transform: scale(0.8); }
       .long-g--1 { left: -42vmin; transform: scale(1) rotate(-5deg); }
       .long-g--2 { left: -15vmin; transform: scale(0.6); z-index: -1; }
@@ -383,13 +378,15 @@ export default function MysticFlowers() {
       @keyframes moving-grass { 0%, 100% { transform: rotate(-48deg) rotateY(40deg); } 50% { transform: rotate(-50deg) rotateY(40deg); } }
       @keyframes moving-grass--2 { 0%, 100% { transform: rotate(75deg) rotateX(10deg) rotateY(-200deg); } 50% { transform: rotate(70deg) rotateX(10deg) rotateY(-200deg); } }
     `}</style>
-    <div className="relative w-full h-full overflow-hidden">
+     <div className="relative w-full h-full overflow-hidden"> 
         <div className="night" />
+        
         <div className="rain-container">
             {Array.from({ length: 40 }).map((_, i) => (
                 <Sparkle key={i} index={i} />
             ))}
         </div>
+
         <div className="flowers">
             <Flower flowerClass="flower--1" height={70} leafsDelay={1.1} lineDelay={0.3} />
             <Flower flowerClass="flower--2" height={60} leafsDelay={1.4} lineDelay={0.6} />
@@ -398,14 +395,11 @@ export default function MysticFlowers() {
             <Grass className="flower__grass--1" animationDelay={2} />
             <Grass className="flower__grass--2" animationDelay={2} />
             
-            <LongGrass className="long-g--0" d={3}/>
-            <LongGrass className="long-g--1" d={3.2}/>
-            <LongGrass className="long-g--2" d={3.4}/>
-            <LongGrass className="long-g--3" d={3.6}/>
-            <LongGrass className="long-g--4" d={3.8}/>
-            <LongGrass className="long-g--5" d={4}/>
-            <LongGrass className="long-g--6" d={4.2}/>
-            <LongGrass className="long-g--7" d={4.4}/>
+            <div className="absolute bottom-0 w-full flex justify-around opacity-50">
+                 <LongGrass className="long-g--1" d={3.2}/>
+                 <LongGrass className="long-g--3" d={3.6}/>
+                 <LongGrass className="long-g--5" d={4}/>
+            </div>
         </div>
     </div>
     </>
