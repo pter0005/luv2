@@ -3,7 +3,7 @@ import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useTranslation } from "@/lib/i18n";
 import { Instagram, Mail, MessageSquare, Heart, ExternalLink } from "lucide-react";
-import { useUser } from "@/firebase";
+import { useUser } from "@/firebase/provider";
 
 export default function Footer() {
   const { t, locale } = useTranslation();
