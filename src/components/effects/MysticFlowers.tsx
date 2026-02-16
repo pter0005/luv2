@@ -4,133 +4,173 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-const Sparkle = ({ initialX, duration, delay, size }: { initialX: number; duration: number; delay: number; size: number }) => (
-    <motion.div
-        className="absolute top-0 bg-white rounded-full pointer-events-none"
-        style={{
-            left: `${initialX}%`,
-            width: size,
-            height: size,
-            boxShadow: '0 0 5px #ff00ff, 0 0 10px #fff',
-        }}
-        initial={{ y: '-10vh', scale: 0, opacity: 0 }}
-        animate={{ y: '110vh', scale: [0, 1, 0.5], opacity: [0, 1, 0] }}
-        transition={{ duration, delay, repeat: Infinity, ease: 'linear' }}
-    />
-);
+// --- SUB-COMPONENTES OTIMIZADOS ---
 
-const Flower = ({ left, finalHeight, scale, swayDuration, animationDelay }: { left: string; finalHeight: number; scale: number; swayDuration: number; animationDelay: number; }) => {
+// Partícula de brilho que sobe
+const Firefly = React.memo(({ style }: { style: React.CSSProperties }) => (
+    <div className="firefly" style={style}></div>
+));
+Firefly.displayName = 'Firefly';
+
+// Lâmina de grama individual (SVG)
+const GrassBlade = React.memo(({ d, delay }: { d: string, delay: number }) => (
+    <motion.path
+        className="grass-blade"
+        d={d}
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        transition={{ duration: 1.5, ease: "easeOut", delay }}
+    />
+));
+GrassBlade.displayName = 'GrassBlade';
+
+// Componente completo de uma Flor
+const Flower = React.memo(({ scale, delay, xPos }: { scale: number, xPos: string, delay: number }) => {
+    const curveX = useMemo(() => (Math.random() - 0.5) * 40, []);
+    const flowerHeight = useMemo(() => (40 + Math.random() * 20), []);
+
     return (
         <motion.div
-            className="absolute bottom-0 flex flex-col items-center"
-            style={{ left, originY: 1 }}
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 1.5, delay: animationDelay, ease: 'easeOut' }}
+            className="flower-wrapper"
+            style={{ left: xPos, height: `${flowerHeight}vh`, zIndex: Math.floor(scale * 10) }}
+            initial={{ y: 200, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay }}
         >
             <motion.div
-                className="relative"
-                style={{ width: 50 * scale, height: 50 * scale }}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 1, delay: animationDelay + 1.8, type: 'spring', stiffness: 150, damping: 10 }}
+                className="sway-anim"
+                style={{ transform: `scale(${scale})` }}
+                animate={{ rotate: [-3, 3] }}
+                transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse', delay: delay + 2 }}
             >
-                {/* Petals */}
-                {[0, 90, 180, 270].map(rot => (
-                    <div
-                        key={rot}
-                        className="absolute w-full h-full rounded-[50%_50%_0_50%] shadow-[0_0_10px_rgba(255,0,255,0.4)]"
-                        style={{
-                            background: 'radial-gradient(circle at 30% 30%, #ff4081, #7b1fa2)',
-                            transform: `rotate(${rot}deg)`,
-                        }}
+                <svg viewBox="0 0 100 400" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                    <motion.path
+                        d={`M 50 400 Q ${50 + curveX} 200 50 50`}
+                        fill="none"
+                        stroke="url(#stemGradient)"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 2, ease: "easeOut", delay: delay + 0.5 }}
                     />
-                ))}
-                {/* Center */}
-                <div
-                    className="absolute top-1/2 left-1/2 w-[15px] h-[15px] bg-yellow-400 rounded-full shadow-[0_0_10px_#ffeb3b] z-10"
-                    style={{ transform: 'translate(-50%, -50%)' }}
-                />
-            </motion.div>
-            {/* Stem */}
-            <motion.div
-                className="w-1 rounded-full mb-[-2px]"
-                style={{ background: 'linear-gradient(to top, #2e003e, #880e4f)' }}
-                initial={{ height: 0 }}
-                animate={{ height: finalHeight * scale }}
-                transition={{ duration: 2, delay: animationDelay, ease: 'easeOut' }}
-            >
-                {/* Leaves */}
-                <motion.div
-                    className="absolute w-5 h-10 bg-purple-900 rounded-[0_100%]"
-                    style={{ left: -20, bottom: '30%', originX: 0, originY: 1 }}
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: animationDelay + 1.5 }}
-                />
-                 <motion.div
-                    className="absolute w-5 h-10 bg-purple-900 rounded-[100%_0]"
-                    style={{ right: -20, bottom: '50%', originX: 1, originY: 1, transform: 'scaleX(-1)' }}
-                    initial={{ scale: 0, rotate: 45 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: animationDelay + 1.8 }}
-                />
+                    
+                    <motion.path
+                        d="M 0 0 Q -20 -10 -30 -30 Q -10 -20 0 0"
+                        fill="url(#leafGradient)"
+                        style={{ transform: `translate(50px, 250px) rotate(-45deg)` }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 15, delay: delay + 1.5 }}
+                    />
+
+                    <motion.path
+                        d="M 0 0 Q 20 -10 30 -30 Q 10 -20 0 0"
+                        fill="url(#leafGradient)"
+                        style={{ transform: `translate(50px, 300px) rotate(45deg)` }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 15, delay: delay + 1.8 }}
+                    />
+
+                    <motion.g
+                        style={{ transform: 'translate(50px, 50px)', transformOrigin: 'center center' }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 150, damping: 12, delay: delay + 2 }}
+                    >
+                        <path d="M 0 0 C -30 -10, -50 -40, -30 -60 C -10 -40, 0 0, 0 0" fill="url(#petalGradient)" filter="url(#glow)" />
+                        <path d="M 0 0 C 30 -10, 50 -40, 30 -60 C 10 -40, 0 0, 0 0" fill="url(#petalGradient)" filter="url(#glow)" />
+                        <path d="M 0 0 C -20 30, 20 30, 0 0" fill="url(#petalGradient)" filter="url(#glow)" style={{transform: "translateY(-40px) rotate(180deg) scale(1.2)"}} />
+                        <circle cx="0" cy="-15" r="5" fill="url(#centerGradient)" filter="url(#centerGlow)" />
+                    </motion.g>
+                </svg>
             </motion.div>
         </motion.div>
     );
-};
+});
+Flower.displayName = 'Flower';
 
+// --- COMPONENTE PRINCIPAL ---
 
-const MysticFlowers = () => {
-    const sparkles = useMemo(() => Array.from({ length: 30 }).map((_, i) => ({
-        id: i,
-        initialX: Math.random() * 100,
-        size: Math.random() * 3 + 1,
-        duration: Math.random() * 3 + 4,
-        delay: Math.random() * 5,
-    })), []);
+export default function MysticFlowers() {
 
-    const flowers = [
-        { id: 1, left: '50%', finalHeight: 300, scale: 1, swayDuration: 4, animationDelay: 0 },
-        { id: 2, left: '20%', finalHeight: 200, scale: 0.8, swayDuration: 5, animationDelay: 0.5 },
-        { id: 3, left: '80%', finalHeight: 250, scale: 0.9, swayDuration: 4.5, animationDelay: 0.2 },
-    ];
+    // Gerar dados aleatórios para os elementos, memoizado para performance
+    const fireflies = useMemo(() => Array.from({ length: 25 }, (_, i) => {
+        const size = Math.random() * 4 + 2;
+        return {
+            key: `fly-${i}`,
+            style: {
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${Math.random() * 100}%`,
+                animationDuration: `${Math.random() * 10 + 8}s`,
+                animationDelay: `${Math.random() * 8}s`,
+            } as React.CSSProperties
+        };
+    }), []);
+
+    const grassBlades = useMemo(() => Array.from({ length: 60 }, (_, i) => {
+        const x = Math.random() * 1000;
+        const h = 30 + Math.random() * 70;
+        const w = 5 + Math.random() * 10;
+        const curve = (Math.random() - 0.5) * 20;
+        return {
+            key: `grass-${i}`,
+            d: `M ${x} 100 Q ${x + curve} ${100 - h / 2} ${x + curve * 2} ${100 - h} Q ${x + curve} ${100 - h / 2} ${x + w} 100 Z`,
+            delay: Math.random() * 1
+        };
+    }), []);
+
+    const flowers = useMemo(() => [
+        { key: 'flower-1', xPos: '50%', scale: 1.2, delay: 0 },
+        { key: 'flower-2', xPos: '25%', scale: 0.9, delay: 0.5 },
+        { key: 'flower-3', xPos: '75%', scale: 0.95, delay: 0.8 },
+        { key: 'flower-4', xPos: '10%', scale: 0.7, delay: 1.2 },
+        { key: 'flower-5', xPos: '90%', scale: 0.75, delay: 1.5 },
+    ], []);
 
     return (
         <div className="absolute inset-0 w-full h-full overflow-hidden bg-gradient-to-b from-[#0d021f] to-[#240b36]">
+            
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                <defs>
+                    <linearGradient id="stemGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                        <stop offset="0%" stopColor="#2a001a" />
+                        <stop offset="100%" stopColor="#ff0055" />
+                    </linearGradient>
+                    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#880044" />
+                        <stop offset="100%" stopColor="#ff0066" />
+                    </linearGradient>
+                    <radialGradient id="petalGradient">
+                        <stop offset="0%" stopColor="#ff3388" />
+                        <stop offset="100%" stopColor="#660033" />
+                    </radialGradient>
+                    <radialGradient id="centerGradient">
+                        <stop offset="0%" stopColor="#ffeea7" />
+                        <stop offset="100%" stopColor="#ffc107" />
+                    </radialGradient>
+                    <filter id="glow">
+                        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="rgba(255, 0, 85, 0.5)" />
+                    </filter>
+                    <filter id="centerGlow">
+                        <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#ffeba7" />
+                    </filter>
+                </defs>
+            </svg>
+
             <div className="relative w-full h-full">
-                {/* Sparkles */}
-                {sparkles.map(s => <Sparkle key={s.id} {...s} />)}
+                {fireflies.map(fly => <Firefly key={fly.key} style={fly.style} />)}
 
-                {/* Grass */}
-                <motion.div
-                    className="absolute bottom-0 w-full h-40 z-10"
-                    style={{
-                        background: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1440 320\"><path fill=\"%231a0529\" fill-opacity=\"1\" d=\"M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,250.7C960,235,1056,181,1152,165.3C1248,149,1344,171,1392,181.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\"></path></svg>')",
-                        backgroundSize: 'cover',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'bottom',
-                    }}
-                    initial={{ y: '100%' }}
-                    animate={{ y: '0%' }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                />
+                <div className="grass-layer">
+                    <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                        {grassBlades.map(blade => <GrassBlade key={blade.key} d={blade.d} delay={blade.delay} />)}
+                    </svg>
+                </div>
 
-                {/* Flowers */}
-                {flowers.map(f => (
-                    <motion.div
-                        key={f.id}
-                        className="absolute bottom-0"
-                        style={{ left: f.left, transformOrigin: 'bottom center' }}
-                        animate={{ rotate: [0, -2, 2, 0] }}
-                        transition={{ duration: f.swayDuration, repeat: Infinity, ease: 'easeInOut', delay: f.animationDelay + 2 }}
-                    >
-                        <Flower {...f} />
-                    </motion.div>
-                ))}
+                {flowers.map(flower => <Flower key={flower.key} {...flower} />)}
             </div>
         </div>
     );
 };
-
-export default MysticFlowers;
