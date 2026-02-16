@@ -1,3 +1,4 @@
+
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 
@@ -372,6 +373,7 @@ const translations = {
     'wizard.background.hearts': 'Chuva de Corações',
     'wizard.background.stars': 'Céu Estrelado',
     'wizard.background.nebula': 'Nebulosa Galáctica',
+    'wizard.background.mystic-flowers': 'Flores Místicas',
     'wizard.background.dots': 'Pontos Coloridos',
     'wizard.background.clouds': 'Nuvens',
     'wizard.background.exclusive': 'Exclusivo do Plano Avançado',
@@ -833,6 +835,7 @@ const translations = {
     'wizard.background.hearts': 'Falling Hearts',
     'wizard.background.stars': 'Starry Sky',
     'wizard.background.nebula': 'Galactic Nebula',
+    'wizard.background.mystic-flowers': 'Mystic Flowers',
     'wizard.background.dots': 'Colored Dots',
     'wizard.background.clouds': 'Clouds',
     'wizard.background.exclusive': 'Advanced Plan Exclusive',
@@ -943,21 +946,21 @@ const translations = {
     // Criando Página
     'creating.page.ready.title': 'Sua página está pronta!',
     'creating.page.ready.description': 'O pagamento foi confirmado e sua surpresa foi criada com sucesso.',
-    'creating.page.ready.cta.view': 'Ver minha página',
-    'creating.page.ready.cta.myPages': 'Ir para Minhas Páginas',
-    'creating.page.finalizing.title': 'Finalizando sua página...',
-    'creating.page.finalizing.description': 'Recebemos a aprovação de seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
-    'creating.page.finalizing.tip': 'Você pode aguardar ou voltar para o site.',
-    'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
+    'creating.page.ready.cta.view': 'Ver mi página',
+    'creating.page.ready.cta.myPages': 'Ir a Mis Páginas',
+    'creating.page.finalizing.title': 'Finalizando tu página...',
+    'creating.page.finalizing.description': 'Hemos recibido la aprobación de tu pago y ya estamos preparando todo. Esto puede tomar unos momentos.',
+    'creating.page.finalizing.tip': 'Puedes esperar o volver al sitio.',
+    'creating.page.finalizing.cta.myPages': 'Ir a Mis Páginas',
     
     // Memory Game
-    'memorygame.title': 'Um joguinho para você',
-    'memorygame.description': 'Tente acertar todos os pares de fotos.',
-    'memorygame.moves': 'Jogadas',
+    'memorygame.title': 'Un jueguito para ti',
+    'memorygame.description': 'Intenta acertar todos los pares de fotos.',
+    'memorygame.moves': 'Movimientos',
     'memorygame.reset': 'Reiniciar',
-    'memorygame.win.title': 'Parabéns!',
-    'memorygame.win.description': 'Você encontrou todos os pares em {moves} jogadas.',
-    'memorygame.win.playAgain': 'Jogar Novamente',
+    'memorygame.win.title': '¡Felicidades!',
+    'memorygame.win.description': 'Encontraste todos los pares en {moves} movimientos.',
+    'memorygame.win.playAgain': 'Jugar de Nuevo',
   },
   es: {
     // Metadata
@@ -1056,6 +1059,7 @@ const translations = {
     'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
     'payment.canceled.cta': 'Volver al Creador de Páginas',
     'footer.follow_us': 'Síguenos',
+    'wizard.background.mystic-flowers': 'Flores Místicas',
     
     // Memory Game
     'memorygame.title': 'Un jueguito para ti',

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -62,6 +63,7 @@ import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
 import PayPalButton from "@/components/paypal/PaypalButton";
+import MysticFlowers from "@/components/effects/MysticFlowers";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -1015,15 +1017,6 @@ const MusicStep = React.memo(() => {
 MusicStep.displayName = 'MusicStep';
 
 
-const animationOptions = [
-    { id: "none", name: "Nenhuma" },
-    { id: "falling-hearts", name: "Chuva de Corações" },
-    { id: "starry-sky", name: "Céu Estrelado", requiredPlan: "avancado" },
-    { id: "nebula", name: "Nebulosa Galáctica" },
-    { id: "floating-dots", name: "Pontos Coloridos", requiredPlan: "avancado" },
-    { id: "clouds", name: "Nuvens", requiredPlan: "avancado" },
-];
-
 const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const { t } = useTranslation();
@@ -1037,6 +1030,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
         { id: "falling-hearts", name: t('wizard.background.hearts') },
         { id: "starry-sky", name: t('wizard.background.stars'), requiredPlan: "avancado" },
         { id: "nebula", name: t('wizard.background.nebula') },
+        { id: 'mystic-flowers', name: t('wizard.background.mystic-flowers'), requiredPlan: "avancado" },
         { id: "floating-dots", name: t('wizard.background.dots'), requiredPlan: "avancado" },
         { id: "clouds", name: t('wizard.background.clouds'), requiredPlan: "avancado" },
     ];
@@ -1078,6 +1072,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                                     {option.id === "starry-sky" && <div className="w-full h-full relative overflow-hidden"><StarrySky /></div>}
                                                     {option.id === "nebula" && <div className="w-full h-full relative overflow-hidden"><NebulaBackground /></div>}
                                                     {option.id === "floating-dots" && <div className="w-full h-full relative overflow-hidden"><FloatingDots /></div>}
+                                                    {option.id === 'mystic-flowers' && <div className="w-full h-full relative overflow-hidden"><MysticFlowers /></div>}
                                                     {option.id === "mystic-fog" && <><div className="mystic-fog-1 !opacity-50 !-z-0"></div><div className="mystic-fog-2 !opacity-50 !-z-0"></div></>}
                                                     {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4"/></video>}
                                                 </div>

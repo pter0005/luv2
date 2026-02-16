@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -21,12 +22,14 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import { useTranslation } from '@/lib/i18n';
 import MemoryGame from '@/components/memory-game/MemoryGame';
+import MysticFlowers from '@/components/effects/MysticFlowers';
+
 
 // Imports Dinâmicos
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -191,6 +194,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
         {pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
         {pageData.backgroundAnimation === 'nebula' && <NebulaBackground />}
+        {pageData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
         {pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
         {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
       </div>

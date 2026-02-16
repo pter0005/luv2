@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -18,6 +19,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
 import { useTranslation } from '@/lib/i18n';
+import MysticFlowers from '@/components/effects/MysticFlowers';
 
 // Dynamic imports
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -158,6 +160,7 @@ export default function PreviewContent({
                         {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={50} color={formData.heartColor} />}
                         {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
                         {isClient && formData.backgroundAnimation === 'nebula' && <NebulaBackground />}
+                        {isClient && formData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
                         {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
                         {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
                         {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
