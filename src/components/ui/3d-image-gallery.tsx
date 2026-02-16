@@ -56,7 +56,7 @@ function useIsMobile() {
 /* =========================
    Floating Card (PERFORMANCE & UI UPDATE)
    ========================= */
-function FloatingCard({ card, position, isMobile }: { card: Card, position: any, isMobile: boolean }) {
+function FloatingCard({ card, position, isMobile, onClick }: { card: Card, position: any, isMobile: boolean, onClick: () => void }) {
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
   const { locale } = useTranslation();
@@ -91,7 +91,7 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
   const cardWidthPx = isMobile ? 140 : 220;
 
   return (
-    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={isMobile ? 1.25 : 1.44} visible={isVisible}>
+    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={isMobile ? 1.125 : 1.44} visible={isVisible}>
       <mesh ref={occludeRef} renderOrder={-1}>
          <planeGeometry args={[(cardWidthPx/100)*1.26, (cardWidthPx/100)*1.26/(3/4)]} />
          <meshBasicMaterial colorWrite={false} depthWrite={true} transparent={false} side={THREE.DoubleSide} />
@@ -103,9 +103,11 @@ function FloatingCard({ card, position, isMobile }: { card: Card, position: any,
         distanceFactor={8} 
         position={[0, 0, 0.1]} 
         zIndexRange={[200000, 0]} 
-        style={{ pointerEvents: 'none', transformStyle: 'preserve-3d' }} 
+        style={{ pointerEvents: 'auto', cursor: 'pointer', transformStyle: 'preserve-3d' }}
       >
-        <div className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10"
+        <div 
+          onClick={onClick}
+          className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10"
              style={{ width: `${cardWidthPx}px`, aspectRatio: '3/4' }}>
             {/* img nativa para máxima performance no canvas 3D */}
             <img
@@ -157,7 +159,7 @@ function StaticStars({ count = 500 }) {
 /* =========================
    Galaxy Geometry
    ========================= */
-function CardGalaxy({ isMobile }: { isMobile: boolean }) {
+function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean, setSelectedCard: (card: Card) => void }) {
   const { cards } = useCard()
 
   const cardPositions = useMemo(() => {
@@ -195,6 +197,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
           card={card} 
           position={cardPositions[i]} 
           isMobile={isMobile}
+          onClick={() => setSelectedCard(card)}
         />
       ))}
     </group>
@@ -205,7 +208,7 @@ function CardGalaxy({ isMobile }: { isMobile: boolean }) {
 /* =========================
    Scene (EQUILIBRADO)
    ========================= */
-function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
+function Scene({ isMobile, events, setSelectedCard }: { isMobile: boolean, events: Card[], setSelectedCard: (card: Card) => void }) {
     const { camera } = useThree();
 
     useEffect(() => {
@@ -220,12 +223,12 @@ function Scene({ isMobile, events }: { isMobile: boolean, events: Card[] }) {
         <>
             <color attach="background" args={['#020202']} />
             
-            <StaticStars count={isMobile ? 200 : 1500} />
+            <StaticStars count={isMobile ? 50 : 1500} />
             
             <ambientLight intensity={1.5} />
             <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
             
-            <CardGalaxy isMobile={isMobile} />
+            <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
             
             <OrbitControls
                 makeDefault
@@ -265,11 +268,54 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => {
 
 
 /* =========================
+   Full Screen Card View
+   ========================= */
+function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void }) {
+  const { t, locale } = useTranslation();
+  const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
+  const fnsLocale = dateLocales[locale] || ptBR;
+
+  const dateObj = useMemo(() => {
+      if (!card.date) return null;
+      const seconds = (card.date as any)._seconds || (card.date as any).seconds;
+      return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
+  }, [card.date]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100000] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+      onClick={onClose} // Close on backdrop click
+    >
+      <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl">
+          <Image src={card.imageUrl} alt={card.alt} fill className="object-contain" />
+        </div>
+        <div className="text-center text-white p-4 bg-white/5 rounded-xl">
+          <h2 className="text-xl font-bold">{card.title}</h2>
+          {dateObj && <p className="text-purple-400 font-semibold text-sm mt-1">{format(dateObj, "PPP", { locale: fnsLocale })}</p>}
+        </div>
+      </div>
+      <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-3 transition-transform hover:scale-110 active:scale-90"
+      >
+          <X className="w-6 h-6" />
+      </button>
+    </motion.div>
+  );
+}
+
+
+/* =========================
    Main Wrapper
    ========================= */
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[], onClose: () => void }) {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -298,10 +344,13 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
           }}
         >
             <Suspense fallback={null}>
-                <Scene isMobile={isMobile} events={events} />
+                <Scene isMobile={isMobile} events={events} setSelectedCard={setSelectedCard} />
             </Suspense>
         </Canvas>
         <TimelineUI onClose={onClose} />
+        <AnimatePresence>
+            {selectedCard && <FullScreenCardView card={selectedCard} onClose={() => setSelectedCard(null)} />}
+        </AnimatePresence>
       </CardProvider>
     </motion.div>,
     document.body
