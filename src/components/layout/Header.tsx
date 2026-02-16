@@ -15,7 +15,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/firebase";
+import { useUser } from "@/firebase/provider";
 import { getAuth, signOut } from "firebase/auth";
 import {
   DropdownMenu,
@@ -35,7 +35,6 @@ const navLinks = [
   { href: "/#planos", labelKey: "nav.planos" },
   { href: "/#avaliacoes", labelKey: "nav.avaliacoes" },
   { href: "/como-funciona", labelKey: "nav.comoFunciona" },
-  { href: "/jogos/memoria", labelKey: "nav.jogos" },
 ];
 
 export default function Header() {
