@@ -486,7 +486,7 @@ const translations = {
     'creating.page.ready.cta.view': 'Ver minha página',
     'creating.page.ready.cta.myPages': 'Ir para Minhas Páginas',
     'creating.page.finalizing.title': 'Finalizando sua página...',
-    'creating.page.finalizing.description': 'Recebemos a aprovação do seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
+    'creating.page.finalizing.description': 'Recebemos a aprovação de seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
     'creating.page.finalizing.tip': 'Você pode aguardar ou voltar para o site.',
     'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
     
@@ -948,18 +948,18 @@ const translations = {
     'creating.page.ready.cta.view': 'Ver minha página',
     'creating.page.ready.cta.myPages': 'Ir para Minhas Páginas',
     'creating.page.finalizing.title': 'Finalizando sua página...',
-    'creating.page.finalizing.description': 'Recebemos a aprovação do seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
+    'creating.page.finalizing.description': 'Recebemos a aprovação de seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
     'creating.page.finalizing.tip': 'Você pode aguardar ou voltar para o site.',
     'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
     
     // Memory Game
-    'memorygame.title': 'A little game for you',
-    'memorygame.description': 'Try to match all the photo pairs.',
-    'memorygame.moves': 'Moves',
-    'memorygame.reset': 'Reset',
-    'memorygame.win.title': 'Congratulations!',
-    'memorygame.win.description': 'You found all pairs in {moves} moves.',
-    'memorygame.win.playAgain': 'Play Again',
+    'memorygame.title': 'Um joguinho para você',
+    'memorygame.description': 'Tente acertar todos os pares de fotos.',
+    'memorygame.moves': 'Jogadas',
+    'memorygame.reset': 'Reiniciar',
+    'memorygame.win.title': 'Parabéns!',
+    'memorygame.win.description': 'Você encontrou todos os pares em {moves} jogadas.',
+    'memorygame.win.playAgain': 'Jogar Novamente',
   },
   es: {
     // Metadata

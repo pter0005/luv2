@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -137,6 +137,8 @@ const pageSchema = z.object({
   backgroundVideo: fileWithPreviewSchema.optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
+  enableMemoryGame: z.boolean().default(false),
+  memoryGameImages: z.array(fileWithPreviewSchema).default([]),
   payment: paymentSchema.optional(),
 });
 
@@ -1267,6 +1269,120 @@ const PuzzleStep = React.memo(() => {
 });
 PuzzleStep.displayName = 'PuzzleStep';
 
+const MemoryGameStep = React.memo(() => {
+    const { control, watch, setValue } = useFormContext<PageData>();
+    const { user, storage } = useFirebase();
+    const { t } = useTranslation();
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "memoryGameImages",
+    });
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
+    const enableMemoryGame = watch("enableMemoryGame");
+
+    const MAX_IMAGES = 8;
+    const isLimitReached = fields.length >= MAX_IMAGES;
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files || !user || !storage) return;
+        const availableSlots = MAX_IMAGES - fields.length;
+        if (availableSlots <= 0) return;
+
+        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        
+        try {
+            const uploadPromises = filesArray.map(async file => {
+                const compressedFile = await compressImage(file, 400, 0.8);
+                return uploadFile(storage, user.uid, compressedFile, 'memory-game');
+            });
+
+            const newImageObjects = await Promise.all(uploadPromises);
+            append(newImageObjects);
+            toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
+        } catch (error: any) {
+            console.error("Error uploading memory game files:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: t('toast.upload.error'),
+                description: (
+                    <div>
+                        <p>{t('toast.upload.error.description')}</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
+        remove(index);
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enableMemoryGame"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">{t('wizard.memory.enable')}</FormLabel>
+                            <FormDescription>{t('wizard.memory.description')}</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+
+            {enableMemoryGame && (
+                <div className="space-y-4">
+                    <FormLabel>{t('wizard.memory.image.label')}</FormLabel>
+                    <ImageLimitWarning currentCount={fields.length} limit={MAX_IMAGES} itemType={t('wizard.imageLimit.item.memory')} />
+
+                    <FormControl>
+                        <label
+                            htmlFor="memory-game-upload"
+                            className={cn(
+                                "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                (isLimitReached || isUploading) && "cursor-not-allowed opacity-50"
+                            )}
+                        >
+                            {isUploading ? <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" /> : <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />}
+                            <p className="font-semibold">{isUploading ? t('wizard.gallery.uploading') : t('wizard.memory.upload')}</p>
+                            <p className="text-xs text-muted-foreground">{t('wizard.memory.image.description')}</p>
+                            <input id="memory-game-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLimitReached || isUploading} />
+                        </label>
+                    </FormControl>
+
+                    {fields.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2 sm:gap-4 mt-4">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="relative group aspect-square">
+                                    <Image src={(field as any).url || 'https://via.placeholder.com/150'} alt={`Preview ${index + 1}`} fill className="rounded-md object-cover" unoptimized />
+                                    <Button type="button" variant="destructive" className="absolute -top-2 -right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-2 z-10" onClick={() => removeImage(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+MemoryGameStep.displayName = 'MemoryGameStep';
+
 const stepComponents = [
     TitleStep,
     MessageStep,
@@ -1276,6 +1392,7 @@ const stepComponents = [
     MusicStep,
     BackgroundStep,
     PuzzleStep,
+    MemoryGameStep,
 ];
 
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
@@ -1718,6 +1835,7 @@ const WizardInternal = () => {
     { id: "music", title: t('wizard.steps.6.title'), description: t('wizard.steps.6.description'), fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
     { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
     { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
+    { id: "memory", title: t('wizard.steps.memory.title'), description: t('wizard.steps.memory.description'), fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
     { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment"] },
   ], [t]);
 

@@ -39,6 +39,14 @@
         "backgroundVideo": { "$ref": "#/entities/FileWithPreview" },
         "enablePuzzle": { "type": "boolean", "description": "Whether the interactive puzzle is enabled" },
         "puzzleImage": { "type": "string", "description": "Base64 encoded string of the puzzle image." },
+        "enableMemoryGame": { "type": "boolean", "description": "Whether the interactive memory game is enabled." },
+        "memoryGameImages": {
+            "type": "array",
+            "items": {
+                "$ref": "#/entities/FileWithPreview"
+            },
+            "description": "Array of image files for the memory game."
+        },
         "qrCodeDesign": { "type": "string", "description": "Identifier for the chosen custom QR code design." },
         "createdAt": {
             "type": "object",
