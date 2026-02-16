@@ -22,9 +22,13 @@ const PlansSection = () => {
                     </div>
                     <h3 className="text-2xl font-bold text-primary">{t('home.plans.avancado.title')}</h3>
                     <p className="text-muted-foreground text-sm mb-4">{t('home.plans.avancado.description')}</p>
-                    <div className="text-center my-6">
-                        <p className="text-4xl font-bold text-foreground">R$24,90</p>
-                        <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
+                    <div className="text-center my-6 space-y-1">
+                        <div className="flex items-baseline justify-center gap-2">
+                            <span className="text-2xl font-medium text-muted-foreground line-through">De R$59,90</span>
+                            <span className="text-4xl font-bold text-foreground">por R$24,90</span>
+                        </div>
+                        <p className="text-sm text-primary font-bold animate-pulse">(Só hoje!)</p>
+                        <p className="text-xs text-muted-foreground">{t('home.plans.payment')}</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text={t('home.plans.feature.gallery_advanced')} />

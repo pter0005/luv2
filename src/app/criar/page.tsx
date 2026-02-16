@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/firebase";
+import { useUser } from "@/firebase/provider";
 import { PlanFeature } from "@/components/layout/PlanFeature";
 import { useTranslation } from "@/lib/i18n";
 
@@ -70,7 +70,15 @@ export default function CreatePage() {
                       <Star className="w-4 h-4" /> {t('home.plans.recommended')}
                   </div>
                   <h3 className="text-2xl font-bold text-primary">{t('home.plans.avancado.title')}</h3>
-                  <p className="text-muted-foreground text-sm mb-8">{t('home.plans.avancado.description')}</p>
+                  <p className="text-muted-foreground text-sm mb-4">{t('home.plans.avancado.description')}</p>
+                  <div className="text-center my-6 space-y-1">
+                    <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-2xl font-medium text-muted-foreground line-through">De R$59,90</span>
+                        <span className="text-4xl font-bold text-foreground">por R$24,90</span>
+                    </div>
+                    <p className="text-sm text-primary font-bold animate-pulse">(Só hoje!)</p>
+                    <p className="text-xs text-muted-foreground">{t('home.plans.payment')}</p>
+                  </div>
                   <ul className="space-y-4 mb-10 flex-grow">
                       <PlanFeature text={t('home.plans.feature.gallery_advanced')} />
                       <PlanFeature text={t('home.plans.feature.music')} />
@@ -87,7 +95,11 @@ export default function CreatePage() {
               {/* Plano Econômico */}
               <div className="bg-card/80 backdrop-blur-sm border border-border p-8 rounded-2xl flex flex-col">
                   <h3 className="text-2xl font-bold">{t('home.plans.basico.title')}</h3>
-                  <p className="text-muted-foreground text-sm mb-8">{t('home.plans.basico.description')}</p>
+                  <p className="text-muted-foreground text-sm mb-4">{t('home.plans.basico.description')}</p>
+                  <div className="text-center my-6">
+                    <p className="text-4xl font-bold text-foreground">R$19,90</p>
+                    <p className="text-sm text-muted-foreground">{t('home.plans.payment')}</p>
+                  </div>
                   <ul className="space-y-4 mb-10 flex-grow">
                       <PlanFeature text={t('home.plans.feature.gallery_basic')} />
                       <PlanFeature text={t('home.plans.feature.timeline_basic')} />
