@@ -3,240 +3,206 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-// --- CONFIGURAÇÃO VISUAL ---
-const COLORS = {
-    bgTop: '#0f021f',      // Roxo quase preto
-    bgBottom: '#2d0a31',   // Roxo ameixa
-    stem: '#4a042e',       // Caule escuro
-    leafDark: '#5e0b35',   // Folha escura
-    leafLight: '#940f5a',  // Folha clara
-    petalDark: '#700046',  // Pétala fundo
-    petalLight: '#ff0066', // Pétala frente (Neon)
-    glow: '#ffccff',       // Brilho central
+// --- CONFIGURAÇÃO DE CORES (PALETA ROXA PROFUNDA) ---
+const THEME = {
+    bg: 'radial-gradient(circle at center bottom, #2a003b 0%, #05000a 100%)', // Roxo muito escuro
+    grassDark: '#1a001a',    // Silhueta quase preta
+    grassLight: '#590059',   // Roxo médio
+    flowerStem: '#400040',
+    flowerLeaf: '#800080',   // Roxo vibrante
+    petalBack: '#66004d',    // Roxo avermelhado escuro
+    petalFront: '#cc00cc',   // Magenta/Roxo Neon
+    glowInner: '#ffcc00',    // O amarelo/dourado de dentro (igual ao GIF)
+    firefly: '#ffd700',      // Dourado
 };
 
-// --- COMPONENTE: PARTICULA CAINDO (Otimizado) ---
-const Sparkle = React.memo(({ index }: { index: number }) => {
-    const randomLeft = useMemo(() => Math.random() * 100, []);
-    const randomDuration = useMemo(() => 3 + Math.random() * 4, []);
-    const randomDelay = useMemo(() => Math.random() * 5, []);
-    const size = useMemo(() => Math.random() * 3 + 1, []);
+// --- 1. VAGALUMES (Os pontinhos amarelos do GIF) ---
+const Firefly = React.memo(({ index }: { index: number }) => {
+    const style = useMemo(() => ({
+        left: `${Math.random() * 100}%`,
+        bottom: '-10px',
+        width: Math.random() * 3 + 2 + 'px',
+        height: Math.random() * 3 + 2 + 'px',
+        animationDuration: Math.random() * 5 + 5 + 's',
+        animationDelay: Math.random() * 5 + 's',
+    }), []);
 
     return (
         <motion.div
             style={{
                 position: 'absolute',
-                top: -10,
-                left: `${randomLeft}%`,
-                width: size,
-                height: size,
+                backgroundColor: THEME.firefly,
                 borderRadius: '50%',
-                backgroundColor: Math.random() > 0.5 ? '#fff' : '#d8b4fe', // Branco ou Lilás
-                boxShadow: '0 0 4px rgba(255, 255, 255, 0.6)',
-                zIndex: 5,
+                boxShadow: `0 0 6px ${THEME.firefly}`,
+                opacity: 0,
+                zIndex: 20,
+                ...style
             }}
             animate={{
-                y: ['-10vh', '110vh'],
-                opacity: [0, 1, 0],
+                y: ['0vh', '-60vh'],
+                x: [0, (Math.random() - 0.5) * 50],
+                opacity: [0, 1, 0, 0]
             }}
             transition={{
-                duration: randomDuration,
+                duration: 8,
                 repeat: Infinity,
-                delay: randomDelay,
-                ease: 'linear',
+                delay: index * 0.5,
+                ease: "easeInOut"
             }}
         />
     );
 });
-Sparkle.displayName = 'Sparkle';
+Firefly.displayName = "Firefly";
 
-// --- COMPONENTE: FLOR CENTRAL (SVG Complexo) ---
-const Flower = ({ 
-    x, height, scale, delay, rotationOffset 
-}: { x: string, height: number, scale: number, delay: number, rotationOffset: number }) => {
-    
+// --- 2. GRAMA GROSSA LATERAL (As folhas longas do GIF) ---
+const ThickGrassBlade = ({ d, delay, color, x, scale }: any) => (
+    <motion.path
+        d={d}
+        fill={color}
+        initial={{ scaleY: 0 }}
+        animate={{ scaleY: 1 }}
+        transition={{ duration: 1.5, delay, ease: "easeOut" }}
+        style={{ transformOrigin: 'bottom center', transformBox: 'fill-box' }}
+        transform={`translate(${x}, 0) scale(${scale})`}
+    />
+);
+
+// --- 3. FOLHAS DA BASE (O arbusto redondinho embaixo) ---
+const FernLeaf = ({ x, y, rotate, delay, color }: any) => (
+    <motion.ellipse
+        cx={x} cy={y} rx="15" ry="8"
+        fill={color}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay, type: "spring" }}
+        style={{ transformOrigin: 'center', transformBox: 'fill-box' }}
+        transform={`rotate(${rotate} ${x} ${y})`}
+    />
+);
+
+// --- 4. A FLOR ESPECÍFICA (Formato de Boca/Concha) ---
+const SpecficFlower = ({ x, height, scale, delay }: any) => {
     return (
-        <motion.div
-            className="absolute bottom-0"
-            style={{ 
-                left: x, 
-                height: `${height}%`, 
-                width: '120px', 
-                marginLeft: '-60px', // Centralizar
-                zIndex: 10,
-                transformOrigin: 'bottom center',
-                willChange: 'transform' // Dica para o navegador usar GPU
-            }}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 1.5, delay, ease: "easeOut" }}
+        <motion.g
+            transform={`translate(${x}, 0)`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
         >
-            {/* Animação de balanço suave */}
-            <motion.div
-                className="w-full h-full"
-                animate={{ rotate: [rotationOffset - 2, rotationOffset + 2] }}
-                transition={{ 
-                    duration: 4 + Math.random(), 
-                    repeat: Infinity, 
-                    repeatType: "mirror", 
-                    ease: "easeInOut",
-                    delay: delay 
-                }}
+            {/* O Caule */}
+            <motion.path
+                d={`M 0 400 L 0 ${400 - height}`}
+                stroke={THEME.flowerStem}
+                strokeWidth="6"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.5, delay }}
+            />
+
+            {/* Folhas no caule (Pares ovais subindo) */}
+            {[1, 2, 3].map((i) => (
+                <g key={i} transform={`translate(0, ${400 - (height * (i/4))})`}>
+                    <motion.ellipse cx="-15" cy="0" rx="12" ry="6" fill={THEME.flowerLeaf} transform="rotate(-30)" 
+                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: delay + 0.5 + (i * 0.2) }} />
+                    <motion.ellipse cx="15" cy="0" rx="12" ry="6" fill={THEME.flowerLeaf} transform="rotate(30)"
+                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: delay + 0.6 + (i * 0.2) }} />
+                </g>
+            ))}
+
+            {/* A CABEÇA DA FLOR (Boca aberta) */}
+            <motion.g
+                transform={`translate(0, ${400 - height}) scale(${scale})`}
+                initial={{ scale: 0 }}
+                animate={{ scale: scale }}
+                transition={{ delay: delay + 1.2, type: "spring", stiffness: 60 }}
             >
-                <svg viewBox="0 0 100 400" className="w-full h-full overflow-visible">
-                    <defs>
-                        <linearGradient id="petalGrad" x1="0" y1="1" x2="0" y2="0">
-                            <stop offset="0%" stopColor={COLORS.petalDark} />
-                            <stop offset="100%" stopColor={COLORS.petalLight} />
-                        </linearGradient>
-                        <radialGradient id="centerGlow">
-                            <stop offset="0%" stopColor="#fff" />
-                            <stop offset="50%" stopColor="#ffeb3b" />
-                            <stop offset="100%" stopColor="#ff0066" stopOpacity="0" />
-                        </radialGradient>
-                        <filter id="blurGlow">
-                            <feGaussianBlur stdDeviation="2" />
-                        </filter>
-                    </defs>
+                {/* Animação de balanço da flor */}
+                <motion.g
+                    animate={{ rotate: [-5, 5] }}
+                    transition={{ duration: 5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut", delay: Math.random() }}
+                >
+                    {/* Pétala de Trás (Escura) */}
+                    <path d="M -30 -10 Q 0 -40 30 -10 Q 0 10 -30 -10" fill={THEME.petalBack} />
+                    
+                    {/* O Brilho de dentro (Dourado/Amarelo) */}
+                    <ellipse cx="0" cy="-5" rx="15" ry="6" fill={THEME.glowInner} filter="url(#glowBlur)" />
+                    <ellipse cx="0" cy="-5" rx="8" ry="3" fill="#fff" opacity="0.8" />
 
-                    {/* Caule Suavemente Curvado */}
-                    <path 
-                        d="M 50 400 Q 50 250 50 100" 
-                        fill="none" 
-                        stroke={COLORS.stem} 
-                        strokeWidth="4" 
-                        strokeLinecap="round"
-                    />
-
-                    {/* Folhas Largas (Estilo da imagem) */}
-                    <motion.path 
-                        d="M 50 300 Q 10 280 0 240 Q 30 260 50 280" 
-                        fill={COLORS.leafDark}
-                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: delay + 0.5 }}
-                    />
-                    <motion.path 
-                        d="M 50 220 Q 90 200 100 160 Q 70 180 50 200" 
-                        fill={COLORS.leafLight}
-                        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: delay + 0.7 }}
-                    />
-
-                    {/* A Cabeça da Flor (Tulipa/Copo) */}
-                    <motion.g 
-                        initial={{ scale: 0 }} 
-                        animate={{ scale: scale }} 
-                        transition={{ delay: delay + 1, type: "spring", stiffness: 50 }}
-                        style={{ transformOrigin: "50px 100px" }}
-                    >
-                        {/* Pétala de Trás (Mais escura) */}
-                        <path d="M 20 80 Q 50 140 80 80 L 50 110 Z" fill="#4a002e" />
-
-                        {/* Corpo Principal da Flor */}
-                        <path 
-                            d="M 15 80 C 5 40, 30 20, 50 30 C 70 20, 95 40, 85 80 Q 50 120 15 80" 
-                            fill="url(#petalGrad)" 
-                            stroke="#ff3388" 
-                            strokeWidth="1"
-                        />
-
-                        {/* O Centro Brilhante (Boca da flor) */}
-                        <ellipse cx="50" cy="65" rx="18" ry="8" fill="#590033" /> {/* Fundo da boca */}
-                        <ellipse cx="50" cy="68" rx="14" ry="5" fill="url(#centerGlow)" filter="url(#blurGlow)" opacity="0.9" />
-                    </motion.g>
-                </svg>
-            </motion.div>
-        </motion.div>
+                    {/* Pétala da Frente (Clara/Neon - Formato de 'Copo') */}
+                    <path d="M -35 -15 Q 0 15 35 -15 Q 40 -5 30 10 Q 0 35 -30 10 Q -40 -5 -35 -15" fill={THEME.petalFront} />
+                </motion.g>
+            </motion.g>
+        </motion.g>
     );
 };
 
-// --- COMPONENTE: GRAMA DECORATIVA (Fundo) ---
-const GrassLayer = React.memo(() => {
-    // Gerar caminhos aleatórios apenas uma vez
-    const blades = useMemo(() => Array.from({ length: 60 }, (_, i) => {
-        const x = Math.random() * 100;
-        const h = 20 + Math.random() * 30; // Altura em %
-        const bend = (Math.random() - 0.5) * 20;
-        return (
-            <path
-                key={i}
-                d={`M ${x}% 100% Q ${x + bend}% ${100 - h / 2}% ${x + bend * 2}% ${100 - h}%`}
-                stroke={Math.random() > 0.5 ? COLORS.leafDark : '#380220'}
-                strokeWidth={Math.random() * 4 + 2}
-                strokeLinecap="round"
-                fill="none"
-            />
-        );
-    }), []);
-
-    return (
-        <svg className="absolute bottom-0 left-0 w-full h-[30vh] z-0 opacity-80" preserveAspectRatio="none">
-            {blades}
-        </svg>
-    );
-});
-GrassLayer.displayName = 'GrassLayer';
-
-
-// --- COMPONENTE PRINCIPAL ---
 export default function MysticFlowers() {
-    
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[#000]">
-            
-            {/* 1. Fundo Gradiente Otimizado */}
-            <div 
-                className="absolute inset-0 w-full h-full"
-                style={{
-                    background: `radial-gradient(circle at center bottom, ${COLORS.bgBottom} 0%, ${COLORS.bgTop} 80%)`
-                }}
-            />
+        <div className="relative w-full h-full overflow-hidden bg-black">
+            {/* Fundo Gradiente */}
+            <div className="absolute inset-0" style={{ background: THEME.bg }} />
 
-            {/* 2. Partículas/Brilhos (Quantidade controlada para 60fps) */}
-            {Array.from({ length: 40 }).map((_, i) => (
-                <Sparkle key={i} index={i} />
-            ))}
+            {/* Filtros SVG para o brilho */}
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                <defs>
+                    <filter id="glowBlur">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+            </svg>
 
-            {/* 3. Grama de Fundo (Estática para performance) */}
-            <GrassLayer />
+            {/* Camada de Vagalumes (Atrás da grama) */}
+            {Array.from({ length: 30 }).map((_, i) => <Firefly key={i} index={i} />)}
 
-            {/* 4. Camada das Flores (Interativas/Animadas) */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none flex justify-center items-end pb-[5vh]">
-                
-                {/* Flor Esquerda */}
-                <Flower 
-                    x="25%" 
-                    height={65} 
-                    scale={0.85} 
-                    delay={0.2} 
-                    rotationOffset={-5} 
-                />
+            {/* CENA PRINCIPAL SVG */}
+            <div className="absolute bottom-0 w-full h-[60vh] flex justify-center items-end">
+                <svg viewBox="-200 0 400 400" preserveAspectRatio="xMidYMax meet" className="h-full w-full overflow-visible">
+                    
+                    {/* GRAMA GROSSA DE FUNDO (Lados) */}
+                    {/* Esquerda */}
+                    <ThickGrassBlade d="M -10 400 Q -30 200 -80 100 Q -40 200 10 400" color={THEME.grassDark} delay={0.1} />
+                    <ThickGrassBlade d="M -40 400 Q -80 250 -140 150 Q -90 300 -20 400" color={THEME.grassDark} delay={0.2} />
+                    {/* Direita */}
+                    <ThickGrassBlade d="M 10 400 Q 30 200 80 100 Q 40 200 -10 400" color={THEME.grassDark} delay={0.1} />
+                    <ThickGrassBlade d="M 40 400 Q 80 250 140 150 Q 90 300 20 400" color={THEME.grassDark} delay={0.2} />
 
-                {/* Flor Direita */}
-                <Flower 
-                    x="75%" 
-                    height={70} 
-                    scale={0.9} 
-                    delay={0.4} 
-                    rotationOffset={5} 
-                />
 
-                {/* Flor Principal (Centro - Maior) */}
-                <Flower 
-                    x="50%" 
-                    height={85} 
-                    scale={1.2} 
-                    delay={0} 
-                    rotationOffset={0} 
-                />
+                    {/* O ARBUSTO DA BASE (Muitas folhas ovais roxas) */}
+                    <g transform="translate(0, 380)">
+                        {Array.from({ length: 20 }).map((_, i) => (
+                            <FernLeaf 
+                                key={i}
+                                x={(Math.random() - 0.5) * 140}
+                                y={(Math.random() - 0.5) * 40}
+                                rotate={(Math.random() - 0.5) * 90}
+                                color={Math.random() > 0.5 ? THEME.flowerLeaf : THEME.petalBack}
+                                delay={0.5 + Math.random() * 0.5}
+                            />
+                        ))}
+                    </g>
 
-                 {/* Flores Menores Extras para volume */}
-                 <Flower x="10%" height={45} scale={0.6} delay={0.8} rotationOffset={-10} />
-                 <Flower x="90%" height={50} scale={0.65} delay={1.0} rotationOffset={10} />
+                    {/* AS 3 FLORES PRINCIPAIS */}
+                    {/* Esquerda */}
+                    <SpecficFlower x={-60} height={250} scale={0.9} delay={0.5} />
+                    {/* Direita */}
+                    <SpecficFlower x={60} height={280} scale={0.9} delay={0.7} />
+                    {/* Centro (Maior) */}
+                    <SpecficFlower x={0} height={320} scale={1.2} delay={0.3} />
+
+                    {/* GRAMA DA FRENTE (Para dar profundidade) */}
+                    <ThickGrassBlade d="M -150 400 Q -100 300 -50 400" color="#000" delay={0} />
+                    <ThickGrassBlade d="M 150 400 Q 100 300 50 400" color="#000" delay={0} />
+
+                </svg>
             </div>
-
-            {/* 5. Vinheta e Brilho Global (Post-Processing simulado) */}
-            <div className="absolute inset-0 pointer-events-none mix-blend-screen bg-gradient-to-t from-transparent via-transparent to-purple-900/20" />
-            <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black/80 to-transparent z-20" />
             
+            {/* Vinheta escura nas bordas para focar no centro */}
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(transparent_50%,#000_100%)] opacity-80" />
         </div>
     );
 }
