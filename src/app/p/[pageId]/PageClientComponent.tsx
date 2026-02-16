@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -27,6 +26,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import { useTranslation } from '@/lib/i18n';
+import MemoryGame from '@/components/memory-game/MemoryGame';
 
 // Imports Dinâmicos
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -250,6 +250,13 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </Swiper>
             </div>
           )}
+
+           {pageData.enableMemoryGame && pageData.memoryGameImages && pageData.memoryGameImages.length > 0 && (
+            <div className="w-full flex flex-col items-center gap-4">
+              <h2 className="text-2xl font-bold font-headline">{t('publicpage.memory.title')}</h2>
+              <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />
+            </div>
+           )}
 
           {/* ÁREA DO PLAYER (ISOLADA E COM ESPAÇO) */}
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex justify-center">

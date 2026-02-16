@@ -19,12 +19,18 @@ import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
 import { useTranslation } from '@/lib/i18n';
 
+// Dynamic imports
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
 });
+const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full aspect-square" />,
+});
+
 
 type PreviewContentProps = {
     formData: any;
@@ -213,6 +219,13 @@ export default function PreviewContent({
                             <div className="w-full max-w-sm mx-auto">
                                 <MemoizedSwiper galleryImages={formData.galleryImages} galleryStyle={formData.galleryStyle} />
                             </div>
+                            )}
+                            
+                           {isClient && formData.enableMemoryGame && formData.memoryGameImages && formData.memoryGameImages.length > 0 && (
+                                <div className="w-full flex flex-col items-center gap-4">
+                                <h2 className="text-2xl font-bold font-headline">{t('publicpage.memory.title')}</h2>
+                                <MemoryGame images={formData.memoryGameImages.map((img: any) => img.url)} />
+                                </div>
                             )}
                             
                             {isClient && formData.musicOption === 'youtube' && formData.youtubeUrl && (

@@ -6,6 +6,7 @@ import { CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 interface Card {
   id: number;
@@ -29,8 +30,10 @@ export default function MemoryGame({ images }: MemoryGameProps) {
   const [moves, setMoves] = useState(0);
   const [isGameWon, setIsGameWon] = useState(false);
 
+  const gameImages = images.slice(0, 8); // Use up to 8 images
+  const gridSize = gameImages.length <= 6 ? 3 : 4;
+
   useEffect(() => {
-    const gameImages = images.slice(0, 6); // Use 6 images for 12 cards
     const initialCards: Card[] = shuffleArray([
       ...gameImages.map((url, index) => ({ id: index * 2, imageId: index, imageUrl: url })),
       ...gameImages.map((url, index) => ({ id: index * 2 + 1, imageId: index, imageUrl: url })),
@@ -59,20 +62,20 @@ export default function MemoryGame({ images }: MemoryGameProps) {
   }, [flippedIndices, cards, matchedPairs, moves]);
 
   useEffect(() => {
-    if (images.length > 0 && matchedPairs.length === images.slice(0, 6).length) {
+    if (gameImages.length > 0 && matchedPairs.length === gameImages.length) {
       setIsGameWon(true);
     }
-  }, [matchedPairs, images]);
+  }, [matchedPairs, gameImages]);
 
 
   const handleCardClick = (index: number) => {
-    if (flippedIndices.length < 2 && !flippedIndices.includes(index) && !matchedPairs.includes(cards[index].imageId)) {
-      setFlippedIndices([...flippedIndices, index]);
+    if (isGameWon || flippedIndices.length >= 2 || flippedIndices.includes(index) || matchedPairs.includes(cards[index].imageId)) {
+      return;
     }
+    setFlippedIndices([...flippedIndices, index]);
   };
   
   const resetGame = () => {
-    const gameImages = images.slice(0, 6);
     const initialCards: Card[] = shuffleArray([
       ...gameImages.map((url, index) => ({ id: index * 2, imageId: index, imageUrl: url })),
       ...gameImages.map((url, index) => ({ id: index * 2 + 1, imageId: index, imageUrl: url })),
@@ -106,7 +109,7 @@ export default function MemoryGame({ images }: MemoryGameProps) {
         <h2 className="text-lg font-bold text-foreground">{t('memorygame.moves')}: {moves}</h2>
         <Button variant="ghost" onClick={resetGame}>{t('memorygame.reset')}</Button>
       </div>
-      <div className="grid grid-cols-3 gap-3" style={{ perspective: '1000px' }}>
+      <div className={cn("grid gap-3", gridSize === 3 ? 'grid-cols-3' : 'grid-cols-4')} style={{ perspective: '1000px' }}>
         {cards.map((card, index) => {
           const isFlipped = flippedIndices.includes(index) || matchedPairs.includes(card.imageId);
           return (
