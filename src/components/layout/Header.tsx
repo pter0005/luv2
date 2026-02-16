@@ -35,6 +35,7 @@ const navLinks = [
   { href: "/#planos", labelKey: "nav.planos" },
   { href: "/#avaliacoes", labelKey: "nav.avaliacoes" },
   { href: "/como-funciona", labelKey: "nav.comoFunciona" },
+  { href: "/jogos/memoria", labelKey: "nav.jogos" },
 ];
 
 export default function Header() {

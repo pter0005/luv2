@@ -12,6 +12,7 @@ const translations = {
     'nav.planos': 'Planos',
     'nav.avaliacoes': 'Avaliações',
     'nav.comoFunciona': 'Como Funciona',
+    'nav.jogos': 'Jogos',
     'user.myAccount': 'Minha Conta',
     'user.myPages': 'Minhas Páginas',
     'user.signOut': 'Sair',
@@ -473,6 +474,15 @@ const translations = {
     'creating.page.finalizing.description': 'Recebemos a aprovação do seu pagamento e já estamos preparando tudo. Isso pode levar alguns instantes.',
     'creating.page.finalizing.tip': 'Você pode aguardar ou voltar para o site.',
     'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
+    
+    // Memory Game
+    'memorygame.title': 'Um joguinho para você',
+    'memorygame.description': 'Tente acertar todos os pares de fotos.',
+    'memorygame.moves': 'Jogadas',
+    'memorygame.reset': 'Reiniciar',
+    'memorygame.win.title': 'Parabéns!',
+    'memorygame.win.description': 'Você encontrou todos os pares em {moves} jogadas.',
+    'memorygame.win.playAgain': 'Jogar Novamente',
   },
   en: {
     'metadata.title': 'MyCupid - Create Unique Love Declarations',
@@ -481,6 +491,7 @@ const translations = {
     'nav.planos': 'Plans',
     'nav.avaliacoes': 'Reviews',
     'nav.comoFunciona': 'How it Works',
+    'nav.jogos': 'Games',
     'user.myAccount': 'My Account',
     'user.myPages': 'My Pages',
     'user.signOut': 'Sign Out',
@@ -903,6 +914,14 @@ const translations = {
     'creating.page.finalizing.description': 'We have received your payment approval and are now preparing everything. This may take a few moments.',
     'creating.page.finalizing.tip': 'You can wait or go back to the site.',
     'creating.page.finalizing.cta.myPages': 'Go to My Pages',
+    // Memory Game
+    'memorygame.title': 'A little game for you',
+    'memorygame.description': 'Try to match all the photo pairs.',
+    'memorygame.moves': 'Moves',
+    'memorygame.reset': 'Reset',
+    'memorygame.win.title': 'Congratulations!',
+    'memorygame.win.description': 'You found all pairs in {moves} moves.',
+    'memorygame.win.playAgain': 'Play Again',
   },
   es: {
     // Metadata
@@ -914,6 +933,7 @@ const translations = {
     'nav.planos': 'Planes',
     'nav.avaliacoes': 'Reseñas',
     'nav.comoFunciona': 'Cómo funciona',
+    'nav.jogos': 'Juegos',
     'user.myAccount': 'Mi Cuenta',
     'user.myPages': 'Mis Páginas',
     'user.signOut': 'Cerrar Sesión',
@@ -995,6 +1015,15 @@ const translations = {
     'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
     'payment.canceled.cta': 'Volver al Creador de Páginas',
     'footer.follow_us': 'Síguenos',
+    
+    // Memory Game
+    'memorygame.title': 'Un jueguito para ti',
+    'memorygame.description': 'Intenta acertar todos los pares de fotos.',
+    'memorygame.moves': 'Movimientos',
+    'memorygame.reset': 'Reiniciar',
+    'memorygame.win.title': '¡Felicidades!',
+    'memorygame.win.description': 'Encontraste todos los pares en {moves} movimientos.',
+    'memorygame.win.playAgain': 'Jugar de Nuevo',
   },
 };
 
