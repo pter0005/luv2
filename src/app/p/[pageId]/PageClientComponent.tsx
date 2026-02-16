@@ -21,7 +21,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
@@ -62,6 +62,8 @@ GalleryImage.displayName = 'GalleryImage';
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showGames, setShowGames] = useState(false);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { t } = useTranslation();
   
@@ -78,6 +80,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const hasPuzzle = useMemo(() => {
     return !!(pageData.enablePuzzle && pageData.puzzleImage?.url);
   }, [pageData.enablePuzzle, pageData.puzzleImage]);
+
+  const hasMemoryGame = useMemo(() => {
+    return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
+  }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
+
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!Array.isArray(pageData.timelineEvents)) {
@@ -227,6 +234,18 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
 
+          {hasMemoryGame && (
+              <div className="text-center w-full">
+                  <Button 
+                      type="button"
+                      onClick={() => setShowGames(true)} 
+                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
+                  >
+                      <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
+                  </Button>
+              </div>
+          )}
+
           {pageData.galleryImages?.length > 0 && (
             <div className="w-full max-w-[90vw] md:max-w-md mx-auto relative z-10">
               <Swiper
@@ -299,6 +318,77 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       <AnimatePresence>
         {showTimeline && (
           <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {showGames && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-lg"
+          >
+            <AnimatePresence mode="wait">
+              {activeGame === null ? (
+                <motion.div
+                  key="game-selection"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="w-full max-w-2xl text-center"
+                >
+                  <h2 className="text-4xl font-bold font-headline text-white mb-8">{t('publicpage.games.selectTitle')}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Card Jogo da Memória */}
+                    <div
+                      onClick={() => setActiveGame('memory')}
+                      className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
+                    >
+                      <BrainCircuit className="w-10 h-10 text-primary" />
+                      <h3 className="font-bold text-lg text-white">{t('publicpage.games.memory.title')}</h3>
+                      <p className="text-sm text-muted-foreground">{t('publicpage.games.memory.description')}</p>
+                    </div>
+                    {/* Placeholder 1 */}
+                    <div className="p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center bg-white/5 border-dashed border-white/10 opacity-50">
+                      <Gamepad2 className="w-10 h-10 text-muted-foreground" />
+                      <h3 className="font-bold text-lg text-muted-foreground">{t('publicpage.games.comingSoon')}</h3>
+                    </div>
+                     {/* Placeholder 2 */}
+                    <div className="p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center bg-white/5 border-dashed border-white/10 opacity-50">
+                      <Gamepad2 className="w-10 h-10 text-muted-foreground" />
+                      <h3 className="font-bold text-lg text-muted-foreground">{t('publicpage.games.comingSoon')}</h3>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="active-game-view"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full h-full flex flex-col items-center justify-center"
+                >
+                  <Button
+                    variant="ghost"
+                    onClick={() => setActiveGame(null)}
+                    className="absolute top-4 left-4 text-white z-20"
+                  >
+                    <ArrowLeft className="mr-2" /> Voltar
+                  </Button>
+                  {activeGame === 'memory' && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
+                </motion.div>
+              )}
+            </AnimatePresence>
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => { setShowGames(false); setActiveGame(null); }}
+                className="absolute top-4 right-4 text-white rounded-full bg-white/10 z-20"
+              >
+                <X className="w-5 h-5" />
+            </Button>
+          </motion.div>
         )}
       </AnimatePresence>
 

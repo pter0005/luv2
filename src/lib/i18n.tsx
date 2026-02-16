@@ -283,6 +283,12 @@ const translations = {
     'publicpage.error.unauthenticated.solution.tip': 'O valor da `FIREBASE_PRIVATE_KEY` deve ser copiado exatamente como está, incluindo `-----BEGIN PRIVATE KEY-----` e `-----END PRIVATE KEY-----`.',
     'publicpage.alt.timelineImage': 'Imagem da linha do tempo',
     'publicpage.memory.title': 'Um Jogo de Memórias para Você',
+    'publicpage.games.title': 'Vamos Jogar?',
+    'publicpage.games.selectTitle': 'Escolha um Jogo',
+    'publicpage.games.memory.title': 'Jogo da Memória',
+    'publicpage.games.memory.description': 'Encontre os pares das suas fotos especiais.',
+    'publicpage.games.comingSoon': 'Em Breve',
+
 
     // Privacy & Terms
     'privacy.back': 'Voltar para o início',
@@ -743,6 +749,12 @@ const translations = {
     'publicpage.error.unauthenticated.solution.tip': 'The value of `FIREBASE_PRIVATE_KEY` must be copied exactly as it is, including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`.',
     'publicpage.alt.timelineImage': 'Timeline image',
     'publicpage.memory.title': 'A Memory Game for You',
+    'publicpage.games.title': 'Let\'s Play?',
+    'publicpage.games.selectTitle': 'Choose a Game',
+    'publicpage.games.memory.title': 'Memory Game',
+    'publicpage.games.memory.description': 'Find the pairs of your special photos.',
+    'publicpage.games.comingSoon': 'Coming Soon',
+
     'privacy.back': 'Back to home',
     'terms.title': 'Terms of Use',
     'terms.description': 'By using our services, you agree to these rules.',
@@ -997,6 +1009,11 @@ const translations = {
     'publicpage.puzzle.complete': '¡Reto Completado!',
     'publicpage.loading': 'Cargando tu sorpresa...',
     'publicpage.memory.title': 'Un Juego de Memorias para Ti',
+    'publicpage.games.title': '¿Vamos a Jugar?',
+    'publicpage.games.selectTitle': 'Elige un Juego',
+    'publicpage.games.memory.title': 'Juego de Memoria',
+    'publicpage.games.memory.description': 'Encuentra los pares de tus fotos especiales.',
+    'publicpage.games.comingSoon': 'Próximamente',
 
     // Wizard
     'wizard.payment.admin.cta': 'Finalizar como Admin (PRUEBA)',
