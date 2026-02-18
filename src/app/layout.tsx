@@ -55,22 +55,24 @@ export async function generateMetadata() {
   const host = headers().get('host') || '';
   const acceptLanguage = headers().get('accept-language');
   
-  const isDevEnvironment = host.includes('localhost') || host.endsWith('.web.app') || host.endsWith('.app');
-
   let metadata;
   let url;
 
-  if (isDevEnvironment || host.includes('mycupid.com.br')) {
+  if (host.includes('mycupid.com.br')) {
     metadata = ptMetadata;
     url = 'https://www.mycupid.com.br/';
-  } else {
+  } else if (host.includes('mycupid.net')) {
     if (acceptLanguage?.startsWith('es')) {
         metadata = esMetadata;
-        url = 'https://www.mycupid.net/'; // or a specific .es domain if you have one
+        url = 'https://www.mycupid.net/'; 
     } else {
         metadata = enMetadata;
         url = 'https://www.mycupid.net/';
     }
+  } else {
+    // Default to PT for all dev/preview environments
+    metadata = ptMetadata;
+    url = 'https://www.mycupid.com.br/';
   }
 
   return {
@@ -112,14 +114,15 @@ export default function RootLayout({
   const host = headers().get('host') || '';
   const acceptLanguage = headers().get('accept-language');
 
-  const isDevEnvironment = host.includes('localhost') || host.endsWith('.web.app') || host.endsWith('.app');
-  
   let lang = 'en'; // Default to English
-  if (isDevEnvironment || host.includes('mycupid.com.br')) {
+  // If the domain is NOT mycupid.net, default to Portuguese (covers .com.br and all dev environments)
+  if (!host.includes('mycupid.net')) {
     lang = 'pt';
   } else if (acceptLanguage?.startsWith('es')) {
+    // Only for .net, check if we should serve Spanish
     lang = 'es';
   }
+
 
   return (
     <html lang={lang} className="dark scroll-smooth">

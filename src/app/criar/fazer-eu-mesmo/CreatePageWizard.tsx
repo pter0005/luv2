@@ -1462,8 +1462,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            const isDevEnvironment = hostname.includes('localhost') || hostname.endsWith('.web.app') || hostname.endsWith('.app');
-            setIsBrazilDomain(isDevEnvironment || hostname.endsWith('.com.br'));
+            // Any domain that isn't the explicit international production domain is considered a Brazilian context.
+            // This covers mycupid.com.br and ALL dev/preview environments, including Firebase Studio.
+            const isInternationalProd = hostname.endsWith('mycupid.net');
+            setIsBrazilDomain(!isInternationalProd);
         }
     }, []);
 

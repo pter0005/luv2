@@ -12,30 +12,31 @@ const authRoutes = ['/login'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Pega o domínio que o usuário digitou (ex: mycupid.net)
   const hostname = request.headers.get('host') || '';
   
-  // FORÇA O CONTEXTO BRASIL PARA AMBIENTES DE DESENVOLVIMENTO
-  const isDevEnvironment = hostname.includes('localhost') || hostname.endsWith('.web.app') || hostname.endsWith('.app');
-  const country = isDevEnvironment ? 'BR' : (request.geo?.country || 'BR');
-
   // --- LÓGICA DE REDIRECIONAMENTO DE DOMÍNIO ---
-  const url = request.nextUrl.clone();
+  const isProdBr = hostname.endsWith('mycupid.com.br');
+  const isProdIntl = hostname.endsWith('mycupid.net');
+  
+  // Only perform geo-redirects on production domains
+  if (isProdBr || isProdIntl) {
+    const country = request.geo?.country || 'BR';
+    const url = request.nextUrl.clone();
 
-  // CASO 1: É Brasileiro, mas entrou no .net -> Manda pro .com.br
-  // Ignora se for ambiente de dev para não quebrar preview.
-  if (country === 'BR' && hostname.includes('mycupid.net') && !isDevEnvironment) {
-    url.hostname = 'mycupid.com.br'; // Troca o domínio
-    url.port = ''; // Garante que não quebra porta se tiver
-    return NextResponse.redirect(url);
+    // CASE 1: Brazilian user on international site -> redirect to .com.br
+    if (country === 'BR' && isProdIntl) {
+        url.hostname = 'mycupid.com.br';
+        url.port = '';
+        return NextResponse.redirect(url);
+    }
+    // CASE 2: International user on Brazilian site -> redirect to .net
+    if (country !== 'BR' && isProdBr) {
+        url.hostname = 'mycupid.net';
+        url.port = '';
+        return NextResponse.redirect(url);
+    }
   }
 
-  // CASO 2: É Gringo, mas entrou no .com.br -> Manda pro .net
-  if (country !== 'BR' && hostname.includes('mycupid.com.br') && !isDevEnvironment) {
-    url.hostname = 'mycupid.net';
-    url.port = '';
-    return NextResponse.redirect(url);
-  }
 
   // --- LÓGICA DE PROTEÇÃO DE ROTAS (JÁ EXISTENTE) ---
   const userSession = request.cookies.get('__session')?.value;
