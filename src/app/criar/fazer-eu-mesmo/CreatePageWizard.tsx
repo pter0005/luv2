@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -1028,10 +1029,10 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
 
     const animationOptions = [
         { id: "none", name: t('wizard.background.none') },
-        { id: "falling-hearts", name: t('wizard.background.hearts') },
-        { id: "starry-sky", name: t('wizard.background.stars'), requiredPlan: "avancado" },
+        { id: "falling-hearts", name: t('wizard.background.hearts'), isFavorite: true },
+        { id: "starry-sky", name: t('wizard.background.stars'), requiredPlan: "avancado", isFavorite: true },
         { id: "nebula", name: t('wizard.background.nebula') },
-        { id: 'mystic-flowers', name: t('wizard.background.mystic-flowers'), requiredPlan: "avancado" },
+        { id: 'mystic-flowers', name: t('wizard.background.mystic-flowers'), requiredPlan: "avancado", isFavorite: true },
         { id: "floating-dots", name: t('wizard.background.dots'), requiredPlan: "avancado" },
         { id: "clouds", name: t('wizard.background.clouds'), requiredPlan: "avancado" },
     ];
@@ -1079,6 +1080,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                                 </div>
                                             )}
                                             {isDisabled && <Lock className="absolute top-2 right-2 w-4 h-4" />}
+                                            {option.isFavorite && <Heart className="absolute top-2 left-2 w-4 h-4 text-pink-400 fill-pink-400" />}
                                             <span className="relative z-10">{option.name}</span>
                                         </Label>
                                     );
@@ -1759,16 +1761,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <Button 
                     onClick={handleOneClickPix} 
                     disabled={isProcessing}
-                    className="w-full h-14 text-lg font-bold shadow-lg shadow-purple-500/20 bg-green-600 hover:bg-green-700 transition-all scale-100 hover:scale-[1.02]"
+                    className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/30 bg-[#009EE3] hover:bg-[#008ac6] text-white transition-all scale-100 hover:scale-[1.02]"
                 >
                     {isProcessing ? (
                         <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
                         </>
                     ) : (
-                        <>
-                            <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')} R$ {totalBRL.toFixed(2).replace('.', ',')}
-                        </>
+                        <div className="flex items-center justify-center gap-2">
+                           <Image src="https://i.imgur.com/rO0hA3A.png" alt="PIX" width={24} height={24} />
+                           <span>{t('wizard.payment.pix.pay_button')}</span>
+                        </div>
                     )}
                 </Button>
             ) : (
@@ -1791,7 +1794,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             </div>
                         )}
                     </div>
-                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs">
+                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
                         <Copy className="mr-2 h-4 w-4" />
                         {t('wizard.payment.pix.copy')}
                     </Button>
@@ -1824,9 +1827,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                 </Alert>
             )}
-            <p className="text-xs text-muted-foreground mt-4">
-                {t('wizard.payment.secure')}
-            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-6 pt-6 border-t border-border/20">
+                <Lock className="w-4 h-4" />
+                <span>{t('wizard.payment.secure_mp')}</span>
+                <Image 
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Mercado-pago-logo.svg/2560px-Mercado-pago-logo.svg.png" 
+                    alt="Logo Mercado Pago" 
+                    width={80} 
+                    height={20} 
+                    className="opacity-80"
+                />
+            </div>
         </div>
     );
 };
@@ -2197,3 +2208,4 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
