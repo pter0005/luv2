@@ -26,7 +26,6 @@ export default function MysticFlowers() {
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          background-color: #0b0118;
           overflow: hidden;
           perspective: 1000px;
         }
@@ -35,7 +34,7 @@ export default function MysticFlowers() {
           animation-play-state: paused !important;
         }
 
-        .mystic-garden-container .night {
+        .night {
           position: absolute;
           left: 50%;
           top: 0;
@@ -46,13 +45,13 @@ export default function MysticFlowers() {
           background-image: radial-gradient(ellipse at top, transparent 0%, #0b0118), radial-gradient(ellipse at bottom, #0b0118, rgba(180, 100, 255, 0.2)), repeating-linear-gradient(220deg, black 0px, black 19px, transparent 19px, transparent 22px), repeating-linear-gradient(189deg, black 0px, black 19px, transparent 19px, transparent 22px), repeating-linear-gradient(148deg, black 0px, black 19px, transparent 19px, transparent 22px), linear-gradient(90deg, #a000ff, #f0f0f0);
         }
 
-        .mystic-garden-container .flowers {
+        .flowers {
           position: relative;
-          transform: scale(0.45) translateY(40%); /* Adjusted for perfect fit */
+          transform: scale(0.8);
           transform-origin: bottom center;
         }
 
-        .mystic-garden-container .flower {
+        .flower {
           position: absolute;
           bottom: 10vmin;
           transform-origin: bottom center;
@@ -60,86 +59,86 @@ export default function MysticFlowers() {
           --fl-speed: 0.8s;
         }
 
-        .mystic-garden-container .flower--1 {
+        .flower--1 {
           animation: moving-flower-1 4s linear infinite;
         }
-        .mystic-garden-container .flower--1 .flower__line {
+        .flower--1 .flower__line {
           height: 70vmin;
           animation-delay: 0.3s;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--1 {
+        .flower--1 .flower__line__leaf--1 {
           animation: blooming-leaf-right var(--fl-speed) 1.6s backwards;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--2 {
+        .flower--1 .flower__line__leaf--2 {
           animation: blooming-leaf-right var(--fl-speed) 1.4s backwards;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--3 {
+        .flower--1 .flower__line__leaf--3 {
           animation: blooming-leaf-left var(--fl-speed) 1.2s backwards;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--4 {
+        .flower--1 .flower__line__leaf--4 {
           animation: blooming-leaf-left var(--fl-speed) 1s backwards;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--5 {
+        .flower--1 .flower__line__leaf--5 {
           animation: blooming-leaf-right var(--fl-speed) 1.8s backwards;
         }
-        .mystic-garden-container .flower--1 .flower__line__leaf--6 {
+        .flower--1 .flower__line__leaf--6 {
           animation: blooming-leaf-left var(--fl-speed) 2s backwards;
         }
-        .mystic-garden-container .flower--2 {
+        .flower--2 {
           left: 50%;
           transform: rotate(20deg);
           animation: moving-flower-2 4s linear infinite;
         }
-        .mystic-garden-container .flower--2 .flower__line {
+        .flower--2 .flower__line {
           height: 60vmin;
           animation-delay: 0.6s;
         }
-        .mystic-garden-container .flower--2 .flower__line__leaf--1 {
+        .flower--2 .flower__line__leaf--1 {
           animation: blooming-leaf-right var(--fl-speed) 1.9s backwards;
         }
-        .mystic-garden-container .flower--2 .flower__line__leaf--2 {
+        .flower--2 .flower__line__leaf--2 {
           animation: blooming-leaf-right var(--fl-speed) 1.7s backwards;
         }
-        .mystic-garden-container .flower--2 .flower__line__leaf--3 {
+        .flower--2 .flower__line__leaf--3 {
           animation: blooming-leaf-left var(--fl-speed) 1.5s backwards;
         }
-        .mystic-garden-container .flower--2 .flower__line__leaf--4 {
+        .flower--2 .flower__line__leaf--4 {
           animation: blooming-leaf-left var(--fl-speed) 1.3s backwards;
         }
-        .mystic-garden-container .flower--3 {
+        .flower--3 {
           left: 50%;
           transform: rotate(-15deg);
           animation: moving-flower-3 4s linear infinite;
         }
-        .mystic-garden-container .flower--3 .flower__line {
+        .flower--3 .flower__line {
           animation-delay: 0.9s;
         }
-        .mystic-garden-container .flower--3 .flower__line__leaf--1 {
+        .flower--3 .flower__line__leaf--1 {
           animation: blooming-leaf-right var(--fl-speed) 2.5s backwards;
         }
-        .mystic-garden-container .flower--3 .flower__line__leaf--2 {
+        .flower--3 .flower__line__leaf--2 {
           animation: blooming-leaf-right var(--fl-speed) 2.3s backwards;
         }
-        .mystic-garden-container .flower--3 .flower__line__leaf--3 {
+        .flower--3 .flower__line__leaf--3 {
           animation: blooming-leaf-left var(--fl-speed) 2.1s backwards;
         }
-        .mystic-garden-container .flower--3 .flower__line__leaf--4 {
+        .flower--3 .flower__line__leaf--4 {
           animation: blooming-leaf-left var(--fl-speed) 1.9s backwards;
         }
-        .mystic-garden-container .flower__leafs {
+        .flower__leafs {
           position: relative;
           animation: blooming-flower 2s backwards;
         }
-        .mystic-garden-container .flower__leafs--1 {
+        .flower__leafs--1 {
           animation-delay: 1.1s;
         }
-        .mystic-garden-container .flower__leafs--2 {
+        .flower__leafs--2 {
           animation-delay: 1.4s;
         }
-        .mystic-garden-container .flower__leafs--3 {
+        .flower__leafs--3 {
           animation-delay: 1.7s;
         }
-        .mystic-garden-container .flower__leafs::after {
+        .flower__leafs::after {
           content: "";
           position: absolute;
           left: 0;
@@ -150,7 +149,7 @@ export default function MysticFlowers() {
           background-color: #c06bff;
           filter: blur(10vmin);
         }
-        .mystic-garden-container .flower__leaf {
+        .flower__leaf {
           position: absolute;
           bottom: 0;
           left: 50%;
@@ -163,16 +162,16 @@ export default function MysticFlowers() {
           opacity: 0.9;
           box-shadow: inset 0 0 2vmin rgba(255, 255, 255, 0.5);
         }
-        .mystic-garden-container .flower__leaf--1 {
+        .flower__leaf--1 {
           transform: translate(-10%, 1%) rotateY(40deg) rotateX(-50deg);
         }
-        .mystic-garden-container .flower__leaf--2 {
+        .flower__leaf--2 {
           transform: translate(-50%, -4%) rotateX(40deg);
         }
-        .mystic-garden-container .flower__leaf--3 {
+        .flower__leaf--3 {
           transform: translate(-90%, 0%) rotateY(45deg) rotateX(50deg);
         }
-        .mystic-garden-container .flower__leaf--4 {
+        .flower__leaf--4 {
           width: 8vmin;
           height: 8vmin;
           transform-origin: bottom left;
@@ -182,7 +181,7 @@ export default function MysticFlowers() {
           z-index: 1;
           opacity: 0.8;
         }
-        .mystic-garden-container .flower__white-circle {
+        .flower__white-circle {
           position: absolute;
           left: -3.5vmin;
           top: -3vmin;
@@ -191,7 +190,7 @@ export default function MysticFlowers() {
           border-radius: 50%;
           background-color: #fff;
         }
-        .mystic-garden-container .flower__white-circle::after {
+        .flower__white-circle::after {
           content: "";
           position: absolute;
           left: 50%;
@@ -202,14 +201,14 @@ export default function MysticFlowers() {
           border-radius: inherit;
           background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 12px), linear-gradient(90deg, #ffeb12, #ffce00);
         }
-        .mystic-garden-container .flower__line {
+        .flower__line {
           height: 55vmin;
           width: 1.5vmin;
           background-image: linear-gradient(to left, rgba(0,0,0,0.2), transparent, rgba(255,255,255,0.2)), linear-gradient(to top, transparent 10%, #4a1475, #8c39d6);
           box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
           animation: grow-flower-tree 4s backwards;
         }
-        .mystic-garden-container .flower__line__leaf {
+        .flower__line__leaf {
           --w: 7vmin;
           --h: calc(var(--w) + 2vmin);
           position: absolute;
@@ -221,14 +220,14 @@ export default function MysticFlowers() {
           border-bottom-left-radius: var(--h);
           background-image: linear-gradient(to top, rgba(74, 20, 117, 0.4), #8c39d6);
         }
-        .mystic-garden-container .flower__line__leaf--1 {
+        .flower__line__leaf--1 {
           transform: rotate(70deg) rotateY(30deg);
         }
-        .mystic-garden-container .flower__line__leaf--2 {
+        .flower__line__leaf--2 {
           top: 45%;
           transform: rotate(70deg) rotateY(30deg);
         }
-        .mystic-garden-container .flower__line__leaf--3, .mystic-garden-container .flower__line__leaf--4, .mystic-garden-container .flower__line__leaf--6 {
+        .flower__line__leaf--3, .flower__line__leaf--4, .flower__line__leaf--6 {
           border-top-right-radius: 0;
           border-bottom-left-radius: 0;
           border-top-left-radius: var(--h);
@@ -237,21 +236,21 @@ export default function MysticFlowers() {
           top: 12%;
           transform: rotate(-70deg) rotateY(30deg);
         }
-        .mystic-garden-container .flower__line__leaf--4 {
+        .flower__line__leaf--4 {
           top: 40%;
         }
-        .mystic-garden-container .flower__line__leaf--5 {
+        .flower__line__leaf--5 {
           top: 0;
           transform-origin: left;
           transform: rotate(70deg) rotateY(30deg) scale(0.6);
         }
-        .mystic-garden-container .flower__line__leaf--6 {
+        .flower__line__leaf--6 {
           top: -2%;
           left: -450%;
           transform-origin: right;
           transform: rotate(-70deg) rotateY(30deg) scale(0.6);
         }
-        .mystic-garden-container .flower__light {
+        .flower__light {
           position: absolute;
           bottom: 0vmin;
           width: 1vmin;
@@ -261,18 +260,18 @@ export default function MysticFlowers() {
           filter: blur(0.2vmin);
           animation: light-ans 4s linear infinite backwards;
         }
-        .mystic-garden-container .flower__light:nth-child(odd) {
+        .flower__light:nth-child(odd) {
           background-color: #cc00ff;
         }
-        .mystic-garden-container .flower__light--1 { left: -2vmin; animation-delay: 1s; }
-        .mystic-garden-container .flower__light--2 { left: 3vmin; animation-delay: 0.5s; }
-        .mystic-garden-container .flower__light--3 { left: -6vmin; animation-delay: 0.3s; }
-        .mystic-garden-container .flower__light--4 { left: 6vmin; animation-delay: 0.9s; }
-        .mystic-garden-container .flower__light--5 { left: -1vmin; animation-delay: 1.5s; }
-        .mystic-garden-container .flower__light--6 { left: -4vmin; animation-delay: 3s; }
-        .mystic-garden-container .flower__light--7 { left: 3vmin; animation-delay: 2s; }
-        .mystic-garden-container .flower__light--8 { left: -6vmin; animation-delay: 3.5s; }
-        .mystic-garden-container .flower__grass {
+        .flower__light--1 { left: -2vmin; animation-delay: 1s; }
+        .flower__light--2 { left: 3vmin; animation-delay: 0.5s; }
+        .flower__light--3 { left: -6vmin; animation-delay: 0.3s; }
+        .flower__light--4 { left: 6vmin; animation-delay: 0.9s; }
+        .flower__light--5 { left: -1vmin; animation-delay: 1.5s; }
+        .flower__light--6 { left: -4vmin; animation-delay: 3s; }
+        .flower__light--7 { left: 3vmin; animation-delay: 2s; }
+        .flower__light--8 { left: -6vmin; animation-delay: 3.5s; }
+        .flower__grass {
           --c: #7c15aa;
           --line-w: 1.5vmin;
           position: absolute;
@@ -285,10 +284,10 @@ export default function MysticFlowers() {
           transform-origin: bottom center;
           transform: rotate(-48deg) rotateY(40deg);
         }
-        .mystic-garden-container .flower__grass--1 {
+        .flower__grass--1 {
           animation: moving-grass 2s linear infinite;
         }
-        .mystic-garden-container .flower__grass--2 {
+        .flower__grass--2 {
           left: 2vmin;
           bottom: 10vmin;
           transform: scale(0.5) rotate(75deg) rotateX(10deg) rotateY(-200deg);
@@ -296,7 +295,7 @@ export default function MysticFlowers() {
           z-index: 0;
           animation: moving-grass--2 1.5s linear infinite;
         }
-        .mystic-garden-container .flower__grass--top {
+        .flower__grass--top {
           width: 7vmin;
           height: 10vmin;
           border-top-right-radius: 100%;
@@ -304,13 +303,13 @@ export default function MysticFlowers() {
           transform-origin: bottom center;
           transform: rotate(-2deg);
         }
-        .mystic-garden-container .flower__grass--bottom {
+        .flower__grass--bottom {
           margin-top: -2px;
           width: var(--line-w);
           height: 25vmin;
           background-image: linear-gradient(to top, transparent, var(--c));
         }
-        .mystic-garden-container .flower__grass__leaf {
+        .flower__grass__leaf {
           --size: 10vmin;
           position: absolute;
           width: calc(var(--size) * 2.1);
@@ -320,73 +319,73 @@ export default function MysticFlowers() {
           background-image: linear-gradient(to top, transparent, transparent 30%, var(--c));
           z-index: 100;
         }
-        .mystic-garden-container .flower__grass__leaf--1 { top: -6%; left: 30%; --size: 6vmin; transform: rotate(-20deg); animation: growing-grass-ans--1 2s 2.6s backwards; }
-        .mystic-garden-container .flower__grass__leaf--2 { top: -5%; left: -110%; --size: 6vmin; transform: rotate(10deg); animation: growing-grass-ans--2 2s 2.4s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--3 { top: 5%; left: 60%; --size: 8vmin; transform: rotate(-18deg) rotateX(-20deg); animation: growing-grass-ans--3 2s 2.2s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--4 { top: 6%; left: -135%; --size: 8vmin; transform: rotate(2deg); animation: growing-grass-ans--4 2s 2s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--5 { top: 20%; left: 60%; --size: 10vmin; transform: rotate(-24deg) rotateX(-20deg); animation: growing-grass-ans--5 2s 1.8s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--6 { top: 22%; left: -180%; --size: 10vmin; transform: rotate(10deg); animation: growing-grass-ans--6 2s 1.6s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--7 { top: 39%; left: 70%; --size: 10vmin; transform: rotate(-10deg); animation: growing-grass-ans--7 2s 1.4s linear backwards; }
-        .mystic-garden-container .flower__grass__leaf--8 { top: 40%; left: -215%; --size: 11vmin; transform: rotate(10deg); animation: growing-grass-ans--8 2s 1.2s linear backwards; }
+        .flower__grass__leaf--1 { top: -6%; left: 30%; --size: 6vmin; transform: rotate(-20deg); animation: growing-grass-ans--1 2s 2.6s backwards; }
+        .flower__grass__leaf--2 { top: -5%; left: -110%; --size: 6vmin; transform: rotate(10deg); animation: growing-grass-ans--2 2s 2.4s linear backwards; }
+        .flower__grass__leaf--3 { top: 5%; left: 60%; --size: 8vmin; transform: rotate(-18deg) rotateX(-20deg); animation: growing-grass-ans--3 2s 2.2s linear backwards; }
+        .flower__grass__leaf--4 { top: 6%; left: -135%; --size: 8vmin; transform: rotate(2deg); animation: growing-grass-ans--4 2s 2s linear backwards; }
+        .flower__grass__leaf--5 { top: 20%; left: 60%; --size: 10vmin; transform: rotate(-24deg) rotateX(-20deg); animation: growing-grass-ans--5 2s 1.8s linear backwards; }
+        .flower__grass__leaf--6 { top: 22%; left: -180%; --size: 10vmin; transform: rotate(10deg); animation: growing-grass-ans--6 2s 1.6s linear backwards; }
+        .flower__grass__leaf--7 { top: 39%; left: 70%; --size: 10vmin; transform: rotate(-10deg); animation: growing-grass-ans--7 2s 1.4s linear backwards; }
+        .flower__grass__leaf--8 { top: 40%; left: -215%; --size: 11vmin; transform: rotate(10deg); animation: growing-grass-ans--8 2s 1.2s linear backwards; }
         
-        .mystic-garden-container .flower__g-long { --w: 2vmin; --h: 6vmin; --c: #7c15aa; position: absolute; bottom: 10vmin; left: -3vmin; transform-origin: bottom center; transform: rotate(-30deg) rotateY(-20deg); display: flex; flex-direction: column; align-items: flex-end; animation: flower-g-long-ans 3s linear infinite; }
-        .mystic-garden-container .flower__g-long__top { top: calc(var(--h) * -1); width: calc(var(--w) + 1vmin); height: var(--h); border-top-right-radius: 100%; border-right: 0.7vmin solid var(--c); transform: translate(-0.7vmin, 1vmin); }
-        .mystic-garden-container .flower__g-long__bottom { width: var(--w); height: 50vmin; transform-origin: bottom center; background-image: linear-gradient(to top, transparent 30%, var(--c)); box-shadow: inset 0 0 2px rgba(0,0,0,0.5); clip-path: polygon(35% 0, 65% 1%, 100% 100%, 0% 100%); }
-        .mystic-garden-container .flower__g-right { position: absolute; bottom: 6vmin; left: -2vmin; transform-origin: bottom left; transform: rotate(20deg); }
-        .mystic-garden-container .flower__g-right .leaf { width: 30vmin; height: 50vmin; border-top-left-radius: 100%; border-left: 2vmin solid #6600aa; background-image: linear-gradient(to bottom, transparent, #0b0118 60%); -webkit-mask-image: linear-gradient(to top, transparent 30%, #6600aa 60%); }
-        .mystic-garden-container .flower__g-right--1 { animation: flower-g-right-ans 2.5s linear infinite; }
-        .mystic-garden-container .flower__g-right--2 { left: 5vmin; transform: rotateY(-180deg); animation: flower-g-right-ans--2 3s linear infinite; }
-        .mystic-garden-container .flower__g-right--2 .leaf { height: 75vmin; filter: blur(0.3vmin); opacity: 0.8; }
+        .flower__g-long { --w: 2vmin; --h: 6vmin; --c: #7c15aa; position: absolute; bottom: 10vmin; left: -3vmin; transform-origin: bottom center; transform: rotate(-30deg) rotateY(-20deg); display: flex; flex-direction: column; align-items: flex-end; animation: flower-g-long-ans 3s linear infinite; }
+        .flower__g-long__top { top: calc(var(--h) * -1); width: calc(var(--w) + 1vmin); height: var(--h); border-top-right-radius: 100%; border-right: 0.7vmin solid var(--c); transform: translate(-0.7vmin, 1vmin); }
+        .flower__g-long__bottom { width: var(--w); height: 50vmin; transform-origin: bottom center; background-image: linear-gradient(to top, transparent 30%, var(--c)); box-shadow: inset 0 0 2px rgba(0,0,0,0.5); clip-path: polygon(35% 0, 65% 1%, 100% 100%, 0% 100%); }
+        .flower__g-right { position: absolute; bottom: 6vmin; left: -2vmin; transform-origin: bottom left; transform: rotate(20deg); }
+        .flower__g-right .leaf { width: 30vmin; height: 50vmin; border-top-left-radius: 100%; border-left: 2vmin solid #6600aa; background-image: linear-gradient(to bottom, transparent, #0b0118 60%); -webkit-mask-image: linear-gradient(to top, transparent 30%, #6600aa 60%); }
+        .flower__g-right--1 { animation: flower-g-right-ans 2.5s linear infinite; }
+        .flower__g-right--2 { left: 5vmin; transform: rotateY(-180deg); animation: flower-g-right-ans--2 3s linear infinite; }
+        .flower__g-right--2 .leaf { height: 75vmin; filter: blur(0.3vmin); opacity: 0.8; }
         
-        .mystic-garden-container .flower__g-front { position: absolute; bottom: 6vmin; left: 2.5vmin; z-index: 100; transform-origin: bottom center; transform: rotate(-28deg) rotateY(30deg) scale(1.04); animation: flower__g-front-ans 2s linear infinite; }
-        .mystic-garden-container .flower__g-front__line { width: 0.3vmin; height: 20vmin; background-image: linear-gradient(to top, transparent, #6600aa, transparent 100%); position: relative; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper { position: absolute; top: 0; left: 0; transform-origin: bottom left; transform: rotate(10deg); }
-        .mystic-garden-container .flower__g-front__leaf-wrapper:nth-child(even) { left: 0vmin; transform: rotateY(-180deg) rotate(5deg); animation: flower__g-front__leaf-left-ans 1s ease-in backwards; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper:nth-child(odd) { animation: flower__g-front__leaf-ans 1s ease-in backwards; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--1 { top: -8vmin; transform: scale(0.7); animation: flower__g-front__leaf-ans 1s 5.5s ease-in backwards !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--2 { top: -8vmin; transform: rotateY(-180deg) scale(0.7) !important; animation: flower__g-front__leaf-left-ans-2 1s 4.6s ease-in backwards !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--3 { top: -3vmin; animation: flower__g-front__leaf-ans 1s 4.6s ease-in backwards; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--4 { top: -3vmin; transform: rotateY(-180deg) scale(0.9) !important; animation: flower__g-front__leaf-left-ans-2 1s 4.6s ease-in backwards !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--5, .mystic-garden-container .flower__g-front__leaf-wrapper--6 { top: 2vmin; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--7, .mystic-garden-container .flower__g-front__leaf-wrapper--8 { top: 6.5vmin; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--2 { animation-delay: 5.2s !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--3 { animation-delay: 4.9s !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--5 { animation-delay: 4.3s !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--6 { animation-delay: 4.1s !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--7 { animation-delay: 3.8s !important; }
-        .mystic-garden-container .flower__g-front__leaf-wrapper--8 { animation-delay: 3.5s !important; }
-        .mystic-garden-container .flower__g-front__leaf { width: 10vmin; height: 10vmin; border-radius: 100% 0% 0% 100%/100% 100% 0% 0%; box-shadow: inset 0 2px 1vmin rgba(180, 44, 252, 0.2); background-image: linear-gradient(to bottom left, transparent, #0b0118), linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); -webkit-mask-image: linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); mask-image: linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); }
-        .mystic-garden-container .flower__g-fr { position: absolute; bottom: -4vmin; left: 0vmin; transform-origin: bottom left; z-index: 10; animation: flower__g-fr-ans 2s linear infinite; }
-        .mystic-garden-container .flower__g-fr .leaf { width: 30vmin; height: 50vmin; border-top-left-radius: 100%; border-left: 2vmin solid #6600aa; -webkit-mask-image: linear-gradient(to top, transparent 25%, #6600aa 50%); position: relative; z-index: 1; }
-        .mystic-garden-container .flower__g-fr__leaf { position: absolute; top: 0; left: 0; width: 10vmin; height: 10vmin; border-radius: 100% 0% 0% 100%/100% 100% 0% 0%; box-shadow: inset 0 2px 1vmin rgba(180, 44, 252, 0.2); background-image: linear-gradient(to bottom left, transparent, #0b0118 98%), linear-gradient(to bottom right, #cc00ff 45%, transparent 50%, transparent); -webkit-mask-image: linear-gradient(135deg, #7c15aa 40%, transparent 50%, transparent); }
-        .mystic-garden-container .flower__g-fr__leaf--1 { left: 20vmin; transform: rotate(45deg); animation: flower__g-fr-leaft-ans-1 0.5s 5.2s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--2 { left: 12vmin; top: -7vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 5s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--3 { left: 15vmin; top: 6vmin; transform: rotate(55deg); animation: flower__g-fr-leaft-ans-5 0.5s 4.8s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--4 { left: 6vmin; top: -2vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 4.6s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--5 { left: 10vmin; top: 14vmin; transform: rotate(55deg); animation: flower__g-fr-leaft-ans-5 0.5s 4.4s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--6 { left: 0vmin; top: 6vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 4.2s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--7 { left: 5vmin; top: 22vmin; transform: rotate(45deg); animation: flower__g-fr-leaft-ans-7 0.5s 4s linear backwards; }
-        .mystic-garden-container .flower__g-fr__leaf--8 { left: -4vmin; top: 15vmin; transform: rotate(15deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-8 0.5s 3.8s linear backwards; }
+        .flower__g-front { position: absolute; bottom: 6vmin; left: 2.5vmin; z-index: 100; transform-origin: bottom center; transform: rotate(-28deg) rotateY(30deg) scale(1.04); animation: flower__g-front-ans 2s linear infinite; }
+        .flower__g-front__line { width: 0.3vmin; height: 20vmin; background-image: linear-gradient(to top, transparent, #6600aa, transparent 100%); position: relative; }
+        .flower__g-front__leaf-wrapper { position: absolute; top: 0; left: 0; transform-origin: bottom left; transform: rotate(10deg); }
+        .flower__g-front__leaf-wrapper:nth-child(even) { left: 0vmin; transform: rotateY(-180deg) rotate(5deg); animation: flower__g-front__leaf-left-ans 1s ease-in backwards; }
+        .flower__g-front__leaf-wrapper:nth-child(odd) { animation: flower__g-front__leaf-ans 1s ease-in backwards; }
+        .flower__g-front__leaf-wrapper--1 { top: -8vmin; transform: scale(0.7); animation: flower__g-front__leaf-ans 1s 5.5s ease-in backwards !important; }
+        .flower__g-front__leaf-wrapper--2 { top: -8vmin; transform: rotateY(-180deg) scale(0.7) !important; animation: flower__g-front__leaf-left-ans-2 1s 4.6s ease-in backwards !important; }
+        .flower__g-front__leaf-wrapper--3 { top: -3vmin; animation: flower__g-front__leaf-ans 1s 4.6s ease-in backwards; }
+        .flower__g-front__leaf-wrapper--4 { top: -3vmin; transform: rotateY(-180deg) scale(0.9) !important; animation: flower__g-front__leaf-left-ans-2 1s 4.6s ease-in backwards !important; }
+        .flower__g-front__leaf-wrapper--5, .flower__g-front__leaf-wrapper--6 { top: 2vmin; }
+        .flower__g-front__leaf-wrapper--7, .flower__g-front__leaf-wrapper--8 { top: 6.5vmin; }
+        .flower__g-front__leaf-wrapper--2 { animation-delay: 5.2s !important; }
+        .flower__g-front__leaf-wrapper--3 { animation-delay: 4.9s !important; }
+        .flower__g-front__leaf-wrapper--5 { animation-delay: 4.3s !important; }
+        .flower__g-front__leaf-wrapper--6 { animation-delay: 4.1s !important; }
+        .flower__g-front__leaf-wrapper--7 { animation-delay: 3.8s !important; }
+        .flower__g-front__leaf-wrapper--8 { animation-delay: 3.5s !important; }
+        .flower__g-front__leaf { width: 10vmin; height: 10vmin; border-radius: 100% 0% 0% 100%/100% 100% 0% 0%; box-shadow: inset 0 2px 1vmin rgba(180, 44, 252, 0.2); background-image: linear-gradient(to bottom left, transparent, #0b0118), linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); -webkit-mask-image: linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); mask-image: linear-gradient(to bottom right, #7c15aa 50%, transparent 50%, transparent); }
+        .flower__g-fr { position: absolute; bottom: -4vmin; left: 0vmin; transform-origin: bottom left; z-index: 10; animation: flower__g-fr-ans 2s linear infinite; }
+        .flower__g-fr .leaf { width: 30vmin; height: 50vmin; border-top-left-radius: 100%; border-left: 2vmin solid #6600aa; -webkit-mask-image: linear-gradient(to top, transparent 25%, #6600aa 50%); position: relative; z-index: 1; }
+        .flower__g-fr__leaf { position: absolute; top: 0; left: 0; width: 10vmin; height: 10vmin; border-radius: 100% 0% 0% 100%/100% 100% 0% 0%; box-shadow: inset 0 2px 1vmin rgba(180, 44, 252, 0.2); background-image: linear-gradient(to bottom left, transparent, #0b0118 98%), linear-gradient(to bottom right, #cc00ff 45%, transparent 50%, transparent); -webkit-mask-image: linear-gradient(135deg, #7c15aa 40%, transparent 50%, transparent); }
+        .flower__g-fr__leaf--1 { left: 20vmin; transform: rotate(45deg); animation: flower__g-fr-leaft-ans-1 0.5s 5.2s linear backwards; }
+        .flower__g-fr__leaf--2 { left: 12vmin; top: -7vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 5s linear backwards; }
+        .flower__g-fr__leaf--3 { left: 15vmin; top: 6vmin; transform: rotate(55deg); animation: flower__g-fr-leaft-ans-5 0.5s 4.8s linear backwards; }
+        .flower__g-fr__leaf--4 { left: 6vmin; top: -2vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 4.6s linear backwards; }
+        .flower__g-fr__leaf--5 { left: 10vmin; top: 14vmin; transform: rotate(55deg); animation: flower__g-fr-leaft-ans-5 0.5s 4.4s linear backwards; }
+        .flower__g-fr__leaf--6 { left: 0vmin; top: 6vmin; transform: rotate(25deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-6 0.5s 4.2s linear backwards; }
+        .flower__g-fr__leaf--7 { left: 5vmin; top: 22vmin; transform: rotate(45deg); animation: flower__g-fr-leaft-ans-7 0.5s 4s linear backwards; }
+        .flower__g-fr__leaf--8 { left: -4vmin; top: 15vmin; transform: rotate(15deg) rotateY(-180deg); animation: flower__g-fr-leaft-ans-8 0.5s 3.8s linear backwards; }
         
-        .mystic-garden-container .long-g { position: absolute; bottom: 25vmin; left: -42vmin; transform-origin: bottom left; }
-        .mystic-garden-container .long-g--1 { bottom: 0vmin; transform: scale(0.8) rotate(-5deg); }
-        .mystic-garden-container .long-g--1 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 40%, #6600aa 80%) !important; }
-        .mystic-garden-container .long-g--1 .leaf--1 { --w: 5vmin; --h: 60vmin; left: -2vmin; transform: rotate(3deg) rotateY(-180deg); }
-        .mystic-garden-container .long-g--2, .mystic-garden-container .long-g--3 { bottom: -3vmin; left: -35vmin; transform-origin: center; transform: scale(0.6) rotateX(60deg); }
-        .mystic-garden-container .long-g--2 .leaf, .mystic-garden-container .long-g--3 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 50%, #6600aa 80%) !important; }
-        .mystic-garden-container .long-g--2 .leaf--1, .mystic-garden-container .long-g--3 .leaf--1 { left: -1vmin; transform: rotateY(-180deg); }
-        .mystic-garden-container .long-g--3 { left: -17vmin; bottom: 0vmin; }
-        .mystic-garden-container .long-g--3 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 40%, #6600aa 80%) !important; }
-        .mystic-garden-container .long-g--4 { left: 25vmin; bottom: -3vmin; transform-origin: center; transform: scale(0.6) rotateX(60deg); }
-        .mystic-garden-container .long-g--4 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 50%, #6600aa 80%) !important; }
-        .mystic-garden-container .long-g--5 { left: 42vmin; bottom: 0vmin; transform: scale(0.8) rotate(2deg); }
-        .mystic-garden-container .long-g--6 { left: 0vmin; bottom: -20vmin; z-index: 100; filter: blur(0.3vmin); transform: scale(0.8) rotate(2deg); }
-        .mystic-garden-container .long-g--7 { left: 35vmin; bottom: 20vmin; z-index: -1; filter: blur(0.3vmin); transform: scale(0.6) rotate(2deg); opacity: 0.7; }
-        .mystic-garden-container .long-g .leaf { --w: 15vmin; --h: 40vmin; --c: #8a2be2; position: absolute; bottom: 0; width: var(--w); height: var(--h); border-top-left-radius: 100%; border-left: 2vmin solid var(--c); -webkit-mask-image: linear-gradient(to top, transparent 20%, #0b0118); transform-origin: bottom center; }
-        .mystic-garden-container .long-g .leaf--0 { left: 2vmin; animation: leaf-ans-1 4s linear infinite; }
-        .mystic-garden-container .long-g .leaf--1 { --w: 5vmin; --h: 60vmin; animation: leaf-ans-1 4s linear infinite; }
-        .mystic-garden-container .long-g .leaf--2 { --w: 10vmin; --h: 40vmin; left: -0.5vmin; bottom: 5vmin; transform-origin: bottom left; transform: rotateY(-180deg); animation: leaf-ans-2 3s linear infinite; }
-        .mystic-garden-container .long-g .leaf--3 { --w: 5vmin; --h: 30vmin; left: -1vmin; bottom: 3.2vmin; transform-origin: bottom left; transform: rotate(-10deg) rotateY(-180deg); animation: leaf-ans-3 3s linear infinite; }
+        .long-g { position: absolute; bottom: 25vmin; left: -42vmin; transform-origin: bottom left; }
+        .long-g--1 { bottom: 0vmin; transform: scale(0.8) rotate(-5deg); }
+        .long-g--1 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 40%, #6600aa 80%) !important; }
+        .long-g--1 .leaf--1 { --w: 5vmin; --h: 60vmin; left: -2vmin; transform: rotate(3deg) rotateY(-180deg); }
+        .long-g--2, .long-g--3 { bottom: -3vmin; left: -35vmin; transform-origin: center; transform: scale(0.6) rotateX(60deg); }
+        .long-g--2 .leaf, .long-g--3 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 50%, #6600aa 80%) !important; }
+        .long-g--2 .leaf--1, .long-g--3 .leaf--1 { left: -1vmin; transform: rotateY(-180deg); }
+        .long-g--3 { left: -17vmin; bottom: 0vmin; }
+        .long-g--3 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 40%, #6600aa 80%) !important; }
+        .long-g--4 { left: 25vmin; bottom: -3vmin; transform-origin: center; transform: scale(0.6) rotateX(60deg); }
+        .long-g--4 .leaf { -webkit-mask-image: linear-gradient(to top, transparent 50%, #6600aa 80%) !important; }
+        .long-g--5 { left: 42vmin; bottom: 0vmin; transform: scale(0.8) rotate(2deg); }
+        .long-g--6 { left: 0vmin; bottom: -20vmin; z-index: 100; filter: blur(0.3vmin); transform: scale(0.8) rotate(2deg); }
+        .long-g--7 { left: 35vmin; bottom: 20vmin; z-index: -1; filter: blur(0.3vmin); transform: scale(0.6) rotate(2deg); opacity: 0.7; }
+        .long-g .leaf { --w: 15vmin; --h: 40vmin; --c: #8a2be2; position: absolute; bottom: 0; width: var(--w); height: var(--h); border-top-left-radius: 100%; border-left: 2vmin solid var(--c); -webkit-mask-image: linear-gradient(to top, transparent 20%, #0b0118); transform-origin: bottom center; }
+        .long-g .leaf--0 { left: 2vmin; animation: leaf-ans-1 4s linear infinite; }
+        .long-g .leaf--1 { --w: 5vmin; --h: 60vmin; animation: leaf-ans-1 4s linear infinite; }
+        .long-g .leaf--2 { --w: 10vmin; --h: 40vmin; left: -0.5vmin; bottom: 5vmin; transform-origin: bottom left; transform: rotateY(-180deg); animation: leaf-ans-2 3s linear infinite; }
+        .long-g .leaf--3 { --w: 5vmin; --h: 30vmin; left: -1vmin; bottom: 3.2vmin; transform-origin: bottom left; transform: rotate(-10deg) rotateY(-180deg); animation: leaf-ans-3 3s linear infinite; }
 
         @keyframes leaf-ans-1 { 0%, 100% { transform: rotate(-5deg) scale(1); } 50% { transform: rotate(5deg) scale(1.1); } }
         @keyframes leaf-ans-2 { 0%, 100% { transform: rotateY(-180deg) rotate(5deg); } 50% { transform: rotateY(-180deg) rotate(0deg) scale(1.1); } }
@@ -402,15 +401,11 @@ export default function MysticFlowers() {
         @keyframes blooming-flower { 0% { transform: scale(0); } }
         @keyframes moving-grass { 0%, 100% { transform: rotate(-48deg) rotateY(40deg); } 50% { transform: rotate(-50deg) rotateY(40deg); } }
         @keyframes moving-grass--2 { 0%, 100% { transform: scale(0.5) rotate(75deg) rotateX(10deg) rotateY(-200deg); } 50% { transform: scale(0.5) rotate(79deg) rotateX(10deg) rotateY(-200deg); } }
+        .growing-grass { animation: growing-grass-ans 1s 2s backwards; }
         @keyframes growing-grass-ans { 0% { transform: scale(0); } }
-        @keyframes growing-grass-ans--1 { 0% { transform-origin: bottom left; transform: rotate(-20deg) scale(0); } }
-        @keyframes growing-grass-ans--2 { 0% { transform-origin: bottom right; transform: rotate(10deg) scale(0); } }
-        @keyframes growing-grass-ans--3 { 0% { transform-origin: bottom left; transform: rotate(-18deg) rotateX(-20deg) scale(0); } }
-        @keyframes growing-grass-ans--4 { 0% { transform-origin: bottom right; transform: rotate(2deg) scale(0); } }
-        @keyframes growing-grass-ans--5 { 0% { transform-origin: bottom left; transform: rotate(-24deg) rotateX(-20deg) scale(0); } }
-        @keyframes growing-grass-ans--6 { 0% { transform-origin: bottom right; transform: rotate(10deg) scale(0); } }
-        @keyframes growing-grass-ans--7 { 0% { transform-origin: bottom left; transform: rotate(-10deg) scale(0); } }
-        @keyframes growing-grass-ans--8 { 0% { transform-origin: bottom right; transform: rotate(10deg) scale(0); } }
+        @keyframes flower-g-long-ans { 0%, 100% { transform: rotate(-30deg) rotateY(-20deg); } 50% { transform: rotate(-32deg) rotateY(-20deg); } }
+        @keyframes flower-g-right-ans { 0%, 100% { transform: rotate(20deg); } 50% { transform: rotate(24deg) rotateX(-20deg); } }
+        @keyframes flower-g-right-ans--2 { 0%, 100% { transform: rotateY(-180deg) rotate(0deg) rotateX(-20deg); } 50% { transform: rotateY(-180deg) rotate(6deg) rotateX(-20deg); } }
         @keyframes flower__g-front-ans { 0%, 100% { transform: rotate(-28deg) rotateY(30deg) scale(1.04); } 50% { transform: rotate(-35deg) rotateY(40deg) scale(1.04); } }
         @keyframes flower__g-front__leaf-left-ans-2 { 0% { transform: rotateY(-180deg) scale(0); } }
         @keyframes flower__g-front__leaf-ans { 0% { transform: rotate(10deg) scale(0); } }
@@ -421,15 +416,14 @@ export default function MysticFlowers() {
         @keyframes flower__g-fr-leaft-ans-6 { 0% { transform-origin: right; transform: rotate(25deg) rotateY(-180deg) scale(0); } }
         @keyframes flower__g-fr-leaft-ans-7 { 0% { transform-origin: left; transform: rotate(45deg) scale(0); } }
         @keyframes flower__g-fr-leaft-ans-8 { 0% { transform-origin: right; transform: rotate(15deg) rotateY(-180deg) scale(0); } }
-        @keyframes flower-g-right-ans { 0%, 100% { transform: rotate(20deg); } 50% { transform: rotate(24deg) rotateX(-20deg); } }
-        @keyframes flower-g-right-ans--2 { 0%, 100% { transform: rotateY(-180deg) rotate(0deg) rotateX(-20deg); } 50% { transform: rotateY(-180deg) rotate(6deg) rotateX(-20deg); } }
-        @keyframes flower-g-long-ans { 0%, 100% { transform: rotate(-30deg) rotateY(-20deg); } 50% { transform: rotate(-32deg) rotateY(-20deg); } }
+
+        .not-loaded * {
+          animation-play-state: paused !important;
+        }
       `}</style>
-      
       <div className="night"></div>
-      
       <div className="flowers">
-        {/* All flower and grass divs from the user's code */}
+        {/* ... (Todo o HTML das flores vai aqui) ... */}
       </div>
     </div>
   );
