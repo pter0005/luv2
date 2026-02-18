@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTranslation } from '@/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import TicketGenerator from '@/components/TicketGenerator';
 
 const LovePageCard = ({ page, t, onClick }: { page: any, t: (key: any) => string, onClick: () => void }) => {
   const previewImage = page.galleryImages?.[0]?.url || `https://picsum.photos/seed/${page.id}/400/300`;
@@ -85,6 +86,7 @@ export default function MinhasPaginasPage() {
   };
 
   const pageUrl = selectedPage ? `${window.location.origin}/p/${selectedPage.id}` : '';
+  const isTicketQr = selectedPage?.qrCodeDesign === 'ticket';
 
   if (isUserLoading) {
     return (
@@ -193,6 +195,10 @@ export default function MinhasPaginasPage() {
                         {t('mypages.share.cta')} <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
                     </Button>
+
+                    {isTicketQr && (
+                      <TicketGenerator linkUrl={pageUrl} nomeArquivo={`ticket-${selectedPage.id}`} />
+                    )}
                 </div>
             </DialogContent>
       </Dialog>
