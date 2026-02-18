@@ -1,3 +1,4 @@
+
 "use client";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { capturePaypalOrder } from "@/app/criar/fazer-eu-mesmo/actions";
@@ -5,11 +6,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
-export default function PaypalButton({ intentId, plan }: { intentId: string, plan: 'basico' | 'avancado' }) {
+export default function PaypalButton({ intentId, plan, amount }: { intentId: string, plan: 'basico' | 'avancado', amount: string }) {
   const router = useRouter();
   const [isVerifying, setIsVerifying] = useState(false);
-
-  const amount = plan === 'avancado' ? "19.90" : "14.90";
 
   return (
     <div className="w-full relative">

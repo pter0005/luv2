@@ -428,6 +428,9 @@ const translations = {
     'wizard.imageLimit.item.gallery': 'fotos na galeria',
     'wizard.imageLimit.item.timeline': 'momentos na linha do tempo',
     'wizard.imageLimit.item.memory': 'fotos para o jogo',
+    'wizard.qr.title': 'QR Code Personalizado',
+    'wizard.qr.upsell': 'Destaque',
+    'wizard.qr.free': 'GRÁTIS',
  
      // Toasts
      'toast.error': 'Error',
@@ -897,6 +900,9 @@ const translations = {
     'wizard.imageLimit.item.gallery': 'photos in the gallery',
     'wizard.imageLimit.item.timeline': 'moments in the timeline',
     'wizard.imageLimit.item.memory': 'photos for the game',
+    'wizard.qr.title': 'Custom QR Code',
+    'wizard.qr.upsell': 'Featured',
+    'wizard.qr.free': 'FREE',
  
      // Toasts
      'toast.error': 'Error',
@@ -1072,6 +1078,9 @@ const translations = {
     'wizard.success.qr.description': 'También puedes guardar o imprimir el Código QR de arriba.',
     'wizard.success.cta': 'Ver Página',
     'wizard.background.mystic-flowers': 'Flores Nacientes',
+    'wizard.qr.title': 'Código QR Personalizado',
+    'wizard.qr.upsell': 'Destacado',
+    'wizard.qr.free': 'GRATIS',
 
     // Criando Página
     'creating.page.ready.title': '¡Tu página está lista!',

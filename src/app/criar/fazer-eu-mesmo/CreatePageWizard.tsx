@@ -64,6 +64,7 @@ import { FirebaseError } from "firebase/app";
 import { useTranslation } from "@/lib/i18n";
 import PayPalButton from "@/components/paypal/PaypalButton";
 import MysticFlowers from "@/components/effects/MysticFlowers";
+import QrCodeSelector from "./QrCodeSelector";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -141,6 +142,7 @@ const pageSchema = z.object({
   puzzleImage: fileWithPreviewSchema.optional(),
   enableMemoryGame: z.boolean().default(false),
   memoryGameImages: z.array(fileWithPreviewSchema).default([]),
+  qrCodeDesign: z.string().default("classic"),
   payment: paymentSchema.optional(),
 });
 
@@ -1391,7 +1393,7 @@ const stepComponents = [
 ];
 
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
-    const { getValues, watch, setValue } = useFormContext<PageData>();
+    const { getValues, watch, setValue, control } = useFormContext<PageData>();
     const { t } = useTranslation();
     const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
@@ -1404,6 +1406,16 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
+
+    const [qrPrice, setQrPrice] = useState(() => {
+        const initialDesign = getValues('qrCodeDesign');
+        // This is a simplified way to find the initial price.
+        // A more robust way would be to have a shared config.
+        if (initialDesign && initialDesign !== 'classic') {
+            return 3.90;
+        }
+        return 0;
+    });
 
 
     // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
@@ -1453,8 +1465,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     }, []);
 
-    const priceUSD = plan === 'basico' ? 19.90 : 24.99;
-    const priceBRL = plan === 'basico' ? 19.90 : 24.90;
+    const basePriceUSD = plan === 'basico' ? 14.90 : 19.90;
+    const basePriceBRL = plan === 'basico' ? 19.90 : 24.90;
+
+    const totalBRL = basePriceBRL + qrPrice;
+    const totalUSD = basePriceUSD + qrPrice;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1525,7 +1540,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 }
                 
                 setValue('intentId', saveResult.intentId);
-                const paymentResult = await processPixPayment(saveResult.intentId, priceBRL);
+                const paymentResult = await processPixPayment(saveResult.intentId, totalBRL);
                 
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
@@ -1645,7 +1660,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </span>
                     </div>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total_en')}</p>
-                    <h2 className="text-5xl font-black text-white mb-1">${priceUSD.toFixed(2)}</h2>
+                    <h2 className="text-5xl font-black text-white mb-1">${totalUSD.toFixed(2)}</h2>
                     <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
                         <Clock size={12} /> {t('wizard.payment.immediate_access')}
                     </p>
@@ -1689,7 +1704,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
                     {intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
-                             <PayPalButton firebaseIntentId={intentId} planType={plan} />
+                             <PayPalButton firebaseIntentId={intentId} planType={plan} amount={totalUSD.toFixed(2)} />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-3 py-6">
@@ -1714,6 +1729,19 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     return (
         <div className="space-y-6 text-center">
             <div className="mb-8">
+              <FormField
+                  control={control}
+                  name="qrCodeDesign"
+                  render={({ field }) => (
+                      <QrCodeSelector
+                          value={field.value}
+                          onChange={field.onChange}
+                          onPriceChange={setQrPrice}
+                      />
+                  )}
+              />
+            </div>
+            <div className="mb-8">
                 <h3 className="text-2xl font-bold font-headline mb-2">
                     {t('wizard.payment.title')}
                 </h3>
@@ -1724,7 +1752,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
                 <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
-                <span className="block text-4xl font-black text-white">R$ {priceBRL.toFixed(2).replace('.', ',')}</span>
+                <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
                 <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
             </div>
 
@@ -1740,7 +1768,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </>
                     ) : (
                         <>
-                            <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')}
+                            <QrCode className="mr-2 h-5 w-5" /> {t('wizard.payment.pix.pay_button')} R$ {totalBRL.toFixed(2).replace('.', ',')}
                         </>
                     )}
                 </Button>
@@ -1831,7 +1859,7 @@ const WizardInternal = () => {
     { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
     { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
     { id: "memory", title: t('wizard.steps.memory.title'), description: t('wizard.steps.memory.description'), fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
-    { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment"] },
+    { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment", "qrCodeDesign"] },
   ], [t]);
 
   const methods = useForm<PageData>({
@@ -1848,6 +1876,7 @@ const WizardInternal = () => {
         timelineEvents: [],
         enablePuzzle: plan === 'avancado',
         musicOption: plan === 'basico' ? 'none' : 'none',
+        qrCodeDesign: "classic",
     }
   });
   
