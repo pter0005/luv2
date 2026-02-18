@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -133,7 +132,7 @@ export default function PreviewContent({
     return (
         <div className="relative w-full h-full flex items-center justify-center">
             <div className={cn(
-                "relative w-full max-w-md h-[85vh] bg-zinc-800 rounded-[2.5rem] p-3 border-[6px] border-zinc-700 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
+                "relative w-full max-w-lg h-[85vh] bg-zinc-800 rounded-[2.5rem] p-3 border-[6px] border-zinc-700 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
             )}>
                  {/* CAMADA DE EFEITOS ESPECIAIS (ACIMA DE TUDO) */}
                  <AnimatePresence>

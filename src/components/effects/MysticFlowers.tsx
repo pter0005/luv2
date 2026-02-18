@@ -57,9 +57,15 @@ export default function MysticFlowers() {
         }
 
         .flowers {
-          position: relative;
-          transform: scale(0.8); /* Ajuste de escala para caber no card */
-          bottom: 5%;
+          position: absolute; /* MUDADO para absolute */
+          bottom: 0;         /* Alinha na base do container */
+          left: 50%;
+          transform: translateX(-50%) scale(0.5); /* Centraliza e ajusta escala para caber no celular */
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          pointer-events: none;
         }
 
         .flower {
@@ -131,17 +137,17 @@ export default function MysticFlowers() {
         }
 
         /* Ajustes de posição das folhas do caule */
-        .flower__line__leaf--1 { transform: rotate(70deg) rotateY(30deg); animation: blooming-leaf-right 0.8s 1.6s backwards; }
-        .flower__line__leaf--2 { top: 45%; transform: rotate(70deg) rotateY(30deg); animation: blooming-leaf-right 0.8s 1.4s backwards;}
+        .flower__line__leaf--1 { transform: rotate(70deg) rotateY(30deg); animation: blooming-leaf-right var(--fl-speed) 1.6s backwards; }
+        .flower__line__leaf--2 { top: 45%; transform: rotate(70deg) rotateY(30deg); animation: blooming-leaf-right var(--fl-speed) 1.4s backwards;}
         .flower__line__leaf--3, .flower__line__leaf--4, .flower__line__leaf--6 {
           border-top-right-radius: 0; border-bottom-left-radius: 0;
           border-top-left-radius: var(--h); border-bottom-right-radius: var(--h);
           left: -460%; top: 12%; transform: rotate(-70deg) rotateY(30deg);
         }
-         .flower__line__leaf--3 { animation: blooming-leaf-left 0.8s 1.2s backwards;}
-        .flower__line__leaf--4 { top: 40%; animation: blooming-leaf-left 0.8s 1s backwards; }
-        .flower__line__leaf--5 { top: 0; transform-origin: left; transform: rotate(70deg) rotateY(30deg) scale(0.6); animation: blooming-leaf-right 0.8s 1.8s backwards;}
-        .flower__line__leaf--6 { top: -2%; left: -450%; transform-origin: right; transform: rotate(-70deg) rotateY(30deg) scale(0.6); animation: blooming-leaf-left 0.8s 2s backwards;}
+         .flower__line__leaf--3 { animation: blooming-leaf-left var(--fl-speed) 1.2s backwards;}
+        .flower__line__leaf--4 { top: 40%; animation: blooming-leaf-left var(--fl-speed) 1s backwards; }
+        .flower__line__leaf--5 { top: 0; transform-origin: left; transform: rotate(70deg) rotateY(30deg) scale(0.6); animation: blooming-leaf-right 1.8s backwards;}
+        .flower__line__leaf--6 { top: -2%; left: -450%; transform-origin: right; transform: rotate(-70deg) rotateY(30deg) scale(0.6); animation: blooming-leaf-left 2s backwards;}
 
         /* --- LUZES --- */
         .flower__light {
@@ -162,11 +168,8 @@ export default function MysticFlowers() {
 
         /* --- ANIMAÇÕES (Copiadas exatamente do CSS original) --- */
         .flower--1 { animation: moving-flower-1 4s linear infinite; }
-        .flower--1 .flower__line { height: 70vmin; animation-delay: 0.3s; }
         .flower--2 { left: 50%; transform: rotate(20deg); animation: moving-flower-2 4s linear infinite; }
-        .flower--2 .flower__line { height: 60vmin; animation-delay: 0.6s; }
         .flower--3 { left: 50%; transform: rotate(-15deg); animation: moving-flower-3 4s linear infinite; }
-         .flower--3 .flower__line { animation-delay: 0.9s; }
 
 
         .flower__leafs { position: relative; animation: blooming-flower 2s backwards; }
