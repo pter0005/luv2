@@ -65,6 +65,7 @@ import { useTranslation } from "@/lib/i18n";
 import PayPalButton from "@/components/paypal/PaypalButton";
 import MysticFlowers from "@/components/effects/MysticFlowers";
 import QrCodeSelector from "./QrCodeSelector";
+import { Suspense } from "react";
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -1462,8 +1463,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            const isInternationalProd = hostname.endsWith('mycupid.net');
-            setIsBrazilDomain(!isInternationalProd);
+            const isProdBr = hostname.endsWith('mycupid.com.br');
+            const isProdIntl = hostname.endsWith('mycupid.net');
+            // Treat as Brazil if it's the BR domain or if it's a dev environment
+            setIsBrazilDomain(isProdBr || (!isProdBr && !isProdIntl));
         }
     }, []);
 
@@ -1759,19 +1762,27 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             </div>
 
             {!pixData ? (
-                <Button 
-                    onClick={handleOneClickPix} 
+                <button
+                    onClick={handleOneClickPix}
                     disabled={isProcessing}
-                    className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-500/30 bg-[#009EE3] hover:bg-[#008ac6] text-white transition-all scale-100 hover:scale-[1.02]"
+                    className="w-full transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-lg overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     {isProcessing ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
-                        </>
+                         <div className="flex items-center justify-center h-14 bg-muted text-muted-foreground">
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            <span>{t('wizard.payment.pix.generating')}</span>
+                        </div>
                     ) : (
-                        <span>{t('wizard.payment.pix.pay_button')}</span>
+                        <Image
+                            src="https://i.imgur.com/MQc6ull.png"
+                            alt={t('wizard.payment.pix.pay_button')}
+                            width={344}
+                            height={56}
+                            className="w-full h-auto"
+                            priority
+                        />
                     )}
-                </Button>
+                </button>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
                    <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
@@ -1829,7 +1840,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <Lock className="w-4 h-4" />
                 <span>{t('wizard.payment.secure_mp')}</span>
                 <Image 
-                    src="https://i.imgur.com/5lSA0mI.png"
+                    src="https://i.imgur.com/QeYjEEv.png"
                     alt="Logo do Mercado Pago"
                     width={90}
                     height={20}
@@ -1883,7 +1894,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
     );
 };
 
-export default function CreatePageWizard() {
+function WizardInternal() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [showTimelinePreview, setShowTimelinePreview] = useState(false);
@@ -2183,7 +2194,13 @@ export default function CreatePageWizard() {
   );
 }
 
-
+export default function CreatePageWizard() {
+  return (
+    <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-primary h-12 w-12" /></div>}>
+        <WizardInternal />
+    </Suspense>
+  )
+}
 
 
 const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
@@ -2206,6 +2223,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
-
-
