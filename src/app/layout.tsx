@@ -52,13 +52,15 @@ const esMetadata = {
 
 
 export async function generateMetadata() {
-  const host = headers().get('host');
+  const host = headers().get('host') || '';
   const acceptLanguage = headers().get('accept-language');
+  
+  const isDevEnvironment = host.includes('localhost') || host.endsWith('.web.app') || host.endsWith('.app');
 
   let metadata;
   let url;
 
-  if (host?.includes('mycupid.com.br')) {
+  if (isDevEnvironment || host.includes('mycupid.com.br')) {
     metadata = ptMetadata;
     url = 'https://www.mycupid.com.br/';
   } else {
@@ -107,11 +109,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const host = headers().get('host');
+  const host = headers().get('host') || '';
   const acceptLanguage = headers().get('accept-language');
+
+  const isDevEnvironment = host.includes('localhost') || host.endsWith('.web.app') || host.endsWith('.app');
   
   let lang = 'en'; // Default to English
-  if (host?.includes('mycupid.com.br')) {
+  if (isDevEnvironment || host.includes('mycupid.com.br')) {
     lang = 'pt';
   } else if (acceptLanguage?.startsWith('es')) {
     lang = 'es';

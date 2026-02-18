@@ -15,23 +15,23 @@ export function middleware(request: NextRequest) {
   // Pega o domínio que o usuário digitou (ex: mycupid.net)
   const hostname = request.headers.get('host') || '';
   
-  // Pega o país (Vercel injeta isso automático. No localhost é undefined)
-  // Se for undefined (localhost), assumimos 'BR' pra facilitar
-  const country = request.geo?.country || 'BR';
+  // FORÇA O CONTEXTO BRASIL PARA AMBIENTES DE DESENVOLVIMENTO
+  const isDevEnvironment = hostname.includes('localhost') || hostname.endsWith('.web.app') || hostname.endsWith('.app');
+  const country = isDevEnvironment ? 'BR' : (request.geo?.country || 'BR');
 
   // --- LÓGICA DE REDIRECIONAMENTO DE DOMÍNIO ---
   const url = request.nextUrl.clone();
 
   // CASO 1: É Brasileiro, mas entrou no .net -> Manda pro .com.br
-  // Ignora se estiver em localhost para não quebrar o dev local
-  if (country === 'BR' && hostname.includes('mycupid.net') && !hostname.includes('localhost')) {
+  // Ignora se for ambiente de dev para não quebrar preview.
+  if (country === 'BR' && hostname.includes('mycupid.net') && !isDevEnvironment) {
     url.hostname = 'mycupid.com.br'; // Troca o domínio
     url.port = ''; // Garante que não quebra porta se tiver
     return NextResponse.redirect(url);
   }
 
   // CASO 2: É Gringo, mas entrou no .com.br -> Manda pro .net
-  if (country !== 'BR' && hostname.includes('mycupid.com.br') && !hostname.includes('localhost')) {
+  if (country !== 'BR' && hostname.includes('mycupid.com.br') && !isDevEnvironment) {
     url.hostname = 'mycupid.net';
     url.port = '';
     return NextResponse.redirect(url);
