@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-export async function createSession(uid: string, redirectPath: string) {
+export async function createSession(uid: string) {
   cookies().set('session_user', uid, {
     httpOnly: true,
     secure: true, // Forçado para true para funcionar em ambientes de dev HTTPS como o Firebase Studio
@@ -12,8 +12,7 @@ export async function createSession(uid: string, redirectPath: string) {
     sameSite: 'lax',
   });
 
-  // O redirecionamento é feito no lado do servidor, garantindo que o cookie esteja presente na próxima requisição.
-  redirect(redirectPath);
+  // O redirecionamento agora é feito no lado do cliente.
 }
 
 export async function removeSession() {

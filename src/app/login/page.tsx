@@ -31,6 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 function LoginContent() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -47,8 +48,10 @@ function LoginContent() {
   });
 
   const handleAuthSuccess = async (authedUser: User) => {
-    // Chama a server action que cria o cookie e faz o redirect no servidor.
-    await createSession(authedUser.uid, redirectUrl);
+    // 1. Chama a server action para criar o cookie de sessão.
+    await createSession(authedUser.uid);
+    // 2. O cliente redireciona após a sessão ser criada.
+    router.push(redirectUrl);
   };
 
   const handleEmailAuth = async (values: LoginFormValues, isRegister: boolean) => {
