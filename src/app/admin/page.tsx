@@ -32,10 +32,12 @@ const formatCurrency = (value: number, currency: 'BRL' | 'USD') => {
 async function getAdminData() {
   const db = getAdminFirestore();
   
-  // 1. Fetch all users to have a map of ID -> Email
+  // 1. Fetch all users to have a map of ID -> Email and count non-admin users
   const usersSnapshot = await db.collection('users').get();
   const userMap = new Map<string, any>();
-  
+  const adminEmails = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+  let totalUserCount = 0;
+
   usersSnapshot.forEach(doc => {
     const data = doc.data();
     userMap.set(doc.id, { 
@@ -43,6 +45,10 @@ async function getAdminData() {
       name: data.name || 'No name',
       photoUrl: data.photoUrl
     });
+    // Exclude admins from the total user count
+    if (!adminEmails.includes(data.email)) {
+      totalUserCount++;
+    }
   });
 
   // 2. Fetch all pages (Sales)
@@ -53,8 +59,15 @@ async function getAdminData() {
   let totalSalesBRL = 0;
   let totalSalesUSD = 0;
   
-  // Detailed list for the table
-  const detailedSales = pagesSnapshot.docs.map(doc => {
+  // Filter out pages belonging to admin users
+  const filteredDocs = pagesSnapshot.docs.filter(doc => {
+    const owner = userMap.get(doc.data().userId);
+    // Keep the page if the owner is not found or is not an admin
+    return !owner || !adminEmails.includes(owner.email);
+  });
+
+  // Detailed list for the table using filtered docs
+  const detailedSales = filteredDocs.map(doc => {
     const data = doc.data();
     
     // Count plans
@@ -97,8 +110,8 @@ async function getAdminData() {
 
   return {
     stats: {
-      totalUsers: usersSnapshot.size,
-      totalPages: pagesSnapshot.size,
+      totalUsers: totalUserCount,
+      totalPages: filteredDocs.length,
       totalSalesBRL,
       totalSalesUSD,
       avancadoCount,
