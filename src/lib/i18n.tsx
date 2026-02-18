@@ -373,7 +373,7 @@ const translations = {
     'wizard.background.hearts': 'Chuva de Corações',
     'wizard.background.stars': 'Céu Estrelado',
     'wizard.background.nebula': 'Nebulosa Galáctica',
-    'wizard.background.mystic-flowers': 'Flores Místicas',
+    'wizard.background.mystic-flowers': 'Flores Nascendo',
     'wizard.background.dots': 'Pontos Coloridos',
     'wizard.background.clouds': 'Nuvens',
     'wizard.background.exclusive': 'Exclusivo do Plano Avançado',
@@ -493,11 +493,11 @@ const translations = {
     
     // Memory Game
     'memorygame.title': 'Um joguinho para você',
-    'memorygame.description': 'Tente acertar todos os pares de fotos.',
+    'memorygame.description': 'Tenta acertar todos os pares de fotos.',
     'memorygame.moves': 'Jogadas',
     'memorygame.reset': 'Reiniciar',
-    'memorygame.win.title': 'Parabéns!',
-    'memorygame.win.description': 'Você encontrou todos os pares em {moves} jogadas.',
+    'memorygame.win.title': '¡Parabéns!',
+    'memorygame.win.description': 'Encontraste todos os pares em {moves} jogadas.',
     'memorygame.win.playAgain': 'Jogar Novamente',
   },
   en: {
@@ -835,7 +835,7 @@ const translations = {
     'wizard.background.hearts': 'Falling Hearts',
     'wizard.background.stars': 'Starry Sky',
     'wizard.background.nebula': 'Galactic Nebula',
-    'wizard.background.mystic-flowers': 'Mystic Flowers',
+    'wizard.background.mystic-flowers': 'Rising Flowers',
     'wizard.background.dots': 'Colored Dots',
     'wizard.background.clouds': 'Clouds',
     'wizard.background.exclusive': 'Advanced Plan Exclusive',
@@ -1040,6 +1040,7 @@ const translations = {
     'wizard.success.copied': '¡Copiado!',
     'wizard.success.qr.description': 'También puedes guardar o imprimir el Código QR de arriba.',
     'wizard.success.cta': 'Ver Página',
+    'wizard.background.mystic-flowers': 'Flores Nacientes',
 
     // Criando Página
     'creating.page.ready.title': '¡Tu página está lista!',
@@ -1059,7 +1060,6 @@ const translations = {
     'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
     'payment.canceled.cta': 'Volver al Creador de Páginas',
     'footer.follow_us': 'Síguenos',
-    'wizard.background.mystic-flowers': 'Flores Místicas',
     
     // Memory Game
     'memorygame.title': 'Un jueguito para ti',
