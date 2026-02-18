@@ -1462,8 +1462,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            // Any domain that isn't the explicit international production domain is considered a Brazilian context.
-            // This covers mycupid.com.br and ALL dev/preview environments, including Firebase Studio.
             const isInternationalProd = hostname.endsWith('mycupid.net');
             setIsBrazilDomain(!isInternationalProd);
         }
@@ -1642,7 +1640,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <div className="bg-black/40 p-3 rounded-md overflow-x-auto">
                     <pre className="whitespace-pre-wrap break-all text-red-400/90 text-[10px]">
                         <code>
-                            CMD_LOG: {JSON.stringify(error.details || { info: "No additional details provided." }, null, 2)}
+                            {JSON.stringify(error.details || { info: "No additional details provided." }, null, 2)}
                         </code>
                     </pre>
                 </div>
@@ -1771,9 +1769,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t('wizard.payment.pix.generating')}
                         </>
                     ) : (
-                        <div className="flex items-center justify-center gap-2">
-                           <Image src="https://i.imgur.com/d1IIon6.png" alt="Pagar com PIX via Mercado Pago" width={140} height={32} />
-                        </div>
+                        <span>{t('wizard.payment.pix.pay_button')}</span>
                     )}
                 </Button>
             ) : (
@@ -1829,12 +1825,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                 </Alert>
             )}
-            <div className="flex items-center justify-center mt-6 pt-6 border-t border-border/20">
+            <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border/20 text-sm text-muted-foreground">
+                <Lock className="w-4 h-4" />
+                <span>{t('wizard.payment.secure_mp')}</span>
                 <Image 
-                    src="https://i.imgur.com/QeYjEEv.png"
-                    alt="Pagamento Seguro via Mercado Pago"
-                    width={250}
-                    height={28}
+                    src="https://i.imgur.com/5lSA0mI.png"
+                    alt="Logo do Mercado Pago"
+                    width={90}
+                    height={20}
                     className="opacity-90"
                 />
             </div>
@@ -2208,5 +2206,6 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
 
 
