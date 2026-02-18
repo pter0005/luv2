@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 export async function createSession(uid: string, redirectPath: string) {
   cookies().set('session_user', uid, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true, // Forçado para true para funcionar em ambientes de dev HTTPS como o Firebase Studio
     maxAge: 60 * 60 * 24 * 5, // 5 dias
     path: '/',
     sameSite: 'lax',
