@@ -1,56 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Sparkles } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 const GRID_SIZE = 3;
-
-// Each path defines a piece shape within a 120x120 viewbox (100x100 piece + 10 margin for tabs)
-// T=Top, R=Right, B=Bottom, L=Left. 0=flat, 1=tab, -1=indent.
-const pieceShapes = [
-  [0, 1, 1, 0], [0, 1, 1, -1], [0, 0, 1, -1],
-  [-1, 1, 1, 0], [-1, 1, 1, -1], [-1, 0, 1, -1],
-  [-1, 1, 0, 0], [-1, 1, 0, -1], [-1, 0, 0, -1],
-];
-
-const generatePath = (shape: number[]) => {
-  const [T, R, B, L] = shape;
-  let d = 'M 10 10 '; // Start with margin
-  
-  const tab = (dir: 'h' | 'v') => dir === 'h' ? 'c 5 -15 25 -15 30 0 ' : 'c 15 5 15 25 0 30 ';
-  const indent = (dir: 'h' | 'v') => dir === 'h' ? 'c 5 15 25 15 30 0 ' : 'c -15 5 -15 25 0 30 ';
-
-  // Top edge
-  d += 'h 30 ';
-  if (T === 1) d += tab('h'); else if (T === -1) d += indent('h'); else d += 'h 40 ';
-  d += 'h 30 ';
-  
-  // Right edge
-  d += 'v 30 ';
-  if (R === 1) d += tab('v'); else if (R === -1) d += indent('v'); else d += 'v 40 ';
-  d += 'v 30 ';
-  
-  // Bottom edge
-  d += 'h -30 ';
-  if (B === 1) d += 'c -5 15 -25 15 -30 0 '; else if (B === -1) d += 'c -5 -15 -25 -15 -30 0 '; else d += 'h -40 ';
-  d += 'h -30 ';
-
-  // Left edge
-  d += 'v -30 ';
-  if (L === 1) d += 'c -15 -5 -15 -25 0 -30 '; else if (L === -1) d += 'c 15 -5 15 -25 0 -30 '; else d += 'v -40 ';
-  d += 'v -30 ';
-
-  d += 'z';
-  return d;
-}
-
-const pieceMasks = pieceShapes.map(shape => 
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="${generatePath(shape)}" fill="black" /></svg>`
-  )}`
-);
 
 interface PuzzleProps {
   imageSrc: string;
@@ -77,7 +32,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
       const containerW = containerRef.current?.offsetWidth || 300;
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
-      const boardWidth = containerW;
+      const boardWidth = Math.min(containerW, 400);
       const boardHeight = boardWidth / aspectRatio;
 
       const pW = boardWidth / GRID_SIZE;
@@ -89,60 +44,31 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
           const id = row * GRID_SIZE + col;
-          const targetX = col * pW;
-          const targetY = row * pH;
-
-          const scatterRadius = boardWidth * 0.7;
+          
+          const scatterRadius = boardWidth * 0.5;
           const angle = Math.random() * 2 * Math.PI;
           const randomDist = Math.random() * scatterRadius;
           const scatterX = (boardWidth / 2) + Math.cos(angle) * randomDist - pW/2;
-          const scatterY = (boardHeight / 2) + Math.sin(angle) * randomDist - pH/2;
+          const scatterY = (boardHeight / 2) + Math.sin(angle) * randomDist - (pH/2) - (boardHeight/2) - 100;
 
           newPieces.push({
             id,
-            targetX,
-            targetY,
+            r: row,
+            c: col,
+            targetX: col * pW,
+            targetY: row * pH,
             currentX: scatterX,
             currentY: scatterY,
             isSnapped: false,
           });
         }
       }
-      setPieces(newPieces);
+      setPieces(newPieces.sort(() => Math.random() - 0.5));
       setIsLoaded(true);
     };
 
     img.src = imageSrc;
   }, [imageSrc]);
-
-  const handleDragEnd = (pieceId: number, info: any) => {
-    const pieceIndex = pieces.findIndex((p) => p.id === pieceId);
-    if (pieceIndex === -1) return;
-
-    const piece = pieces[pieceIndex];
-    const draggedX = piece.currentX + info.offset.x;
-    const draggedY = piece.currentY + info.offset.y;
-
-    const dist = Math.hypot(draggedX - piece.targetX, draggedY - piece.targetY);
-
-    const snapThreshold = dimensions.pieceW * 0.4;
-    if (dist < snapThreshold) {
-      const newPieces = [...pieces];
-      newPieces[pieceIndex] = {
-        ...piece,
-        currentX: piece.targetX,
-        currentY: piece.targetY,
-        isSnapped: true,
-      };
-      setPieces(newPieces);
-      checkWin(newPieces);
-    } else {
-        // If not snapped, update current position to where it was dropped
-        const newPieces = [...pieces];
-        newPieces[pieceIndex] = { ...piece, currentX: draggedX, currentY: draggedY };
-        setPieces(newPieces);
-    }
-  };
 
   const checkWin = useCallback((currentPieces: any[]) => {
     if (currentPieces.every((p) => p.isSnapped)) {
@@ -151,6 +77,24 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     }
   }, [onReveal]);
 
+  const handlePieceDrop = (pieceId: number, finalX: number, finalY: number) => {
+    const pieceIndex = pieces.findIndex((p) => p.id === pieceId);
+    if (pieceIndex === -1 || pieces[pieceIndex].isSnapped) return;
+
+    const piece = pieces[pieceIndex];
+    const dist = Math.hypot(finalX - piece.targetX, finalY - piece.targetY);
+    const snapThreshold = dimensions.pieceW * 0.4;
+    
+    const newPieces = [...pieces];
+    if (dist < snapThreshold) {
+      newPieces[pieceIndex] = { ...piece, currentX: piece.targetX, currentY: piece.targetY, isSnapped: true };
+    } else {
+      newPieces[pieceIndex] = { ...piece, currentX: finalX, currentY: finalY };
+    }
+    setPieces(newPieces);
+    checkWin(newPieces);
+  };
+
   return (
     <div className="w-full flex flex-col items-center justify-center p-4">
       <div 
@@ -158,8 +102,8 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
         className="relative"
         style={{ 
             width: '100%', 
-            maxWidth: '400px',
-            height: isLoaded ? dimensions.height + 200 : '400px'
+            maxWidth: '350px',
+            height: isLoaded ? dimensions.height + 100 : '300px'
         }}
       >
         {!isLoaded && (
@@ -171,7 +115,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
 
         {isLoaded && (
             <div 
-                className="absolute left-0 top-0 rounded-lg bg-black/20"
+                className="absolute left-0 top-[50px] border-2 border-dashed border-white/20 rounded-lg bg-black/20"
                 style={{ width: dimensions.width, height: dimensions.height }}
             >
                 <AnimatePresence>
@@ -198,26 +142,23 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
             key={p.id}
             drag={!p.isSnapped && !isCompleted}
             dragMomentum={false}
-            onDragEnd={(_, info) => handleDragEnd(p.id, info)}
+            onDragEnd={(event, info) => handlePieceDrop(p.id, p.currentX + info.offset.x, p.currentY + info.offset.y)}
             initial={{ x: p.currentX, y: p.currentY, scale: 0.5, opacity: 0 }}
             animate={{ 
-                x: p.isSnapped ? p.targetX : p.currentX,
-                y: p.isSnapped ? p.targetY : p.currentY,
+                x: p.currentX,
+                y: p.currentY,
                 scale: 1,
                 opacity: 1,
                 zIndex: p.isSnapped ? 1 : 50,
             }}
             whileDrag={{ scale: 1.1, zIndex: 100, cursor: 'grabbing' }}
-            transition={{ type: "spring", stiffness: 300, damping: 25, delay: Math.random() * 0.5 }}
-            className="absolute"
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="absolute rounded-md overflow-hidden shadow-lg"
             style={{
               width: dimensions.pieceW,
               height: dimensions.pieceH,
               cursor: p.isSnapped ? 'default' : 'grab',
-              maskImage: `url("${pieceMasks[p.id]}")`,
-              WebkitMaskImage: `url("${pieceMasks[p.id]}")`,
-              maskSize: '100% 100%',
-              WebkitMaskSize: '100% 100%',
+              top: p.isSnapped ? dimensions.height + 50 : 0, // Move to board area when snapped
             }}
           >
             <div 
@@ -225,10 +166,10 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
                 style={{
                     backgroundImage: `url('${imageSrc}')`,
                     backgroundSize: `${dimensions.width}px ${dimensions.height}px`,
-                    backgroundPosition: `-${(p.id % GRID_SIZE) * dimensions.pieceW}px -${Math.floor(p.id / GRID_SIZE) * dimensions.pieceH}px`,
+                    backgroundPosition: `-${p.c * dimensions.pieceW}px -${p.r * dimensions.pieceH}px`
                 }}
             />
-             {p.isSnapped && (
+            {p.isSnapped && (
                 <motion.div 
                     initial={{ opacity: 1 }} 
                     animate={{ opacity: 0 }} 
