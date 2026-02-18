@@ -2173,8 +2173,8 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
 
 export default function CreatePageWizard() {
   return (
-    <React.Suspense>
-      <WizardInternal />
-    </React.Suspense>
+    <WizardInternal />
   )
 }
+
+    
