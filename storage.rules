@@ -5,9 +5,10 @@ service firebase.storage {
     
     function isAuthenticated() { return request.auth != null; }
     
-    // Rascunhos temporários: apenas o usuário logado pode mexer na sua própria pasta.
+    // Rascunhos temporários: usuários podem criar arquivos, mas só ler e apagar os seus.
     match /temp/{userId}/{allPaths=**} {
-      allow read, write, delete: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if request.auth != null;
+      allow read, delete: if isAuthenticated() && request.auth.uid == userId;
     }
     
     // Pasta final de produção: Subpastas explícitas para leitura pública.
@@ -25,6 +26,14 @@ service firebase.storage {
       allow write: if false;
     }
      match /lovepages/{pageId}/audio/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /lovepages/{pageId}/memory-game/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /lovepages/{pageId}/video/{fileName} {
       allow read: if true;
       allow write: if false;
     }

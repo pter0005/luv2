@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getAdminFirestore } from '@/lib/firebase/admin/config';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -164,6 +164,7 @@ export async function capturePaypalOrder(orderId: string, intentId: string) {
 // --- FINALIZAR PÁGINA ---
 export async function finalizeLovePage(intentId: string, paymentId: string) {
     const db = getAdminFirestore();
+    const bucket = getAdminStorage();
     const intentRef = db.collection('payment_intents').doc(intentId);
     
     try {
@@ -173,14 +174,74 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
 
         const newPageId = db.collection('lovepages').doc().id;
-        const sanitized = sanitizeForFirebase(data);
         
-        if (sanitized.timelineEvents) {
-            sanitized.timelineEvents = sanitized.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
-        }
-        sanitized.specialDate = ensureTimestamp(sanitized.specialDate);
+        // Helper to move a file from temp to final location
+        const moveFile = async (fileObject: any, targetFolder: string) => {
+            if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) {
+                return fileObject; // Not a temp file, return as is
+            }
+            
+            const oldPath = fileObject.path;
+            const fileName = oldPath.split('/').pop();
+            if (!fileName) return fileObject; // Should not happen
+            
+            const newPath = `lovepages/${newPageId}/${targetFolder}/${fileName}`;
 
-        const { payment, ...finalData } = sanitized;
+            try {
+                // Move file in storage
+                await bucket.file(oldPath).move(newPath);
+                
+                const newFileRef = bucket.file(newPath);
+                // Make new file public
+                await newFileRef.makePublic();
+
+                // Return updated object with new public URL and path
+                return {
+                    url: newFileRef.publicUrl(),
+                    path: newPath,
+                };
+            } catch (error) {
+                console.error(`Failed to move file from ${oldPath} to ${newPath}:`, error);
+                // If move fails, return original object so page doesn't break
+                return fileObject;
+            }
+        };
+
+        const sanitizedData = sanitizeForFirebase(data);
+
+        // Process all file objects (gallery, timeline, puzzle, etc.)
+        if (sanitizedData.galleryImages?.length) {
+            sanitizedData.galleryImages = await Promise.all(sanitizedData.galleryImages.map((img: any) => moveFile(img, 'gallery')));
+        }
+        if (sanitizedData.timelineEvents?.length) {
+            sanitizedData.timelineEvents = await Promise.all(
+                sanitizedData.timelineEvents.map(async (event: any) => {
+                    if (event.image) {
+                        event.image = await moveFile(event.image, 'timeline');
+                    }
+                    return { ...event, date: ensureTimestamp(event.date) };
+                })
+            );
+        } else if (sanitizedData.timelineEvents) {
+             sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
+        }
+        
+        if (sanitizedData.puzzleImage) {
+            sanitizedData.puzzleImage = await moveFile(sanitizedData.puzzleImage, 'puzzle');
+        }
+        if (sanitizedData.audioRecording) {
+            sanitizedData.audioRecording = await moveFile(sanitizedData.audioRecording, 'audio');
+        }
+        if (sanitizedData.backgroundVideo) {
+             sanitizedData.backgroundVideo = await moveFile(sanitizedData.backgroundVideo, 'video');
+        }
+        if (sanitizedData.memoryGameImages?.length) {
+           sanitizedData.memoryGameImages = await Promise.all(sanitizedData.memoryGameImages.map((img: any) => moveFile(img, 'memory-game')));
+        }
+
+        sanitizedData.specialDate = ensureTimestamp(sanitizedData.specialDate);
+
+        const { payment, ...finalData } = sanitizedData;
         finalData.id = newPageId;
         finalData.createdAt = Timestamp.now();
         finalData.paymentId = paymentId;
@@ -197,6 +258,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string) {
         await intentRef.update({ status: 'completed', lovePageId: newPageId });
         return { success: true, pageId: newPageId };
     } catch (error: any) {
+        console.error("[FINALIZE_PAGE_ERROR]", error);
         return { error: error.message };
     }
 }
@@ -219,4 +281,30 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
     } catch (error: any) {
         return { status: 'error', error: error.message };
     }
+}
+
+export async function adminFinalizePage(intentId: string, userId: string) {
+    try {
+        const result = await finalizeLovePage(intentId, `admin_finalize_${userId}_${Date.now()}`);
+        return result;
+    } catch (error: any) {
+        return { error: error.message, details: error };
+    }
+}
+
+export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string) {
+    // This function is a placeholder as Stripe is not the primary payment provider.
+    // In a real scenario, you would use the Stripe Node.js library here.
+    const priceId = plan === 'avancado' ? 'price_avancado_stripe' : 'price_basico_stripe';
+    console.log(`Creating Stripe session for intent ${intentId} with price ${priceId}`);
+
+    // Placeholder URL, in a real implementation this would come from the Stripe API
+    const successUrl = `${domain}/criando-pagina?intentId=${intentId}`;
+    const cancelUrl = `${domain}/pagamento/cancelado`;
+    
+    // Simulate a successful session creation
+    // return { url: `${successUrl}` };
+    
+    // Simulate an error
+     return { error: 'Stripe integration is not fully configured on the backend.' };
 }
