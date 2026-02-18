@@ -286,9 +286,12 @@ const translations = {
     'publicpage.games.title': 'Vamos Jogar?',
     'publicpage.games.selectTitle': 'Escolha um Jogo',
     'publicpage.games.memory.title': 'Jogo da Memória',
-    'publicpage.games.memory.description': 'Encontre os pares das suas fotos especiais.',
+    'publicpage.games.memory.description': 'Encontre os pares de suas fotos especiais.',
     'publicpage.games.comingSoon': 'Em Breve',
 
+    // Puzzle
+    'puzzle.loading': 'Carregando memórias...',
+    'puzzle.perfect': 'Perfeito!',
 
     // Privacy & Terms
     'privacy.back': 'Voltar para o início',
@@ -755,6 +758,10 @@ const translations = {
     'publicpage.games.memory.description': 'Find the pairs of your special photos.',
     'publicpage.games.comingSoon': 'Coming Soon',
 
+    // Puzzle
+    'puzzle.loading': 'Loading memories...',
+    'puzzle.perfect': 'Perfect!',
+
     'privacy.back': 'Back to home',
     'terms.title': 'Terms of Use',
     'terms.description': 'By using our services, you agree to these rules.',
@@ -1014,6 +1021,10 @@ const translations = {
     'publicpage.games.memory.title': 'Juego de Memoria',
     'publicpage.games.memory.description': 'Encuentra los pares de tus fotos especiales.',
     'publicpage.games.comingSoon': 'Próximamente',
+
+    // Puzzle
+    'puzzle.loading': 'Cargando recuerdos...',
+    'puzzle.perfect': '¡Perfecto!',
 
     // Wizard
     'wizard.payment.admin.cta': 'Finalizar como Admin (PRUEBA)',

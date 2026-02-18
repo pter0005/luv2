@@ -1,9 +1,56 @@
-"use client";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Loader2, Sparkles } from "lucide-react";
+'use client';
 
-const GRID_SIZE = 3; // 3x3 = 9 peças
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Sparkles } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
+
+const GRID_SIZE = 3;
+
+// Each path defines a piece shape within a 120x120 viewbox (100x100 piece + 10 margin for tabs)
+// T=Top, R=Right, B=Bottom, L=Left. 0=flat, 1=tab, -1=indent.
+const pieceShapes = [
+  [0, 1, 1, 0], [0, 1, 1, -1], [0, 0, 1, -1],
+  [-1, 1, 1, 0], [-1, 1, 1, -1], [-1, 0, 1, -1],
+  [-1, 1, 0, 0], [-1, 1, 0, -1], [-1, 0, 0, -1],
+];
+
+const generatePath = (shape: number[]) => {
+  const [T, R, B, L] = shape;
+  let d = 'M 10 10 '; // Start with margin
+  
+  const tab = (dir: 'h' | 'v') => dir === 'h' ? 'c 5 -15 25 -15 30 0 ' : 'c 15 5 15 25 0 30 ';
+  const indent = (dir: 'h' | 'v') => dir === 'h' ? 'c 5 15 25 15 30 0 ' : 'c -15 5 -15 25 0 30 ';
+
+  // Top edge
+  d += 'h 30 ';
+  if (T === 1) d += tab('h'); else if (T === -1) d += indent('h'); else d += 'h 40 ';
+  d += 'h 30 ';
+  
+  // Right edge
+  d += 'v 30 ';
+  if (R === 1) d += tab('v'); else if (R === -1) d += indent('v'); else d += 'v 40 ';
+  d += 'v 30 ';
+  
+  // Bottom edge
+  d += 'h -30 ';
+  if (B === 1) d += 'c -5 15 -25 15 -30 0 '; else if (B === -1) d += 'c -5 -15 -25 -15 -30 0 '; else d += 'h -40 ';
+  d += 'h -30 ';
+
+  // Left edge
+  d += 'v -30 ';
+  if (L === 1) d += 'c -15 -5 -15 -25 0 -30 '; else if (L === -1) d += 'c 15 -5 15 -25 0 -30 '; else d += 'v -40 ';
+  d += 'v -30 ';
+
+  d += 'z';
+  return d;
+}
+
+const pieceMasks = pieceShapes.map(shape => 
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><path d="${generatePath(shape)}" fill="black" /></svg>`
+  )}`
+);
 
 interface PuzzleProps {
   imageSrc: string;
@@ -11,13 +58,13 @@ interface PuzzleProps {
 }
 
 export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
+  const { t } = useTranslation();
   const [pieces, setPieces] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 300, height: 400, pieceW: 100, pieceH: 133 });
+  const [dimensions, setDimensions] = useState({ width: 300, height: 300, pieceW: 100, pieceH: 100 });
 
-  // 1. Carregar imagem e calcular dimensões reais baseadas no container
   useEffect(() => {
     if (!imageSrc || !containerRef.current) return;
     
@@ -28,7 +75,6 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     
     img.onload = () => {
       const containerW = containerRef.current?.offsetWidth || 300;
-      // Mantém a proporção da imagem original, mas limita à largura do container
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       
       const boardWidth = containerW;
@@ -39,25 +85,21 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
 
       setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
 
-      // Gerar peças
       const newPieces = [];
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
           const id = row * GRID_SIZE + col;
-          
-          // Posição CORRETA (onde encaixa)
           const targetX = col * pW;
           const targetY = row * pH;
 
-          // Posição ALEATÓRIA (espalhada)
-          // Espalha num raio em volta do tabuleiro
-          const scatterX = (Math.random() * boardWidth * 1.2) - (boardWidth * 0.1);
-          const scatterY = (Math.random() * boardHeight * 1.2) - (boardHeight * 0.1);
+          const scatterRadius = boardWidth * 0.7;
+          const angle = Math.random() * 2 * Math.PI;
+          const randomDist = Math.random() * scatterRadius;
+          const scatterX = (boardWidth / 2) + Math.cos(angle) * randomDist - pW/2;
+          const scatterY = (boardHeight / 2) + Math.sin(angle) * randomDist - pH/2;
 
           newPieces.push({
             id,
-            r: row,
-            c: col,
             targetX,
             targetY,
             currentX: scatterX,
@@ -73,20 +115,18 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     img.src = imageSrc;
   }, [imageSrc]);
 
-  // 2. Lógica de Arrastar e Encaixar
   const handleDragEnd = (pieceId: number, info: any) => {
     const pieceIndex = pieces.findIndex((p) => p.id === pieceId);
     if (pieceIndex === -1) return;
 
     const piece = pieces[pieceIndex];
-    // Pega a posição final do arraste relativo ao elemento pai
     const draggedX = piece.currentX + info.offset.x;
     const draggedY = piece.currentY + info.offset.y;
 
-    // Distância para o encaixe (Snap)
     const dist = Math.hypot(draggedX - piece.targetX, draggedY - piece.targetY);
 
-    if (dist < 40) { // Se estiver a menos de 40px, puxa pro lugar
+    const snapThreshold = dimensions.pieceW * 0.4;
+    if (dist < snapThreshold) {
       const newPieces = [...pieces];
       newPieces[pieceIndex] = {
         ...piece,
@@ -96,45 +136,44 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
       };
       setPieces(newPieces);
       checkWin(newPieces);
+    } else {
+        // If not snapped, update current position to where it was dropped
+        const newPieces = [...pieces];
+        newPieces[pieceIndex] = { ...piece, currentX: draggedX, currentY: draggedY };
+        setPieces(newPieces);
     }
   };
 
-  const checkWin = (currentPieces: any[]) => {
+  const checkWin = useCallback((currentPieces: any[]) => {
     if (currentPieces.every((p) => p.isSnapped)) {
       setIsCompleted(true);
-      if (onReveal) setTimeout(onReveal, 1500); // Espera animação de vitória
+      if (onReveal) setTimeout(onReveal, 1500); 
     }
-  };
+  }, [onReveal]);
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-4">
-      
-      {/* Container Principal */}
       <div 
         ref={containerRef}
         className="relative"
         style={{ 
             width: '100%', 
-            maxWidth: '350px', // Limite para telas grandes
-            height: isLoaded ? dimensions.height + 100 : '300px' // Espaço extra para peças soltas
+            maxWidth: '400px',
+            height: isLoaded ? dimensions.height + 200 : '400px'
         }}
       >
-        
-        {/* Loading State */}
         {!isLoaded && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-pink-500">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-primary">
             <Loader2 className="w-10 h-10 animate-spin mb-2" />
-            <span className="text-sm font-medium">Carregando memórias...</span>
+            <span className="text-sm font-medium">{t('puzzle.loading')}</span>
           </div>
         )}
 
-        {/* Área do Tabuleiro (Guia visual) */}
         {isLoaded && (
             <div 
-                className="absolute left-0 top-0 border-2 border-dashed border-white/20 rounded-lg bg-black/20"
+                className="absolute left-0 top-0 rounded-lg bg-black/20"
                 style={{ width: dimensions.width, height: dimensions.height }}
             >
-                {/* Mensagem de Vitória */}
                 <AnimatePresence>
                     {isCompleted && (
                         <motion.div 
@@ -143,13 +182,10 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
                             className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-lg"
                         >
                             <div className="text-center">
-                                <motion.div 
-                                    animate={{ rotate: [0, 10, -10, 0] }} 
-                                    transition={{ duration: 0.5 }}
-                                >
+                                <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }}>
                                     <Sparkles className="w-16 h-16 text-yellow-400 mx-auto mb-2" />
                                 </motion.div>
-                                <h3 className="text-white font-bold text-xl">Perfeito!</h3>
+                                <h3 className="text-white font-bold text-xl">{t('puzzle.perfect')}</h3>
                             </div>
                         </motion.div>
                     )}
@@ -157,52 +193,51 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
             </div>
         )}
 
-        {/* As Peças */}
         {isLoaded && pieces.map((p) => (
           <motion.div
             key={p.id}
             drag={!p.isSnapped && !isCompleted}
             dragMomentum={false}
             onDragEnd={(_, info) => handleDragEnd(p.id, info)}
-            initial={{ x: p.currentX, y: p.currentY, scale: 0 }}
+            initial={{ x: p.currentX, y: p.currentY, scale: 0.5, opacity: 0 }}
             animate={{ 
-                x: p.isSnapped ? p.targetX : undefined, // Framer motion cuida do resto se não estiver snapped
-                y: p.isSnapped ? p.targetY : undefined,
+                x: p.isSnapped ? p.targetX : p.currentX,
+                y: p.isSnapped ? p.targetY : p.currentY,
                 scale: 1,
-                zIndex: p.isSnapped ? 1 : 50, // Peça solta fica por cima
-                filter: p.isSnapped ? 'brightness(1)' : 'brightness(1.1) drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+                opacity: 1,
+                zIndex: p.isSnapped ? 1 : 50,
             }}
             whileDrag={{ scale: 1.1, zIndex: 100, cursor: 'grabbing' }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute rounded-sm overflow-hidden"
+            transition={{ type: "spring", stiffness: 300, damping: 25, delay: Math.random() * 0.5 }}
+            className="absolute"
             style={{
               width: dimensions.pieceW,
               height: dimensions.pieceH,
               cursor: p.isSnapped ? 'default' : 'grab',
+              maskImage: `url("${pieceMasks[p.id]}")`,
+              WebkitMaskImage: `url("${pieceMasks[p.id]}")`,
+              maskSize: '100% 100%',
+              WebkitMaskSize: '100% 100%',
             }}
           >
-            {/* Imagem Recortada via Background */}
             <div 
                 className="w-full h-full pointer-events-none"
                 style={{
                     backgroundImage: `url('${imageSrc}')`,
                     backgroundSize: `${dimensions.width}px ${dimensions.height}px`,
-                    backgroundPosition: `-${p.c * dimensions.pieceW}px -${p.r * dimensions.pieceH}px`
+                    backgroundPosition: `-${(p.id % GRID_SIZE) * dimensions.pieceW}px -${Math.floor(p.id / GRID_SIZE) * dimensions.pieceH}px`,
                 }}
             />
-            
-            {/* Brilho ao encaixar */}
-            {p.isSnapped && (
+             {p.isSnapped && (
                 <motion.div 
                     initial={{ opacity: 1 }} 
                     animate={{ opacity: 0 }} 
                     transition={{ duration: 0.8 }}
-                    className="absolute inset-0 border-2 border-yellow-400 shadow-[0_0_15px_rgba(255,215,0,0.6)]"
+                    className="absolute inset-0 ring-2 ring-yellow-400"
                 />
             )}
           </motion.div>
         ))}
-
       </div>
     </div>
   );
