@@ -1409,16 +1409,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
-    const [qrPrice, setQrPrice] = useState(() => {
-        const initialDesign = getValues('qrCodeDesign');
-        // This is a simplified way to find the initial price.
-        // A more robust way would be to have a shared config.
-        if (initialDesign && initialDesign !== 'classic') {
-            return 3.90;
-        }
-        return 0;
-    });
-
 
     // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
     useEffect(() => {
@@ -1461,20 +1451,21 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     }, [user, intentId, getValues, setValue]);
 
     useEffect(() => {
+        // This check ensures we're on the client side
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
             const isProdBr = hostname.endsWith('mycupid.com.br');
             const isProdIntl = hostname.endsWith('mycupid.net');
-            // Treat as Brazil if it's the BR domain or if it's a dev environment
-            setIsBrazilDomain(isProdBr || (!isProdBr && !isProdIntl));
+            // Treat as Brazil if it's the BR domain or any development environment (not .net)
+            setIsBrazilDomain(isProdBr || !isProdIntl);
         }
     }, []);
 
     const basePriceUSD = plan === 'basico' ? 14.90 : 19.90;
     const basePriceBRL = plan === 'basico' ? 19.90 : 24.90;
 
-    const totalBRL = basePriceBRL + qrPrice;
-    const totalUSD = basePriceUSD + qrPrice;
+    const totalBRL = basePriceBRL;
+    const totalUSD = basePriceUSD;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
@@ -1734,19 +1725,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     return (
         <div className="space-y-6 text-center">
             <div className="mb-8">
-              <FormField
-                  control={control}
-                  name="qrCodeDesign"
-                  render={({ field }) => (
-                      <QrCodeSelector
-                          value={field.value}
-                          onChange={field.onChange}
-                          onPriceChange={setQrPrice}
-                      />
-                  )}
-              />
-            </div>
-            <div className="mb-8">
                 <h3 className="text-2xl font-bold font-headline mb-2">
                     {t('wizard.payment.title')}
                 </h3>
@@ -1758,31 +1736,25 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
                 <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
                 <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
-                <span className="text-xs text-white/50">{t('wizard.payment.payment')}</span>
+                <p className="text-xs text-white/50">{t('wizard.payment.payment')}</p>
             </div>
 
             {!pixData ? (
-                <button
+                <Button
                     onClick={handleOneClickPix}
                     disabled={isProcessing}
-                    className="w-full transition-all duration-200 ease-in-out hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-lg overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+                    size="lg"
+                    className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]"
                 >
                     {isProcessing ? (
-                         <div className="flex items-center justify-center h-14 bg-muted text-muted-foreground">
+                        <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             <span>{t('wizard.payment.pix.generating')}</span>
-                        </div>
+                        </>
                     ) : (
-                        <Image
-                            src="https://i.imgur.com/cTmvXMu.png"
-                            alt={t('wizard.payment.pix.pay_button')}
-                            width={344}
-                            height={56}
-                            className="w-full h-auto"
-                            priority
-                        />
+                        <span>{t('wizard.payment.pix.pay_button')}</span>
                     )}
-                </button>
+                </Button>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
                    <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
@@ -1869,7 +1841,7 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
             <h2 className="text-2xl font-bold font-headline">{t('wizard.success.title')}</h2>
             <p className="text-muted-foreground">{t('wizard.success.description')}</p>
             <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
-                <Input type="text" value={pageUrl} readOnly className="flex-1 bg-transparent border-0 ring-0 focus-visible:ring-0"/>
+                <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0"/>
                 <Button onClick={handleCopy}>
                     {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
                     {copied ? t('wizard.success.copied') : t('wizard.success.copy')}
