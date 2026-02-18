@@ -1757,7 +1757,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
                 <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
                 <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
-                <span className="text-xs text-white/50">{t('home.plans.payment')} • {t('wizard.payment.immediate_access')}</span>
+                <span className="text-xs text-white/50">{t('wizard.payment.payment')}</span>
             </div>
 
             {!pixData ? (
@@ -2208,4 +2208,5 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
 
