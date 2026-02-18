@@ -1770,8 +1770,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </>
                     ) : (
                         <div className="flex items-center justify-center gap-2">
-                           <Image src="https://i.imgur.com/rO0hA3A.png" alt="PIX" width={24} height={24} />
-                           <span>{t('wizard.payment.pix.pay_button')}</span>
+                           <Image src="https://i.imgur.com/d1IIon6.png" alt="Pagar com PIX via Mercado Pago" width={140} height={32} />
                         </div>
                     )}
                 </Button>
@@ -1828,15 +1827,13 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     {typeof error.details === 'object' && error.details?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{error.details.log}</AlertDescription>}
                 </Alert>
             )}
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-6 pt-6 border-t border-border/20">
-                <Lock className="w-4 h-4" />
-                <span>{t('wizard.payment.secure_mp')}</span>
+            <div className="flex items-center justify-center mt-6 pt-6 border-t border-border/20">
                 <Image 
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Mercado-pago-logo.svg/2560px-Mercado-pago-logo.svg.png" 
-                    alt="Logo Mercado Pago" 
-                    width={80} 
-                    height={20} 
-                    className="opacity-80"
+                    src="https://i.imgur.com/QeYjEEv.png"
+                    alt="Pagamento Seguro via Mercado Pago"
+                    width={250}
+                    height={28}
+                    className="opacity-90"
                 />
             </div>
         </div>
@@ -2209,3 +2206,4 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
