@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -153,7 +152,7 @@ const PlanLockWrapper = React.memo(({ children, requiredPlan }: { children: Reac
     const { watch } = useFormContext<PageData>();
     const { t } = useTranslation();
     const plan = watch('plan');
-    const isLocked = requiredPlan && plan !== requiredPlan;
+    const isLocked = requiredPlan && plan !== plan;
 
     if (isLocked) {
         return (
@@ -1832,8 +1831,50 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     );
 };
 
-// Wizard Internal Logic
-const WizardInternal = () => {
+const SuccessStep = ({ pageId }: { pageId: string }) => {
+    const { t } = useTranslation();
+    const pageUrl = `${window.location.origin}/p/${pageId}`;
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(pageUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+    
+    return (
+        <div className="flex flex-col items-center text-center gap-6">
+            <CheckCircle className="w-16 h-16 text-green-500"/>
+            <h2 className="text-2xl font-bold font-headline">{t('wizard.success.title')}</h2>
+            <p className="text-muted-foreground">{t('wizard.success.description')}</p>
+            <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
+                <Input type="text" value={pageUrl} readOnly className="flex-1 bg-transparent border-0 ring-0 focus-visible:ring-0"/>
+                <Button onClick={handleCopy}>
+                    {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
+                    {copied ? t('wizard.success.copied') : t('wizard.success.copy')}
+                </Button>
+            </div>
+            <div className="p-4 bg-white rounded-lg border mt-4">
+                <Image 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
+                    alt="QR Code da Página"
+                    width={200}
+                    height={200}
+                />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">{t('wizard.success.qr.description')}</p>
+            <Button asChild className="mt-4">
+                <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+                    <View className="mr-2" />
+                    {t('wizard.success.cta')}
+                </a>
+            </Button>
+        </div>
+    );
+};
+
+export default function CreatePageWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [showTimelinePreview, setShowTimelinePreview] = useState(false);
@@ -2156,54 +2197,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
-const SuccessStep = ({ pageId }: { pageId: string }) => {
-    const { t } = useTranslation();
-    const pageUrl = `${window.location.origin}/p/${pageId}`;
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(pageUrl).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
-    };
-    
-    return (
-        <div className="flex flex-col items-center text-center gap-6">
-            <CheckCircle className="w-16 h-16 text-green-500"/>
-            <h2 className="text-2xl font-bold font-headline">{t('wizard.success.title')}</h2>
-            <p className="text-muted-foreground">{t('wizard.success.description')}</p>
-            <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
-                <Input type="text" value={pageUrl} readOnly className="flex-1 bg-transparent border-0 ring-0 focus-visible:ring-0"/>
-                <Button onClick={handleCopy}>
-                    {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
-                    {copied ? t('wizard.success.copied') : t('wizard.success.copy')}
-                </Button>
-            </div>
-            <div className="p-4 bg-white rounded-lg border mt-4">
-                <Image 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
-                    alt="QR Code da Página"
-                    width={200}
-                    height={200}
-                />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{t('wizard.success.qr.description')}</p>
-            <Button asChild className="mt-4">
-                <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-                    <View className="mr-2" />
-                    {t('wizard.success.cta')}
-                </a>
-            </Button>
-        </div>
-    );
-};
-
-export default function CreatePageWizard() {
-  return (
-    <WizardInternal />
-  )
-}
-
-    

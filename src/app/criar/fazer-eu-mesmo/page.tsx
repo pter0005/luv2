@@ -1,12 +1,11 @@
 "use client";
 
-import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import CreatePageWizard from './CreatePageWizard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/i18n';
 
-const CreatePageWizard = dynamic(() => import('./CreatePageWizard'), {
-  ssr: false,
-  loading: () => (
+const WizardSkeleton = () => (
     <div className="flex flex-col md:grid md:grid-cols-2 w-full min-h-screen">
        <div className="w-full md:sticky md:top-0 md:h-screen p-4 order-1 md:flex items-center justify-center hidden">
             <Skeleton className="w-full h-full rounded-2xl" />
@@ -27,8 +26,7 @@ const CreatePageWizard = dynamic(() => import('./CreatePageWizard'), {
             </div>
        </div>
     </div>
-  ),
-});
+);
 
 
 export default function DoItYourselfPage() {
@@ -47,7 +45,9 @@ export default function DoItYourselfPage() {
           </p>
       </div>
       <div className="flex-grow">
-        <CreatePageWizard />
+        <Suspense fallback={<WizardSkeleton />}>
+          <CreatePageWizard />
+        </Suspense>
       </div>
     </div>
   );
