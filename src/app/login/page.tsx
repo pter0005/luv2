@@ -48,9 +48,11 @@ function LoginContent() {
   });
 
   const handleAuthSuccess = async (authedUser: User) => {
-    // 1. Chama a server action para criar o cookie de sessão.
-    await createSession(authedUser.uid);
-    // 2. O cliente redireciona após a sessão ser criada.
+    // 1. Get the ID token from the authenticated user.
+    const idToken = await authedUser.getIdToken();
+    // 2. Call the server action to create the session cookie from the token.
+    await createSession(idToken);
+    // 3. The client redirects after the session is created.
     router.push(redirectUrl);
   };
 

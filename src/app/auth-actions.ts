@@ -1,26 +1,40 @@
 'use server';
 
+import { getAdminApp } from '@/lib/firebase/admin/config';
+import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
-export async function createSession(uid: string) {
-  cookies().set('session_user', uid, {
-    httpOnly: true,
-    secure: true, // Forçado para true para funcionar em ambientes de dev HTTPS como o Firebase Studio
-    maxAge: 60 * 60 * 24 * 5, // 5 dias
-    path: '/',
-    sameSite: 'lax',
-  });
+const SESSION_COOKIE_NAME = '__session';
 
-  // O redirecionamento agora é feito no lado do cliente.
+export async function createSession(idToken: string) {
+  try {
+    const adminAuth = getAuth(getAdminApp());
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    
+    // Set the secure, server-side session cookie.
+    cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: expiresIn / 1000, // maxAge is in seconds
+      path: '/',
+      sameSite: 'lax',
+    });
+
+  } catch (error) {
+    console.error('Error creating session cookie:', error);
+    // This error will be propagated to the client, which should handle it.
+    throw new Error('Failed to create session.');
+  }
 }
 
 export async function removeSession() {
-  cookies().delete('session_user');
-  // Apenas remove o cookie. O cliente cuidará do redirecionamento.
+  // Delete the session cookie.
+  cookies().delete(SESSION_COOKIE_NAME);
 }
 
 export async function getSession() {
-  const session = cookies().get('session_user')?.value;
+  // Helper to get the session cookie if needed server-side.
+  const session = cookies().get(SESSION_COOKIE_NAME)?.value;
   return session || null;
 }

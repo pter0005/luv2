@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
   }
 
   // --- LÓGICA DE PROTEÇÃO DE ROTAS (JÁ EXISTENTE) ---
-  const userSession = request.cookies.get('session_user')?.value;
+  const userSession = request.cookies.get('__session')?.value;
   const adminSession = request.cookies.get('session_admin')?.value;
 
   // 1. Se tentar acessar rota protegida de usuário sem cookie -> Manda pro Login
