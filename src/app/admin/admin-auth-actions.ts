@@ -16,7 +16,7 @@ export async function createAdminSession(prevState: { error: string }, data: For
   if (username === ADMIN_USER && password === ADMIN_PASS) {
     cookies().set('session_admin', 'true', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Forçar cookie seguro para ambientes de dev HTTPS
       maxAge: 60 * 60 * 8, // 8 hours
       path: '/',
       sameSite: 'lax',

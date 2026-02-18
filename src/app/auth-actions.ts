@@ -3,6 +3,7 @@
 import { getAdminApp } from '@/lib/firebase/admin/config';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 const SESSION_COOKIE_NAME = '__session';
 
@@ -15,7 +16,7 @@ export async function createSession(idToken: string) {
     // Set the secure, server-side session cookie.
     cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Forçar cookie seguro para ambientes de dev HTTPS
       maxAge: expiresIn / 1000, // maxAge is in seconds
       path: '/',
       sameSite: 'lax',
