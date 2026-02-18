@@ -18,7 +18,6 @@ export default function MysticFlowers() {
           inset: 0;
           width: 100%;
           height: 100%;
-          background-color: #000;
           overflow: hidden;
           display: flex;
           align-items: flex-end;
@@ -30,23 +29,18 @@ export default function MysticFlowers() {
 
         .fw .night {
           position: absolute;
-          left: 50%; top: 0;
-          transform: translateX(-50%);
-          width: 100%; height: 100%;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           filter: blur(0.1vmin);
           background-image:
             radial-gradient(ellipse at top, transparent 0%, #000),
-            radial-gradient(ellipse at bottom, #000, rgba(180,100,255,0.2)),
-            repeating-linear-gradient(220deg, black 0px, black 19px, transparent 19px, transparent 22px),
-            repeating-linear-gradient(189deg, black 0px, black 19px, transparent 19px, transparent 22px),
-            repeating-linear-gradient(148deg, black 0px, black 19px, transparent 19px, transparent 22px),
-            linear-gradient(90deg, #a000ff, #f0f0f0);
+            radial-gradient(ellipse at bottom, #000, rgba(180,100,255,0.2));
         }
 
         .fw .flowers {
           position: relative;
-          transform: scale(0.55);
-          transform-origin: bottom center;
+          transform: scale(0.7) translateY(40%);
         }
 
         .fw .flower {
@@ -122,8 +116,6 @@ export default function MysticFlowers() {
           background-image:
             repeating-linear-gradient(135deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 12px),
             repeating-linear-gradient(45deg,  rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 12px),
-            repeating-linear-gradient(67.5deg,rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 12px),
-            repeating-linear-gradient(157.5deg,rgba(0,0,0,0.03) 0px,rgba(0,0,0,0.03) 1px,transparent 1px,transparent 12px),
             linear-gradient(90deg, #ffeb12, #ffce00);
         }
 
@@ -400,12 +392,8 @@ export default function MysticFlowers() {
         @keyframes fw-la2 { 0%,100%{transform:rotateY(-180deg) rotate(5deg)}50%{transform:rotateY(-180deg) rotate(0deg) scale(1.1)} }
         @keyframes fw-la3 { 0%,100%{transform:rotate(-10deg) rotateY(-180deg)}50%{transform:rotate(-20deg) rotateY(-180deg)} }
       `}</style>
-
       <div className="night" />
-
       <div className="flowers">
-
-        {/* Flower 1 */}
         <div className="flower flower--1">
           <div className="flower__leafs flower__leafs--1">
             {[1,2,3,4].map(n=><div key={n} className={`flower__leaf flower__leaf--${n}`}/>)}
@@ -416,8 +404,6 @@ export default function MysticFlowers() {
             {[1,2,3,4,5,6].map(n=><div key={n} className={`flower__line__leaf flower__line__leaf--${n}`}/>)}
           </div>
         </div>
-
-        {/* Flower 2 */}
         <div className="flower flower--2">
           <div className="flower__leafs flower__leafs--2">
             {[1,2,3,4].map(n=><div key={n} className={`flower__leaf flower__leaf--${n}`}/>)}
@@ -428,8 +414,6 @@ export default function MysticFlowers() {
             {[1,2,3,4].map(n=><div key={n} className={`flower__line__leaf flower__line__leaf--${n}`}/>)}
           </div>
         </div>
-
-        {/* Flower 3 */}
         <div className="flower flower--3">
           <div className="flower__leafs flower__leafs--3">
             {[1,2,3,4].map(n=><div key={n} className={`flower__leaf flower__leaf--${n}`}/>)}
@@ -440,16 +424,12 @@ export default function MysticFlowers() {
             {[1,2,3,4].map(n=><div key={n} className={`flower__line__leaf flower__line__leaf--${n}`}/>)}
           </div>
         </div>
-
-        {/* Long stem */}
         <div className="grow-ans" style={{'--d':'1.2s'}}>
           <div className="flower__g-long">
             <div className="flower__g-long__top"/>
             <div className="flower__g-long__bottom"/>
           </div>
         </div>
-
-        {/* Grass 1 */}
         <div className="growing-grass">
           <div className="flower__grass flower__grass--1">
             <div className="flower__grass--top"/>
@@ -458,8 +438,6 @@ export default function MysticFlowers() {
             <div className="flower__grass__overlay"/>
           </div>
         </div>
-
-        {/* Grass 2 */}
         <div className="growing-grass">
           <div className="flower__grass flower__grass--2">
             <div className="flower__grass--top"/>
@@ -468,16 +446,12 @@ export default function MysticFlowers() {
             <div className="flower__grass__overlay"/>
           </div>
         </div>
-
-        {/* Right leaves */}
         <div className="grow-ans" style={{'--d':'2.4s'}}>
           <div className="flower__g-right flower__g-right--1"><div className="leaf"/></div>
         </div>
         <div className="grow-ans" style={{'--d':'2.8s'}}>
           <div className="flower__g-right flower__g-right--2"><div className="leaf"/></div>
         </div>
-
-        {/* Front grass */}
         <div className="grow-ans" style={{'--d':'2.8s'}}>
           <div className="flower__g-front">
             {[1,2,3,4,5,6,7,8].map(n=>(
@@ -488,16 +462,12 @@ export default function MysticFlowers() {
             <div className="flower__g-front__line"/>
           </div>
         </div>
-
-        {/* FR leaves */}
         <div className="grow-ans" style={{'--d':'3.2s'}}>
           <div className="flower__g-fr">
             <div className="leaf"/>
             {[1,2,3,4,5,6,7,8].map(n=><div key={n} className={`flower__g-fr__leaf flower__g-fr__leaf--${n}`}/>)}
           </div>
         </div>
-
-        {/* Long grass groups */}
         <div className="long-g long-g--0">
           {[['3s'],['2.2s'],['3.4s'],['3.6s']].map(([d],i)=>(
             <div key={i} className="grow-ans" style={{'--d':d}}><div className={`leaf leaf--${i}`}/></div>
