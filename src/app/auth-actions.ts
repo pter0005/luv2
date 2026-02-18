@@ -1,9 +1,9 @@
+
 'use server';
 
 import { getAdminApp } from '@/lib/firebase/admin/config';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 const SESSION_COOKIE_NAME = '__session';
 
@@ -16,10 +16,10 @@ export async function createSession(idToken: string) {
     // Set the secure, server-side session cookie.
     cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
-      secure: true, // Forçar cookie seguro para ambientes de dev HTTPS
-      maxAge: expiresIn / 1000, // maxAge is in seconds
+      secure: true,
+      maxAge: expiresIn / 1000,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'none', // Allow cross-site cookie usage, necessary for iframed environments
     });
 
   } catch (error) {

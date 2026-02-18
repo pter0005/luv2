@@ -16,10 +16,10 @@ export async function createAdminSession(prevState: { error: string }, data: For
   if (username === ADMIN_USER && password === ADMIN_PASS) {
     cookies().set('session_admin', 'true', {
       httpOnly: true,
-      secure: true, // Forçar cookie seguro para ambientes de dev HTTPS
+      secure: true,
       maxAge: 60 * 60 * 8, // 8 hours
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'none', // Allow cross-site cookie usage
     });
     redirect('/admin');
   }
