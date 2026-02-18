@@ -1774,7 +1774,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </div>
                     ) : (
                         <Image
-                            src="https://i.imgur.com/MQc6ull.png"
+                            src="https://i.imgur.com/cTmvXMu.png"
                             alt={t('wizard.payment.pix.pay_button')}
                             width={344}
                             height={56}
@@ -2195,11 +2195,11 @@ function WizardInternal() {
 }
 
 export default function CreatePageWizard() {
-  return (
-    <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-primary h-12 w-12" /></div>}>
-        <WizardInternal />
-    </Suspense>
-  )
+    return (
+        <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-primary h-12 w-12" /></div>}>
+            <WizardInternal />
+        </Suspense>
+    )
 }
 
 
@@ -2223,3 +2223,5 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
+    

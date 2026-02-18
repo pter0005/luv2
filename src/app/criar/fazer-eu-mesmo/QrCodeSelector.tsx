@@ -22,14 +22,6 @@ const QR_OPTIONS = [
     bgImage: 'https://i.imgur.com/sYf8e4s.png', 
     qrColor: '#991b1b',
     previewPos: { top: '48%', left: '50%', width: '38%' }
-  },
-  {
-    id: 'love',
-    title: 'Coração',
-    price: 3.90,
-    bgImage: 'https://i.imgur.com/b2bA3mB.png', 
-    qrColor: '#ec4899',
-    previewPos: { top: '50%', left: '50%', width: '30%' }
   }
 ];
 
@@ -62,7 +54,7 @@ export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCod
         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">{t('wizard.qr.upsell')}</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {QR_OPTIONS.map((option) => {
           const isSelected = selected === option.id;
           return (
@@ -136,3 +128,5 @@ export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCod
     </div>
   );
 }
+
+    
