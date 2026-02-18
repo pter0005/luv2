@@ -1,33 +1,7 @@
 "use client";
 
-import { Suspense } from 'react';
 import CreatePageWizard from './CreatePageWizard';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/lib/i18n';
-
-const WizardSkeleton = () => (
-    <div className="flex flex-col md:grid md:grid-cols-2 w-full min-h-screen">
-       <div className="w-full md:sticky md:top-0 md:h-screen p-4 order-1 md:flex items-center justify-center hidden">
-            <Skeleton className="w-full h-full rounded-2xl" />
-       </div>
-       <div className="w-full flex flex-col items-center p-4 md:p-8 order-2">
-            <div className="w-full max-w-md space-y-8">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-10 w-3/4" />
-                <Skeleton className="h-6 w-full" />
-                 <div className="flex items-center gap-4 my-8">
-                    <Skeleton className="h-10 w-24" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-6">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                </div>
-            </div>
-       </div>
-    </div>
-);
-
 
 export default function DoItYourselfPage() {
   const { t } = useTranslation();
@@ -45,9 +19,7 @@ export default function DoItYourselfPage() {
           </p>
       </div>
       <div className="flex-grow">
-        <Suspense fallback={<WizardSkeleton />}>
-          <CreatePageWizard />
-        </Suspense>
+        <CreatePageWizard />
       </div>
     </div>
   );
