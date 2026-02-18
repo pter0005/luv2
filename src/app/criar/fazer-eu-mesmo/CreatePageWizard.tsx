@@ -1462,7 +1462,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
-            setIsBrazilDomain(hostname.endsWith('.com.br'));
+            const isDevEnvironment = hostname.includes('localhost') || hostname.endsWith('.web.app') || hostname.endsWith('.app');
+            setIsBrazilDomain(isDevEnvironment || hostname.endsWith('.com.br'));
         }
     }, []);
 
@@ -2208,4 +2209,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
