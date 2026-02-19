@@ -6,9 +6,9 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp } from 'firebase-admin/firestore';
 
 // --- TYPE DEFINITIONS for consistent returns ---
-type IntentSuccess = { intentId: string };
-type IntentError = { error: string; details?: any };
-type CreateIntentResult = IntentSuccess | IntentError;
+type CreateIntentResult = 
+  | { success: true; intentId: string }
+  | { success: false; error: string; details?: any };
 
 type FinalizePageResult = 
   | { success: true; pageId: string }
@@ -20,8 +20,8 @@ type PaymentVerificationResult =
   | { status: string }; // For other statuses like 'pending'
 
 type StripeSessionResult =
-  | { url: string; error?: undefined }
-  | { url?: undefined; error: string; details?: any };
+  | { success: true; url: string }
+  | { success: false; error: string; details?: any };
 
 
 // --- UTILITÁRIOS ---
@@ -55,20 +55,20 @@ function sanitizeForFirebase(obj: any): any {
 export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<CreateIntentResult> {
     const { intentId, ...restOfPageData } = fullPageData;
     if (!restOfPageData.userId) {
-        return { error: 'Usuário não logado.', details: 'User ID was not provided in the page data.' };
+        return { success: false, error: 'Usuário não logado.', details: 'User ID was not provided in the page data.' };
     }
     try {
         const db = getAdminFirestore(); 
         const dataToSave = { ...sanitizeForFirebase(restOfPageData), updatedAt: Timestamp.now(), expireAt: Timestamp.fromMillis(Date.now() + (24 * 60 * 60 * 1000)) };
         if (intentId) {
             await db.collection('payment_intents').doc(intentId).set(dataToSave, { merge: true });
-            return { intentId };
+            return { success: true, intentId };
         } else {
             const intentDoc = await db.collection('payment_intents').add({ ...dataToSave, status: 'pending', createdAt: Timestamp.now() });
-            return { intentId: intentDoc.id };
+            return { success: true, intentId: intentDoc.id };
         }
     } catch (error: any) {
-        return { error: error.message, details: error };
+        return { success: false, error: error.message, details: error };
     }
 }
 
@@ -292,7 +292,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
         if (paymentInfo.status === 'approved') {
             const result = await finalizeLovePage(intentId, paymentId);
-            if (result.error || !result.pageId) {
+            if (!result.success) {
                 return { status: 'error', error: result.error || 'Falha ao finalizar a página após aprovação.' };
             }
             return { status: 'approved', pageId: result.pageId };
@@ -319,5 +319,5 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     const successUrl = `${domain}/criando-pagina?intentId=${intentId}`;
     const cancelUrl = `${domain}/pagamento/cancelado`;
     
-     return { error: 'Stripe integration is not fully configured on the backend.' };
+     return { success: false, error: 'Stripe integration is not fully configured on the backend.' };
 }

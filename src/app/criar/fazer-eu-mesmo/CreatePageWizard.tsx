@@ -1416,10 +1416,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             const forceSave = async () => {
                 const data = getValues();
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
-                if (result.intentId) {
+                if (result.success) {
                     setValue('intentId', result.intentId);
-                } else if ("error" in result) {
-                    console.error("Autosave failed on initial load:", result);
+                } else {
+                    console.error("Autosave failed on initial load:", result.error, result.details);
                     toast({
                         variant: 'destructive',
                         title: "Erro Crítico ao Salvar",
@@ -1438,10 +1438,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             const forceSave = async () => {
                 const data = getValues();
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
-                if (result.intentId) {
+                if (result.success) {
                     setValue('intentId', result.intentId, { shouldDirty: false });
                     console.log("Forced intent creation, ID:", result.intentId);
-                } else if ("error" in result) {
+                } else {
                     const { error, details } = result;
                     console.error("Failed to force create intent:", error, details);
                     setError({ message: error, details });
@@ -1528,9 +1528,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
 
-                if ("error" in saveResult || !saveResult.intentId) {
-                    const error = 'error' in saveResult ? saveResult.error : "Não foi possível salvar o rascunho antes do pagamento.";
-                    const details = 'details' in saveResult ? (saveResult as any).details : undefined;
+                if (!saveResult.success) {
+                    const { error, details } = saveResult;
                     setError({ message: error, details });
                     if (error?.includes("NOT_FOUND")) {
                         setValue('intentId', undefined, { shouldDirty: false });
@@ -1568,24 +1567,19 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
               const fullData = { ...getValues(), userId: user.uid };
               const saveResult = await createOrUpdatePaymentIntent(fullData);
   
-              if ("error" in saveResult) {
-                const { error, details } = saveResult as { error: string, details?: any };
+              if (!saveResult.success) {
+                const { error, details } = saveResult;
                 setError({ message: error || "Could not save draft before payment.", details });
                 return;
               }
     
-              if (!saveResult.intentId) { // Fallback
-                setError({ message: "Could not save draft before payment." });
-                return;
-              }
-  
               setValue('intentId', saveResult.intentId);
               const planValue = getValues('plan') as 'basico' | 'avancado';
               const domain = window.location.origin;
 
               const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
 
-              if (sessionResult.error || !sessionResult.url) {
+              if (!sessionResult.success) {
                   setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
               } else {
                   window.location.href = sessionResult.url;
@@ -1605,7 +1599,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         startTransition(async () => {
             try {
                 const result = await adminFinalizePage(intentId, user.uid);
-                if (result.error || !result.pageId) {
+                if (!result.success) {
                     setError({ message: result.error || "Falha ao finalizar como admin.", details: result.details });
                 } else {
                     handlePaymentSuccess(result.pageId);
@@ -1975,7 +1969,7 @@ function WizardInternal() {
     try {
         const result = await createOrUpdatePaymentIntent(dataToSave);
 
-        if ("error" in result) {
+        if (!result.success) {
             console.error("Autosave failed:", result);
             toast({
                 variant: 'destructive',
