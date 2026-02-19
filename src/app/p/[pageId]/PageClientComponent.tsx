@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -128,10 +127,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     setPuzzleRevealed(true);
     playerRef.current?.play();
     setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); 
-
-    setTimeout(() => {
-        setShowExplosion(false);
-    }, 2000); // Allow remnants to fade
   }, [cookieName]);
 
   useEffect(() => {
@@ -164,18 +159,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
-      {/* CAMADA DE EFEITOS ESPECIAIS */}
-      <AnimatePresence>
-        {showExplosion && (
-            <motion.div 
-                initial={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
-                className="fixed inset-0 z-[999] pointer-events-none"
-            >
-                <PurpleExplosion />
-            </motion.div>
-        )}
-      </AnimatePresence>
+      {showExplosion && <PurpleExplosion onComplete={() => setShowExplosion(false)} />}
       
       {/* CAMADA 0: CABEÇALHO */}
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
