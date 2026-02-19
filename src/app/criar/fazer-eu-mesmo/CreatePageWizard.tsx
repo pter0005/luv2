@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -24,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, type Locale } from "date-fns";
 import { ptBR, enUS, es } from "date-fns/locale";
 import Countdown from "./Countdown";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -2195,5 +2194,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
-    
