@@ -41,7 +41,7 @@ export async function createOrUpdatePaymentIntent(fullPageData: any) {
         const dataToSave = { ...sanitizeForFirebase(restOfPageData), updatedAt: Timestamp.now(), expireAt: Timestamp.fromMillis(Date.now() + (24 * 60 * 60 * 1000)) };
         if (intentId) { await db.collection('payment_intents').doc(intentId).set(dataToSave, { merge: true }); return { intentId };
         } else { const intentDoc = await db.collection('payment_intents').add({ ...dataToSave, status: 'pending', createdAt: Timestamp.now() }); return { intentId: intentDoc.id }; }
-    } catch (error: any) { return { error: error.message }; }
+    } catch (error: any) { return { error: error.message, details: error }; }
 }
 
 // --- GERAR PIX (EXTRAÇÃO MANUAL DOS DADOS) ---

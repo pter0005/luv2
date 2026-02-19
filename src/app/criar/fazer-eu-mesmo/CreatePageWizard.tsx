@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -1417,7 +1418,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
                 if (result.intentId) {
                     setValue('intentId', result.intentId);
-                } else if (result.error) {
+                } else if ("error" in result) {
                     console.error("Autosave failed on initial load:", result);
                     toast({
                         variant: 'destructive',
@@ -1440,9 +1441,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 if (result.intentId) {
                     setValue('intentId', result.intentId, { shouldDirty: false });
                     console.log("Forced intent creation, ID:", result.intentId);
-                } else if (result.error) {
-                    console.error("Failed to force create intent:", result.error, result.details);
-                    setError({message: result.error, details: result.details});
+                } else if ("error" in result) {
+                    const { error, details } = result;
+                    console.error("Failed to force create intent:", error, details);
+                    setError({ message: error, details });
                 }
             };
             forceSave();
@@ -1526,10 +1528,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
 
-                if (saveResult.error || !saveResult.intentId) {
-                    setError({ message: saveResult.error || "Não foi possível salvar o rascunho antes do pagamento.", details: saveResult.details });
-                    if (saveResult.error?.includes("NOT_FOUND")) {
-                      setValue('intentId', undefined, { shouldDirty: false });
+                if ("error" in saveResult || !saveResult.intentId) {
+                    const error = 'error' in saveResult ? saveResult.error : "Não foi possível salvar o rascunho antes do pagamento.";
+                    const details = 'details' in saveResult ? (saveResult as any).details : undefined;
+                    setError({ message: error, details });
+                    if (error?.includes("NOT_FOUND")) {
+                        setValue('intentId', undefined, { shouldDirty: false });
                     }
                     return;
                 }
@@ -1564,9 +1568,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
               const fullData = { ...getValues(), userId: user.uid };
               const saveResult = await createOrUpdatePaymentIntent(fullData);
   
-              if (saveResult.error || !saveResult.intentId) {
-                  setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
-                  return;
+              if ("error" in saveResult) {
+                const { error, details } = saveResult as { error: string, details?: any };
+                setError({ message: error || "Could not save draft before payment.", details });
+                return;
+              }
+    
+              if (!saveResult.intentId) { // Fallback
+                setError({ message: "Could not save draft before payment." });
+                return;
               }
   
               setValue('intentId', saveResult.intentId);
@@ -1965,7 +1975,7 @@ function WizardInternal() {
     try {
         const result = await createOrUpdatePaymentIntent(dataToSave);
 
-        if (result.error) {
+        if ("error" in result) {
             console.error("Autosave failed:", result);
             toast({
                 variant: 'destructive',
