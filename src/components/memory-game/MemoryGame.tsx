@@ -89,7 +89,7 @@ export default function MemoryGame({ images }: MemoryGameProps) {
 
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 md:p-6 rounded-2xl bg-black/60 border border-primary/20 backdrop-blur-lg shadow-2xl">
+    <div className="w-full max-w-md mx-auto p-4 md:p-6 rounded-2xl">
       <AnimatePresence>
         {isGameWon && (
           <motion.div
