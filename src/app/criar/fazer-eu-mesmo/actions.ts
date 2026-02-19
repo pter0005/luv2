@@ -17,7 +17,7 @@ type FinalizePageResult =
 type PaymentVerificationResult = 
   | { status: 'approved'; pageId: string }
   | { status: 'error'; error: string; details?: any }
-  | { status: string }; // For other statuses like 'pending'
+  | { status: 'pending' | 'in_process' | 'authorized' | 'in_mediation' | 'rejected' | 'cancelled' | 'refunded' | 'charged_back' };
 
 type StripeSessionResult =
   | { success: true; url: string }
@@ -297,7 +297,17 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
             }
             return { status: 'approved', pageId: result.pageId };
         }
-        return { status: paymentInfo.status || 'pending' };
+        
+        const currentStatus = paymentInfo.status || 'pending';
+        const knownOtherStatuses: Array<'pending' | 'in_process' | 'authorized' | 'in_mediation' | 'rejected' | 'cancelled' | 'refunded' | 'charged_back'> = ['pending', 'in_process', 'authorized', 'in_mediation', 'rejected', 'cancelled', 'refunded', 'charged_back'];
+
+        if (knownOtherStatuses.includes(currentStatus as any)) {
+            return { status: currentStatus as any };
+        }
+
+        console.warn(`Unknown Mercado Pago status received: "${currentStatus}". Treating as pending.`);
+        return { status: 'pending' };
+
     } catch (error: any) {
         return { status: 'error', error: error.message, details: error };
     }
