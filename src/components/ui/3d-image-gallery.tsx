@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, PerformanceMonitor } from "@react-three/drei"
+import { OrbitControls, Html } from "@react-three/drei"
 import { X, Loader2, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR, enUS, es } from "date-fns/locale"
@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
 import { useTranslation } from "@/lib/i18n"
-import Image from 'next/image'; // Still needed for FullScreenCardView
+import Image from 'next/image';
 
 /* =========================
    Types & Context
@@ -53,135 +53,92 @@ function useIsMobile() {
 
 
 /* =========================
-   Floating Card with CanvasTexture
+   Floating Card (PERFORMANCE & UI UPDATE)
    ========================= */
-function FloatingCard({ card, position, isMobile, onClick }: { card: Card, position: any, isMobile: boolean, onClick: () => void }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [isVisible, setIsVisible] = useState(true);
-  const distanceThreshold = isMobile ? 25 : 40;
+// Optimization: Create a single Vector3 to reuse in the frame loop.
+const _cameraPos = new THREE.Vector3()
 
+function FloatingCard({ card, position, isMobile, onClick }: { card: Card, position: any, isMobile: boolean, onClick: () => void }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const occludeRef = useRef<THREE.Mesh>(null)
   const { locale } = useTranslation();
+  
+  // FIX: Increased threshold to ensure cards are visible on initial load.
+  const distanceThreshold = isMobile ? 45 : 60; 
+
+  useFrame(({ camera }) => {
+    const g = groupRef.current
+    if (!g) return
+
+    // Make card always face the camera
+    g.lookAt(camera.position);
+
+    // PERFORMANCE: Use a shared Vector3 to avoid allocations in the render loop.
+    _cameraPos.copy(camera.position)
+    const distance = g.position.distanceTo(_cameraPos);
+    const shouldBeVisible = distance < distanceThreshold;
+
+    if (g.visible !== shouldBeVisible) {
+      g.visible = shouldBeVisible
+    }
+  })
+
   const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
   const fnsLocale = dateLocales[locale] || ptBR;
 
   const dateObj = useMemo(() => {
-    if (!card.date) return null;
-    const seconds = (card.date as any)._seconds || (card.date as any).seconds;
-    return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
+      if (!card.date) return null;
+      const seconds = (card.date as any)._seconds || (card.date as any).seconds;
+      return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
   }, [card.date]);
 
-  // The core optimization: UseMemo to create the CanvasTexture
-  const texture = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    const canvasSize = 512;
-    const cardWidth = canvasSize;
-    const cardHeight = Math.round(canvasSize / 0.75); // 3:4 aspect ratio
-    canvas.width = cardWidth;
-    canvas.height = cardHeight;
-    const ctx = canvas.getContext('2d')!;
-
-    // 1. Background
-    ctx.fillStyle = '#18181b'; // zinc-900
-    ctx.beginPath();
-    ctx.roundRect(0, 0, cardWidth, cardHeight, 32);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    // 2. Text (rendered before image to be underneath)
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 36px sans-serif`;
-    
-    // Simple word wrapping
-    const wrapText = (context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) => {
-        const words = text.split(' ');
-        let line = '';
-        for(let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            if (context.measureText(testLine).width > maxWidth && n > 0) {
-                context.fillText(line, x, y);
-                line = words[n] + ' ';
-                y += lineHeight;
-            } else {
-                line = testLine;
-            }
-        }
-        context.fillText(line, x, y);
-    }
-    wrapText(ctx, card.title, 32, cardWidth + 60, cardWidth - 64, 40);
-
-    if (dateObj) {
-      ctx.fillStyle = '#c4b5fd'; // violet-300
-      ctx.font = `600 28px sans-serif`;
-      ctx.fillText(format(dateObj, "dd MMM yyyy", { locale: fnsLocale }), 32, cardWidth + 110);
-    }
-
-    return new THREE.CanvasTexture(canvas);
-  }, [card.title, dateObj, fnsLocale]);
-
-  // Load image asynchronously and draw it onto the canvas
-  useEffect(() => {
-    const img = new window.Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      const canvas = texture.image as HTMLCanvasElement;
-      const ctx = canvas.getContext('2d')!;
-      const cardWidth = canvas.width;
-      
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(24, 24, cardWidth - 48, cardWidth - 48, 24);
-      ctx.clip();
-      ctx.drawImage(img, 24, 24, cardWidth - 48, cardWidth - 48);
-      ctx.restore();
-      
-      texture.needsUpdate = true;
-    };
-    img.onerror = () => {
-        // Draw an error state on the canvas if image fails
-        const canvas = texture.image as HTMLCanvasElement;
-        const ctx = canvas.getContext('2d')!;
-        ctx.fillStyle = '#ef4444';
-        ctx.textAlign = 'center';
-        ctx.fillText('Error', canvas.width / 2, (canvas.width-48) / 2);
-        texture.needsUpdate = true;
-    };
-    
-    // Request a smaller image for better performance
-    const optimizedUrl = card.imageUrl.includes("unsplash") 
-      ? card.imageUrl.replace(/w=\d+/, "w=512").replace(/q=\d+/, "q=80") 
-      : card.imageUrl;
-    img.src = optimizedUrl;
-  }, [card.imageUrl, texture]);
-
-  // Dispose texture on unmount to free up GPU memory
-  useEffect(() => {
-    return () => {
-      texture.dispose();
-    };
-  }, [texture]);
-
-  // Frame loop for LOD and facing camera
-  useFrame(({ camera }) => {
-    if (meshRef.current) {
-      meshRef.current.lookAt(camera.position);
-      const distance = meshRef.current.position.distanceTo(camera.position);
-      const shouldBeVisible = distance < distanceThreshold;
-      if (shouldBeVisible !== meshRef.current.visible) {
-        meshRef.current.visible = shouldBeVisible;
-      }
-    }
-  });
-
-  const scale = isMobile ? 1.5 : 2.5;
+  const cardWidthPx = isMobile ? 140 : 220;
 
   return (
-    <mesh ref={meshRef} position={position} onClick={onClick}>
-      <planeGeometry args={[scale * 0.75, scale]} />
-      <meshBasicMaterial map={texture} transparent />
-    </mesh>
-  );
+    // FIX: Set visible={true} explicitly to prevent it from starting as hidden.
+    <group ref={groupRef} visible={true} position={[position.x, position.y, position.z]} scale={isMobile ? 1.125 : 1.44}>
+      <mesh ref={occludeRef} renderOrder={-1}>
+         <planeGeometry args={[(cardWidthPx/100)*1.26, (cardWidthPx/100)*1.26/(3/4)]} />
+         <meshBasicMaterial colorWrite={false} depthWrite={true} transparent={false} side={THREE.DoubleSide} />
+      </mesh>
+
+      <Html
+        transform
+        occlude={[occludeRef]}
+        distanceFactor={8} 
+        position={[0, 0, 0.1]} 
+        zIndexRange={[200000, 0]} 
+        style={{ pointerEvents: 'auto', cursor: 'pointer', transformStyle: 'preserve-3d' }}
+      >
+        <div 
+          onClick={onClick}
+          className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10"
+             style={{ width: `${cardWidthPx}px`, aspectRatio: '3/4' }}>
+            {/* img nativa para máxima performance no canvas 3D */}
+            <img
+                src={card.imageUrl}
+                alt={card.alt}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                // FIX: If the image fails to load (e.g., due to network issues), retry once.
+                onError={(e) => {
+                  const img = e.currentTarget as HTMLImageElement;
+                  if (!img.dataset.retried) {
+                    img.dataset.retried = '1';
+                    setTimeout(() => { img.src = card.imageUrl }, 2000);
+                  }
+                }}
+            />
+            {/* UI UPDATE: Darker gradient, better font styles and colors */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col justify-end p-4">
+                <p className="text-white font-bold text-lg leading-tight line-clamp-3 drop-shadow-lg">{card.title}</p>
+                {dateObj && <p className="text-purple-400 font-semibold text-xs tracking-wide mt-1">{format(dateObj, "dd MMM yyyy", { locale: fnsLocale })}</p>}
+            </div>
+        </div>
+      </Html>
+    </group>
+  )
 }
 
 /* =========================
@@ -211,6 +168,7 @@ function StaticStars({ count = 500 }) {
         </points>
     );
 }
+
 
 /* =========================
    Galaxy Geometry
@@ -262,10 +220,10 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean, setSelec
 
 
 /* =========================
-   Scene
+   Scene (EQUILIBRADO)
    ========================= */
-function Scene({ isMobile, events, setSelectedCard, autoRotate, setAutoRotate }: { isMobile: boolean, events: Card[], setSelectedCard: (card: Card) => void, autoRotate: boolean, setAutoRotate: (val: boolean) => void }) {
-    const { camera, invalidate } = useThree();
+function Scene({ isMobile, events, setSelectedCard }: { isMobile: boolean, events: Card[], setSelectedCard: (card: Card) => void }) {
+    const { camera } = useThree();
 
     useEffect(() => {
         camera.position.set(0, 0, isMobile ? 22 : 32);
@@ -273,20 +231,19 @@ function Scene({ isMobile, events, setSelectedCard, autoRotate, setAutoRotate }:
             camera.fov = isMobile ? 75 : 55;
             camera.updateProjectionMatrix();
         }
-        invalidate();
-    }, [isMobile, camera, invalidate]);
-
-    useFrame(() => {
-      if(autoRotate) invalidate()
-    });
+    }, [isMobile, camera]);
 
     return (
         <>
             <color attach="background" args={['#020202']} />
-            <StaticStars count={isMobile ? 200 : 500} />
+            
+            <StaticStars count={isMobile ? 50 : 1500} />
+            
             <ambientLight intensity={1.5} />
             <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
+            
             <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
+            
             <OrbitControls
                 makeDefault
                 enableDamping
@@ -294,10 +251,8 @@ function Scene({ isMobile, events, setSelectedCard, autoRotate, setAutoRotate }:
                 enablePan={false}
                 minDistance={5}
                 maxDistance={45}
-                autoRotate={autoRotate}
+                autoRotate
                 autoRotateSpeed={0.3}
-                onStart={() => setAutoRotate(false)}
-                onEnd={() => setTimeout(() => setAutoRotate(true), 2000)}
             />
         </>
     );
@@ -330,7 +285,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => {
    Full Screen Card View
    ========================= */
 function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void }) {
-  const { locale } = useTranslation();
+  const { t, locale } = useTranslation();
   const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
   const fnsLocale = dateLocales[locale] || ptBR;
 
@@ -340,13 +295,12 @@ function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void
       return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
   }, [card.date]);
 
-  // FIX: Use createPortal to render outside the main react root and set a very high z-index
-  return createPortal(
+  return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[300000] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100000] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
       onClick={onClose} // Close on backdrop click
     >
       <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
@@ -364,8 +318,7 @@ function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void
       >
           <X className="w-6 h-6" />
       </button>
-    </motion.div>,
-    document.body
+    </motion.div>
   );
 }
 
@@ -377,18 +330,6 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-  const [autoRotate, setAutoRotate] = useState(true);
-  const [dpr, setDpr] = useState(1);
-  const [starCount, setStarCount] = useState(isMobile ? 200 : 500);
-
-  // Preload first 5 images
-  useEffect(() => {
-    const urls = events.map(e => e.imageUrl).slice(0, 5);
-    urls.forEach(url => {
-        const img = new window.Image();
-        img.src = url;
-    })
-  }, [events])
 
   useEffect(() => {
     setMounted(true);
@@ -400,33 +341,24 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   return createPortal(
     <motion.div 
-      className="fixed inset-0 z-[200000] bg-[#020202]"
+      className="fixed inset-0 z-[99999] bg-[#020202]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <CardProvider events={events}>
         <Canvas
-          frameloop="demand"
-          dpr={dpr}
+          dpr={isMobile ? 0.75 : 1}
           gl={{ 
               antialias: false,
               powerPreference: 'high-performance', 
+              logarithmicDepthBuffer: true,
               stencil: false,
               depth: true
           }}
         >
             <Suspense fallback={null}>
-                <PerformanceMonitor
-                    onIncline={() => setDpr(Math.min(window.devicePixelRatio, 1.5))}
-                    onDecline={() => setDpr(0.5)}
-                    onFallback={() => {
-                        setDpr(0.4);
-                        setStarCount(isMobile ? 100 : 200);
-                    }}
-                 >
-                    <Scene isMobile={isMobile} events={events} setSelectedCard={setSelectedCard} autoRotate={autoRotate} setAutoRotate={setAutoRotate} />
-                </PerformanceMonitor>
+                <Scene isMobile={isMobile} events={events} setSelectedCard={setSelectedCard} />
             </Suspense>
         </Canvas>
         <TimelineUI onClose={onClose} />
