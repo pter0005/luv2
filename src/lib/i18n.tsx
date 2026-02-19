@@ -270,7 +270,7 @@ const translations = {
     'publicpage.error.generic': 'Esta página de amor não existe ou não pôde ser encontrada.',
     'publicpage.error.notfound': 'Esta página de amor não existe ou pode ter sido removida.',
     'publicpage.error.dbConfig': 'O sistema de banco de dados não está configurado corretamente. Por favor, contate o suporte.',
-    'publicpage.error.fetch': 'Erro ao buscar dados: {message}',
+    'publicpage.error.fetch': 'Ocorreu um erro ao buscar os dados da página. Por favor, tente novamente mais tarde.',
     'publicpage.error.unknown': 'Ocorreu um erro desconhecido ao buscar os dados da página.',
     'publicpage.error.processing': 'Ocorreu um erro ao processar os dados da página.',
     'publicpage.error.unauthenticated.title': 'Erro de Autenticação no Servidor',

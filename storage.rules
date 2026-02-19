@@ -4,8 +4,11 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     // Rascunhos temporários: usuários podem criar, ler e apagar apenas seus próprios arquivos.
+    // Adicionada validação de tipo de conteúdo e tamanho.
     match /temp/{userId}/{allPaths=**} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId
+                         && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+                         && request.resource.contentType.matches('image/.*|video/.*|audio/.*');
     }
     
     // Pasta final de produção: Subpastas explícitas para leitura pública.

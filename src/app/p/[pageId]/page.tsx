@@ -31,7 +31,8 @@ async function getPageData(pageId: string) {
             if (error.message.includes("initializeApp")) {
                 return { error: 'publicpage.error.dbConfig' };
             }
-            return { error: 'publicpage.error.fetch', errorMessage: error.message };
+            // Do not leak raw error messages to the client.
+            return { error: 'publicpage.error.fetch' };
         }
         return { error: 'publicpage.error.unknown' };
     }
@@ -73,7 +74,7 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
           <LanguageProvider initialLocale={lang as any}>
               <ErrorState 
                 messageKey={rawPageData.error} 
-                messageVars={{ message: rawPageData.errorMessage || '' }} 
+                messageVars={{ message: '' }} // Message is no longer passed
               />
           </LanguageProvider>
       );
