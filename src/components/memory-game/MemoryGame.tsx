@@ -99,14 +99,13 @@ export default function MemoryGame({ images }: MemoryGameProps) {
           >
             <CheckCircle className="w-20 h-20 text-green-500 mb-4" />
             <h2 className="text-3xl font-bold font-headline text-white mb-2">{t('memorygame.win.title')}</h2>
-            <p className="text-muted-foreground mb-6">{t('memorygame.win.description', { moves: moves })}</p>
+            <p className="text-muted-foreground mb-6">{t('memorygame.win.description')}</p>
             <Button onClick={resetGame}>{t('memorygame.win.playAgain')}</Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex justify-between items-center mb-6 px-2">
-        <h2 className="text-lg font-bold text-foreground">{t('memorygame.moves')}: {moves}</h2>
+      <div className="flex justify-end items-center mb-6 px-2">
         <Button variant="ghost" onClick={resetGame}>{t('memorygame.reset')}</Button>
       </div>
       <div className={cn("grid gap-3", gridSize === 3 ? 'grid-cols-3' : 'grid-cols-4')} style={{ perspective: '1000px' }}>

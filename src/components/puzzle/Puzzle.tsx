@@ -19,15 +19,27 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
   const [isCompleted, setIsCompleted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 300, height: 300, pieceW: 100, pieceH: 100 });
+  const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
+
+  const checkWin = useCallback((currentPieces: any[]) => {
+    if (currentPieces.length === 0) return;
+    const isSolved = currentPieces.every(p => p.currentX === p.targetX && p.currentY === p.targetY);
+    if (isSolved) {
+      setIsCompleted(true);
+      if (onReveal) setTimeout(onReveal, 1500);
+    }
+  }, [onReveal]);
 
   useEffect(() => {
     if (!imageSrc || !containerRef.current) return;
     
     setIsLoaded(false);
     setIsCompleted(false);
+    setSelectedPieceId(null);
 
     const img = new Image();
-    
+    img.crossOrigin = 'anonymous';
+
     img.onload = () => {
       const containerW = containerRef.current?.offsetWidth || 300;
       const aspectRatio = img.naturalWidth / img.naturalHeight;
@@ -40,70 +52,78 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
 
       setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
 
-      const newPieces = [];
+      const initialPieces = [];
+      const targetPositions: { x: number; y: number }[] = [];
+
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          targetPositions.push({ x: col * pW, y: row * pH });
+        }
+      }
+
+      let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+      
+      let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+      while(!isShuffledCorrectly) {
+        shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+        isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+      }
+
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
           const id = row * GRID_SIZE + col;
-          
-          const scatterRadius = boardWidth * 0.5;
-          const angle = Math.random() * 2 * Math.PI;
-          const randomDist = Math.random() * scatterRadius;
-          const scatterX = (boardWidth / 2) + Math.cos(angle) * randomDist - pW/2;
-          const scatterY = (boardHeight / 2) + Math.sin(angle) * randomDist - (pH/2) - (boardHeight/2) - 100;
-
-          newPieces.push({
+          initialPieces.push({
             id,
             r: row,
             c: col,
             targetX: col * pW,
             targetY: row * pH,
-            currentX: scatterX,
-            currentY: scatterY,
-            isSnapped: false,
+            currentX: shuffledPositions[id].x,
+            currentY: shuffledPositions[id].y,
           });
         }
       }
-      setPieces(newPieces.sort(() => Math.random() - 0.5));
+      setPieces(initialPieces);
       setIsLoaded(true);
     };
 
     img.src = imageSrc;
   }, [imageSrc]);
 
-  const checkWin = useCallback((currentPieces: any[]) => {
-    if (currentPieces.every((p) => p.isSnapped)) {
-      setIsCompleted(true);
-      if (onReveal) setTimeout(onReveal, 1500); 
-    }
-  }, [onReveal]);
+  const handlePieceClick = (clickedPieceId: number) => {
+    if (isCompleted) return;
 
-  const handlePieceDrop = (pieceId: number, finalX: number, finalY: number) => {
-    const pieceIndex = pieces.findIndex((p) => p.id === pieceId);
-    if (pieceIndex === -1 || pieces[pieceIndex].isSnapped) return;
-
-    const piece = pieces[pieceIndex];
-    const dist = Math.hypot(finalX - piece.targetX, finalY - piece.targetY);
-    const snapThreshold = dimensions.pieceW * 0.4;
-    
-    const newPieces = [...pieces];
-    if (dist < snapThreshold) {
-      newPieces[pieceIndex] = { ...piece, currentX: piece.targetX, currentY: piece.targetY, isSnapped: true };
+    if (selectedPieceId === null) {
+      setSelectedPieceId(clickedPieceId);
     } else {
-      newPieces[pieceIndex] = { ...piece, currentX: finalX, currentY: finalY };
+      const newPieces = [...pieces];
+      const clickedIndex = newPieces.findIndex(p => p.id === clickedPieceId);
+      const selectedIndex = newPieces.findIndex(p => p.id === selectedPieceId);
+
+      if (clickedIndex !== -1 && selectedIndex !== -1 && clickedIndex !== selectedIndex) {
+        const tempX = newPieces[clickedIndex].currentX;
+        const tempY = newPieces[clickedIndex].currentY;
+        newPieces[clickedIndex].currentX = newPieces[selectedIndex].currentX;
+        newPieces[clickedIndex].currentY = newPieces[selectedIndex].currentY;
+        newPieces[selectedIndex].currentX = tempX;
+        newPieces[selectedIndex].currentY = tempY;
+      }
+      
+      setSelectedPieceId(null);
+      setPieces(newPieces);
+      checkWin(newPieces);
     }
-    setPieces(newPieces);
-    checkWin(newPieces);
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center p-4">
+    <div className="w-full flex flex-col items-center justify-center">
       <div 
         ref={containerRef}
-        className="relative"
+        className="relative puzzle-board"
         style={{ 
             width: '100%', 
             maxWidth: '350px',
-            height: isLoaded ? dimensions.height + 100 : '300px'
+            height: isLoaded ? dimensions.height + 4 : '300px'
         }}
       >
         {!isLoaded && (
@@ -113,52 +133,22 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
           </div>
         )}
 
-        {isLoaded && (
-            <div 
-                className="absolute left-0 top-[50px] border-2 border-dashed border-white/20 rounded-lg bg-black/20"
-                style={{ width: dimensions.width, height: dimensions.height }}
-            >
-                <AnimatePresence>
-                    {isCompleted && (
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-lg"
-                        >
-                            <div className="text-center">
-                                <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }}>
-                                    <Sparkles className="w-16 h-16 text-yellow-400 mx-auto mb-2" />
-                                </motion.div>
-                                <h3 className="text-white font-bold text-xl">{t('puzzle.perfect')}</h3>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        )}
-
         {isLoaded && pieces.map((p) => (
           <motion.div
             key={p.id}
-            drag={!p.isSnapped && !isCompleted}
-            dragMomentum={false}
-            onDragEnd={(event, info) => handlePieceDrop(p.id, p.currentX + info.offset.x, p.currentY + info.offset.y)}
-            initial={{ x: p.currentX, y: p.currentY, scale: 0.5, opacity: 0 }}
+            onClick={() => handlePieceClick(p.id)}
             animate={{ 
                 x: p.currentX,
                 y: p.currentY,
-                scale: 1,
-                opacity: 1,
-                zIndex: p.isSnapped ? 1 : 50,
             }}
-            whileDrag={{ scale: 1.1, zIndex: 100, cursor: 'grabbing' }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute rounded-md overflow-hidden shadow-lg"
+            className="absolute puzzle-slot cursor-pointer"
             style={{
               width: dimensions.pieceW,
               height: dimensions.pieceH,
-              cursor: p.isSnapped ? 'default' : 'grab',
-              top: p.isSnapped ? dimensions.height + 50 : 0, // Move to board area when snapped
+              outline: selectedPieceId === p.id ? '3px solid hsl(var(--primary))' : 'none',
+              outlineOffset: '-3px',
+              zIndex: selectedPieceId === p.id ? 2 : 1
             }}
           >
             <div 
@@ -169,16 +159,25 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
                     backgroundPosition: `-${p.c * dimensions.pieceW}px -${p.r * dimensions.pieceH}px`
                 }}
             />
-            {p.isSnapped && (
-                <motion.div 
-                    initial={{ opacity: 1 }} 
-                    animate={{ opacity: 0 }} 
-                    transition={{ duration: 0.8 }}
-                    className="absolute inset-0 ring-2 ring-yellow-400"
-                />
-            )}
           </motion.div>
         ))}
+
+        <AnimatePresence>
+            {isCompleted && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                >
+                    <div className="text-center">
+                        <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }}>
+                            <Sparkles className="w-16 h-16 text-yellow-400 mx-auto mb-2" />
+                        </motion.div>
+                        <h3 className="text-white font-bold text-xl">{t('puzzle.perfect')}</h3>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
       </div>
     </div>
   );
