@@ -40,54 +40,66 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
-    img.onload = () => {
-      const containerW = containerRef.current?.offsetWidth || 300;
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      
-      const boardWidth = Math.min(containerW, 400);
-      const boardHeight = boardWidth / aspectRatio;
+    const handleLoad = () => {
+        const containerW = containerRef.current?.offsetWidth || 300;
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        
+        const boardWidth = Math.min(containerW, 400);
+        const boardHeight = boardWidth / aspectRatio;
 
-      const pW = boardWidth / GRID_SIZE;
-      const pH = boardHeight / GRID_SIZE;
+        const pW = boardWidth / GRID_SIZE;
+        const pH = boardHeight / GRID_SIZE;
 
-      setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
+        setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
 
-      const initialPieces = [];
-      const targetPositions: { x: number; y: number }[] = [];
+        const initialPieces = [];
+        const targetPositions: { x: number; y: number }[] = [];
 
-      for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-          targetPositions.push({ x: col * pW, y: row * pH });
+        for (let row = 0; row < GRID_SIZE; row++) {
+            for (let col = 0; col < GRID_SIZE; col++) {
+            targetPositions.push({ x: col * pW, y: row * pH });
+            }
         }
-      }
 
-      let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-      
-      let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-      while(!isShuffledCorrectly) {
-        shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-        isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-      }
-
-      for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-          const id = row * GRID_SIZE + col;
-          initialPieces.push({
-            id,
-            r: row,
-            c: col,
-            targetX: col * pW,
-            targetY: row * pH,
-            currentX: shuffledPositions[id].x,
-            currentY: shuffledPositions[id].y,
-          });
+        let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+        
+        let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+        while(!isShuffledCorrectly) {
+            shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+            isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
         }
-      }
-      setPieces(initialPieces);
-      setIsLoaded(true);
+
+        for (let row = 0; row < GRID_SIZE; row++) {
+            for (let col = 0; col < GRID_SIZE; col++) {
+            const id = row * GRID_SIZE + col;
+            initialPieces.push({
+                id,
+                r: row,
+                c: col,
+                targetX: col * pW,
+                targetY: row * pH,
+                currentX: shuffledPositions[id].x,
+                currentY: shuffledPositions[id].y,
+            });
+            }
+        }
+        setPieces(initialPieces);
+        setIsLoaded(true);
+    };
+
+    img.onload = handleLoad;
+    img.onerror = () => {
+        console.error("Puzzle image failed to load:", imageSrc);
+        setIsLoaded(false); 
     };
 
     img.src = imageSrc;
+
+    // Handle images that might already be in the browser cache
+    if (img.complete) {
+        handleLoad();
+    }
+
   }, [imageSrc]);
 
   const handlePieceClick = (clickedPieceId: number) => {
