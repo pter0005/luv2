@@ -23,18 +23,14 @@ async function getPageData(pageId: string) {
 
     } catch (error) {
         console.error("Error fetching page data:", error);
+        // Do not leak raw error messages to the client.
+        // Return a generic key and log the specific error on the server.
         if (error instanceof Error) {
-            // Specific check for the UNAUTHENTICATED error
             if ((error as any).code === 16 || error.message.includes("UNAUTHENTICATED")) {
                 return { error: 'publicpage.error.unauthenticated' };
             }
-            if (error.message.includes("initializeApp")) {
-                return { error: 'publicpage.error.dbConfig' };
-            }
-            // Do not leak raw error messages to the client.
-            return { error: 'publicpage.error.fetch' };
         }
-        return { error: 'publicpage.error.unknown' };
+        return { error: 'publicpage.error.fetch' };
     }
 }
 

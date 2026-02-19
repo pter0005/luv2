@@ -1,18 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Ignora erros de Typescript pra economizar memória
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // Ignora erros de Lint pra economizar memória
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   // Desativa mapas pesados pra economizar memória
   productionBrowserSourceMaps: false,
   
   async headers() {
+    const cspHeader = `
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' https: data:;
+      font-src 'self';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      report-uri /api/csp-report;
+    `.replace(/\s{2,}/g, ' ').trim();
+
     return [
       {
         source: '/:path*',
@@ -33,6 +38,14 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: "camera=('self'), microphone=('self'), geolocation=()",
           },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          },
+          {
+            key: 'Content-Security-Policy-Report-Only',
+            value: cspHeader
+          }
         ],
       },
     ];
@@ -40,12 +53,11 @@ const nextConfig = {
 
   images: {
     dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'i.imgur.com' },
-      { protocol: 'https', hostname: 'imgur.com' },
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'api.qrserver.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },

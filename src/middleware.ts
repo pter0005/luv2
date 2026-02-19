@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
 // Rotas que precisam de login
 const protectedRoutes = ['/criar', '/minhas-paginas'];
@@ -9,7 +10,7 @@ const adminRoutes = ['/admin'];
 const authRoutes = ['/login'];
 
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   const hostname = request.headers.get('host') || '';
@@ -49,14 +50,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
   
-  // 2. Se tentar acessar rota de admin sem cookie de admin -> Manda pro Login do Admin
+  // 2. Se tentar acessar rota de admin -> Valida o JWT
   const isTryingToAccessAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
   const isTryingToAccessAdminLogin = pathname === '/admin/login';
 
-  if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin && !adminSession) {
-    const adminLoginUrl = new URL('/admin/login', request.url);
-    adminLoginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(adminLoginUrl);
+  if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin) {
+    if (!adminSession) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    try {
+      if (!process.env.ADMIN_JWT_SECRET) throw new Error('JWT Secret not configured');
+      const secret = new TextEncoder().encode(process.env.ADMIN_JWT_SECRET);
+      await jwtVerify(adminSession, secret);
+    } catch (error) {
+      console.error("Admin session verification failed:", error);
+      // If token is invalid, redirect to login
+      const loginUrl = new URL('/admin/login', request.url);
+      request.cookies.delete('session_admin');
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
 

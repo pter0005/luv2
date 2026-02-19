@@ -265,7 +265,7 @@ const translations = {
     'publicpage.puzzle.description': 'Resolva o quebra-cabeça para revelar uma surpresa especial.',
     'publicpage.puzzle.complete': 'Desafio Concluído!',
     'publicpage.loading': 'Carregando sua surpresa...',
-    'publicpage.error.title': 'Página não encontrada ou erro',
+    'publicpage.error.title': 'Erro',
     'publicpage.error.description': 'O link que você acessou pode estar quebrado ou a página foi removida.',
     'publicpage.error.generic': 'Esta página de amor não existe ou não pôde ser encontrada.',
     'publicpage.error.notfound': 'Esta página de amor não existe ou pode ter sido removida.',
@@ -697,12 +697,12 @@ const translations = {
     'create.feature.backup': 'Copia de seguridad en la nube',
     
     // Public Page
-    'publicpage.error.title': 'Página no encontrada o error',
+    'publicpage.error.title': 'Error',
     'publicpage.error.description': 'El enlace que seguiste puede estar roto, o la página puede haber sido eliminada.',
     'publicpage.error.generic': 'Esta página de amor no existe o no se pudo encontrar.',
     'publicpage.error.notfound': 'Esta página de amor no existe o puede haber sido eliminada.',
     'publicpage.error.dbConfig': 'El sistema de base de datos no está configurado correctamente. Por favor, contacta con el soporte.',
-    'publicpage.error.fetch': 'Error al buscar datos: {message}',
+    'publicpage.error.fetch': 'Se ha producido un error al obtener los datos de la página. Por favor, inténtelo de nuevo más tarde.',
     'publicpage.error.unknown': 'Ocurrió un error desconocido al buscar los datos de la página.',
     'publicpage.error.processing': 'Ocurrió un error al procesar los datos de la página.',
     'publicpage.error.unauthenticated.title': 'Error de Autenticación del Servidor',
