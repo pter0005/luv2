@@ -21,7 +21,7 @@ export async function updateLovePage(pageId: string, data: UpdatablePageData) {
         const pageRef = db.collection('lovepages').doc(pageId);
         
         // Ensure you only update allowed fields
-        const dataToUpdate: UpdatablePageData = {};
+        const dataToUpdate: { [key: string]: any } = {};
         if (data.title) dataToUpdate.title = data.title;
         if (data.message) dataToUpdate.message = data.message;
         
