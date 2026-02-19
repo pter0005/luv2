@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef } from 'react';
@@ -66,10 +67,10 @@ const AnimatedSection = ({ children, className, id }: { children: React.ReactNod
 export default function Home() {
   return (
     <>
-      {/* HeroSection is loaded statically for a fast Largest Contentful Paint (LCP) */}
-      <HeroSection />
-
-      {/* The rest of the sections are loaded dynamically as the user scrolls down */}
+      <AnimatedSection>
+        <HeroSection />
+      </AnimatedSection>
+      
       <AnimatedSection id="how-it-works-simple" className="section-padding bg-transparent">
         <HowItWorksSection />
       </AnimatedSection>
