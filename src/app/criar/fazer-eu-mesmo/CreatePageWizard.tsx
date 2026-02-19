@@ -862,6 +862,7 @@ const MusicStep = React.memo(() => {
           description: (
             <div>
                 <p>{t('toast.mic.error.description')}</p>
+
                 <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
             </div>
           )
@@ -1410,29 +1411,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const router = useRouter();
 
 
-    // FORÇAR CRIAÇÃO DO INTENT ID ASSIM QUE ABRIR A TELA
-    useEffect(() => {
-        if (user && !intentId) {
-            const forceSave = async () => {
-                const data = getValues();
-                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
-                if (result.success) {
-                    setValue('intentId', result.intentId);
-                } else {
-                    console.error("Autosave failed on initial load:", result.error, result.details);
-                    toast({
-                        variant: 'destructive',
-                        title: "Erro Crítico ao Salvar",
-                        description: result.error,
-                        duration: 9000,
-                    });
-                }
-            };
-            forceSave();
-        }
-    }, [user, intentId, getValues, setValue, toast]);
-
-
     useEffect(() => {
         if (user && !intentId) {
             const forceSave = async () => {
@@ -1442,14 +1420,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     setValue('intentId', result.intentId, { shouldDirty: false });
                     console.log("Forced intent creation, ID:", result.intentId);
                 } else {
-                    const { error, details } = result;
-                    console.error("Failed to force create intent:", error, details);
-                    setError({ message: error, details });
+                    console.error("Failed to force create intent:", result.error, result.details);
+                    setError({ message: result.error, details: result.details });
                 }
             };
             forceSave();
         }
     }, [user, intentId, getValues, setValue]);
+
 
     useEffect(() => {
         // This check ensures we're on the client side
@@ -1487,7 +1465,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
             console.log("Status do pagamento:", result.status);
             
-            if (result.status === 'approved' && result.pageId) {
+            if (result.status === 'approved') {
                 clearInterval(pollingIntervalRef.current!);
                 handlePaymentSuccess(result.pageId);
             } else if (result.status === 'error') {
@@ -1615,7 +1593,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setIsVerifying(true);
         try {
             const result = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
-            if (result.status === 'approved' && result.pageId) {
+            if (result.status === 'approved') {
                 handlePaymentSuccess(result.pageId);
             } else {
                 toast({ variant: 'default', title: t('toast.payment.pending'), description: t('toast.payment.pending.description') });
@@ -2198,3 +2176,5 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
+    
