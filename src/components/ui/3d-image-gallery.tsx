@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext } from "react"
-import * THREE from "three"
+import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, PerformanceMonitor } from "@react-three/drei"
 import { X, Loader2, AlertTriangle } from "lucide-react"
@@ -310,25 +310,19 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => {
     const { t } = useTranslation();
     return (
     <>
-        
-            
-                
-                    
-                        
-                            {t('publicpage.timeline.title')}
-                        
-                        
-                            {t('publicpage.timeline.description')}
-                        
-                    
-                    
-                        
-                            
-                        
-                    
-                
-            
-        
+        <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/90 to-transparent pointer-events-none h-24">
+            <div className="text-white pointer-events-none pl-1">
+                <h1 className="text-lg font-bold drop-shadow-xl font-headline tracking-wide">{t('publicpage.timeline.title')}</h1>
+                <p className="text-[10px] text-white/70">{t('publicpage.timeline.description')}</p>
+            </div>
+            <button 
+                onClick={onClose} 
+                className="pointer-events-auto bg-white/10 active:bg-white/20 backdrop-blur-md text-white rounded-full p-3 shadow-lg active:scale-90 transition-transform touch-manipulation border border-white/5"
+            >
+                <X className="w-5 h-5" />
+            </button>
+        </div>
+    </>
 )};
 
 
@@ -348,26 +342,29 @@ function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void
 
   // FIX: Use createPortal to render outside the main react root and set a very high z-index
   return createPortal(
-    
-      
-        
-          
-            
-              
-            
-            
-              
-                {card.title}
-                {dateObj && {format(dateObj, "PPP", { locale: fnsLocale })}}
-              
-            
-          
-          
-              
-          
-        
-      
-    ,
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[300000] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+      onClick={onClose} // Close on backdrop click
+    >
+      <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl">
+          <Image src={card.imageUrl} alt={card.alt} fill className="object-contain" />
+        </div>
+        <div className="text-center text-white p-4 bg-white/5 rounded-xl">
+          <h2 className="text-xl font-bold">{card.title}</h2>
+          {dateObj && <p className="text-purple-400 font-semibold text-sm mt-1">{format(dateObj, "PPP", { locale: fnsLocale })}</p>}
+        </div>
+      </div>
+      <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-3 transition-transform hover:scale-110 active:scale-90"
+      >
+          <X className="w-6 h-6" />
+      </button>
+    </motion.div>,
     document.body
   );
 }
@@ -401,28 +398,43 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   if (!mounted || events.length === 0) return null;
 
-  return (
-    
-      
-        
-          
-              
-                  
-                      
-                          
-                              
-                                  
-                              
-                          
-                      
-                  
-              
-              
-              
-                  {selectedCard && }
-              
-          
-      
-    
-  );
+  return createPortal(
+    <motion.div 
+      className="fixed inset-0 z-[200000] bg-[#020202]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <CardProvider events={events}>
+        <Canvas
+          frameloop="demand"
+          dpr={dpr}
+          gl={{ 
+              antialias: false,
+              powerPreference: 'high-performance', 
+              stencil: false,
+              depth: true
+          }}
+        >
+            <Suspense fallback={null}>
+                <PerformanceMonitor
+                    onIncline={() => setDpr(Math.min(window.devicePixelRatio, 1.5))}
+                    onDecline={() => setDpr(0.5)}
+                    onFallback={() => {
+                        setDpr(0.4);
+                        setStarCount(isMobile ? 100 : 200);
+                    }}
+                 >
+                    <Scene isMobile={isMobile} events={events} setSelectedCard={setSelectedCard} autoRotate={autoRotate} setAutoRotate={setAutoRotate} />
+                </PerformanceMonitor>
+            </Suspense>
+        </Canvas>
+        <TimelineUI onClose={onClose} />
+        <AnimatePresence>
+            {selectedCard && <FullScreenCardView card={selectedCard} onClose={() => setSelectedCard(null)} />}
+        </AnimatePresence>
+      </CardProvider>
+    </motion.div>,
+    document.body
+  )
 }
