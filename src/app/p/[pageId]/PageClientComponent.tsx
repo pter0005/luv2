@@ -159,7 +159,17 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
-      {showExplosion && <PurpleExplosion onComplete={() => setShowExplosion(false)} />}
+      <AnimatePresence>
+        {showExplosion && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999] pointer-events-none"
+          >
+            <PurpleExplosion onComplete={() => setShowExplosion(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* CAMADA 0: CABEÇALHO */}
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
@@ -222,18 +232,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
 
-          {hasMemoryGame && (
-              <div className="text-center w-full">
-                  <Button 
-                      type="button"
-                      onClick={() => setShowGames(true)} 
-                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
-                  >
-                      <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
-                  </Button>
-              </div>
-          )}
-
           {pageData.galleryImages?.length > 0 && (
             <div className="w-full max-w-[90vw] md:max-w-md mx-auto relative z-10">
               <Swiper
@@ -257,13 +255,18 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </Swiper>
             </div>
           )}
-
-           {pageData.enableMemoryGame && pageData.memoryGameImages && pageData.memoryGameImages.length > 0 && (
-            <div className="w-full flex flex-col items-center gap-4">
-              <h2 className="text-2xl font-bold font-headline">{t('publicpage.memory.title')}</h2>
-              <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />
-            </div>
-           )}
+          
+          {hasMemoryGame && (
+              <div className="text-center w-full">
+                  <Button 
+                      type="button"
+                      onClick={() => setShowGames(true)} 
+                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
+                  >
+                      <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
+                  </Button>
+              </div>
+          )}
 
           {/* ÁREA DO PLAYER (ISOLADA E COM ESPAÇO) */}
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex justify-center">
