@@ -38,10 +38,23 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     setSelectedPieceId(null);
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // img.crossOrigin = 'anonymous'; // REMOVED as requested. This is the main fix.
+
+    let loaded = false; // Guard to prevent double execution.
 
     const handleLoad = () => {
+        if (loaded) return;
+        loaded = true;
+
         const containerW = containerRef.current?.offsetWidth || 300;
+        
+        // Guard against container or image not being ready.
+        if (containerW === 0 || img.naturalWidth === 0) {
+          console.warn("Puzzle container or image has no width, retrying...");
+          // Optionally, add a retry mechanism. For now, we'll just stop.
+          return;
+        }
+
         const aspectRatio = img.naturalWidth / img.naturalHeight;
         
         const boardWidth = Math.min(containerW, 400);
