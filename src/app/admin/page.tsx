@@ -51,8 +51,8 @@ async function getAdminData() {
     }
   });
 
-  // 2. Fetch all pages (Sales)
-  const pagesSnapshot = await db.collection('lovepages').orderBy('createdAt', 'desc').get();
+  // 2. Fetch latest 100 pages (Sales) for performance
+  const pagesSnapshot = await db.collection('lovepages').orderBy('createdAt', 'desc').limit(100).get();
   
   let avancadoCount = 0;
   let basicoCount = 0;
@@ -200,7 +200,7 @@ export default async function AdminDashboard() {
             <div className="p-6 border-b border-border flex justify-between items-center">
                 <h2 className="text-lg font-bold">Sales & Pages History</h2>
                 <span className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded-full">
-                    {sales.length} records
+                    {sales.length} most recent
                 </span>
             </div>
             

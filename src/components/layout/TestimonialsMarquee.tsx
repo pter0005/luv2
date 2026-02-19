@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Star, Quote, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 
 // --- DADOS REAIS & HUMANIZADOS (Gírias + Linguagem Jovem) ---
 const testimonialImages = [
@@ -36,7 +36,7 @@ const testimonialImages = [
 
 
 // --- CARD DEPOIMENTO PREMIUM ---
-const TestimonialCard = ({ image, name, text }: { image: string, name: string, text: string }) => {
+const TestimonialCard = memo(({ image, name, text }: { image: string, name: string, text: string }) => {
     return (
         <figure
             className="relative w-[320px] md:w-[380px] shrink-0 rounded-2xl border border-white/5 bg-[#121212]/80 p-5 backdrop-blur-md transition-all duration-300 hover:border-purple-500/40 hover:bg-white/5 hover:-translate-y-1 group"
@@ -79,7 +79,9 @@ const TestimonialCard = ({ image, name, text }: { image: string, name: string, t
             </div>
         </figure>
     );
-};
+});
+TestimonialCard.displayName = "TestimonialCard";
+
 
 // --- MARQUEE INFINITO OTIMIZADO (GPU ACCELERATED) ---
 const Marquee = ({ items, direction = "left", speed }: { items: { name: string, text: string, image: string }[], direction?: "left" | "right", speed: number }) => {
