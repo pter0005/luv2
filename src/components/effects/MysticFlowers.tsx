@@ -44,13 +44,19 @@ export default function MysticFlowers() {
             linear-gradient(90deg, #a000ff, #f0f0f0);
         }
 
-        /* Scale reduzido + origin bottom para flores ficarem na base */
+        /* Scale agora é responsivo para melhorar a visualização em mobile */
         .fw .flowers {
           position: relative;
-          transform: scale(0.441);
+          transform: scale(0.85); /* Aumenta a escala base para mobile */
           transform-origin: bottom center;
         }
 
+        @media (min-width: 768px) {
+            .fw .flowers {
+                transform: scale(0.5); /* Ajusta para telas maiores */
+            }
+        }
+        
         .fw .flower {
           position: absolute; bottom: 10vmin;
           transform-origin: bottom center;
@@ -373,7 +379,7 @@ export default function MysticFlowers() {
         ].map(([delays,cls])=>(
           <div key={cls} className={`long-g ${cls}`}>
             {delays.map((d,i)=>(
-              <div key={i} className="grow-ans" style={{'--d':d}}>
+              <div key={i} className="grow-ans" style={{'--d':d as string}}>
                 <div className={`leaf leaf--${i}`}/>
               </div>
             ))}
