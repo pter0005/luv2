@@ -3,12 +3,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    function isAuthenticated() { return request.auth != null; }
-    
-    // Rascunhos temporários: usuários podem criar arquivos, mas só ler e apagar os seus.
+    // Rascunhos temporários: usuários podem criar, ler e apagar apenas seus próprios arquivos.
     match /temp/{userId}/{allPaths=**} {
-      allow create: if request.auth != null;
-      allow read, delete: if isAuthenticated() && request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
     }
     
     // Pasta final de produção: Subpastas explícitas para leitura pública.

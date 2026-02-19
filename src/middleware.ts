@@ -60,9 +60,9 @@ export function middleware(request: NextRequest) {
   }
 
 
-  // 3. Se já tem cookie e tenta acessar login -> Manda direto pra criar
+  // 3. Se já tem cookie e tenta acessar login -> Manda direto para as páginas do usuário
   if (authRoutes.includes(pathname) && userSession) {
-    return NextResponse.redirect(new URL('/criar', request.url));
+    return NextResponse.redirect(new URL('/minhas-paginas', request.url));
   }
 
   return NextResponse.next();
