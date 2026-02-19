@@ -1088,7 +1088,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                     return (
                                         <FormItem key={option.id}>
                                             <FormControl>
-                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" disabled={isDisabled} />
+                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" disabled={!!isDisabled} />
                                             </FormControl>
                                             {isDisabled ? (
                                                 <TooltipProvider>
