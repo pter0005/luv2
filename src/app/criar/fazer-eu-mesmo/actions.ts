@@ -12,7 +12,7 @@ type CreateIntentResult = IntentSuccess | IntentError;
 
 type FinalizePageResult = 
   | { success: true; pageId: string }
-  | { error: string; details?: any };
+  | { success: false; error: string; details?: any };
 
 type PaymentVerificationResult = 
   | { status: 'approved'; pageId: string }
@@ -146,13 +146,13 @@ export async function processPixPayment(intentId: string, price: number) {
 
 // --- CAPTURAR ORDEM PAYPAL ---
 export async function capturePaypalOrder(orderId: string, intentId: string): Promise<FinalizePageResult> {
-    if (!intentId) return { error: "ID do rascunho não encontrado." };
+    if (!intentId) return { success: false, error: "ID do rascunho não encontrado." };
 
     const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
     const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 
     if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-        return { error: "Credenciais do PayPal não configuradas no servidor." };
+        return { success: false, error: "Credenciais do PayPal não configuradas no servidor." };
     }
 
     const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
@@ -171,17 +171,17 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
 
         if (data.status === 'COMPLETED') {
             const finalizationResult = await finalizeLovePage(intentId, orderId);
-            if (finalizationResult.error) {
-                return { error: `Erro ao finalizar a página: ${finalizationResult.error}`, details: finalizationResult.details };
+            if (!finalizationResult.success) {
+                return { success: false, error: `Erro ao finalizar a página: ${finalizationResult.error}`, details: finalizationResult.details };
             }
             return { success: true, pageId: finalizationResult.pageId };
         } else {
             console.error("PAYPAL CAPTURE FAILED:", data);
-            return { error: "A captura do pagamento com PayPal falhou.", details: data };
+            return { success: false, error: "A captura do pagamento com PayPal falhou.", details: data };
         }
     } catch (error: any) {
         console.error("PAYPAL API ERROR:", error);
-        return { error: `Erro de conexão com a API do PayPal: ${error.message}`, details: error };
+        return { success: false, error: `Erro de conexão com a API do PayPal: ${error.message}`, details: error };
     }
 }
 
@@ -195,7 +195,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     try {
         const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) return { error: "Rascunho não encontrado." };
+        if (!data) return { success: false, error: "Rascunho não encontrado." };
         if (data.status === 'completed') return { success: true, pageId: data.lovePageId };
 
         const newPageId = db.collection('lovepages').doc().id;
@@ -277,7 +277,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         return { success: true, pageId: newPageId };
     } catch (error: any) {
         console.error("[FINALIZE_PAGE_ERROR]", error);
-        return { error: error.message, details: error };
+        return { success: false, error: error.message, details: error };
     }
 }
 
@@ -308,7 +308,7 @@ export async function adminFinalizePage(intentId: string, userId: string): Promi
         const result = await finalizeLovePage(intentId, `admin_finalize_${userId}_${Date.now()}`);
         return result;
     } catch (error: any) {
-        return { error: error.message, details: error };
+        return { success: false, error: error.message, details: error };
     }
 }
 

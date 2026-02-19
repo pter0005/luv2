@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
                 // Centralized Logic: Call the "brain" function to finalize the page
                 const finalizationResult = await finalizeLovePage(intentId, paymentId.toString());
 
-                if (finalizationResult.error) {
+                if (!finalizationResult.success) {
                     // Log the error but don't crash the webhook, as it might be a transient issue
                     // or an idempotency case (already processed).
                     console.error(`[WEBHOOK_FINALIZE_ERROR] for intent ${intentId}:`, finalizationResult.error);
