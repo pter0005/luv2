@@ -171,7 +171,7 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean, setSelec
 
     const phi = Math.PI * (3 - Math.sqrt(5)); 
     
-    const baseRadius = isMobile ? 5.8 : 9.7;
+    const baseRadius = isMobile ? 6.7 : 11.2;
     const radius = baseRadius + (Math.sqrt(numCards) * 0.5);
 
     const yFactor = isMobile ? 1.6 : 1.2; 
@@ -282,13 +282,13 @@ function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void
       return seconds ? new Date(seconds * 1000) : (card.date instanceof Date ? card.date : null);
   }, [card.date]);
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100000] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
-      onClick={onClose} // Close on backdrop click
+      className="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-lg flex items-center justify-center p-4"
+      onClick={onClose}
     >
       <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
         <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl">
@@ -305,7 +305,8 @@ function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void
       >
           <X className="w-6 h-6" />
       </button>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
