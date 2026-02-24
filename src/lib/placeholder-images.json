@@ -1,0 +1,70 @@
+{
+  "placeholderImages": [
+    {
+      "id": "headerLogo",
+      "description": "mycupid logo for header",
+      "imageUrl": "https://res.cloudinary.com/dncoxm1it/image/upload/v1770072227/Design_sem_nome_3_1_ptmdcw.png",
+      "imageHint": "logo love cupid"
+    },
+    {
+      "id": "footerLogo",
+      "description": "mycupid logo for footer",
+      "imageUrl": "https://res.cloudinary.com/dncoxm1it/image/upload/v1770072227/Design_sem_nome_3_1_ptmdcw.png",
+      "imageHint": "logo love cupid"
+    },
+    {
+      "id": "lovePageLogo",
+      "description": "Amore Pages logo for the created love page",
+      "imageUrl": "https://i.imgur.com/2ZyhtCE.png",
+      "imageHint": "logo love signature"
+    },
+    {
+      "id": "avatar1",
+      "description": "Avatar for Juliana S.",
+      "imageUrl": "https://images.unsplash.com/photo-1710886289695-4a7e2f214aaf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjB3b21hbnxlbnwwfHx8fDE3NjA4NTA4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person woman"
+    },
+    {
+      "id": "avatar2",
+      "description": "Avatar for Ricardo M.",
+      "imageUrl": "https://images.unsplash.com/photo-1587207156120-118783f37a76?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBtYW58ZW58MHx8fHwxNzYwODUwODA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person man"
+    },
+    {
+      "id": "avatar3",
+      "description": "Avatar for Fernanda L.",
+      "imageUrl": "https://images.unsplash.com/photo-1724491801483-9e812b1eb2b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjB3b21hbnxlbnwwfHx8fDE3NjA4NTA4MDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person woman"
+    },
+    {
+      "id": "heroVertical",
+      "description": "A vertical image for the hero section.",
+      "imageUrl": "https://images.unsplash.com/photo-1591969851586-adbbd4accf81?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb3VwbGUlMjBsb3ZlfGVufDB8fHx8MTc2MDg0MzUzMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "couple love"
+    },
+    {
+      "id": "step1",
+      "description": "Image for step 1 of how it works.",
+      "imageUrl": "https://i.imgur.com/46jDAIG.png",
+      "imageHint": "panda write"
+    },
+    {
+      "id": "step2",
+      "description": "Image for step 2 of how it works.",
+      "imageUrl": "https://i.imgur.com/KZ7cgMP.png",
+      "imageHint": "panda mobile"
+    },
+    {
+      "id": "step3",
+      "description": "Image for step 3 of how it works.",
+      "imageUrl": "https://i.imgur.com/YRUFAXm.png",
+      "imageHint": "cupid qr code"
+    },
+    {
+      "id": "step4",
+      "description": "Image for step 4 of how it works.",
+      "imageUrl": "https://i.imgur.com/CfVDIR9.png",
+      "imageHint": "cupid mobile"
+    }
+  ]
+}

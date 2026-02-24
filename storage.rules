@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Rascunhos temporários: usuários podem criar, ler e apagar apenas seus próprios arquivos.
+    match /temp/{userId}/{allPaths=**} {
+      allow read, delete: if request.auth.uid == userId;
+      allow create, update: if request.auth.uid == userId
+                         && request.resource.size < 5 * 1024 * 1024 // 5MB limit
+                         && request.resource.contentType.matches('image/.*|video/.*|audio/.*');
+    }
+    
+    // Pasta final de produção: Acesso de leitura público a todo o conteúdo dentro de uma página de amor.
+    match /lovepages/{pageId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // Ninguém, exceto o backend, deve escrever aqui.
+    }
+    
+    // Regra legado (mantida por segurança, mas o ideal é não usar mais)
+    match /gallery-images/{allPaths=**} { 
+      allow read: if true; 
+      allow write: if false; 
+    }
+  }
+}
