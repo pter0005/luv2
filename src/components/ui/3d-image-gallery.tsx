@@ -94,7 +94,7 @@ function FloatingCard({ card, position, isMobile, onClick }: { card: Card, posit
         occlude={[occludeRef]}
         distanceFactor={8} 
         position={[0, 0, 0.1]} 
-        zIndexRange={[200000, 0]} 
+        zIndexRange={[100, 0]} 
         style={{ pointerEvents: 'auto', cursor: 'pointer', transformStyle: 'preserve-3d' }}
       >
         <div 
