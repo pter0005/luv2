@@ -763,7 +763,7 @@ const translations = {
     'publicpage.games.memory.title': 'Juego de Memoria',
     'publicpage.games.memory.description': 'Encuentra las parejas de tus fotos especiales.',
     'publicpage.games.comingSoon': 'Próximamente',
-    'puzzle.loading': 'Cargando rompecabezas...',
+    'puzzle.loading': 'Carregando quebra-cabeça...',
     'puzzle.perfect': '¡Perfecto!',
     'privacy.back': 'Volver al inicio',
     'terms.title': 'Términos de Uso',
