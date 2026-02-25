@@ -1921,15 +1921,15 @@ function WizardInternal() {
   
   useEffect(() => {
     setIsClient(true);
-    
     if (searchParams.get('new') === 'true') {
-        localStorage.removeItem('amore-pages-autosave');
-        methods.reset(); // Resets to default values, including plan from URL
-        const url = new URL(window.location.href);
-        url.searchParams.delete('new');
-        window.history.replaceState({}, '', url.toString());
+      localStorage.removeItem('amore-pages-autosave');
+      methods.reset();
+      
+      const url = new URL(window.location.href);
+      url.searchParams.delete('new');
+      window.history.replaceState({}, '', url.toString());
     } else {
-        restoreFromLocalStorage();
+      restoreFromLocalStorage();
     }
   }, [searchParams, methods, restoreFromLocalStorage]);
 
@@ -2180,5 +2180,7 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
 
+
+    
 
     
