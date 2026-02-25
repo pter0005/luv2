@@ -1935,10 +1935,10 @@ function WizardInternal() {
 
 
   // --- AUTOSAVE LOGIC ---
-  const handleAutosave = useCallback(async (data: PageData) => {
-    if (!user || isUserLoading) return; // Don't save if no user or still loading
+  const handleAutosave = useCallback(async () => {
+    if (!user || isUserLoading) return;
     
-    // Explicitly add user ID to the data being saved
+    const data = getValues();
     const dataToSave = { ...data, userId: user.uid };
 
     try {
@@ -1954,7 +1954,7 @@ function WizardInternal() {
                         <p>{result.error}</p>
                         <div className="mt-2 p-2 bg-black/30 rounded-md">
                             <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
-                                CMD_LOG: {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                                {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
                             </pre>
                         </div>
                     </div>
@@ -1965,24 +1965,30 @@ function WizardInternal() {
             if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
                 setValue('intentId', undefined, { shouldDirty: false });
             }
-        } else if (result.intentId && !dataToSave.intentId) {
-            setValue('intentId', result.intentId, { shouldDirty: false });
-            localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
         } else {
-            localStorage.setItem('amore-pages-autosave', JSON.stringify(dataToSave));
+            const objectToStore = {
+                ...dataToSave,
+                intentId: result.intentId, 
+            };
+            
+            if (result.intentId && !dataToSave.intentId) {
+                setValue('intentId', result.intentId, { shouldDirty: false });
+            }
+            
+            localStorage.setItem('amore-pages-autosave', JSON.stringify(objectToStore));
         }
     } catch (e) {
         console.error("Error during autosave:", e);
     }
-  }, [user, isUserLoading, setValue, toast]);
+  }, [user, isUserLoading, getValues, setValue, toast]);
 
   useEffect(() => {
-    const subscription = watch((value) => {
+    const subscription = watch(() => {
         if (autosaveTimeoutRef.current) {
             clearTimeout(autosaveTimeoutRef.current);
         }
         autosaveTimeoutRef.current = setTimeout(() => {
-            handleAutosave(value as PageData);
+            handleAutosave();
         }, 1500); // Debounce autosave
     });
     
@@ -2030,7 +2036,7 @@ function WizardInternal() {
     
     if (steps[nextStepIndex]?.id === 'payment' && user) {
         toast({ title: t('toast.payment.autosave'), description: t('toast.payment.autosave.description') });
-        await handleAutosave({ ...getValues(), userId: user.uid });
+        await handleAutosave();
     }
     
     setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
@@ -2184,3 +2190,4 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
     
 
     
+
