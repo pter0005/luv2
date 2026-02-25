@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -33,86 +34,87 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
   }, [onReveal]);
 
   useEffect(() => {
-    if (!imageSrc || !containerRef.current) return;
-    
+    if (!imageSrc) return;
+
     setIsLoaded(false);
     setIsCompleted(false);
     setSelectedPieceId(null);
+    setPieces([]);
 
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
 
-    let loaded = false;
-
     const handleLoad = () => {
-        if (loaded) return;
-        loaded = true;
+      if (!containerRef.current) return;
 
-        const containerW = containerRef.current?.offsetWidth || 300;
-        
-        if (containerW === 0 || img.naturalWidth === 0) {
-          console.warn("Puzzle container or image has no width, retrying...");
-          return;
+      const containerW = containerRef.current.offsetWidth;
+      if (containerW === 0 || img.naturalWidth === 0) {
+        console.warn("Puzzle container or image has no width, cannot init puzzle.");
+        setIsLoaded(false);
+        return;
+      }
+
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      const boardWidth = Math.min(containerW, 400);
+      const boardHeight = boardWidth / aspectRatio;
+      const pW = boardWidth / GRID_SIZE;
+      const pH = boardHeight / GRID_SIZE;
+
+      setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
+
+      const targetPositions: { x: number; y: number }[] = [];
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          targetPositions.push({ x: col * pW, y: row * pH });
         }
+      }
 
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
-        
-        const boardWidth = Math.min(containerW, 400);
-        const boardHeight = boardWidth / aspectRatio;
-
-        const pW = boardWidth / GRID_SIZE;
-        const pH = boardHeight / GRID_SIZE;
-
-        setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
-
-        const initialPieces = [];
-        const targetPositions: { x: number; y: number }[] = [];
-
-        for (let row = 0; row < GRID_SIZE; row++) {
-            for (let col = 0; col < GRID_SIZE; col++) {
-            targetPositions.push({ x: col * pW, y: row * pH });
-            }
-        }
-
-        let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-        
-        let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-        while(!isShuffledCorrectly) {
+      let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+      let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+      
+      // Ensure it's actually shuffled for more than 1 piece
+      if (!isShuffledCorrectly && shuffledPositions.length > 1) {
+        while (!isShuffledCorrectly) {
             shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
             isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
         }
+      }
 
-        for (let row = 0; row < GRID_SIZE; row++) {
-            for (let col = 0; col < GRID_SIZE; col++) {
-            const id = row * GRID_SIZE + col;
-            initialPieces.push({
-                id,
-                r: row,
-                c: col,
-                targetX: col * pW,
-                targetY: row * pH,
-                currentX: shuffledPositions[id].x,
-                currentY: shuffledPositions[id].y,
-            });
-            }
+      const initialPieces = [];
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          const id = row * GRID_SIZE + col;
+          initialPieces.push({
+            id,
+            r: row,
+            c: col,
+            targetX: col * pW,
+            targetY: row * pH,
+            currentX: shuffledPositions[id].x,
+            currentY: shuffledPositions[id].y,
+          });
         }
-        setPieces(initialPieces);
-        setIsLoaded(true);
+      }
+
+      setPieces(initialPieces);
+      setIsLoaded(true);
+      checkWin(initialPieces);
     };
 
-    img.onload = handleLoad;
-    img.onerror = () => {
-        console.error("Puzzle image failed to load:", imageSrc);
-        setIsLoaded(false); 
+    const handleError = () => {
+      console.error("Puzzle image failed to load:", imageSrc);
+      setIsLoaded(false);
     };
 
+    img.addEventListener('load', handleLoad);
+    img.addEventListener('error', handleError);
     img.src = imageSrc;
 
-    if (img.complete) {
-        handleLoad();
-    }
-
-  }, [imageSrc]);
+    return () => {
+      img.removeEventListener('load', handleLoad);
+      img.removeEventListener('error', handleError);
+    };
+  }, [imageSrc, checkWin]);
 
   const handlePieceClick = (clickedPieceId: number) => {
     if (isCompleted) return;
