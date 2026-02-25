@@ -46,11 +46,16 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     const processImage = () => {
         if (!containerRef.current || !img.naturalWidth) {
           console.warn("Puzzle container or image has no dimensions, cannot init puzzle.");
-          // We could add a retry mechanism here with ResizeObserver if this proves unreliable.
           return;
         }
   
         const containerW = containerRef.current.offsetWidth;
+        if (containerW === 0) {
+          // Container ainda não tem tamanho, tenta de novo em 1 frame
+          requestAnimationFrame(processImage);
+          return;
+        }
+
         const aspectRatio = img.naturalWidth / img.naturalHeight;
         const boardWidth = Math.min(containerW, 400);
         const boardHeight = boardWidth / aspectRatio;
@@ -178,6 +183,8 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="absolute puzzle-slot cursor-pointer"
             style={{
+              top: 0,
+              left: 0,
               width: dimensions.pieceW,
               height: dimensions.pieceH,
               outline: selectedPieceId === p.id ? '3px solid hsl(var(--primary))' : 'none',
