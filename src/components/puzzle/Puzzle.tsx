@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -219,4 +218,3 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     </div>
   );
 }
-
