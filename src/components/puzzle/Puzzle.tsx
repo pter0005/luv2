@@ -45,11 +45,8 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     img.crossOrigin = 'anonymous';
 
     const processImage = () => {
-        if (!containerRef.current || !img.naturalWidth) {
-          console.warn("Puzzle container or image has no dimensions, cannot init puzzle.");
-          return;
-        }
-  
+        if (!containerRef.current) return;
+        
         const containerW = containerRef.current.offsetWidth;
         if (containerW === 0) {
           // Container ainda não tem tamanho, tenta de novo em 1 frame
@@ -104,7 +101,6 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
       };
 
     const handleLoad = () => {
-        // This check is crucial. It ensures the image is fully decoded and has dimensions.
         if (img.complete && img.naturalWidth > 0) {
             processImage();
         }
@@ -112,14 +108,13 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
 
     const handleError = () => {
       console.error("Puzzle image failed to load:", imageSrc);
-      setIsLoaded(false); // Keep it in loading state with an error message
+      setIsLoaded(false); 
     };
 
     img.addEventListener('load', handleLoad);
     img.addEventListener('error', handleError);
     img.src = imageSrc;
 
-    // This handles cached images where the 'load' event might not fire again.
     if (img.complete && img.naturalWidth > 0) {
         handleLoad();
     }
@@ -224,3 +219,4 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     </div>
   );
 }
+
