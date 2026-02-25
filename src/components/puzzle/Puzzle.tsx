@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -57,7 +58,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
         }
 
         const aspectRatio = img.naturalWidth / img.naturalHeight;
-        const boardWidth = Math.min(containerW, 400);
+        const boardWidth = Math.min(containerW, 350);
         const boardHeight = boardWidth / aspectRatio;
         const pW = boardWidth / GRID_SIZE;
         const pH = boardHeight / GRID_SIZE;
