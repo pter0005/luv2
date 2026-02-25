@@ -6,9 +6,9 @@ import { redirect } from 'next/navigation';
 import { SignJWT } from 'jose';
 import { timingSafeEqual } from 'crypto';
 
-// Admin credentials should be set as environment variables for security.
-const ADMIN_USER = process.env.ADMIN_USER;
-const ADMIN_PASS = process.env.ADMIN_PASS;
+// Admin credentials set directly as requested. For production, use environment variables.
+const ADMIN_USER = 'admin123';
+const ADMIN_PASS = '123admin';
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 
 // Timing-safe comparison to prevent timing attacks
