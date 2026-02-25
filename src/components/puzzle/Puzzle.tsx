@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 const GRID_SIZE = 3;
@@ -18,6 +18,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
   const [pieces, setPieces] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 300, height: 300, pieceW: 100, pieceH: 100 });
   const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
@@ -39,17 +40,16 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     setIsLoaded(false);
     setIsCompleted(false);
     setSelectedPieceId(null);
+    setError(null);
     setPieces([]);
 
     const img = new window.Image();
-    img.crossOrigin = 'anonymous';
 
     const processImage = () => {
         if (!containerRef.current) return;
         
         const containerW = containerRef.current.offsetWidth;
         if (containerW === 0) {
-          // Container ainda não tem tamanho, tenta de novo em 1 frame
           requestAnimationFrame(processImage);
           return;
         }
@@ -107,8 +107,10 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     };
 
     const handleError = () => {
-      console.error("Puzzle image failed to load:", imageSrc);
-      setIsLoaded(false); 
+      const msg = `Falha ao carregar a imagem do quebra-cabeça: ${imageSrc}`;
+      console.error(msg);
+      setError("Não foi possível carregar a imagem. Verifique o link ou tente novamente.");
+      setIsLoaded(false);
     };
 
     img.addEventListener('load', handleLoad);
@@ -161,7 +163,15 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
             height: isLoaded ? dimensions.height + 4 : '300px'
         }}
       >
-        {!isLoaded && (
+        {error && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 p-4 text-center rounded-lg">
+                <AlertTriangle className="w-8 h-8 mb-2" />
+                <p className="text-sm font-bold">Erro de Imagem</p>
+                <p className="text-xs">{error}</p>
+            </div>
+        )}
+
+        {!isLoaded && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-primary">
             <Loader2 className="w-10 h-10 animate-spin mb-2" />
             <span className="text-sm font-medium">{t('puzzle.loading')}</span>
