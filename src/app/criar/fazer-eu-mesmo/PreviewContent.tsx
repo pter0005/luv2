@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -22,7 +23,10 @@ import MysticFlowers from '@/components/effects/MysticFlowers';
 
 // Dynamic imports
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
-const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
+const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full aspect-square" />,
+});
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
