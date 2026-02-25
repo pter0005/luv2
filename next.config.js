@@ -9,12 +9,15 @@ const nextConfig = {
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' https: data:;
-      font-src 'self';
+      img-src 'self' https: data: blob:;
+      font-src 'self' https:;
+      connect-src 'self' https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com;
+      media-src 'self' https: blob:;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
+      frame-src https://www.youtube.com https://player.vimeo.com;
       report-uri /api/csp-report;
     `.replace(/\s{2,}/g, ' ').trim();
 
