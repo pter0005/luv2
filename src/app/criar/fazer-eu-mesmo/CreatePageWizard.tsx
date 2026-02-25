@@ -1893,6 +1893,18 @@ function WizardInternal() {
         if (parsed.timelineEvents) {
             parsed.timelineEvents.forEach((ev: any) => { if(ev.date) ev.date = new Date(ev.date) });
         }
+
+        // Clean up potentially invalid image/file objects before resetting the form
+        if (parsed.puzzleImage && typeof parsed.puzzleImage?.url !== 'string') {
+            delete parsed.puzzleImage;
+        }
+        if (parsed.audioRecording && typeof parsed.audioRecording?.url !== 'string') {
+            delete parsed.audioRecording;
+        }
+        if (parsed.backgroundVideo && typeof parsed.backgroundVideo?.url !== 'string') {
+            delete parsed.backgroundVideo;
+        }
+        
         methods.reset(parsed);
     } catch(e) {
         console.error("Falha ao carregar rascunho. O rascunho pode estar corrompido.", e);
@@ -2162,3 +2174,4 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
     
 
     
+
