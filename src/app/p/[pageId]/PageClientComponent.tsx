@@ -79,9 +79,23 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   const cookieName = `puzzle_solved_${pageData.id}`;
 
+  const puzzleImageSrc = useMemo(() => {
+    if (!pageData.puzzleImage) return null;
+    // Handle new format: { url: '...', path: '...' }
+    if (typeof pageData.puzzleImage === 'object' && pageData.puzzleImage.url) {
+        return pageData.puzzleImage.url;
+    }
+    // Handle old format: 'data:image/...' (base64 string)
+    if (typeof pageData.puzzleImage === 'string' && pageData.puzzleImage.startsWith('data:')) {
+        return pageData.puzzleImage;
+    }
+    return null;
+  }, [pageData.puzzleImage]);
+
   const hasPuzzle = useMemo(() => {
-    return !!(pageData.enablePuzzle && pageData.puzzleImage?.url);
-  }, [pageData.enablePuzzle, pageData.puzzleImage]);
+    return !!(pageData.enablePuzzle && puzzleImageSrc);
+  }, [pageData.enablePuzzle, puzzleImageSrc]);
+
 
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
@@ -422,7 +436,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {!puzzleRevealed && hasPuzzle && pageData.puzzleImage?.url && (
+        {!puzzleRevealed && hasPuzzle && puzzleImageSrc && (
           <motion.div
             key="puzzle-overlay-layer"
             initial={{ opacity: 1 }}
@@ -451,7 +465,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                    <motion.div key="puzzle-view" initial={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
                         <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                         <RealPuzzle
-                            imageSrc={pageData.puzzleImage.url}
+                            imageSrc={puzzleImageSrc}
                             onReveal={() => setIsPuzzleComplete(true)}
                         />
                         </div>
