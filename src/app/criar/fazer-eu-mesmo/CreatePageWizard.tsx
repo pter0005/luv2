@@ -1150,7 +1150,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
 });
 BackgroundStep.displayName = 'BackgroundStep';
 
-const PuzzleStep = React.memo(() => {
+const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const { user, storage } = useFirebase();
     const enablePuzzle = watch("enablePuzzle");
@@ -1167,6 +1167,7 @@ const PuzzleStep = React.memo(() => {
                 const compressedBlob = await compressImage(file, 1280, 0.9);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
+                await handleAutosave?.();
                 toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
             } catch (error: any) {
                 console.error("Error processing puzzle image:", error);
@@ -1187,12 +1188,13 @@ const PuzzleStep = React.memo(() => {
         }
     };
     
-    const removePuzzleImage = () => {
+    const removePuzzleImage = async () => {
         if (puzzleImage?.path && storage) {
             const imageRef = storageRef(storage, puzzleImage.path);
             deleteObject(imageRef).catch(err => console.error("Failed to delete puzzle image from storage:", err));
         }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
+        await handleAutosave?.();
         toast({ title: t('wizard.puzzle.image.remove') });
     };
     
@@ -1383,7 +1385,7 @@ const MemoryGameStep = React.memo(() => {
 });
 MemoryGameStep.displayName = 'MemoryGameStep';
 
-const stepComponents = [
+const stepComponents: React.ComponentType<any>[] = [
     TitleStep,
     MessageStep,
     SpecialDateStep,
@@ -2077,12 +2079,16 @@ function WizardInternal() {
   } else if (currentStepId === 'payment') {
       StepComponent = <PaymentStep setPageId={setPageId} />;
   } else {
-      const Comp = stepComponents[currentStep];
-      StepComponent = (
-          <PlanLockWrapper requiredPlan={currentStepInfo.requiredPlan}>
-            <Comp isVisible={currentStepId === 'background'} />
-          </PlanLockWrapper>
-      );
+    const Comp = stepComponents[currentStep];
+    const props: any = { isVisible: currentStepId === 'background' };
+    if (currentStepId === 'puzzle') {
+        props.handleAutosave = handleAutosave;
+    }
+    StepComponent = (
+        <PlanLockWrapper requiredPlan={currentStepInfo.requiredPlan}>
+            <Comp {...props} />
+        </PlanLockWrapper>
+    );
   }
   
   const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
@@ -2190,4 +2196,5 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
     
 
     
+
 
