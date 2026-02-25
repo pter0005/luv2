@@ -130,7 +130,9 @@ export default function PreviewContent({
         }
     }, [formData.backgroundAnimation]);
 
-    const puzzleImageSrc = formData.puzzleImage?.url;
+    const puzzleImageSrc = typeof formData.puzzleImage === 'string' 
+      ? formData.puzzleImage 
+      : formData.puzzleImage?.url;
     const shouldBeBlurred = showPuzzlePreview && !previewPuzzleRevealed;
 
     return (
@@ -312,3 +314,5 @@ export default function PreviewContent({
         </div>
     )
 }
+
+    
