@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -35,7 +34,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
   }, [onReveal]);
 
   useEffect(() => {
-    if (!imageSrc) return;
+    if (!imageSrc || !imageSrc.startsWith('http')) return;
 
     setIsLoaded(false);
     setIsCompleted(false);
@@ -43,87 +42,68 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     setError(null);
     setPieces([]);
 
-    const img = new window.Image();
+    // Usa um elemento img no DOM em vez de new window.Image()
+    // Isso evita bloqueio de CORS do Firebase Storage
+    const img = document.createElement('img');
+    img.referrerPolicy = 'no-referrer';
 
     const processImage = () => {
-        if (!containerRef.current) return;
-        
-        const containerW = containerRef.current.offsetWidth;
+        const containerW = containerRef.current?.offsetWidth ?? 0;
         if (containerW === 0) {
-          requestAnimationFrame(processImage);
-          return;
+            setTimeout(processImage, 50);
+            return;
         }
 
-        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const aspectRatio = img.naturalWidth > 0 ? img.naturalWidth / img.naturalHeight : 1;
         const boardWidth = Math.min(containerW, 350);
         const boardHeight = boardWidth / aspectRatio;
         const pW = boardWidth / GRID_SIZE;
         const pH = boardHeight / GRID_SIZE;
-  
+
         setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
-  
+
         const targetPositions: { x: number; y: number }[] = [];
         for (let row = 0; row < GRID_SIZE; row++) {
-          for (let col = 0; col < GRID_SIZE; col++) {
-            targetPositions.push({ x: col * pW, y: row * pH });
-          }
+            for (let col = 0; col < GRID_SIZE; col++) {
+                targetPositions.push({ x: col * pW, y: row * pH });
+            }
         }
-  
-        let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-        let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-        
-        if (!isShuffledCorrectly && shuffledPositions.length > 1) {
-          while (!isShuffledCorrectly) {
-              shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-              isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-          }
+
+        let shuffled = [...targetPositions].sort(() => Math.random() - 0.5);
+        let ok = shuffled.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+        while (!ok && shuffled.length > 1) {
+            shuffled = [...targetPositions].sort(() => Math.random() - 0.5);
+            ok = shuffled.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
         }
-  
+
         const initialPieces = [];
         for (let row = 0; row < GRID_SIZE; row++) {
-          for (let col = 0; col < GRID_SIZE; col++) {
-            const id = row * GRID_SIZE + col;
-            initialPieces.push({
-              id,
-              r: row,
-              c: col,
-              targetX: col * pW,
-              targetY: row * pH,
-              currentX: shuffledPositions[id].x,
-              currentY: shuffledPositions[id].y,
-            });
-          }
+            for (let col = 0; col < GRID_SIZE; col++) {
+                const id = row * GRID_SIZE + col;
+                initialPieces.push({
+                    id, r: row, c: col,
+                    targetX: col * pW, targetY: row * pH,
+                    currentX: shuffled[id].x, currentY: shuffled[id].y,
+                });
+            }
         }
-  
+
         setPieces(initialPieces);
         setIsLoaded(true);
         checkWin(initialPieces);
-      };
-
-    const handleLoad = () => {
-        if (img.complete && img.naturalWidth > 0) {
-            processImage();
-        }
     };
 
-    const handleError = () => {
-      const msg = `Falha ao carregar a imagem do quebra-cabeça: ${imageSrc}`;
-      console.error(msg);
-      setError("Não foi possível carregar a imagem. Verifique o link ou tente novamente.");
-      setIsLoaded(false);
+    img.onload = processImage;
+    img.onerror = () => {
+        setError("Não foi possível carregar a imagem. Verifique o link ou tente novamente.");
     };
 
-    img.addEventListener('load', handleLoad);
-    img.addEventListener('error', handleError);
     img.src = imageSrc;
-
-    if (img.complete && img.naturalWidth > 0) {
-        handleLoad();
-    }
+    if (img.complete && img.naturalWidth > 0) processImage();
 
     return () => {
-      img.removeEventListener('load', handleLoad);
-      img.removeEventListener('error', handleError);
+        img.onload = null;
+        img.onerror = null;
     };
   }, [imageSrc, checkWin]);
 
