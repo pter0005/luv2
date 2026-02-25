@@ -2100,7 +2100,6 @@ function WizardInternal() {
         {/* Left Column: Preview (Desktop Only) */}
         <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
             <PreviewContent 
-                formData={formData} 
                 isClient={isClient}
                 onShowTimeline={() => setShowTimelinePreview(true)}
                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
@@ -2139,7 +2138,6 @@ function WizardInternal() {
             </div>
             <div className='relative w-full'>
                 <PreviewContent 
-                    formData={formData} 
                     isClient={isClient}
                     onShowTimeline={() => setShowTimelinePreview(true)}
                     hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
@@ -2196,5 +2194,6 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
     
 
     
+
 
 

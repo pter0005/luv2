@@ -20,6 +20,8 @@ import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
 import { useTranslation } from '@/lib/i18n';
 import MysticFlowers from '@/components/effects/MysticFlowers';
+import { useFormContext } from 'react-hook-form';
+import { PageData } from './CreatePageWizard';
 
 // Dynamic imports
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -38,7 +40,6 @@ const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), 
 
 
 type PreviewContentProps = {
-    formData: any;
     isClient: boolean;
     onShowTimeline: () => void;
     hasValidTimelineEvents: boolean;
@@ -74,7 +75,6 @@ const MemoizedSwiper = React.memo(({ galleryImages, galleryStyle }: { galleryIma
 MemoizedSwiper.displayName = 'MemoizedSwiper';
 
 export default function PreviewContent({
-    formData,
     isClient,
     onShowTimeline,
     hasValidTimelineEvents,
@@ -83,6 +83,8 @@ export default function PreviewContent({
     setPreviewPuzzleRevealed,
     locale,
 }: PreviewContentProps) {
+    const { watch } = useFormContext<PageData>();
+    const formData = watch();
     const { t } = useTranslation();
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
