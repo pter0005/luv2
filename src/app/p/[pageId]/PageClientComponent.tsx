@@ -161,22 +161,33 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const targetDateIso = useMemo(() => {
     if (!pageData.specialDate) return null;
     const d = pageData.specialDate;
-    if (d && typeof d === 'object') {
-        if ('_seconds' in d && d._seconds) {
-            return new Date(d._seconds * 1000).toISOString();
+
+    try {
+        let date: Date | null = null;
+        if (d && typeof d === 'object') {
+            const seconds = (d as any)._seconds || (d as any).seconds;
+            if (seconds) {
+                date = new Date(seconds * 1000);
+            }
+        } else if (d) {
+            date = new Date(d);
         }
-        if ('seconds' in d && d.seconds) {
-            return new Date(d.seconds * 1000).toISOString();
+
+        // Check if the date is valid before converting
+        if (date && !isNaN(date.getTime())) {
+            return date.toISOString();
         }
+    } catch {
+        // If any error occurs during parsing, return null
+        return null;
     }
-    // Fallback for string or Date object
-    if (d) {
-        return new Date(d).toISOString();
-    }
+
     return null;
   }, [pageData.specialDate]);
 
   if (!isClient) return null;
+
+  const isFormattingArray = Array.isArray(pageData.messageFormatting);
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
@@ -231,7 +242,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             <h1 className="text-4xl md:text-7xl font-handwriting leading-tight drop-shadow-lg px-2" style={{ color: pageData.titleColor }}>
               {pageData.title}
             </h1>
-            <p className={cn("text-white/90 whitespace-pre-wrap text-base md:text-lg max-w-2xl mx-auto leading-relaxed drop-shadow-md px-4", pageData.messageFontSize, pageData.messageFormatting?.includes("bold") && "font-bold", pageData.messageFormatting?.includes("italic") && "italic", pageData.messageFormatting?.includes("strikethrough") && "line-through")}>
+            <p className={cn("text-white/90 whitespace-pre-wrap text-base md:text-lg max-w-2xl mx-auto leading-relaxed drop-shadow-md px-4", 
+                pageData.messageFontSize,
+                isFormattingArray && pageData.messageFormatting.includes("bold") && "font-bold",
+                isFormattingArray && pageData.messageFormatting.includes("italic") && "italic",
+                isFormattingArray && pageData.messageFormatting.includes("strikethrough") && "line-through"
+              )}>
               {pageData.message}
             </p>
           </div>
