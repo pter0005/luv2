@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -44,71 +43,80 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
 
+    const processImage = () => {
+        if (!containerRef.current || !img.naturalWidth) {
+          console.warn("Puzzle container or image has no dimensions, cannot init puzzle.");
+          // We could add a retry mechanism here with ResizeObserver if this proves unreliable.
+          return;
+        }
+  
+        const containerW = containerRef.current.offsetWidth;
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const boardWidth = Math.min(containerW, 400);
+        const boardHeight = boardWidth / aspectRatio;
+        const pW = boardWidth / GRID_SIZE;
+        const pH = boardHeight / GRID_SIZE;
+  
+        setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
+  
+        const targetPositions: { x: number; y: number }[] = [];
+        for (let row = 0; row < GRID_SIZE; row++) {
+          for (let col = 0; col < GRID_SIZE; col++) {
+            targetPositions.push({ x: col * pW, y: row * pH });
+          }
+        }
+  
+        let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+        let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+        
+        if (!isShuffledCorrectly && shuffledPositions.length > 1) {
+          while (!isShuffledCorrectly) {
+              shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
+              isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
+          }
+        }
+  
+        const initialPieces = [];
+        for (let row = 0; row < GRID_SIZE; row++) {
+          for (let col = 0; col < GRID_SIZE; col++) {
+            const id = row * GRID_SIZE + col;
+            initialPieces.push({
+              id,
+              r: row,
+              c: col,
+              targetX: col * pW,
+              targetY: row * pH,
+              currentX: shuffledPositions[id].x,
+              currentY: shuffledPositions[id].y,
+            });
+          }
+        }
+  
+        setPieces(initialPieces);
+        setIsLoaded(true);
+        checkWin(initialPieces);
+      };
+
     const handleLoad = () => {
-      if (!containerRef.current) return;
-
-      const containerW = containerRef.current.offsetWidth;
-      if (containerW === 0 || img.naturalWidth === 0) {
-        console.warn("Puzzle container or image has no width, cannot init puzzle.");
-        setIsLoaded(false);
-        return;
-      }
-
-      const aspectRatio = img.naturalWidth / img.naturalHeight;
-      const boardWidth = Math.min(containerW, 400);
-      const boardHeight = boardWidth / aspectRatio;
-      const pW = boardWidth / GRID_SIZE;
-      const pH = boardHeight / GRID_SIZE;
-
-      setDimensions({ width: boardWidth, height: boardHeight, pieceW: pW, pieceH: pH });
-
-      const targetPositions: { x: number; y: number }[] = [];
-      for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-          targetPositions.push({ x: col * pW, y: row * pH });
+        // This check is crucial. It ensures the image is fully decoded and has dimensions.
+        if (img.complete && img.naturalWidth > 0) {
+            processImage();
         }
-      }
-
-      let shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-      let isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-      
-      // Ensure it's actually shuffled for more than 1 piece
-      if (!isShuffledCorrectly && shuffledPositions.length > 1) {
-        while (!isShuffledCorrectly) {
-            shuffledPositions = [...targetPositions].sort(() => Math.random() - 0.5);
-            isShuffledCorrectly = shuffledPositions.some((pos, i) => pos.x !== targetPositions[i].x || pos.y !== targetPositions[i].y);
-        }
-      }
-
-      const initialPieces = [];
-      for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-          const id = row * GRID_SIZE + col;
-          initialPieces.push({
-            id,
-            r: row,
-            c: col,
-            targetX: col * pW,
-            targetY: row * pH,
-            currentX: shuffledPositions[id].x,
-            currentY: shuffledPositions[id].y,
-          });
-        }
-      }
-
-      setPieces(initialPieces);
-      setIsLoaded(true);
-      checkWin(initialPieces);
     };
 
     const handleError = () => {
       console.error("Puzzle image failed to load:", imageSrc);
-      setIsLoaded(false);
+      setIsLoaded(false); // Keep it in loading state with an error message
     };
 
     img.addEventListener('load', handleLoad);
     img.addEventListener('error', handleError);
     img.src = imageSrc;
+
+    // This handles cached images where the 'load' event might not fire again.
+    if (img.complete && img.naturalWidth > 0) {
+        handleLoad();
+    }
 
     return () => {
       img.removeEventListener('load', handleLoad);
