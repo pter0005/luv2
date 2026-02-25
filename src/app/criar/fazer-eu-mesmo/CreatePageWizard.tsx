@@ -1611,8 +1611,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                  <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title_en')}</h3>
-                    <p className="text-sm text-zinc-400">Complete your order to generate your unique link.</p>
+                    <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title')}</h3>
+                    <p className="text-sm text-zinc-400">{t('wizard.payment.description')}</p>
                 </div>
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
                     <div className="absolute top-0 right-0 p-2">
@@ -1620,7 +1620,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                              {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
                         </span>
                     </div>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total_en')}</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total')}</p>
                     <h2 className="text-5xl font-black text-white mb-1">${totalUSD.toFixed(2)}</h2>
                     <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
                         <Clock size={12} /> {t('wizard.payment.immediate_access')}
