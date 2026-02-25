@@ -101,15 +101,24 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       .map((event: any) => {
         let dateObj;
         if (event.date) {
-            if (event.date._seconds !== undefined) {
-                dateObj = new Date(event.date._seconds * 1000);
-            } else if (event.date.seconds !== undefined) {
-                dateObj = new Date(event.date.seconds * 1000);
-            } else {
-                dateObj = new Date(event.date);
+            try {
+                let d: Date;
+                // Handle Firestore Timestamp object ({ _seconds: ... } or { seconds: ... })
+                if (typeof event.date === 'object' && event.date !== null && (event.date.seconds !== undefined || event.date._seconds !== undefined)) {
+                    d = new Date((event.date.seconds || event.date._seconds) * 1000);
+                } else {
+                    // Handle ISO string or other date formats
+                    d = new Date(event.date);
+                }
+
+                // If the parsed date is invalid, we discard it.
+                if (!isNaN(d.getTime())) {
+                    dateObj = d;
+                }
+            } catch {
+                // If any error occurs during parsing, we discard the date.
+                dateObj = undefined;
             }
-        } else {
-            dateObj = undefined;
         }
 
         return {
@@ -117,7 +126,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             imageUrl: event.image!.url,
             alt: t('publicpage.alt.timelineImage'),
             title: event.description || '',
-            date: dateObj,
+            date: dateObj, // This will be a valid Date object or undefined
         };
       });
   }, [pageData.timelineEvents, t]);
