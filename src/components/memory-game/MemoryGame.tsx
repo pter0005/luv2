@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Heart, Sparkles } from 'lucide-react';
 import Image from 'next/image';
@@ -79,7 +79,7 @@ export default function MemoryGame({ images }: MemoryGameProps) {
   const [wrongPair, setWrongPair] = useState<number[]>([]);
   const [started, setStarted] = useState(false);
 
-  const gameImages = images.slice(0, 8);
+  const gameImages = useMemo(() => images.slice(0, 8), [images]);
   const gridCols = gameImages.length <= 6 ? 3 : 4;
 
   const buildCards = useCallback(() => shuffleArray([
