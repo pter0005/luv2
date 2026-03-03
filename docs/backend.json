@@ -47,6 +47,27 @@
             },
             "description": "Array of image files for the memory game."
         },
+        "enableQuiz": { "type": "boolean", "default": false, "description": "Whether the interactive quiz is enabled." },
+        "quizQuestions": {
+            "type": "array",
+            "description": "Array of questions for the interactive quiz.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "questionText": { "type": "string" },
+                    "options": { 
+                        "type": "array", 
+                        "items": { 
+                            "type": "object",
+                            "properties": { "text": { "type": "string" } },
+                             "required": ["text"]
+                        } 
+                    },
+                    "correctAnswerIndex": { "type": "number" }
+                },
+                "required": ["questionText", "options"]
+            }
+        },
         "qrCodeDesign": { "type": "string", "description": "Identifier for the chosen custom QR code design." },
         "createdAt": {
             "type": "object",

@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -114,6 +114,16 @@ export const timelineEventSchema = z.object({
 });
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;
 
+const quizOptionSchema = z.object({
+  text: z.string().min(1, "A opção não pode estar vazia."),
+});
+
+const quizQuestionSchema = z.object({
+  questionText: z.string().min(1, "A pergunta não pode estar vazia."),
+  options: z.array(quizOptionSchema).min(2, "Mínimo de 2 opções.").max(5, "Máximo de 5 opções."),
+  correctAnswerIndex: z.number({ required_error: "Selecione a resposta correta." }).nullable(),
+});
+
 
 // Esquema do formulário completo
 const pageSchema = z.object({
@@ -143,6 +153,8 @@ const pageSchema = z.object({
   puzzleImage: fileWithPreviewSchema.optional(),
   enableMemoryGame: z.boolean().default(false),
   memoryGameImages: z.array(fileWithPreviewSchema).default([]),
+  enableQuiz: z.boolean().default(false),
+  quizQuestions: z.array(quizQuestionSchema).max(5, "Máximo de 5 perguntas.").default([]),
   qrCodeDesign: z.string().default("classic"),
   payment: paymentSchema.optional(),
 });
@@ -1385,6 +1397,135 @@ const MemoryGameStep = React.memo(() => {
 });
 MemoryGameStep.displayName = 'MemoryGameStep';
 
+const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: number, removeQuestion: (index: number) => void, MAX_OPTIONS: number }) => {
+    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `quizQuestions.${qIndex}.options`,
+    });
+
+    const questionErrors = errors.quizQuestions?.[qIndex];
+
+    return (
+        <Card className="p-4 bg-card/80 relative">
+            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeQuestion(qIndex)}>
+                <Trash className="w-4 h-4" />
+            </Button>
+            <div className="space-y-4">
+                <FormField
+                    control={control}
+                    name={`quizQuestions.${qIndex}.questionText`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Pergunta {qIndex + 1}</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Qual nossa comida favorita?" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="space-y-2">
+                    <FormLabel>Opções de Resposta</FormLabel>
+                    <FormDescription>Marque a opção correta.</FormDescription>
+                     <FormField
+                        control={control}
+                        name={`quizQuestions.${qIndex}.correctAnswerIndex`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <RadioGroup onValueChange={(v) => field.onChange(parseInt(v))} value={field.value?.toString()}>
+                                        {fields.map((option, oIndex) => (
+                                            <div key={option.id} className="flex items-center gap-2">
+                                                <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}-o${oIndex}`} />
+                                                <div className="flex-grow">
+                                                     <FormField
+                                                        control={control}
+                                                        name={`quizQuestions.${qIndex}.options.${oIndex}.text`}
+                                                        render={({ field }) => (
+                                                            <Input placeholder={`Opção ${oIndex + 1}`} {...field} />
+                                                        )}
+                                                    />
+                                                </div>
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(oIndex)} disabled={fields.length <= 2}>
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </FormControl>
+                                {(questionErrors as any)?.correctAnswerIndex && <FormMessage>{(questionErrors as any).correctAnswerIndex.message}</FormMessage>}
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                 {fields.length < MAX_OPTIONS && (
+                    <Button type="button" variant="secondary" size="sm" onClick={() => append({ text: '' })}>
+                        <Plus className="mr-2 h-4 w-4" /> Adicionar Opção
+                    </Button>
+                )}
+            </div>
+        </Card>
+    );
+}
+
+const QuizStep = React.memo(() => {
+    const { control, watch } = useFormContext<PageData>();
+    const { t } = useTranslation();
+    const enableQuiz = watch("enableQuiz");
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "quizQuestions",
+    });
+
+    const MAX_QUESTIONS = 5;
+
+    const addQuestion = () => {
+        if (fields.length < MAX_QUESTIONS) {
+            append({ questionText: '', options: [{ text: '' }, { text: '' }], correctAnswerIndex: null });
+        }
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enableQuiz"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Quiz do Casal</FormLabel>
+                            <FormDescription>Crie um quiz divertido para testar os conhecimentos do seu amor.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+
+            {enableQuiz && (
+                <div className="space-y-6">
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Crie seu Quiz</AlertTitle>
+                        <AlertDescription>
+                            Adicione até 5 perguntas com 2 a 5 opções cada. Não se esqueça de marcar a resposta correta!
+                        </AlertDescription>
+                    </Alert>
+                    {fields.map((question, qIndex) => (
+                        <QuizQuestionForm key={question.id} qIndex={qIndex} removeQuestion={remove} MAX_OPTIONS={5} />
+                    ))}
+                    {fields.length < MAX_QUESTIONS && (
+                        <Button type="button" variant="outline" onClick={addQuestion} className="w-full">
+                            <Plus className="mr-2" /> Adicionar Pergunta ({fields.length}/{MAX_QUESTIONS})
+                        </Button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+QuizStep.displayName = 'QuizStep';
+
 const stepComponents: React.ComponentType<any>[] = [
     TitleStep,
     MessageStep,
@@ -1395,6 +1536,7 @@ const stepComponents: React.ComponentType<any>[] = [
     BackgroundStep,
     PuzzleStep,
     MemoryGameStep,
+    QuizStep,
 ];
 
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
@@ -1857,6 +1999,7 @@ function WizardInternal() {
     { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
     { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
     { id: "memory", title: t('wizard.steps.memory.title'), description: t('wizard.steps.memory.description'), fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
+    { id: "quiz", title: "Quiz do Casal", description: "Crie um quiz divertido sobre vocês.", fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
     { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment", "qrCodeDesign"] },
   ], [t]);
 
@@ -1873,6 +2016,9 @@ function WizardInternal() {
         galleryImages: [], 
         timelineEvents: [],
         enablePuzzle: plan === 'avancado',
+        enableMemoryGame: plan === 'avancado',
+        enableQuiz: plan === 'avancado',
+        quizQuestions: [],
         musicOption: plan === 'basico' ? 'none' : 'none',
         qrCodeDesign: "classic",
     }
@@ -1882,6 +2028,53 @@ function WizardInternal() {
   const formData = watch();
   const intentId = watch('intentId');
 
+  const handleAutosave = useCallback(async () => {
+    if (!user || isUserLoading) return;
+    
+    const data = getValues(); 
+    const dataToSave = { ...data, userId: user.uid };
+
+    try {
+        const result = await createOrUpdatePaymentIntent(dataToSave);
+
+        if (result.success) {
+            const objectToStore = {
+                ...dataToSave,
+                intentId: result.intentId, 
+            };
+            
+            localStorage.setItem('amore-pages-autosave', JSON.stringify(objectToStore));
+            
+            if (result.intentId && !dataToSave.intentId) {
+                setValue('intentId', result.intentId, { shouldDirty: false });
+            }
+        } else {
+            console.error("Autosave failed:", result);
+            toast({
+                variant: 'destructive',
+                title: "Erro ao Salvar Rascunho",
+                description: (
+                    <div>
+                        <p>{result.error}</p>
+                        <div className="mt-2 p-2 bg-black/30 rounded-md">
+                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                ),
+                duration: 20000,
+            });
+            const errorString = (result.error || '').toLowerCase();
+            if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
+                setValue('intentId', undefined, { shouldDirty: false });
+            }
+        }
+    } catch (e) {
+        console.error("Error during autosave:", e);
+    }
+  }, [user, isUserLoading, getValues, setValue, toast]);
+  
   const restoreFromLocalStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
     const savedDataJSON = localStorage.getItem('amore-pages-autosave');
@@ -1889,30 +2082,24 @@ function WizardInternal() {
 
     try {
         const parsed = JSON.parse(savedDataJSON);
-        // Ensure the plan from URL overrides the saved one if it's a new session start
         parsed.plan = plan;
         if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
         if (parsed.timelineEvents) {
             parsed.timelineEvents.forEach((ev: any) => { if(ev.date) ev.date = new Date(ev.date) });
         }
-
-        // Clean up potentially invalid image/file objects before resetting the form
-        if (parsed.puzzleImage && typeof parsed.puzzleImage?.url !== 'string') {
-            delete parsed.puzzleImage;
-        }
-        if (parsed.audioRecording && typeof parsed.audioRecording?.url !== 'string') {
-            delete parsed.audioRecording;
-        }
-        if (parsed.backgroundVideo && typeof parsed.backgroundVideo?.url !== 'string') {
-            delete parsed.backgroundVideo;
-        }
         
-        methods.reset(parsed);
+        const cleanAndReset = (p: any) => {
+            if (p.puzzleImage && typeof p.puzzleImage?.url !== 'string') delete p.puzzleImage;
+            if (p.audioRecording && typeof p.audioRecording?.url !== 'string') delete p.audioRecording;
+            if (p.backgroundVideo && typeof p.backgroundVideo?.url !== 'string') delete p.backgroundVideo;
+            methods.reset(p);
+        }
+        cleanAndReset(parsed);
+
     } catch(e) {
         console.error("Falha ao carregar rascunho. O rascunho pode estar corrompido.", e);
-        // If parsing fails, the saved data is likely corrupt. Clear it.
         localStorage.removeItem('amore-pages-autosave');
-        methods.reset(); // Reset to default state
+        methods.reset();
         toast({
             variant: "destructive",
             title: t('toast.autosave.error.load'),
@@ -1936,54 +2123,6 @@ function WizardInternal() {
   }, [searchParams, methods, restoreFromLocalStorage]);
 
 
-  // --- AUTOSAVE LOGIC ---
-  const handleAutosave = useCallback(async () => {
-    if (!user || isUserLoading) return;
-    
-    const data = getValues();
-    const dataToSave = { ...data, userId: user.uid };
-
-    try {
-        const result = await createOrUpdatePaymentIntent(dataToSave);
-
-        if (!result.success) {
-            console.error("Autosave failed:", result);
-            toast({
-                variant: 'destructive',
-                title: "Erro ao Salvar Rascunho",
-                description: (
-                    <div>
-                        <p>{result.error}</p>
-                        <div className="mt-2 p-2 bg-black/30 rounded-md">
-                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
-                                {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
-                            </pre>
-                        </div>
-                    </div>
-                ),
-                duration: 20000,
-            });
-            const errorString = (result.error || '').toLowerCase();
-            if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
-                setValue('intentId', undefined, { shouldDirty: false });
-            }
-        } else {
-            const objectToStore = {
-                ...dataToSave,
-                intentId: result.intentId, 
-            };
-            
-            if (result.intentId && !dataToSave.intentId) {
-                setValue('intentId', result.intentId, { shouldDirty: false });
-            }
-            
-            localStorage.setItem('amore-pages-autosave', JSON.stringify(objectToStore));
-        }
-    } catch (e) {
-        console.error("Error during autosave:", e);
-    }
-  }, [user, isUserLoading, getValues, setValue, toast]);
-
   useEffect(() => {
     const subscription = watch(() => {
         if (autosaveTimeoutRef.current) {
@@ -1991,7 +2130,7 @@ function WizardInternal() {
         }
         autosaveTimeoutRef.current = setTimeout(() => {
             handleAutosave();
-        }, 1500); // Debounce autosave
+        }, 1500);
     });
     
     return () => {
@@ -2001,13 +2140,11 @@ function WizardInternal() {
         }
     };
   }, [watch, handleAutosave]);
-  // --- END AUTOSAVE LOGIC ---
 
 
   const handleNext = async () => {
     const currentStepId = steps[currentStep].id;
     
-    // Manual validation for puzzle step
     if (currentStepId === 'puzzle') {
         const currentData = getValues();
         if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
@@ -2016,21 +2153,18 @@ function WizardInternal() {
                 title: t('toast.puzzle.image.required'),
                 description: t('toast.puzzle.image.required.description')
             });
-            return; // Block advancement
+            return;
         }
     } else {
-        // Standard validation for all other steps
         const fieldsToValidate = steps[currentStep].fields || [];
         const ok = await trigger(fieldsToValidate as any);
         if (!ok) {
-            const errors = methods.formState.errors;
-            console.error("Erros de validação:", errors);
+            console.error("Erros de validação:", methods.formState.errors);
             toast({ variant: "destructive", title: t('toast.validation.error'), description: t('toast.validation.error.description') });
             return;
         }
     }
 
-    // If validation passes, proceed to the next step
     let nextStepIndex = currentStep + 1;
     while(nextStepIndex < steps.length && steps[nextStepIndex].requiredPlan && plan !== steps[nextStepIndex].requiredPlan) {
         nextStepIndex++;
@@ -2046,7 +2180,6 @@ function WizardInternal() {
   
   const handleBack = async () => {
       let prevStepIndex = currentStep - 1;
-      // Pula passos desabilitados ao voltar
       while(prevStepIndex > 0 && steps[prevStepIndex].requiredPlan && plan !== steps[prevStepIndex].requiredPlan) {
           prevStepIndex--;
       }
@@ -2078,6 +2211,8 @@ function WizardInternal() {
       StepComponent = <SuccessStep pageId={pageId} />;
   } else if (currentStepId === 'payment') {
       StepComponent = <PaymentStep setPageId={setPageId} />;
+  } else if (currentStepId === 'quiz') {
+      StepComponent = <QuizStep />;
   } else {
     const Comp = stepComponents[currentStep];
     const props: any = { isVisible: currentStepId === 'background' };
@@ -2097,7 +2232,6 @@ function WizardInternal() {
     <FormProvider {...methods}>
       <div className="md:grid md:grid-cols-2 md:h-screen md:overflow-hidden">
         
-        {/* Left Column: Preview (Desktop Only) */}
         <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
             <PreviewContent 
                 isClient={isClient}
@@ -2110,7 +2244,6 @@ function WizardInternal() {
             />
         </div>
 
-        {/* Right Column: Form Content */}
         <div className="flex-grow p-6 md:p-12 md:overflow-y-auto">
           <div className="flex justify-between items-center">
               <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
@@ -2130,7 +2263,6 @@ function WizardInternal() {
               {StepComponent}
           </div>
 
-          {/* Mobile Preview Section (Integrated into the scroll) */}
           <div className="md:hidden mt-16 pb-16">
             <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
                 <p>{t('wizard.preview.title')}</p>
@@ -2194,6 +2326,7 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
     
 
     
+
 
 
 

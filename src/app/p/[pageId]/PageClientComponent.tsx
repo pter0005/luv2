@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -21,13 +22,14 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import { useTranslation } from '@/lib/i18n';
 import MemoryGame from '@/components/memory-game/MemoryGame';
 import MysticFlowers from '@/components/effects/MysticFlowers';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 // Imports Dinâmicos
@@ -35,6 +37,8 @@ const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { s
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
+const QuizGame = dynamic(() => import('@/components/quiz/QuizGame'), { ssr: false, loading: () => <Skeleton className="w-full aspect-square" />, });
+
 
 const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
     const [isLoaded, setIsLoaded] = useState(false);
@@ -81,11 +85,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   const puzzleImageSrc = useMemo(() => {
     if (!pageData.puzzleImage) return null;
-    // Handle new format: { url: '...', path: '...' }
     if (typeof pageData.puzzleImage === 'object' && pageData.puzzleImage.url) {
         return pageData.puzzleImage.url;
     }
-    // Handle old format: 'data:image/...' (base64 string)
     if (typeof pageData.puzzleImage === 'string' && pageData.puzzleImage.startsWith('data:')) {
         return pageData.puzzleImage;
     }
@@ -100,6 +102,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
+
+  const hasQuiz = useMemo(() => !!(pageData.enableQuiz && pageData.quizQuestions?.length > 0), [pageData.enableQuiz, pageData.quizQuestions]);
 
 
   const timelineEventsForDisplay = useMemo(() => {
@@ -117,20 +121,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         if (event.date) {
             try {
                 let d: Date;
-                // Handle Firestore Timestamp object ({ _seconds: ... } or { seconds: ... })
                 if (typeof event.date === 'object' && event.date !== null && (event.date.seconds !== undefined || event.date._seconds !== undefined)) {
                     d = new Date((event.date.seconds || event.date._seconds) * 1000);
                 } else {
-                    // Handle ISO string or other date formats
                     d = new Date(event.date);
                 }
-
-                // If the parsed date is invalid, we discard it.
                 if (!isNaN(d.getTime())) {
                     dateObj = d;
                 }
             } catch {
-                // If any error occurs during parsing, we discard the date.
                 dateObj = undefined;
             }
         }
@@ -140,7 +139,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             imageUrl: event.image!.url,
             alt: t('publicpage.alt.timelineImage'),
             title: event.description || '',
-            date: dateObj, // This will be a valid Date object or undefined
+            date: dateObj,
         };
       });
   }, [pageData.timelineEvents, t]);
@@ -167,7 +166,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     if (isPuzzleComplete) {
       const timer = setTimeout(() => {
         handleReveal();
-      }, 700); // Wait for user to see the checkmark
+      }, 700);
       return () => clearTimeout(timer);
     }
   }, [isPuzzleComplete, handleReveal]);
@@ -187,12 +186,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             date = new Date(d);
         }
 
-        // Check if the date is valid before converting
         if (date && !isNaN(date.getTime())) {
             return date.toISOString();
         }
     } catch {
-        // If any error occurs during parsing, return null
         return null;
     }
 
@@ -218,7 +215,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </AnimatePresence>
       
-      {/* CAMADA 0: CABEÇALHO */}
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
         <Image
           src={headerLogoUrl}
@@ -230,7 +226,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         />
       </header>
       
-      {/* CAMADA 1: FUNDO ANIMADO */}
       <div className="fixed inset-0 w-full h-full z-0 pointer-events-none translate-z-0">
         {pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
         {pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
@@ -240,7 +235,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
       </div>
 
-      {/* CAMADA 2: CONTEÚDO PRINCIPAL (COM MUITO ESPAÇO) */}
       <motion.main 
         className="relative z-10 w-full min-h-screen pb-24"
         initial={false}
@@ -308,7 +302,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
           
-          {hasMemoryGame && (
+          {(hasMemoryGame || hasQuiz) && (
               <div className="text-center w-full">
                   <Button 
                       type="button"
@@ -320,7 +314,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </div>
           )}
 
-          {/* ÁREA DO PLAYER (ISOLADA E COM ESPAÇO) */}
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex justify-center">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
                 <YoutubePlayer 
@@ -357,7 +350,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         </footer>
       </motion.main>
 
-      {/* OVERLAYS MANTIDOS IGUAIS... */}
       <AnimatePresence>
         {showTimeline && (
           <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />
@@ -382,26 +374,27 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   className="w-full max-w-2xl text-center"
                 >
                   <h2 className="text-4xl font-bold font-headline text-white mb-8">{t('publicpage.games.selectTitle')}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Card Jogo da Memória */}
-                    <div
-                      onClick={() => setActiveGame('memory')}
-                      className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
-                    >
-                      <BrainCircuit className="w-10 h-10 text-primary" />
-                      <h3 className="font-bold text-lg text-white">{t('publicpage.games.memory.title')}</h3>
-                      <p className="text-sm text-muted-foreground">{t('publicpage.games.memory.description')}</p>
-                    </div>
-                    {/* Placeholder 1 */}
-                    <div className="p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center bg-white/5 border-dashed border-white/10 opacity-50">
-                      <Gamepad2 className="w-10 h-10 text-muted-foreground" />
-                      <h3 className="font-bold text-lg text-muted-foreground">{t('publicpage.games.comingSoon')}</h3>
-                    </div>
-                     {/* Placeholder 2 */}
-                    <div className="p-6 rounded-2xl flex flex-col items-center justify-center gap-4 text-center bg-white/5 border-dashed border-white/10 opacity-50">
-                      <Gamepad2 className="w-10 h-10 text-muted-foreground" />
-                      <h3 className="font-bold text-lg text-muted-foreground">{t('publicpage.games.comingSoon')}</h3>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {hasMemoryGame && (
+                        <div
+                        onClick={() => setActiveGame('memory')}
+                        className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
+                        >
+                        <BrainCircuit className="w-10 h-10 text-primary" />
+                        <h3 className="font-bold text-lg text-white">{t('publicpage.games.memory.title')}</h3>
+                        <p className="text-sm text-muted-foreground">{t('publicpage.games.memory.description')}</p>
+                        </div>
+                    )}
+                    {hasQuiz && (
+                        <div
+                        onClick={() => setActiveGame('quiz')}
+                        className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
+                        >
+                        <HelpCircle className="w-10 h-10 text-primary" />
+                        <h3 className="font-bold text-lg text-white">Quiz do Casal</h3>
+                        <p className="text-sm text-muted-foreground">Teste seus conhecimentos um sobre o outro.</p>
+                        </div>
+                    )}
                   </div>
                 </motion.div>
               ) : (
@@ -419,7 +412,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   >
                     <ArrowLeft className="mr-2" /> Voltar
                   </Button>
-                  {activeGame === 'memory' && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
+                  {activeGame === 'memory' && pageData.memoryGameImages && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
+                  {activeGame === 'quiz' && pageData.quizQuestions && <QuizGame questions={pageData.quizQuestions} />}
                 </motion.div>
               )}
             </AnimatePresence>
