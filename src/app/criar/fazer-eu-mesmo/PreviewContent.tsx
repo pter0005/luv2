@@ -222,8 +222,14 @@ export default function PreviewContent({
                             )}
 
                             {hasValidTimelineEvents && (
-                                <div className="text-center">
-                                    <Button onClick={onShowTimeline}><View className="mr-2 h-4 w-4" />{t('publicpage.timeline.title')}</Button>
+                                <div className="text-center w-full">
+                                    <Button 
+                                        type="button"
+                                        onClick={onShowTimeline} 
+                                        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
+                                    >
+                                        <View className="mr-2 h-5 w-5" /> {t('publicpage.timeline.title')}
+                                    </Button>
                                 </div>
                             )}
 
@@ -237,8 +243,8 @@ export default function PreviewContent({
                                 <div className="text-center w-full">
                                     <Button 
                                         type="button"
-                                        disabled
                                         className="bg-white/10 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl w-full max-w-xs"
+                                        disabled
                                     >
                                         <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
                                     </Button>
@@ -319,5 +325,3 @@ export default function PreviewContent({
         </div>
     )
 }
-
-    
