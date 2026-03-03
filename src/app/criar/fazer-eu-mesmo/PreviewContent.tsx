@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -137,6 +136,12 @@ export default function PreviewContent({
       : formData.puzzleImage?.url;
     const shouldBeBlurred = showPuzzlePreview && !previewPuzzleRevealed;
 
+    const hasMemoryGame = useMemo(() => {
+        return !!(formData.enableMemoryGame && formData.memoryGameImages?.length > 0);
+    }, [formData.enableMemoryGame, formData.memoryGameImages]);
+
+    const hasQuiz = useMemo(() => !!(formData.enableQuiz && formData.quizQuestions?.length > 0), [formData.enableQuiz, formData.quizQuestions]);
+
     return (
         <div className="relative w-full h-full flex items-center justify-center">
             <div className={cn(
@@ -172,9 +177,7 @@ export default function PreviewContent({
                         {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
                         {isClient && formData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
                         {isClient && formData.backgroundAnimation === 'clouds' && (
-                            <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                                <source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" />
-                            </video>
+                            <video ref={cloudsVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4"/></video>
                         )}
                         {isClient && formData.backgroundAnimation === 'custom-video' && backgroundVideoPreview && (
                         <video key={backgroundVideoPreview} ref={customVideoRef} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
@@ -230,7 +233,7 @@ export default function PreviewContent({
                                 </div>
                             )}
 
-                            {isClient && formData.enableMemoryGame && formData.memoryGameImages && formData.memoryGameImages.length > 0 && (
+                            {isClient && (hasMemoryGame || hasQuiz) && (
                                 <div className="text-center w-full">
                                     <Button 
                                         type="button"
