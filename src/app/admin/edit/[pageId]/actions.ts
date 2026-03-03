@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 interface UpdatablePageData {
     title?: string;
     message?: string;
+    puzzleBackgroundAnimation?: string;
 }
 
 export async function updateLovePage(pageId: string, data: UpdatablePageData) {
@@ -25,10 +26,16 @@ export async function updateLovePage(pageId: string, data: UpdatablePageData) {
         if (data.title) dataToUpdate.title = data.title;
         if (data.message) dataToUpdate.message = data.message;
         
+        // Allow setting the animation to 'none'
+        if (typeof data.puzzleBackgroundAnimation !== 'undefined') {
+            dataToUpdate.puzzleBackgroundAnimation = data.puzzleBackgroundAnimation;
+        }
+        
         await pageRef.update(dataToUpdate);
 
         // Invalidate cache for the admin page to show new data
         revalidatePath('/admin');
+        revalidatePath(`/p/${pageId}`);
 
     } catch (error: any) {
         console.error('[ADMIN_UPDATE_ERROR]', error);

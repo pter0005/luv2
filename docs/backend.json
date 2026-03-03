@@ -39,6 +39,7 @@
         "backgroundVideo": { "$ref": "#/entities/FileWithPreview" },
         "enablePuzzle": { "type": "boolean", "description": "Whether the interactive puzzle is enabled" },
         "puzzleImage": { "type": "string", "description": "Base64 encoded string of the puzzle image." },
+        "puzzleBackgroundAnimation": { "type": "string", "description": "Admin-only: background animation for the puzzle screen." },
         "enableMemoryGame": { "type": "boolean", "description": "Whether the interactive memory game is enabled." },
         "memoryGameImages": {
             "type": "array",

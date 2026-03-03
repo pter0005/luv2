@@ -88,7 +88,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     if (typeof pageData.puzzleImage === 'object' && pageData.puzzleImage.url) {
         return pageData.puzzleImage.url;
     }
-    if (typeof pageData.puzzleImage === 'string' && pageData.puzzleImage.startsWith('data:')) {
+    if (typeof pageData.puzzleImage === 'string') { // Support for old format
         return pageData.puzzleImage;
     }
     return null;
@@ -436,9 +436,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
             transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-sm overflow-hidden"
           >
-            <div className="w-full max-w-lg space-y-8 animate-in fade-in zoom-in duration-500">
+            <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-50">
+                {pageData.puzzleBackgroundAnimation === 'starry-sky' && <StarrySky />}
+                {pageData.puzzleBackgroundAnimation === 'nebula' && <NebulaBackground />}
+                {pageData.puzzleBackgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+                {pageData.puzzleBackgroundAnimation === 'floating-dots' && <FloatingDots />}
+            </div>
+            <div className="relative z-10 w-full max-w-lg space-y-8 animate-in fade-in zoom-in duration-500">
               <div className="text-center space-y-4">
                   <div className="inline-block p-4 bg-primary/10 rounded-full border-2 border-primary/20 shadow-lg shadow-primary/20">
                       <Puzzle className="w-10 h-10 text-primary" />

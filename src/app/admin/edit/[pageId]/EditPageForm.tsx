@@ -5,18 +5,21 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { updateLovePage } from './actions';
 import { useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 // Define the schema for the form
 const editSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   message: z.string().min(1, 'Message is required.'),
+  puzzleBackgroundAnimation: z.string().optional(),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -30,6 +33,7 @@ export default function EditPageForm({ pageData }: { pageData: any }) {
     defaultValues: {
       title: pageData?.title || '',
       message: pageData?.message || '',
+      puzzleBackgroundAnimation: pageData?.puzzleBackgroundAnimation || 'none',
     },
   });
 
@@ -81,6 +85,33 @@ export default function EditPageForm({ pageData }: { pageData: any }) {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="puzzleBackgroundAnimation"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Puzzle Background Animation (Admin)</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an animation" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="starry-sky">Starry Sky</SelectItem>
+                  <SelectItem value="nebula">Nebula</SelectItem>
+                  <SelectItem value="mystic-vortex">Mystic Vortex</SelectItem>
+                  <SelectItem value="floating-dots">Floating Dots</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                This animation will appear behind the puzzle screen.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
