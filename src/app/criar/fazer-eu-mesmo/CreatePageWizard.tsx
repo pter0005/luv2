@@ -151,6 +151,7 @@ const pageSchema = z.object({
   backgroundVideo: fileWithPreviewSchema.optional(),
   enablePuzzle: z.boolean().default(false),
   puzzleImage: fileWithPreviewSchema.optional(),
+  puzzleBackgroundAnimation: z.string().optional(),
   enableMemoryGame: z.boolean().default(false),
   memoryGameImages: z.array(fileWithPreviewSchema).default([]),
   enableQuiz: z.boolean().default(false),
@@ -1403,7 +1404,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
         control,
         name: `quizQuestions.${qIndex}.options`,
     });
-
+    const { t } = useTranslation();
     const questionErrors = errors.quizQuestions?.[qIndex];
 
     return (
@@ -1417,17 +1418,17 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                     name={`quizQuestions.${qIndex}.questionText`}
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Pergunta {qIndex + 1}</FormLabel>
+                            <FormLabel>{t('wizard.quiz.question.label', { index: qIndex + 1 })}</FormLabel>
                             <FormControl>
-                                <Input placeholder="Qual nossa comida favorita?" {...field} />
+                                <Input placeholder={t('wizard.quiz.question.placeholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
                 <div className="space-y-2">
-                    <FormLabel>Opções de Resposta</FormLabel>
-                    <FormDescription>Marque a opção correta.</FormDescription>
+                    <FormLabel>{t('wizard.quiz.options.label')}</FormLabel>
+                    <FormDescription>{t('wizard.quiz.options.description')}</FormDescription>
                      <FormField
                         control={control}
                         name={`quizQuestions.${qIndex}.correctAnswerIndex`}
@@ -1443,7 +1444,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                                                         control={control}
                                                         name={`quizQuestions.${qIndex}.options.${oIndex}.text`}
                                                         render={({ field }) => (
-                                                            <Input placeholder={`Opção ${oIndex + 1}`} {...field} />
+                                                            <Input placeholder={t('wizard.quiz.option.placeholder', { index: oIndex + 1 })} {...field} />
                                                         )}
                                                     />
                                                 </div>
@@ -1461,7 +1462,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                 </div>
                  {fields.length < MAX_OPTIONS && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => append({ text: '' })}>
-                        <Plus className="mr-2 h-4 w-4" /> Adicionar Opção
+                        <Plus className="mr-2 h-4 w-4" /> {t('wizard.quiz.button.addOption')}
                     </Button>
                 )}
             </div>
@@ -1494,8 +1495,8 @@ const QuizStep = React.memo(() => {
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                            <FormLabel className="text-base">Ativar Quiz do Casal</FormLabel>
-                            <FormDescription>Crie um quiz divertido para testar os conhecimentos do seu amor.</FormDescription>
+                            <FormLabel className="text-base">{t('wizard.quiz.enable')}</FormLabel>
+                            <FormDescription>{t('wizard.quiz.description')}</FormDescription>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
@@ -1506,9 +1507,9 @@ const QuizStep = React.memo(() => {
                 <div className="space-y-6">
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Crie seu Quiz</AlertTitle>
+                        <AlertTitle>{t('wizard.quiz.alert.title')}</AlertTitle>
                         <AlertDescription>
-                            Adicione até 5 perguntas com 2 a 5 opções cada. Não se esqueça de marcar a resposta correta!
+                            {t('wizard.quiz.alert.description')}
                         </AlertDescription>
                     </Alert>
                     {fields.map((question, qIndex) => (
@@ -1516,7 +1517,7 @@ const QuizStep = React.memo(() => {
                     ))}
                     {fields.length < MAX_QUESTIONS && (
                         <Button type="button" variant="outline" onClick={addQuestion} className="w-full">
-                            <Plus className="mr-2" /> Adicionar Pergunta ({fields.length}/{MAX_QUESTIONS})
+                            <Plus className="mr-2" /> {t('wizard.quiz.button.addQuestion', { current: fields.length, max: MAX_QUESTIONS })}
                         </Button>
                     )}
                 </div>
@@ -1999,7 +2000,7 @@ function WizardInternal() {
     { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
     { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
     { id: "memory", title: t('wizard.steps.memory.title'), description: t('wizard.steps.memory.description'), fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
-    { id: "quiz", title: "Quiz do Casal", description: "Crie um quiz divertido sobre vocês.", fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
+    { id: "quiz", title: t('wizard.steps.quiz.title'), description: t('wizard.steps.quiz.description'), fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
     { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment", "qrCodeDesign"] },
   ], [t]);
 
@@ -2330,3 +2331,6 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
 
+
+
+    
