@@ -51,7 +51,7 @@ function MatchBurst({ x, y }: { x: number; y: number }) {
 function WinHearts() {
   const hearts = Array.from({ length: 20 }, (_, i) => ({
     id: i, x: Math.random() * 100, delay: Math.random() * 3,
-    size: 12 + Math.random() * 20, dur: 2.5 + Math.random() * 2,
+    size: 12 + Math.random() * 18, dur: 2.5 + Math.random() * 2,
   }));
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">

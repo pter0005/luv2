@@ -27,7 +27,6 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import { useTranslation } from '@/lib/i18n';
-import MemoryGame from '@/components/memory-game/MemoryGame';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -37,6 +36,10 @@ const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { s
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
+const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full aspect-square" />,
+});
 const QuizGame = dynamic(() => import('@/components/quiz/QuizGame'), { ssr: false, loading: () => <Skeleton className="w-full aspect-square" />, });
 
 
@@ -219,9 +222,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         <Image
           src={headerLogoUrl}
           alt="MyCupid Logo"
-          width={180}
-          height={45}
-          className="w-48 h-auto object-contain"
+          width={140}
+          height={35}
+          className="w-auto h-8 object-contain"
           priority
         />
       </header>
@@ -391,8 +394,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <HelpCircle className="w-10 h-10 text-primary" />
-                        <h3 className="font-bold text-lg text-white">Quiz do Casal</h3>
-                        <p className="text-sm text-muted-foreground">Teste seus conhecimentos um sobre o outro.</p>
+                        <h3 className="font-bold text-lg text-white">{t('wizard.steps.quiz.title')}</h3>
+                        <p className="text-sm text-muted-foreground">{t('wizard.steps.quiz.description')}</p>
                         </div>
                     )}
                   </div>
