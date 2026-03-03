@@ -159,9 +159,9 @@ export default function Header() {
               <Image
                   src={headerLogoUrl}
                   alt="MyCupid Logo"
-                  width={100}
-                  height={100}
-                  className="h-14 w-14 object-contain transition-all duration-300"
+                  width={140}
+                  height={35}
+                  className="w-36 h-auto object-contain transition-all duration-300"
                   data-ai-hint="logo"
                   priority
               />

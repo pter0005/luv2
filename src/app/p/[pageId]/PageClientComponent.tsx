@@ -79,7 +79,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
 
-  const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'lovePageLogo')?.imageUrl || '';
+  const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'headerLogo')?.imageUrl || '';
 
   const cookieName = `puzzle_solved_${pageData.id}`;
 
@@ -218,10 +218,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
         <Image
           src={headerLogoUrl}
-          alt="Amore Pages"
-          width={220}
-          height={220}
-          className="w-48 h-48 md:w-56 md:h-56 object-contain"
+          alt="MyCupid Logo"
+          width={180}
+          height={45}
+          className="w-48 h-auto object-contain"
           priority
         />
       </header>
