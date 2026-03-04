@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -17,7 +18,6 @@ import Countdown from './Countdown';
 import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
-import { useTranslation } from '@/lib/i18n';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { useFormContext } from 'react-hook-form';
 import { PageData } from './CreatePageWizard';
@@ -45,7 +45,6 @@ type PreviewContentProps = {
     showPuzzlePreview: boolean;
     previewPuzzleRevealed: boolean;
     setPreviewPuzzleRevealed: (revealed: boolean) => void;
-    locale: 'pt' | 'en' | 'es';
 };
 
 const MemoizedSwiper = React.memo(({ galleryImages, galleryStyle }: { galleryImages: any[], galleryStyle: string }) => {
@@ -80,11 +79,9 @@ export default function PreviewContent({
     showPuzzlePreview,
     previewPuzzleRevealed,
     setPreviewPuzzleRevealed,
-    locale,
 }: PreviewContentProps) {
     const { watch } = useFormContext<PageData>();
     const formData = watch();
-    const { t } = useTranslation();
     const cloudsVideoRef = useRef<HTMLVideoElement>(null);
     const customVideoRef = useRef<HTMLVideoElement>(null);
     const youtubePlayerRef = useRef<{ play: () => void }>(null);
@@ -200,7 +197,7 @@ export default function PreviewContent({
                                     className="text-3xl font-handwriting break-words"
                                     style={{ color: formData.titleColor }}
                                 >
-                                    {formData.title || (locale === 'pt' ? 'Seu Título Aqui' : 'Your Title Here')}
+                                    {formData.title || 'Seu Título Aqui'}
                                 </h1>
                                 <p className={cn(
                                     "text-white/80 whitespace-pre-wrap break-words text-base",
@@ -209,7 +206,7 @@ export default function PreviewContent({
                                     formData.messageFormatting?.includes("italic") && "italic",
                                     formData.messageFormatting?.includes("strikethrough") && "line-through"
                                 )}>
-                                    {formData.message || (locale === 'pt' ? 'Sua mensagem de amor...' : 'Your love message...')}
+                                    {formData.message || 'Sua mensagem de amor...'}
                                 </p>
                             </div>
                             
@@ -228,7 +225,7 @@ export default function PreviewContent({
                                         onClick={onShowTimeline} 
                                         className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                                     >
-                                        <View className="mr-2 h-5 w-5" /> {t('publicpage.timeline.title')}
+                                        <View className="mr-2 h-5 w-5" /> Nossa Linha do Tempo
                                     </Button>
                                 </div>
                             )}
@@ -246,7 +243,7 @@ export default function PreviewContent({
                                         className="bg-white/10 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl w-full max-w-xs"
                                         disabled
                                     >
-                                        <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
+                                        <Gamepad2 className="mr-2 h-5 w-5" /> Vamos Jogar?
                                     </Button>
                                 </div>
                             )}
@@ -284,11 +281,11 @@ export default function PreviewContent({
                                 </div>
                                 <div className="space-y-2">
                                     <h2 className="text-3xl font-bold text-white font-headline tracking-tighter">
-                                        {t('publicpage.puzzle.title.part1')}{' '}
-                                        <span className="gradient-text">{t('publicpage.puzzle.title.part2')}</span>
+                                        Um Enigma de{' '}
+                                        <span className="gradient-text">Amor</span>
                                     </h2>
                                     <p className="text-white/70 text-sm max-w-xs mx-auto">
-                                        {t('publicpage.puzzle.description')}
+                                        Resolva o quebra-cabeça para revelar uma surpresa especial.
                                     </p>
                                 </div>
                                 
@@ -313,7 +310,7 @@ export default function PreviewContent({
                                             <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
                                                 <CheckCircle className="w-12 h-12 text-green-400" />
                                             </div>
-                                            <h3 className="text-xl font-bold text-white">{t('publicpage.puzzle.complete')}</h3>
+                                            <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

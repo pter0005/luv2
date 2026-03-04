@@ -2214,7 +2214,6 @@ function WizardInternal() {
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
                 setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                locale='pt'
             />
         </div>
 
@@ -2250,7 +2249,6 @@ function WizardInternal() {
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
                     setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                    locale='pt'
                 />
             </div>
           </div>
