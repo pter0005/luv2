@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Menu, UserCircle, LogOut, LayoutDashboard, Heart, Globe } from "lucide-react";
+import { Menu, UserCircle, LogOut, Heart } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -26,15 +26,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { useTranslation } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { removeSession } from "@/app/auth-actions";
 
 const navLinks = [
-  { href: "/#recursos", labelKey: "nav.recursos" },
-  { href: "/#planos", labelKey: "nav.planos" },
-  { href: "/#avaliacoes", labelKey: "nav.avaliacoes" },
-  { href: "/como-funciona", labelKey: "nav.comoFunciona" },
+  { href: "/#recursos", label: "Recursos" },
+  { href: "/#planos", label: "Planos" },
+  { href: "/#avaliacoes", label: "Avaliações" },
+  { href: "/como-funciona", label: "Como Funciona" },
 ];
 
 export default function Header() {
@@ -43,7 +42,6 @@ export default function Header() {
   const router = useRouter();
   const headerLogoUrl = PlaceHolderImages.find((p) => p.id === "headerLogo")?.imageUrl || "";
   const { user, isUserLoading } = useUser();
-  const { t, setLocale, locale } = useTranslation();
   
   // State for header visibility on scroll
   const [hidden, setHidden] = useState(false);
@@ -104,7 +102,7 @@ export default function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {t('profile.greeting')}, {user.displayName || "Meu Perfil"}
+                  Olá, {user.displayName || "Meu Perfil"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user.email}
@@ -117,7 +115,7 @@ export default function Header() {
               className="cursor-pointer"
             >
               <Heart className="mr-2 h-4 w-4" />
-              <span>{t('user.myPages')}</span>
+              <span>Minhas Páginas</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -125,7 +123,7 @@ export default function Header() {
               className="cursor-pointer text-red-400 focus:text-red-400"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>{t('user.signOut')}</span>
+              <span>Sair</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -134,7 +132,7 @@ export default function Header() {
   
     return (
       <Link href="/login">
-        <Button>{t('user.myAccount')}</Button>
+        <Button>Minha Conta</Button>
       </Link>
     );
   };
@@ -172,7 +170,7 @@ export default function Header() {
             {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                 <Button variant="link" className="text-foreground/80 hover:text-primary text-base px-4">
-                    {t(link.labelKey as any)}
+                    {link.label}
                 </Button>
                 </Link>
             ))}
@@ -180,19 +178,6 @@ export default function Header() {
 
         <div className="flex justify-end items-center gap-2">
             <div className="hidden md:flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Globe className="h-5 w-5" />
-                      <span className="sr-only">{t('lang.change')}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setLocale('pt')}>{t('lang.pt')}</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setLocale('en')}>{t('lang.en')}</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setLocale('es')}>{t('lang.es')}</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 {renderUserArea()}
             </div>
             
@@ -228,34 +213,25 @@ export default function Header() {
                             )}
                             onClick={() => setSheetOpen(false)}
                         >
-                            {t(link.labelKey as any)}
+                            {link.label}
                         </Link>
                         ))}
-
-                        <div className="pt-6 border-t">
-                            <h3 className="px-4 py-2 text-muted-foreground">{t('lang.change')}</h3>
-                            <div className="flex flex-col space-y-2">
-                                <Button variant={locale === 'pt' ? 'secondary' : 'ghost'} className="justify-start text-lg" onClick={() => { setLocale('pt'); setSheetOpen(false); }}>{t('lang.pt')}</Button>
-                                <Button variant={locale === 'en' ? 'secondary' : 'ghost'} className="justify-start text-lg" onClick={() => { setLocale('en'); setSheetOpen(false); }}>{t('lang.en')}</Button>
-                                <Button variant={locale === 'es' ? 'secondary' : 'ghost'} className="justify-start text-lg" onClick={() => { setLocale('es'); setSheetOpen(false); }}>{t('lang.es')}</Button>
-                            </div>
-                        </div>
 
                         {user ? (
                         <div className="pt-6 border-t">
                             <Button asChild size="lg" className="w-full text-lg mb-4">
                                 <Link href="/minhas-paginas" onClick={() => setSheetOpen(false)}>
-                                    {t('user.myPages')}
+                                    Minhas Páginas
                                 </Link>
                             </Button>
                             <Button size="lg" className="w-full text-lg" variant="outline" onClick={handleSignOut}>
-                                {t('user.signOut')}
+                                Sair
                             </Button>
                         </div>
                         ) : (
                             <Button asChild size="lg" className="mt-4 text-lg">
                             <Link href="/login" onClick={() => setSheetOpen(false)}>
-                                {t('user.myAccount')}
+                                Minha Conta
                             </Link>
                             </Button>
                         )}

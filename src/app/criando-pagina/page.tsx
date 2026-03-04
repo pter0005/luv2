@@ -1,4 +1,3 @@
-
 'use client';
 import { CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { collection, query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { useTranslation } from "@/lib/i18n";
 
 function CreatingPageContent() {
     const searchParams = useSearchParams();
@@ -16,7 +14,6 @@ function CreatingPageContent() {
     const firestore = useFirestore();
     const [isFinalized, setIsFinalized] = useState(false);
     const [pageId, setPageId] = useState<string | null>(null);
-    const { t } = useTranslation();
 
     const lovepagesQuery = useMemoFirebase(() => {
         if (!firestore || !intentId) return null;
@@ -36,18 +33,18 @@ function CreatingPageContent() {
         return (
             <div className="flex flex-col items-center text-center gap-6 animate-in fade-in duration-500">
                 <CheckCircle className="w-24 h-24 text-green-500"/>
-                <h1 className="text-4xl font-bold font-headline">{t('creating.page.ready.title')}</h1>
+                <h1 className="text-4xl font-bold font-headline">Sua página está pronta!</h1>
                 <p className="text-muted-foreground max-w-md">
-                    {t('creating.page.ready.description')}
+                    O pagamento foi confirmado e sua surpresa foi criada com sucesso.
                 </p>
                 <Button asChild size="lg" className="mt-4">
                     <Link href={`/p/${pageId}`}>
-                        {t('creating.page.ready.cta.view')}
+                        Ver minha página
                     </Link>
                 </Button>
                  <Button asChild size="lg" variant="outline" className="mt-2">
                     <Link href="/minhas-paginas">
-                        {t('creating.page.ready.cta.myPages')}
+                        Ir para Minhas Páginas
                     </Link>
                 </Button>
             </div>
@@ -57,14 +54,14 @@ function CreatingPageContent() {
     return (
         <div className="flex flex-col items-center text-center gap-6">
             <Loader2 className="w-24 h-24 text-primary animate-spin"/>
-            <h1 className="text-4xl font-bold font-headline">{t('creating.page.finalizing.title')}</h1>
+            <h1 className="text-4xl font-bold font-headline">Finalizando sua página...</h1>
             <p className="text-muted-foreground max-w-md">
-                {t('creating.page.finalizing.description')}
+                Recebemos a aprovação do seu pagamento e estamos preparando tudo. Isso pode levar alguns momentos.
             </p>
-            <p className="text-sm text-muted-foreground">{t('creating.page.finalizing.tip')}</p>
+            <p className="text-sm text-muted-foreground">Você pode esperar ou voltar para o site.</p>
              <Button asChild size="lg" variant="secondary" className="mt-4">
                 <Link href="/minhas-paginas">
-                    {t('creating.page.finalizing.cta.myPages')}
+                    Ir para Minhas Páginas
                 </Link>
             </Button>
         </div>

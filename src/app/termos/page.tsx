@@ -3,7 +3,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, User, CreditCard, Scale, Shield, Bot } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
 
 
 const PolicySection = ({ title, icon: Icon, children }: { title: string, icon: React.FC<any>, children: React.ReactNode }) => (
@@ -20,21 +19,20 @@ const PolicySection = ({ title, icon: Icon, children }: { title: string, icon: R
 
 
 export default function TermosPage() {
-  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen">
       <div className="container py-16 md:py-24 max-w-4xl mx-auto">
       <Button asChild variant="outline" className="fixed top-6 left-6 md:absolute md:top-8 md:left-8 bg-background/80 md:bg-transparent backdrop-blur-sm z-50">
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('terms.back')}
+            Voltar para o início
           </Link>
         </Button>
         <div className="text-center mb-16 pt-16 md:pt-0">
             <FileText className="w-16 h-16 text-primary mx-auto mb-4" />
-            <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">{t('terms.title')}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">Termos de Uso</h1>
             <p className="text-lg text-muted-foreground">
-                {t('terms.description')}
+                Ao usar nossos serviços, você concorda com estas regras.
             </p>
             <p className="text-xs text-muted-foreground mt-2">Última atualização: 24 de Julho de 2024</p>
         </div>

@@ -1,9 +1,7 @@
 import { Suspense } from 'react';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import PageClientComponent from './PageClientComponent';
-import { LanguageProvider } from '@/lib/i18n';
 import { LoadingState, ErrorState } from './PageStates';
-import { headers } from 'next/headers';
 
 // =================================================================
 // SERVER-SIDE LOGIC
@@ -49,52 +47,29 @@ const toPlainObject = (obj: any): any => {
 // =================================================================
 export default async function ViewPage({ params }: { params: { pageId: string } }) {
   const pageId = params.pageId;
-
-  // --- LANGUAGE DETECTION LOGIC (RELIABLE) ---
-  const host = headers().get('host');
-  const acceptLanguage = headers().get('accept-language');
-  
-  let lang = 'en'; // Default to English
-  if (host?.includes('mycupid.com.br')) {
-    lang = 'pt';
-  } else if (acceptLanguage?.startsWith('es')) {
-    lang = 'es';
-  }
-  // --- END LANGUAGE DETECTION ---
-
   const rawPageData = await getPageData(pageId);
 
   // Error occurred during fetch
   if (rawPageData && rawPageData.error) {
       return (
-          <LanguageProvider initialLocale={lang as any}>
-              <ErrorState 
-                messageKey={rawPageData.error} 
-                messageVars={{ message: '' }} // Message is no longer passed
-              />
-          </LanguageProvider>
+          <ErrorState 
+            messageKey={rawPageData.error} 
+            messageVars={{ message: '' }} // Message is no longer passed
+          />
       );
   }
   
   // No data and no specific error
   if (!rawPageData) {
       return (
-        <LanguageProvider initialLocale={lang as any}>
-            <ErrorState messageKey="publicpage.error.generic" />
-        </LanguageProvider>
+        <ErrorState messageKey="publicpage.error.generic" />
       )
   }
 
   // Success case
   return (
-      <Suspense fallback={
-        <LanguageProvider initialLocale={lang as any}>
-            <LoadingState />
-        </LanguageProvider>
-      }>
-        <LanguageProvider initialLocale={lang as any}>
-          <PageClientComponent pageData={rawPageData} />
-        </LanguageProvider>
+      <Suspense fallback={<LoadingState />}>
+        <PageClientComponent pageData={rawPageData} />
       </Suspense>
   );
 }

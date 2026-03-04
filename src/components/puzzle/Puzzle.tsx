@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
-import { useTranslation } from "@/lib/i18n";
 
 const GRID_SIZE = 3;
 
@@ -13,7 +12,6 @@ interface PuzzleProps {
 }
 
 export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
-  const { t } = useTranslation();
   const [pieces, setPieces] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -165,7 +163,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
         {!isLoaded && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-primary">
             <Loader2 className="w-10 h-10 animate-spin mb-2" />
-            <span className="text-sm font-medium">{t('puzzle.loading')}</span>
+            <span className="text-sm font-medium">Carregando quebra-cabeça...</span>
           </div>
         )}
 
@@ -208,7 +206,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
                 <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }}>
                   <Sparkles className="w-16 h-16 text-yellow-400 mx-auto mb-2" />
                 </motion.div>
-                <h3 className="text-white font-bold text-xl">{t('puzzle.perfect')}</h3>
+                <h3 className="text-white font-bold text-xl">Perfeito!</h3>
               </div>
             </motion.div>
           )}

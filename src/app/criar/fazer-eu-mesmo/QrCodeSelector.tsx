@@ -1,11 +1,9 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { useTranslation } from '@/lib/i18n';
 
 const QR_OPTIONS = [
   {
@@ -33,7 +31,6 @@ interface QrCodeSelectorProps {
 
 export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCodeSelectorProps) {
   const [selected, setSelected] = useState(value || 'classic');
-  const { t } = useTranslation();
 
   useEffect(() => {
     const selectedOption = QR_OPTIONS.find(opt => opt.id === selected);
@@ -50,8 +47,8 @@ export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCod
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-4">
-        <span className="font-semibold text-foreground">✨ {t('wizard.qr.title')}</span>
-        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">{t('wizard.qr.upsell')}</span>
+        <span className="font-semibold text-foreground">✨ Código QR Personalizado</span>
+        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">Destaque</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -118,7 +115,7 @@ export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCod
                         : 'bg-primary/20 text-primary'
                   )}
                 >
-                  {option.price === 0 ? t('wizard.qr.free') : `R$ ${option.price.toFixed(2).replace('.', ',')}`}
+                  {option.price === 0 ? 'GRÁTIS' : `R$ ${option.price.toFixed(2).replace('.', ',')}`}
                 </div>
               </div>
             </div>
@@ -128,5 +125,3 @@ export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCod
     </div>
   );
 }
-
-    

@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, ChevronLeft, ChevronRight, Puzzle, Clock, ArrowRight, Heart } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -111,7 +110,6 @@ const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isAct
 }
 
 export default function FeaturesCarousel() {
-    const { t, locale } = useTranslation();
     const [swiper, setSwiper] = useState<SwiperType | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -119,30 +117,28 @@ export default function FeaturesCarousel() {
         {
           id: 1,
           icon: Calendar,
-          title: t('featuresCarousel.slide1.title'),
-          description: t('featuresCarousel.slide1.description'),
+          title: 'Linha do Tempo',
+          description: 'Reviva sua jornada com uma linha do tempo animada e elegante.',
           type: 'video', 
           media: "https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4"
         },
         {
           id: 2,
           icon: Puzzle,
-          title: t('featuresCarousel.slide2.title'),
-          description: t('featuresCarousel.slide2.description'),
+          title: 'Quebra-cabeça',
+          description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.',
           type: 'image',
-          media: locale === 'pt' 
-            ? "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png" 
-            : "https://res.cloudinary.com/dncoxm1it/image/upload/v1771041578/puzzle_ula9hb.png"
+          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png"
         },
         {
           id: 3,
           icon: Clock,
-          title: t('featuresCarousel.slide3.title'),
-          description: t('featuresCarousel.slide3.description'),
+          title: 'Contador de Tempo',
+          description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.',
           type: 'image',
           media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750174/cavddawsvdfsxvcfdsaAfASFsafSA_z4pdvd.png"
         },
-    ], [t, locale]);
+    ], []);
 
     const activeContent = featureSlides[activeIndex];
 
@@ -273,7 +269,7 @@ export default function FeaturesCarousel() {
              <motion.div className="mt-16 relative z-20" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button asChild className="relative overflow-hidden bg-white text-black hover:bg-zinc-100 text-xl font-bold px-12 py-8 rounded-full shadow-[0_0_50px_-10px_rgba(255,255,255,0.4)] transition-all">
                     <Link href="/criar" className="flex items-center gap-3 relative z-10">
-                        {t('featuresCarousel.cta')} 
+                        Criar meu presente 
                         <ArrowRight className="w-6 h-6 animate-pulse" />
                     </Link>
                 </Button>

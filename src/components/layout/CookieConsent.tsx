@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,11 +6,9 @@ import { Cookie } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { setCookie, hasCookie } from 'cookies-next';
-import { useTranslation } from '@/lib/i18n';
 
 export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
-  const { t } = useTranslation();
 
   useEffect(() => {
     // Check if the cookie consent has already been given.
@@ -44,20 +41,20 @@ export default function CookieConsent() {
             <div className="flex items-start md:items-center gap-4">
               <Cookie className="h-6 w-6 shrink-0 mt-1 md:mt-0" />
               <div>
-                <h3 className="font-semibold text-base">{t('cookie.title')}</h3>
+                <h3 className="font-semibold text-base">Aviso de Cookies</h3>
                  <p className="mt-2 text-sm text-muted-foreground">
-                  {t('cookie.description')}{' '}
+                  Estes cookies não vão quebrar sua dieta. Eles apenas melhoram seu tempo. Nós os usamos para garantir a melhor experiência em nosso site.{' '}
                   <Link href="/privacidade" className="underline hover:text-primary">
-                    {t('cookie.privacyLink')}
+                    Leia nossa política de privacidade.
                   </Link>
                 </p>
               </div>
             </div>
             
             <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">
-               <Button onClick={handleAccept} className="w-full sm:w-auto">{t('cookie.accept')}</Button>
+               <Button onClick={handleAccept} className="w-full sm:w-auto">Aceitar</Button>
                <Button variant="ghost" className="w-full sm:w-auto text-muted-foreground hover:text-foreground">
-                {t('cookie.manage')}
+                Gerenciar preferências
               </Button>
             </div>
           </div>

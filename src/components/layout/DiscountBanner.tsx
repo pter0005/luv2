@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
 
 export default function DiscountBanner() {
   const [timeLeft, setTimeLeft] = useState('');
   const [showBanner, setShowBanner] = useState(false);
-  const { t } = useTranslation();
 
   useEffect(() => {
     const getExpiryTime = () => {
@@ -53,7 +51,7 @@ export default function DiscountBanner() {
     <div className="bg-gradient-to-r from-red-600 via-purple-700 to-red-600 text-white text-center py-2.5 text-sm font-bold shadow-lg flex items-center justify-center gap-2">
       <Clock className="w-4 h-4" />
       <p>
-        {t('banner.title')} <span className="font-mono tracking-wider">{timeLeft}</span>!
+        Oferta de Lançamento: 50% OFF nas próximas <span className="font-mono tracking-wider">{timeLeft}</span>!
       </p>
     </div>
   );

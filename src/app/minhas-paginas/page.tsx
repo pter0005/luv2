@@ -12,12 +12,11 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { useTranslation } from '@/lib/i18n';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import TicketGenerator from '@/components/TicketGenerator';
 
-const LovePageCard = ({ page, t, onClick }: { page: any, t: (key: any) => string, onClick: () => void }) => {
+const LovePageCard = ({ page, onClick }: { page: any, onClick: () => void }) => {
   const previewImage = page.galleryImages?.[0]?.url || `https://picsum.photos/seed/${page.id}/400/300`;
 
   return (
@@ -33,10 +32,10 @@ const LovePageCard = ({ page, t, onClick }: { page: any, t: (key: any) => string
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
           <CardTitle className="font-handwriting text-3xl text-white drop-shadow-2xl">
-            {page.title || t('mypages.card.noTitle')}
+            {page.title || 'Sem Título'}
           </CardTitle>
           <p className="text-white/70 text-xs mt-2 bg-black/20 px-3 py-1 rounded-full md:backdrop-blur-md">
-             {t('mypages.card.createdAt')} {page.createdAt ? new Date(page.createdAt.seconds * 1000).toLocaleDateString() : t('mypages.card.recent')}
+             Criado em {page.createdAt ? new Date(page.createdAt.seconds * 1000).toLocaleDateString() : 'Recente'}
           </p>
         </div>
       </Card>
@@ -55,7 +54,6 @@ const PageSkeleton = () => (
 export default function MinhasPaginasPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const { t } = useTranslation();
   const [selectedPage, setSelectedPage] = useState<any | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -92,7 +90,7 @@ export default function MinhasPaginasPage() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">{t('mypages.loading')}</p>
+        <p className="ml-4 text-muted-foreground">Verificando sua sessão...</p>
       </div>
     );
   }
@@ -102,13 +100,13 @@ export default function MinhasPaginasPage() {
         <div className="container py-12 md:py-24">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
             <div>
-                <h1 className="text-3xl font-bold font-headline">{t('mypages.title')}</h1>
-                <p className="text-muted-foreground">{t('mypages.description')}</p>
+                <h1 className="text-3xl font-bold font-headline">Minhas Páginas de Amor</h1>
+                <p className="text-muted-foreground">Gerencie aqui todas as suas criações.</p>
             </div>
             <Button asChild>
                 <Link href="/criar">
                     <PlusCircle className="mr-2 h-4 w-4"/>
-                    {t('mypages.cta')}
+                    Criar Nova Página
                 </Link>
             </Button>
             </div>
@@ -116,9 +114,9 @@ export default function MinhasPaginasPage() {
             {showIndexWarning && (
             <Alert variant="destructive" className="mb-8">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{t('mypages.index.title')}</AlertTitle>
+                <AlertTitle>Ação Necessária: Criar Índice no Firestore</AlertTitle>
                 <AlertDescription>
-                    {t('mypages.index.description')}
+                    A busca por suas páginas requer um índice que não existe no banco de dados. Para corrigir, abra o console do navegador (F12), encontre o erro do Firestore e clique no link fornecido para criar o índice.
                 </AlertDescription>
             </Alert>
             )}
@@ -146,7 +144,7 @@ export default function MinhasPaginasPage() {
                             key={page.id}
                             variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
                         >
-                            <LovePageCard page={page} t={t} onClick={() => setSelectedPage(page)} />
+                            <LovePageCard page={page} onClick={() => setSelectedPage(page)} />
                         </motion.div>
                     ))
                 )}
@@ -156,11 +154,11 @@ export default function MinhasPaginasPage() {
             {!arePagesLoading && (!lovePages || lovePages.length === 0) && !showIndexWarning && (
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
                 <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                <h2 className="text-xl font-semibold">{t('mypages.empty.title')}</h2>
-                <p className="text-muted-foreground mt-2">{t('mypages.empty.description')}</p>
+                <h2 className="text-xl font-semibold">Nenhuma página criada ainda</h2>
+                <p className="text-muted-foreground mt-2">Que tal começar a sua primeira obra de arte?</p>
                 <Button asChild variant="outline" className="mt-6">
                     <Link href="/criar">
-                        {t('mypages.empty.cta')}
+                        Criar minha primeira página
                     </Link>
                 </Button>
             </div>
@@ -170,7 +168,7 @@ export default function MinhasPaginasPage() {
         <Dialog open={!!selectedPage} onOpenChange={(isOpen) => !isOpen && setSelectedPage(null)}>
             <DialogContent className="sm:max-w-md bg-card/90 backdrop-blur-lg">
                 <DialogHeader>
-                    <DialogTitle>{t('mypages.share.title')}</DialogTitle>
+                    <DialogTitle>Compartilhe sua Página</DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                     <div className="p-4 bg-white rounded-lg border">
@@ -182,7 +180,7 @@ export default function MinhasPaginasPage() {
                         />
                     </div>
                     <p className="text-xs text-muted-foreground text-center">
-                        {t('mypages.share.description')}
+                        Escaneie o QR Code ou copie o link abaixo.
                     </p>
                     <div className="flex items-center space-x-2 w-full">
                     <Input id="page-link" value={pageUrl} readOnly className="bg-background" />
@@ -192,7 +190,7 @@ export default function MinhasPaginasPage() {
                     </div>
                     <Button asChild className="w-full mt-2">
                     <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-                        {t('mypages.share.cta')} <ExternalLink className="ml-2 h-4 w-4" />
+                        Acessar Página <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
                     </Button>
 

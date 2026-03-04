@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useTranslation } from "@/lib/i18n";
 import { Instagram, Mail, MessageSquare, Heart, ExternalLink, LogOut } from "lucide-react";
 import { useUser } from "@/firebase/provider";
 import { useRouter } from "next/navigation";
@@ -12,7 +11,6 @@ import { removeSession } from "@/app/auth-actions";
 import { useState, useEffect } from "react";
 
 export default function Footer() {
-  const { t, locale } = useTranslation();
   const { user } = useUser();
   const router = useRouter();
   const [isDevelopment, setIsDevelopment] = useState(false);
@@ -61,7 +59,7 @@ export default function Footer() {
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              {t('footer.tagline')}
+              Transformando sentimentos em experiências digitais inesquecíveis. Crie, surpreenda e eternize o seu amor.
             </p>
             <div className="flex items-center gap-4">
               <SocialLink href="https://www.instagram.com/mycupid.oficial/" icon={<Instagram size={20} />} label="Instagram" />
@@ -72,23 +70,23 @@ export default function Footer() {
 
           {/* Coluna 2: Produto */}
           <div>
-            <h3 className="font-bold text-white mb-6">{t('footer.platform')}</h3>
+            <h3 className="font-bold text-white mb-6">Plataforma</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><FooterLink href="/criar">{t('footer.createPage')}</FooterLink></li>
-              <li><FooterLink href="/minhas-paginas">{t('footer.myCreations')}</FooterLink></li>
-              <li><FooterLink href="/login">{t('footer.login')}</FooterLink></li>
-              <li><FooterLink href="/#planos">{t('footer.plans')}</FooterLink></li>
+              <li><FooterLink href="/criar">Criar Página</FooterLink></li>
+              <li><FooterLink href="/minhas-paginas">Minhas Criações</FooterLink></li>
+              <li><FooterLink href="/login">Login / Cadastro</FooterLink></li>
+              <li><FooterLink href="/#planos">Planos e Preços</FooterLink></li>
               {isAdmin && <li><FooterLink href="/admin/login">Área Admin</FooterLink></li>}
             </ul>
           </div>
 
           {/* Coluna 3: Suporte & Legal */}
           <div>
-            <h3 className="font-bold text-white mb-6">{t('footer.support')}</h3>
+            <h3 className="font-bold text-white mb-6">Suporte</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><FooterLink href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0">{t('footer.helpCenter')}</FooterLink></li>
-              <li><FooterLink href="/termos">{t('footer.terms')}</FooterLink></li>
-              <li><FooterLink href="/privacidade">{t('footer.privacy')}</FooterLink></li>
+              <li><FooterLink href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0">Central de Ajuda</FooterLink></li>
+              <li><FooterLink href="/termos">Termos de uso</FooterLink></li>
+              <li><FooterLink href="/privacidade">Política de privacidade</FooterLink></li>
                {isDevelopment && user && (
                 <li>
                   <button onClick={handleSignOut} className="hover:text-purple-400 transition-colors flex items-center gap-2 group text-left">
@@ -102,7 +100,7 @@ export default function Footer() {
 
           {/* Coluna 4: Desenvolvedor (Brou) */}
           <div className="lg:text-right">
-             <h3 className="font-bold text-white mb-6">{t('footer.development')}</h3>
+             <h3 className="font-bold text-white mb-6">Desenvolvimento</h3>
              <a 
                 href="https://newperfect.netlify.app/" 
                 target="_blank" 
@@ -110,7 +108,7 @@ export default function Footer() {
                 className="group inline-block bg-white/5 border border-white/10 rounded-xl p-4 transition-all hover:bg-white/10 hover:border-purple-500/30 hover:shadow-[0_0_20px_-5px_rgba(168,85,247,0.3)]"
              >
                 <div className="flex flex-col items-start lg:items-end gap-2">
-                    <span className="text-xs text-gray-500 font-medium group-hover:text-gray-300 transition-colors">{t('footer.poweredBy')}</span>
+                    <span className="text-xs text-gray-500 font-medium group-hover:text-gray-300 transition-colors">Powered by</span>
                     <span className="font-bold text-white transition-colors group-hover:text-purple-300">New Perfect</span>
                 </div>
              </a>
@@ -121,17 +119,15 @@ export default function Footer() {
         <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-500 space-y-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2">
                  <p>
-                    {t('footer.copyright', { year: new Date().getFullYear() })}
+                    © {new Date().getFullYear()} MyCupid. Todos os direitos reservados.
                 </p>
                 <p className="flex items-center gap-1.5">
-                    {t('footer.madeWith')} <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> {t('footer.forCouples')}
+                    Feito com <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> para casais apaixonados.
                 </p>
             </div>
-            {locale === 'pt' && (
-              <p>
-                G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA | CNPJ: 64.966.299/0001-16
-              </p>
-            )}
+            <p>
+              G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA | CNPJ: 64.966.299/0001-16
+            </p>
         </div>
       </div>
     </footer>

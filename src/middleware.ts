@@ -13,33 +13,7 @@ const authRoutes = ['/login'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  const hostname = request.headers.get('host') || '';
-  
-  // --- LÓGICA DE REDIRECIONAMENTO DE DOMÍNIO ---
-  const isProdBr = hostname.endsWith('mycupid.com.br');
-  const isProdIntl = hostname.endsWith('mycupid.net');
-  
-  // Only perform geo-redirects on production domains
-  if (isProdBr || isProdIntl) {
-    const country = request.geo?.country || 'BR';
-    const url = request.nextUrl.clone();
-
-    // CASE 1: Brazilian user on international site -> redirect to .com.br
-    if (country === 'BR' && isProdIntl) {
-        url.hostname = 'mycupid.com.br';
-        url.port = '';
-        return NextResponse.redirect(url);
-    }
-    // CASE 2: International user on Brazilian site -> redirect to .net
-    if (country !== 'BR' && isProdBr) {
-        url.hostname = 'mycupid.net';
-        url.port = '';
-        return NextResponse.redirect(url);
-    }
-  }
-
-
-  // --- LÓGICA DE PROTEÇÃO DE ROTAS (JÁ EXISTENTE) ---
+  // --- LÓGICA DE PROTEÇÃO DE ROTAS ---
   const userSession = request.cookies.get('__session')?.value;
   const adminSession = request.cookies.get('session_admin')?.value;
 

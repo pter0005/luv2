@@ -1,11 +1,9 @@
-
 "use client";
 
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Star, Quote, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/lib/i18n";
 import { useMemo, memo } from "react";
 
 // --- DADOS REAIS & HUMANIZADOS (Gírias + Linguagem Jovem) ---
@@ -111,14 +109,34 @@ const Marquee = ({ items, direction = "left", speed }: { items: { name: string, 
     );
 };
 
-export default function TestimonialsMarquee() {
-    const { t } = useTranslation();
+const testimonialsData = [
+  { name: 'Lucas & Mari', text: 'Mano, na moral... ela chorou horrores qnd viu kkkk. Ficou mto perfeito, sério!' },
+  { name: 'Bia & Thiago', text: 'Gente, o q é essa linha do tempo?? A gente ficou um tempão lembrando dos roles. Surreal.' },
+  { name: 'Rafa & Ju', text: 'Eu sou zero criativo pra presente, mas isso aqui salvou dms. Montei em 20 min e ficou top.' },
+  { name: 'Gui & Lau', text: "O puzzle no começo é genial, ela ficou tipo 'uai oq é isso?' e dps amou a surpresa." },
+  { name: 'Matheus & Isa', text: 'Melhor presente, papo reto. Mto melhor que dar só chocolate ou roupa. Ela postou em tudo q é lugar.' },
+  { name: 'Bru & Manu', text: 'Achei q ia ser difícil de fazer mas é mó de boa. A musica de fundo deu mó clima 😍' },
+  { name: 'Fe & Gi', text: 'O QR Code funcionou direitinho no jantar. Foi o ponto alto da noite, vlw msm!' },
+  { name: 'Dani & Lice', text: 'Cara, mt foda. É uma parada q fica pra sempre, tlgd? Não é q nem presente q acaba ou quebra.' },
+  { name: 'Du & Sophia', text: 'Nossa história ficou linda demais ali. Chorei junto com ela, admito kkkk.' },
+  { name: 'Vini & Valen', text: 'O suporte me ajudou rapidão com a foto q tava torta. Atendimento 10/10.' },
+  { name: 'Dedé & Lena', text: 'Sem palavras... ficou mto profissa! Parece q paguei uma fortuna pra um designer fazer.' },
+  { name: 'Léo & Lu', text: 'Minha mina ficou chocada. Falou q foi o presente mais criativo q eu já dei. Vcs são brabos!' },
+  { name: 'Rô & Liv', text: 'As fotos em 3D dão um tchan a mais. Ficamos vendo no celular um tempão.' },
+  { name: 'Gabs & Clara', text: 'Fiz pro dia dos namorados, foi sucesso total. Todo mundo perguntou como eu fiz kkk.' },
+  { name: 'Ale & Gabi', text: 'Vale cada centavo, na moral. É mto barato pelo tanto q emociona.' },
+  { name: 'Di & Yas', text: 'Os coraçõezinhos caindo na tela... aff q amor! ❤️ Ela amou demais.' },
+  { name: 'Rick & Lê', text: 'Usei a IA pra escrever o texto pq sou péssimo com palavras e ficou lindo dms.' },
+  { name: 'Serginho & Nick', text: 'Simples, rápido e emocionante. O combo perfeito pra quem quer surpreender.' },
+  { name: 'Fer & Sah', text: 'Eu tava sem ideia do q dar e isso salvou meu namoro kkkk brincadeira, mas ajudou mto!' },
+  { name: 'Will & Carol', text: 'Aquele contador de tempo é hipnotizante. A gnt fica olhando os segundos passarem juntinhos.' },
+];
 
+export default function TestimonialsMarquee() {
     const testimonials = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
-        name: t(`testimonials.t${i + 1}.name` as any),
-        text: t(`testimonials.t${i + 1}.text` as any),
+        ...testimonialsData[i],
         image: testimonialImages[i],
-    })), [t]);
+    })), []);
 
     const topRow = testimonials.slice(0, 10);
     const bottomRow = testimonials.slice(10, 20);

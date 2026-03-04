@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -18,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { FirebaseError } from 'firebase/app';
 import Link from 'next/link';
 import { createSession } from '@/app/auth-actions';
-import { useTranslation } from '@/lib/i18n';
 import DevAuthDomainHelper from '@/components/layout/DevAuthDomainHelper';
 
 const loginSchema = z.object({
@@ -34,7 +32,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setGoogleLoading] = useState(false);
   const redirectUrl = searchParams.get('redirect') || '/minhas-paginas';
@@ -75,23 +72,52 @@ function LoginContent() {
           }, { merge: true });
         }
 
-        toast({ title: t('login.toast.success.register'), description: t('login.toast.redirect') });
+        toast({ title: 'Conta criada com sucesso!', description: 'Você será redirecionado em breve.' });
         await handleAuthSuccess(user);
       } else {
         const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        toast({ title: t('login.toast.success.login'), description: t('login.toast.redirect') });
+        toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
         await handleAuthSuccess(userCredential.user);
       }
     } catch (error) {
         const firebaseError = error as FirebaseError;
         console.error(`Firebase Email Auth Error:`, firebaseError.code, firebaseError.message);
         
-        const errorKey = `login.auth.${firebaseError.code.replace('auth/', '')}` as any;
-        const errorMessage = t(errorKey) || t('login.auth.generic');
+        let errorMessage = 'Ocorreu um problema não catalogado. Verifique o console para mais detalhes.';
+
+        switch (firebaseError.code) {
+          case 'auth/invalid-credential':
+            errorMessage = 'O e-mail ou a senha que você digitou estão incorretos. Verifique os dados e tente novamente.';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'Nenhuma conta foi encontrada com este e-mail. Considere se cadastrar.';
+            break;
+          case 'auth/wrong-password':
+            errorMessage = 'A senha está incorreta. Por favor, tente novamente.';
+            break;
+          case 'auth/email-already-in-use':
+            errorMessage = 'Este e-mail já foi usado para criar uma conta. Tente fazer login ou use outro e-mail.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'A senha precisa ter pelo menos 6 caracteres.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'O formato do e-mail digitado não é válido.';
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = 'O login por e-mail e senha não está habilitado neste projeto. Contate o suporte.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'O acesso a esta conta foi bloqueado temporariamente devido a muitas tentativas de login. Tente novamente mais tarde.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Não foi possível conectar ao servidor de autenticação. Verifique sua conexão com a internet.';
+            break;
+        }
         
         toast({
             variant: 'destructive',
-            title: t('login.toast.fail'),
+            title: 'Falha na Autenticação',
             description: (
               <div>
                 <p>{errorMessage}</p>
@@ -126,7 +152,7 @@ function LoginContent() {
         }, { merge: true });
       }
 
-      toast({ title: t('login.toast.success.login'), description: t('login.toast.redirect') });
+      toast({ title: 'Login bem-sucedido!', description: 'Você será redirecionado em breve.' });
       
       await handleAuthSuccess(result.user);
 
@@ -139,12 +165,11 @@ function LoginContent() {
           return;
         }
 
-        const errorKey = `login.auth.google.${firebaseError.code.replace('auth/', '')}` as any;
-        const errorMessage = t(errorKey) || t('login.auth.google.generic');
+        let errorMessage = 'Ocorreu um erro durante o login com o Google. Tente novamente.';
         
         toast({
             variant: 'destructive',
-            title: t('login.toast.google.fail'),
+            title: 'Falha no Login com Google',
             description: (
                  <div>
                     <p>{errorMessage}</p>
@@ -162,7 +187,7 @@ function LoginContent() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-muted-foreground">{t('login.loading')}</p>
+        <p className="ml-4 text-muted-foreground">Carregando...</p>
       </div>
     );
   }
@@ -171,8 +196,8 @@ function LoginContent() {
     <div className="container flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{t('login.title')}</CardTitle>
-          <CardDescription>{t('login.description')}</CardDescription>
+          <CardTitle className="text-2xl">Acesse sua Conta</CardTitle>
+          <CardDescription>Entre ou crie uma conta para salvar e gerenciar suas páginas.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -181,7 +206,7 @@ function LoginContent() {
                 <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
                     <path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.5 173.5 58.5l-65.2 64.2c-28.5-22.5-64.6-36.5-108.3-36.5-84.3 0-152.3 67-152.3 150s68 150 152.3 150c95.7 0 132.3-72.3 137-108.3H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                 </svg>}
-                {t('login.google')}
+                Continuar com Google
             </Button>
 
             <div className="relative">
@@ -189,7 +214,7 @@ function LoginContent() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">{t('login.separator')}</span>
+                <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
               </div>
             </div>
 
@@ -200,9 +225,9 @@ function LoginContent() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('login.email')}</FormLabel>
+                      <FormLabel>E-mail</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('login.email.placeholder')} {...field} />
+                        <Input placeholder="seu@email.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -213,9 +238,9 @@ function LoginContent() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('login.password')}</FormLabel>
+                      <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder={t('login.password.placeholder')} {...field} />
+                        <Input type="password" placeholder="Sua senha" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -224,24 +249,24 @@ function LoginContent() {
                  <div className="grid grid-cols-2 gap-4">
                     <Button onClick={form.handleSubmit((values) => handleEmailAuth(values, false))} disabled={isLoading || isGoogleLoading} className='w-full'>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t('login.login')}
+                        Entrar
                     </Button>
                     <Button onClick={form.handleSubmit((values) => handleEmailAuth(values, true))} variant="secondary" disabled={isLoading || isGoogleLoading} className='w-full'>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t('login.register')}
+                        Cadastrar
                     </Button>
                 </div>
               </form>
             </Form>
           </div>
             <p className="px-8 text-center text-sm text-muted-foreground mt-6">
-                {t('login.terms.prefix')}{" "}
+                Ao continuar, você concorda com nossos{" "}
                 <Link href="/termos" className="underline underline-offset-4 hover:text-primary">
-                    {t('login.terms.link')}
+                    Termos de Serviço
                 </Link>{" "}
-                {t('login.terms.separator')}{" "}
+                e{" "}
                 <Link href="/privacidade" className="underline underline-offset-4 hover:text-primary">
-                    {t('login.privacy.link')}
+                    Política de Privacidade
                 </Link>
                 .
             </p>
@@ -252,11 +277,10 @@ function LoginContent() {
 }
 
 export default function LoginPage() {
-  const { t } = useTranslation();
   return (
     <>
       <DevAuthDomainHelper />
-      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-muted-foreground">{t('login.loading')}</p></div>}>
+      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4 text-muted-foreground">Carregando...</p></div>}>
         <LoginContent />
       </Suspense>
     </>

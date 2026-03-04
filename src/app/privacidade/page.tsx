@@ -1,11 +1,9 @@
-
 "use client";
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Shield, Lock, Eye, Server, UserCheck, AlertTriangle, FileText, User, Info } from 'lucide-react';
+import { ArrowLeft, Shield, Lock, Eye, Server, UserCheck, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTranslation } from '@/lib/i18n';
 
 const PolicySection = ({ title, icon: Icon, children }: { title: string, icon: React.FC<any>, children: React.ReactNode }) => (
     <section className="space-y-4">
@@ -21,14 +19,13 @@ const PolicySection = ({ title, icon: Icon, children }: { title: string, icon: R
 
 
 export default function PrivacidadePage() {
-  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen">
         <div className="container py-16 md:py-24 max-w-4xl mx-auto">
         <Button asChild variant="outline" className="fixed top-6 left-6 md:absolute md:top-8 md:left-8 bg-background/80 md:bg-transparent backdrop-blur-sm z-50">
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('privacy.back')}
+            Voltar para o início
           </Link>
         </Button>
         <div className="text-center mb-16 pt-16 md:pt-0">
@@ -63,7 +60,7 @@ export default function PrivacidadePage() {
         </div>
 
         <div className="space-y-12">
-            <PolicySection title="Introdução" icon={Info}>
+            <PolicySection title="Introdução" icon={Shield}>
                 <p>
                     O <strong>MyCupid</strong> (doravante "Plataforma"), operado por G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 64.966.299/0001-16, está comprometido com a proteção da sua privacidade. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
                 </p>

@@ -3,13 +3,10 @@
 import Link from 'next/link';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Paintbrush, Sparkles, ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 export default function CreateOptionsPage() {
-  const { t } = useTranslation();
-
   return (
     <div className="container py-16 md:py-24 text-center min-h-[80vh] flex flex-col items-center justify-center">
       <motion.div
@@ -18,13 +15,13 @@ export default function CreateOptionsPage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-4xl font-semibold text-foreground">
-          {t('create.title')}{' '}
+          Comece sua{' '}
           <span className="text-4xl md:text-6xl font-bold mt-1 leading-none gradient-text">
-            {t('create.title.highlight')}
+            obra de arte
           </span>
         </h1>
         <p className="text-muted-foreground text-lg mt-4 max-w-2xl mx-auto">
-          {t('create.description')}
+          Escolha como você quer começar sua jornada criativa.
         </p>
       </motion.div>
 
@@ -42,16 +39,16 @@ export default function CreateOptionsPage() {
                   <div className="p-3 bg-primary/10 rounded-lg">
                     <Paintbrush className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>{t('create.diy.title')}</CardTitle>
+                  <CardTitle>Fazer eu mesmo</CardTitle>
                 </div>
                 <CardDescription>
-                  {t('create.diy.description')}
+                  Comece do zero com uma tela em branco e total liberdade criativa.
                 </CardDescription>
               </CardHeader>
               <div className="flex-grow" />
               <div className="p-6 pt-0">
                 <Button className="w-full">
-                  {t('create.diy.cta')} <ArrowRight className="ml-2 h-4 w-4" />
+                  Começar do Zero <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </Card>
@@ -70,16 +67,16 @@ export default function CreateOptionsPage() {
                 <div className="p-3 bg-primary/10 rounded-lg">
                   <Sparkles className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>{t('create.templates.title')}</CardTitle>
+                <CardTitle>Usar um Modelo Pronto</CardTitle>
               </div>
               <CardDescription>
-                {t('create.templates.description')}
+                Navegue por templates profissionais e apenas adicione seu toque pessoal. (Em breve!)
               </CardDescription>
             </CardHeader>
             <div className="flex-grow" />
             <div className="p-6 pt-0">
               <Button className="w-full" disabled>
-                {t('create.templates.cta')}
+                Ver Modelos
               </Button>
             </div>
           </Card>

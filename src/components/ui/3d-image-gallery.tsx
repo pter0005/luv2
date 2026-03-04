@@ -4,13 +4,11 @@ import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, u
 import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, Html } from "@react-three/drei"
-import { X, Loader2, AlertTriangle } from "lucide-react"
+import { X } from "lucide-react"
 import { format } from "date-fns"
-import { ptBR, enUS, es } from "date-fns/locale"
+import { ptBR } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
-import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
-import { useTranslation } from "@/lib/i18n"
 import Image from 'next/image';
 
 /* =========================
@@ -61,7 +59,6 @@ const _cameraPos = new THREE.Vector3()
 function FloatingCard({ card, position, isMobile, onClick }: { card: Card, position: any, isMobile: boolean, onClick: () => void }) {
   const groupRef = useRef<THREE.Group>(null)
   const occludeRef = useRef<THREE.Mesh>(null)
-  const { locale } = useTranslation();
   
   useFrame(({ camera }) => {
     const g = groupRef.current
@@ -71,8 +68,7 @@ function FloatingCard({ card, position, isMobile, onClick }: { card: Card, posit
     g.lookAt(camera.position);
   })
 
-  const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
-  const fnsLocale = dateLocales[locale] || ptBR;
+  const fnsLocale = ptBR;
 
   const dateObj = useMemo(() => {
       if (!card.date) return null;
@@ -209,7 +205,7 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean, setSelec
 /* =========================
    Scene (EQUILIBRADO)
    ========================= */
-function Scene({ isMobile, events, setSelectedCard }: { isMobile: boolean, events: Card[], setSelectedCard: (card: Card) => void }) {
+function Scene({ isMobile, setSelectedCard }: { isMobile: boolean, events: Card[], setSelectedCard: (card: Card) => void }) {
     const { camera } = useThree();
 
     useEffect(() => {
@@ -249,13 +245,12 @@ function Scene({ isMobile, events, setSelectedCard }: { isMobile: boolean, event
    UI Overlay
    ========================= */
 const TimelineUI = ({ onClose }: { onClose: () => void }) => {
-    const { t } = useTranslation();
     return (
     <>
         <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/90 to-transparent pointer-events-none h-24">
             <div className="text-white pointer-events-none pl-1">
-                <h1 className="text-lg font-bold drop-shadow-xl font-headline tracking-wide">{t('publicpage.timeline.title')}</h1>
-                <p className="text-[10px] text-white/70">{t('publicpage.timeline.description')}</p>
+                <h1 className="text-lg font-bold drop-shadow-xl font-headline tracking-wide">Nossa Linha do Tempo</h1>
+                <p className="text-[10px] text-white/70">Toque e arraste para girar</p>
             </div>
             <button 
                 onClick={onClose} 
@@ -272,9 +267,7 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => {
    Full Screen Card View
    ========================= */
 function FullScreenCardView({ card, onClose }: { card: Card, onClose: () => void }) {
-  const { t, locale } = useTranslation();
-  const dateLocales: { [key: string]: any } = { pt: ptBR, en: enUS, es: es };
-  const fnsLocale = dateLocales[locale] || ptBR;
+  const fnsLocale = ptBR;
 
   const dateObj = useMemo(() => {
       if (!card.date) return null;
