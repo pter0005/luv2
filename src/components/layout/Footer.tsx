@@ -14,7 +14,7 @@ export default function Footer() {
   const { user } = useUser();
   const router = useRouter();
   const [isDevelopment, setIsDevelopment] = useState(false);
-  const logoUrl = PlaceHolderImages.find((p) => p.id === 'footerLogo')?.imageUrl || '/logo-placeholder.png';
+  const logoUrl = PlaceHolderImages.find((p) => p.id === "footerLogo")?.imageUrl || '/logo-placeholder.png';
 
   const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com', 'pedrohenriqww9@gmail.com'];
   const isAdmin = user && user.email && adminEmails.includes(user.email);
@@ -53,9 +53,9 @@ export default function Footer() {
               <Image
                 src={logoUrl}
                 alt="MyCupid Logo"
-                width={600}
-                height={171}
-                className="w-[500px] h-auto object-contain"
+                width={200}
+                height={50}
+                className="w-48 h-auto"
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">

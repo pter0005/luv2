@@ -149,7 +149,7 @@ export default function Header() {
         "fixed top-0 left-0 w-full z-50 transition-colors duration-300 bg-background/80 md:backdrop-blur-sm border-b border-border/50 shadow-lg"
       )}>
       <div className={cn(
-          "container flex items-center justify-between transition-all duration-300 h-40"
+          "container flex items-center justify-between transition-all duration-300 h-28"
         )}>
         
         <div className="flex justify-start">
@@ -157,9 +157,9 @@ export default function Header() {
               <Image
                   src={headerLogoUrl}
                   alt="MyCupid Logo"
-                  width={1000}
-                  height={250}
-                  className="w-auto h-40 object-contain transition-all duration-300"
+                  width={400}
+                  height={100}
+                  className="w-auto h-24 object-contain transition-all duration-300"
                   data-ai-hint="logo"
                   priority
               />
@@ -194,9 +194,9 @@ export default function Header() {
                         <Image
                           src={headerLogoUrl}
                           alt="MyCupid Logo"
-                          width={500}
-                          height={125}
-                          className="w-auto h-36"
+                          width={400}
+                          height={100}
+                          className="w-auto h-24"
                           data-ai-hint="logo"
                         />
                         </SheetTitle>

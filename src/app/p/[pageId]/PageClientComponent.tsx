@@ -79,8 +79,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
 
-  const headerLogoUrl = PlaceHolderImages.find((p) => p.id === 'headerLogo')?.imageUrl || '';
-
   const cookieName = `puzzle_solved_${pageData.id}`;
 
   const puzzleImageSrc = useMemo(() => {
@@ -217,11 +215,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       
       <header className="top-0 left-0 w-full pt-8 pb-4 flex justify-center z-30 relative pointer-events-none">
         <Image
-          src={headerLogoUrl}
+          src="https://i.imgur.com/3jk3dFB.png"
           alt="MyCupid Logo"
-          width={800}
-          height={200}
-          className="w-auto h-48 object-contain"
+          width={600}
+          height={171}
+          className="w-auto h-36 object-contain"
           priority
         />
       </header>
