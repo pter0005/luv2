@@ -394,7 +394,7 @@ const translations = {
     'wizard.puzzle.image.processing': 'Processando...',
     'wizard.puzzle.image.remove': 'Remover Imagem',
     'wizard.memory.enable': 'Ativar Jogo da Memória',
-    'wizard.memory.description': 'Crie um jogo de memória divertido com suas fotos.',
+    'wizard.memory.description': 'Adicione um jogo de memória divertido com suas fotos.',
     'wizard.memory.upload': 'Adicionar fotos para o jogo',
     'wizard.memory.image.label': 'Imagens para o Jogo da Memória',
     'wizard.memory.image.description': 'Adicione de 2 a 8 fotos para o jogo.',
@@ -431,6 +431,8 @@ const translations = {
     'wizard.qr.title': 'Código QR Personalizado',
     'wizard.qr.upsell': 'Destaque',
     'wizard.qr.free': 'GRÁTIS',
+    'wizard.quiz.enable': 'Ativar Quiz do Casal',
+    'wizard.quiz.description': 'Adicionar um quiz divertido sobre vocês dois.',
     'wizard.quiz.question.label': 'Pergunta {index}',
     'wizard.quiz.question.placeholder': 'Qual é a nossa música?',
     'wizard.quiz.options.label': 'Opções de Resposta',
@@ -910,10 +912,12 @@ const translations = {
     'wizard.puzzle.image.processing': 'Processing...',
     'wizard.puzzle.image.remove': 'Remove Image',
     'wizard.memory.enable': 'Enable Memory Game',
-    'wizard.memory.description': 'Create a fun memory game with your photos.',
+    'wizard.memory.description': 'Add a fun memory game with your photos.',
     'wizard.memory.upload': 'Add photos for the game',
     'wizard.memory.image.label': 'Images for the Memory Game',
     'wizard.memory.image.description': 'Add 2 to 8 photos for the game.',
+    'wizard.quiz.enable': 'Enable Couple\'s Quiz',
+    'wizard.quiz.description': 'Add a fun quiz about the two of you.',
     'wizard.payment.title': 'Almost there!',
     'wizard.payment.description': 'Your page is set up. Finalize to receive the link.',
     'wizard.payment.total': 'Total to Pay',
@@ -998,13 +1002,13 @@ const translations = {
     'toast.payment.pending.description': 'Please try again in a few moments.',
     'toast.payment.verify.error': 'Verification Error',
     'toast.payment.verify.error.description': 'Could not verify the payment.',
-
+    
      // Cookie Banner
-    'cookie.title': 'Cookie Notice',
-    'cookie.description': 'These cookies won\'t break your diet. They just improve your time. We use them to ensure the best experience on our site.',
-    'cookie.privacyLink': 'Read our privacy policy.',
-    'cookie.manage': 'Manage preferences',
-    'cookie.accept': 'Accept',
+     'cookie.title': 'Cookie Notice',
+     'cookie.description': 'These cookies won\'t break your diet. They just improve your time. We use them to ensure the best experience on our site.',
+     'cookie.privacyLink': 'Read our privacy policy.',
+     'cookie.manage': 'Manage preferences',
+     'cookie.accept': 'Accept',
 
     // Payment Status Pages
     'payment.success.title': 'Payment Successful!',
@@ -1390,10 +1394,12 @@ const translations = {
     'wizard.puzzle.image.processing': 'Procesando...',
     'wizard.puzzle.image.remove': 'Eliminar Imagen',
     'wizard.memory.enable': 'Activar Juego de Memoria',
-    'wizard.memory.description': 'Crea un divertido juego de memoria con tus fotos.',
+    'wizard.memory.description': 'Añade un divertido juego de memoria con tus fotos.',
     'wizard.memory.upload': 'Añadir fotos para el juego',
     'wizard.memory.image.label': 'Imágenes para el Juego de Memoria',
     'wizard.memory.image.description': 'Añade de 2 a 8 fotos para el juego.',
+    'wizard.quiz.enable': 'Activar Quiz de Pareja',
+    'wizard.quiz.description': 'Añade un divertido quiz sobre vosotros dos.',
     'wizard.payment.title': '¡Casi listo!',
     'wizard.payment.description': 'Tu página ha sido ensamblada. Finaliza para recibir el enlace.',
     'wizard.payment.total': 'Total a Pagar',
@@ -1549,6 +1555,3 @@ export const useTranslation = () => {
   }
   return context;
 };
-
-
-    
