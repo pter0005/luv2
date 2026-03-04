@@ -221,7 +221,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           alt="MyCupid Logo"
           width={384}
           height={96}
-          className="w-auto h-24 object-contain"
+          className="w-auto h-32 object-contain"
           priority
         />
       </header>

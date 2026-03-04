@@ -55,7 +55,7 @@ export default function Footer() {
                 alt="MyCupid Logo"
                 width={288}
                 height={82}
-                className="w-72 h-auto object-contain"
+                className="w-80 h-auto object-contain"
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
