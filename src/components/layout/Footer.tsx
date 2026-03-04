@@ -53,9 +53,9 @@ export default function Footer() {
               <Image
                 src={logoUrl}
                 alt="MyCupid Logo"
-                width={400}
-                height={114}
-                className="w-96 h-auto object-contain"
+                width={600}
+                height={171}
+                className="w-[500px] h-auto object-contain"
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
