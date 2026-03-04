@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -25,7 +26,6 @@ import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquar
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
-import { useTranslation } from '@/lib/i18n';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -73,7 +73,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showGames, setShowGames] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const { t } = useTranslation();
   
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
   
@@ -139,12 +138,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         return {
             id: event.id || Math.random().toString(),
             imageUrl: event.image!.url,
-            alt: t('publicpage.alt.timelineImage'),
+            alt: 'Imagem da linha do tempo',
             title: event.description || '',
             date: dateObj,
         };
       });
-  }, [pageData.timelineEvents, t]);
+  }, [pageData.timelineEvents]);
   
   const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
 
@@ -221,9 +220,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         <Image
           src={headerLogoUrl}
           alt="MyCupid Logo"
-          width={140}
-          height={35}
-          className="w-auto h-8 object-contain"
+          width={160}
+          height={40}
+          className="w-auto h-10 object-contain"
           priority
         />
       </header>
@@ -275,7 +274,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                     onClick={() => setShowTimeline(true)} 
                     className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                 >
-                    <View className="mr-2 h-5 w-5" /> {t('publicpage.timeline.title')}
+                    <View className="mr-2 h-5 w-5" /> Nossa Linha do Tempo
                 </Button>
             </div>
           )}
@@ -311,7 +310,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                       onClick={() => setShowGames(true)} 
                       className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                   >
-                      <Gamepad2 className="mr-2 h-5 w-5" /> {t('publicpage.games.title')}
+                      <Gamepad2 className="mr-2 h-5 w-5" /> Vamos Jogar?
                   </Button>
               </div>
           )}
@@ -336,7 +335,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
         </div>
         <footer className="relative z-10 w-full mt-4 text-center">
-            <p className="text-sm text-muted-foreground mb-4">{t('footer.follow_us')}</p>
+            <p className="text-sm text-muted-foreground mb-4">Siga-nos</p>
             <div className="flex items-center justify-center gap-4">
             <a href="https://www.instagram.com/mycupid.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-purple-500 hover:text-white transition-all duration-300">
                 <Instagram size={24} />
@@ -374,7 +373,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="w-full max-w-2xl text-center"
                 >
-                  <h2 className="text-4xl font-bold font-headline text-white mb-8">{t('publicpage.games.selectTitle')}</h2>
+                  <h2 className="text-4xl font-bold font-headline text-white mb-8">Escolha um Jogo</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {hasMemoryGame && (
                         <div
@@ -382,8 +381,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <BrainCircuit className="w-10 h-10 text-primary" />
-                        <h3 className="font-bold text-lg text-white">{t('publicpage.games.memory.title')}</h3>
-                        <p className="text-sm text-muted-foreground">{t('publicpage.games.memory.description')}</p>
+                        <h3 className="font-bold text-lg text-white">Jogo da Memória</h3>
+                        <p className="text-sm text-muted-foreground">Encontre os pares de suas fotos especiais.</p>
                         </div>
                     )}
                     {hasQuiz && (
@@ -392,8 +391,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <HelpCircle className="w-10 h-10 text-primary" />
-                        <h3 className="font-bold text-lg text-white">{t('wizard.steps.quiz.title')}</h3>
-                        <p className="text-sm text-muted-foreground">{t('wizard.steps.quiz.description')}</p>
+                        <h3 className="font-bold text-lg text-white">Quiz do Casal</h3>
+                        <p className="text-sm text-muted-foreground">Crie um quiz divertido sobre vocês.</p>
                         </div>
                     )}
                   </div>
@@ -452,11 +451,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   </div>
                   <div className="space-y-2">
                       <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
-                          {t('publicpage.puzzle.title.part1')}{' '}
-                          <span className="gradient-text">{t('publicpage.puzzle.title.part2')}</span>
+                          Um Enigma de{' '}
+                          <span className="gradient-text">Amor</span>
                       </h2>
                       <p className="text-white/70 text-sm max-w-xs mx-auto">
-                          {t('publicpage.puzzle.description')}
+                          Resolva o quebra-cabeça para revelar uma surpresa especial.
                       </p>
                   </div>
               </div>
@@ -482,7 +481,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <div className="p-4 bg-green-500/10 rounded-full border-2 border-green-500/20">
                             <CheckCircle className="w-12 h-12 text-green-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-white">{t('publicpage.puzzle.complete')}</h3>
+                        <h3 className="text-xl font-bold text-white">Desafio Concluído!</h3>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -1,3 +1,4 @@
+
 "use client";
 import Link from 'next/link';
 import { Star, TestTube, Hourglass, DatabaseZap } from 'lucide-react';
@@ -21,10 +22,8 @@ const PlansSection = () => {
                     <p className="text-muted-foreground text-sm mb-4">Todos os recursos liberados para a melhor experiência.</p>
                     <div className="text-center my-6 space-y-1">
                         <div className="flex items-baseline justify-center gap-2">
-                            <span className="text-2xl font-medium text-muted-foreground line-through">De R$59,90</span>
-                            <span className="text-4xl font-bold text-foreground">por R$14,90</span>
+                            <span className="text-4xl font-bold text-foreground">R$24,90</span>
                         </div>
-                        <p className="text-sm text-primary font-bold animate-pulse">(Só hoje!)</p>
                         <p className="text-xs text-muted-foreground">Pagamento único</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
@@ -42,7 +41,7 @@ const PlansSection = () => {
                     <h3 className="text-2xl font-bold">Plano Econômico</h3>
                     <p className="text-muted-foreground text-sm mb-4">Ideal para uma surpresa mais direta e emocionante.</p>
                     <div className="text-center my-6">
-                        <p className="text-4xl font-bold text-foreground">R$9,90</p>
+                        <p className="text-4xl font-bold text-foreground">R$14,90</p>
                         <p className="text-sm text-muted-foreground">Pagamento único</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">

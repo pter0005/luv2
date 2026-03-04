@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -157,9 +158,9 @@ export default function Header() {
               <Image
                   src={headerLogoUrl}
                   alt="MyCupid Logo"
-                  width={140}
-                  height={35}
-                  className="w-auto h-8 object-contain transition-all duration-300"
+                  width={160}
+                  height={40}
+                  className="w-auto h-10 object-contain transition-all duration-300"
                   data-ai-hint="logo"
                   priority
               />

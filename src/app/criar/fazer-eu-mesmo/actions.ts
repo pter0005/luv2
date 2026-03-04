@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -264,6 +265,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.createdAt = Timestamp.now();
         finalData.paymentId = paymentId;
         finalData.status = 'paid';
+
+        if (finalData.plan === 'basico') {
+            finalData.expireAt = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+        }
 
         await db.collection('lovepages').doc(newPageId).set(finalData);
         

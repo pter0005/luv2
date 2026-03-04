@@ -1,4 +1,5 @@
 
+
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,7 @@ async function getAdminData() {
     } else {
         currency = 'BRL';
         if (data.plan === 'avancado') price = 24.90;
-        else if (data.plan === 'basico') price = 19.90;
+        else if (data.plan === 'basico') price = 14.90;
         totalSalesBRL += price;
     }
 

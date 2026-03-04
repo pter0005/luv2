@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -61,7 +62,6 @@ import CustomAudioPlayer from "./CustomAudioPlayer";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import NebulaBackground from "@/components/effects/NebulaBackground";
 import { FirebaseError } from "firebase/app";
-import { useTranslation } from "@/lib/i18n";
 import PayPalButton from "@/components/paypal/PaypalButton";
 import MysticFlowers from "@/components/effects/MysticFlowers";
 import QrCodeSelector from "./QrCodeSelector";
@@ -165,7 +165,6 @@ export type PageData = z.infer<typeof pageSchema>;
 
 const PlanLockWrapper = React.memo(({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
     const { watch } = useFormContext<PageData>();
-    const { t } = useTranslation();
     const plan = watch('plan');
     const isLocked = requiredPlan && plan !== requiredPlan;
 
@@ -175,7 +174,7 @@ const PlanLockWrapper = React.memo(({ children, requiredPlan }: { children: Reac
                 {children}
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg z-50">
                     <Lock className="w-12 h-12 text-primary mb-4" />
-                    <p className="font-semibold text-center text-white">{t('wizard.plan.locked')}</p>
+                    <p className="font-semibold text-center text-white">Recurso do Plano Avançado.</p>
                 </div>
             </div>
         );
@@ -188,23 +187,22 @@ PlanLockWrapper.displayName = 'PlanLockWrapper';
 // Componentes de Passo simplificados para o Wizard
 const TitleStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
-    const { t } = useTranslation();
     return (
         <div className="space-y-8">
             <FormField control={control} name="title" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>{t('wizard.title.label')}</FormLabel>
-                    <FormControl><Input placeholder={t('wizard.title.placeholder')} {...field} /></FormControl>
+                    <FormLabel>Título</FormLabel>
+                    <FormControl><Input placeholder="Ex: João & Maria" {...field} /></FormControl>
                     <FormMessage />
                 </FormItem>
             )} />
             <FormField control={control} name="titleColor" render={({ field }) => (
                 <FormItem>
-                    <FormLabel>{t('wizard.title.color.label')}</FormLabel>
+                    <FormLabel>Cor do título</FormLabel>
                     <FormControl>
                         <div className="relative flex items-center gap-4">
                             <Input type="color" className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0" {...field} />
-                            <span className="text-sm">{t('wizard.title.color.description')}</span>
+                            <span className="text-sm">Escolha uma cor para o texto</span>
                         </div>
                     </FormControl>
                     <FormMessage />
@@ -217,11 +215,10 @@ TitleStep.displayName = 'TitleStep';
 
 const MessageStep = React.memo(() => {
   const form = useFormContext<PageData>();
-  const { t } = useTranslation();  
     return (
         <div className="space-y-8">
             <div className="space-y-2">
-                <FormLabel>{t('wizard.message.label')}</FormLabel>
+                <FormLabel>Sua Mensagem</FormLabel>
                 <FormField control={form.control} name="messageFormatting" render={({ field }) => (
                     <ToggleGroup type="multiple" variant="outline" className="justify-start" value={field.value} onValueChange={field.onChange}>
                         <ToggleGroupItem value="bold"><Bold className="h-4 w-4" /></ToggleGroupItem>
@@ -230,7 +227,7 @@ const MessageStep = React.memo(() => {
                     </ToggleGroup>
                 )} />
                 <FormField control={form.control} name="message" render={({ field }) => (
-                    <FormControl><Textarea placeholder={t('wizard.message.placeholder')} className="min-h-[288px]" {...field} /></FormControl>
+                    <FormControl><Textarea placeholder="Sua declaração..." className="min-h-[288px]" {...field} /></FormControl>
                 )} />
             </div>
         </div>
@@ -241,22 +238,15 @@ MessageStep.displayName = 'MessageStep';
 
 const SpecialDateStep = React.memo(() => {
   const { control, setValue, watch } = useFormContext<PageData>();
-  const { t, locale } = useTranslation();
   const countdownStyle = watch("countdownStyle");
   const titleColor = watch("titleColor");
-
-  const dateLocales: { [key: string]: Locale } = {
-    pt: ptBR,
-    en: enUS,
-    es: es,
-  };
-  const fnsLocale = dateLocales[locale] || ptBR;
+  const fnsLocale = ptBR;
 
   return (
     <div className="space-y-12">
       {/* Calendar Section */}
       <div className="space-y-4">
-        <FormLabel>{t('wizard.date.label')}</FormLabel>
+        <FormLabel>Início do relacionamento</FormLabel>
         <FormField
           control={control}
           name="specialDate"
@@ -277,13 +267,13 @@ const SpecialDateStep = React.memo(() => {
           )}
         />
         <FormDescription className="text-center">
-          {t('wizard.date.description')}
+          Essa data será usada para o contador.
         </FormDescription>
       </div>
 
       {/* Countdown Style Section */}
       <div className="space-y-4">
-        <FormLabel>{t('wizard.date.countdownStyle')}</FormLabel>
+        <FormLabel>Modo de Exibição do Contador</FormLabel>
         <FormField
           control={control}
           name="countdownStyle"
@@ -304,7 +294,7 @@ const SpecialDateStep = React.memo(() => {
                     field.value === "Padrão" ? "border-primary" : "border-muted"
                   )}
                 >
-                  {t('wizard.date.countdownStyle.default')}
+                  Padrão
                 </Label>
               </FormItem>
               <FormItem>
@@ -318,7 +308,7 @@ const SpecialDateStep = React.memo(() => {
                     field.value === "Simples" ? "border-primary" : "border-muted"
                   )}
                 >
-                  {t('wizard.date.countdownStyle.simple')}
+                  Simples
                 </Label>
               </FormItem>
             </RadioGroup>
@@ -328,7 +318,7 @@ const SpecialDateStep = React.memo(() => {
 
       {/* Countdown Color Section */}
       <div className="space-y-4">
-        <FormLabel>{t('wizard.date.countdownColor')}</FormLabel>
+        <FormLabel>Cor do Contador</FormLabel>
         <FormField
           control={control}
           name="countdownColor"
@@ -341,7 +331,7 @@ const SpecialDateStep = React.memo(() => {
                     className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
                     {...field}
                   />
-                  <span>{t('wizard.date.countdownColor.description')}</span>
+                  <span>Clique no quadrado para escolher uma cor</span>
                 </div>
               </FormControl>
             </FormItem>
@@ -354,7 +344,7 @@ const SpecialDateStep = React.memo(() => {
           onClick={() => setValue("countdownColor", titleColor)}
         >
           <LinkIcon className="mr-2 h-4 w-4" />
-          {t('wizard.date.useTitleColor')}
+          Usar a cor do título
         </Button>
       </div>
     </div>
@@ -399,7 +389,6 @@ const GalleryStep = React.memo(() => {
     const { storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    const { t } = useTranslation();
     
     const MAX_GALLERY_IMAGES = plan === 'avancado' ? MAX_GALLERY_IMAGES_AVANCADO : MAX_GALLERY_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
@@ -421,16 +410,16 @@ const GalleryStep = React.memo(() => {
 
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
-            toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
         } catch (error: any) {
             console.error("Error uploading files:", error);
             const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
             toast({
                 variant: 'destructive',
-                title: t('toast.upload.error'),
+                title: 'Erro no Upload',
                 description: (
                     <div>
-                        <p>{t('toast.upload.error.description')}</p>
+                        <p>Não foi possível enviar as imagens.</p>
                         <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                     </div>
                 )
@@ -451,10 +440,10 @@ const GalleryStep = React.memo(() => {
     
     return (
         <div className="space-y-8">
-            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType={t('wizard.imageLimit.item.gallery')} />
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType='fotos na galeria' />
             
             <div className="space-y-2">
-                <FormLabel>{t('wizard.gallery.label')}</FormLabel>
+                <FormLabel>Suas Fotos para a galeria</FormLabel>
                 <FormControl>
                     <label
                         htmlFor="photo-upload"
@@ -468,8 +457,8 @@ const GalleryStep = React.memo(() => {
                         ) : (
                             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                         )}
-                        <p className="font-semibold">{isUploading ? t('wizard.gallery.uploading') : t('wizard.gallery.upload')}</p>
-                        <p className="text-xs text-muted-foreground">{t('wizard.gallery.upload.description')}</p>
+                        <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade original)</p>
                         <input
                             id="photo-upload"
                             type="file"
@@ -508,7 +497,7 @@ const GalleryStep = React.memo(() => {
             </div>
 
             <div className="space-y-4 pt-6 border-t">
-                <FormLabel className="text-base font-semibold">{t('wizard.gallery.style')}</FormLabel>
+                <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
                 <FormField
                     control={control}
                     name="galleryStyle"
@@ -558,15 +547,8 @@ const TimelineStep = React.memo(() => {
     const { storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    const { t, locale } = useTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const dateLocales: { [key: string]: Locale } = {
-      pt: ptBR,
-      en: enUS,
-      es: es,
-    };
-    const fnsLocale = dateLocales[locale] || ptBR;
+    const fnsLocale = ptBR;
 
     const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
@@ -578,8 +560,8 @@ const TimelineStep = React.memo(() => {
         if (availableSlots <= 0) {
             toast({
                 variant: 'destructive',
-                title: t('wizard.imageLimit.exceeded'),
-                description: t('wizard.imageLimit.exceeded.description', { limit: MAX_TIMELINE_IMAGES, itemType: t('wizard.imageLimit.item.timeline') }),
+                title: 'Limite Excedido',
+                description: `Você excedeu o limite de ${MAX_TIMELINE_IMAGES} momentos na linha do tempo.`,
             });
             return;
         }
@@ -603,17 +585,17 @@ const TimelineStep = React.memo(() => {
             }));
 
             append(newEvents as any);
-            toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
 
         } catch (error: any) {
             console.error("Error uploading timeline images:", error);
             const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
             toast({
                 variant: 'destructive',
-                title: t('toast.upload.error'),
+                title: 'Erro no Upload',
                 description: (
                     <div>
-                        <p>{t('toast.upload.error.description')}</p>
+                        <p>Não foi possível enviar as imagens.</p>
                         <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                     </div>
                 )
@@ -636,11 +618,11 @@ const TimelineStep = React.memo(() => {
 
     return (
         <div className="space-y-6">
-            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType={t('wizard.imageLimit.item.timeline')} />
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType='momentos na linha do tempo' />
             {errors.timelineEvents?.root && (
                 <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
             )}
-            <p className="text-sm text-muted-foreground">{t('wizard.timeline.description')}</p>
+            <p className="text-sm text-muted-foreground">Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.</p>
             
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.map((field, index) => {
@@ -667,7 +649,7 @@ const TimelineStep = React.memo(() => {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormControl>
-                                                <Textarea {...field} placeholder={t('wizard.timeline.event.placeholder')} className="bg-background min-h-[50px] sm:min-h-[80px]" />
+                                                <Textarea {...field} placeholder='Descreva este momento...' className="bg-background min-h-[50px] sm:min-h-[80px]" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -691,7 +673,7 @@ const TimelineStep = React.memo(() => {
                                                 {field.value ? (
                                                     format(new Date(field.value), "PPP", { locale: fnsLocale })
                                                 ) : (
-                                                    <span>{t('wizard.timeline.event.date')}</span>
+                                                    <span>Escolha a data</span>
                                                 )}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
@@ -727,8 +709,8 @@ const TimelineStep = React.memo(() => {
                  {fields.length === 0 && !isUploading && (
                     <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
                         <Camera className="w-10 h-10 mb-4" />
-                        <p className="font-semibold">{t('wizard.timeline.empty')}</p>
-                        <p className="text-sm">{t('wizard.timeline.empty.description')}</p>
+                        <p className="font-semibold">Sua linha do tempo está vazia</p>
+                        <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
                     </div>
                  )}
             </div>
@@ -748,7 +730,7 @@ const TimelineStep = React.memo(() => {
             <Button asChild size="lg" className="w-full" disabled={isLimitReached || isUploading}>
                 <label htmlFor="timeline-images-upload" className={cn("cursor-pointer", (isLimitReached || isUploading) && "cursor-not-allowed")}>
                     {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
-                    {isUploading ? t('wizard.gallery.uploading') : t('wizard.timeline.add')}
+                    {isUploading ? 'Enviando...' : 'Adicionar Fotos para a Linha do Tempo'}
                 </label>
             </Button>
         </div>
@@ -760,7 +742,6 @@ const MusicStep = React.memo(() => {
     const { control, setValue, getValues } = useFormContext<PageData>();
     const { user, storage } = useFirebase();
     const { toast } = useToast();
-    const { t } = useTranslation();
     const musicOption = useWatch({ control, name: "musicOption" });
     const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
     const [isSearching, startSearchTransition] = useTransition();
@@ -780,7 +761,7 @@ const MusicStep = React.memo(() => {
         if (!sName) {
             toast({
                 variant: "destructive",
-                title: t('toast.songName.required'),
+                title: 'O nome da música é obrigatório',
             });
             return;
         }
@@ -790,13 +771,13 @@ const MusicStep = React.memo(() => {
                 const result = await findYoutubeVideo({ songName: sName, artistName: aName || '' });
                 if (result.url) {
                     setValue("youtubeUrl", result.url, { shouldDirty: true });
-                    toast({ title: t('toast.youtube.success'), description: t('toast.youtube.success.description') });
+                    toast({ title: 'Música conectada!', description: 'Sua música foi encontrada no YouTube.' });
                 }
             } catch (e: any) { 
                 toast({ 
                     variant: "destructive", 
-                    title: t('toast.youtube.error'),
-                    description: e.message || t('toast.youtube.error.description')
+                    title: 'Erro na Busca',
+                    description: e.message || 'Não foi possível encontrar um vídeo.'
                 }); 
             }
         });
@@ -807,21 +788,21 @@ const MusicStep = React.memo(() => {
       if (manualUrl && manualUrl.startsWith("http")) {
         setValue("youtubeUrl", manualUrl, { shouldDirty: true, shouldValidate: true });
          toast({
-            title: t('toast.youtube.manual.success'),
-            description: t('toast.youtube.manual.success.description'),
+            title: 'Link adicionado!',
+            description: 'A música do link foi adicionada.',
          });
       } else {
          toast({
             variant: "destructive",
-            title: t('toast.youtube.manual.error'),
-            description: t('toast.youtube.manual.error.description'),
+            title: 'Link inválido',
+            description: 'Por favor, insira um link válido do YouTube.',
          });
       }
     }
 
   const uploadRecording = async (audioBlob: Blob) => {
     if (!storage || !user) {
-        toast({ variant: 'destructive', title: t('toast.record.error'), description: t('toast.record.error.description') });
+        toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação.' });
         return;
     }
     setRecordingStatus('uploading');
@@ -829,17 +810,17 @@ const MusicStep = React.memo(() => {
         const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
         setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
         setRecordingStatus('recorded');
-        toast({ title: t('toast.record.success'), description: t('toast.record.success.description') });
+        toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi salva com segurança.' });
     } catch (error: any) {
         console.error("Error uploading audio:", error);
         setRecordingStatus('recorded');
         const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
         toast({
             variant: 'destructive',
-            title: t('toast.record.error'),
+            title: 'Erro no Upload',
             description: (
                 <div>
-                    <p>{t('toast.record.error.description')}</p>
+                    <p>Não foi possível salvar sua gravação.</p>
                     <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                 </div>
             )
@@ -871,10 +852,10 @@ const MusicStep = React.memo(() => {
       const errorCode = err.name || 'unknown';
       toast({
           variant: "destructive",
-          title: t('toast.mic.error'),
+          title: 'Erro no Microfone',
           description: (
             <div>
-                <p>{t('toast.mic.error.description')}</p>
+                <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
 
                 <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
             </div>
@@ -897,7 +878,7 @@ const MusicStep = React.memo(() => {
         name="musicOption"
         render={({ field }) => (
           <FormItem className="space-y-3">
-            <FormLabel>{t('wizard.music.label')}</FormLabel>
+            <FormLabel>Escolha a trilha sonora</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={(value) => {
@@ -916,7 +897,7 @@ const MusicStep = React.memo(() => {
                     htmlFor="music-none"
                     className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                   >
-                    {t('wizard.music.none')}
+                    Nenhum Som
                   </Label>
                 </FormItem>
                 <FormItem>
@@ -927,7 +908,7 @@ const MusicStep = React.memo(() => {
                     htmlFor="music-record"
                     className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                   >
-                    {t('wizard.music.record')} <Mic className="h-5 w-5" />
+                    Gravar Mensagem de Voz <Mic className="h-5 w-5" />
                   </Label>
                 </FormItem>
                 <FormItem>
@@ -938,7 +919,7 @@ const MusicStep = React.memo(() => {
                     htmlFor="music-youtube"
                     className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                   >
-                    {t('wizard.music.youtube')} <Youtube className="h-5 w-5" />
+                    Usar Música do YouTube <Youtube className="h-5 w-5" />
                   </Label>
                 </FormItem>
               </RadioGroup>
@@ -955,9 +936,9 @@ const MusicStep = React.memo(() => {
                     name="songName"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{t('wizard.music.youtube.song')}</FormLabel>
+                        <FormLabel>Nome da Música</FormLabel>
                         <FormControl>
-                            <Input placeholder={t('wizard.music.youtube.song.placeholder')} {...field} />
+                            <Input placeholder="Ex: Perfect" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -968,9 +949,9 @@ const MusicStep = React.memo(() => {
                     name="artistName"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{t('wizard.music.youtube.artist')}</FormLabel>
+                        <FormLabel>Nome do Artista</FormLabel>
                         <FormControl>
-                            <Input placeholder={t('wizard.music.youtube.artist.placeholder')} {...field} />
+                            <Input placeholder="Ex: Ed Sheeran" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -979,24 +960,24 @@ const MusicStep = React.memo(() => {
             </div>
             <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
                 {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
-                {t('wizard.music.youtube.search')}
+                Buscar com IA
             </Button>
             
             {youtubeUrl && !isSearching && (
                 <div className="mt-4 pt-4 border-t border-border/50">
-                    <p className="text-sm text-center text-muted-foreground mb-2">{t('wizard.music.youtube.wrong')}</p>
+                    <p className="text-sm text-center text-muted-foreground mb-2">A música não está correta?</p>
                      <Button type="button" variant="secondary" className="w-full" onClick={() => setShowManualLinkInput(!showManualLinkInput)}>
-                        {t('wizard.music.youtube.manual')}
+                        Usar um link direto do YouTube
                     </Button>
                 </div>
             )}
             
             {showManualLinkInput && (
               <div className="mt-4 space-y-2">
-                  <FormLabel htmlFor="manual-link">{t('wizard.music.youtube.manual')}</FormLabel>
+                  <FormLabel htmlFor="manual-link">Usar um link direto do YouTube</FormLabel>
                    <div className="flex gap-2">
-                      <Input id="manual-link" ref={manualLinkInputRef} placeholder={t('wizard.music.youtube.manual.placeholder')} />
-                      <Button type="button" onClick={handleSetManualLink}>{t('wizard.music.youtube.manual.ok')}</Button>
+                      <Input id="manual-link" ref={manualLinkInputRef} placeholder="Cole o link aqui..." />
+                      <Button type="button" onClick={handleSetManualLink}>OK</Button>
                    </div>
               </div>
             )}
@@ -1004,27 +985,27 @@ const MusicStep = React.memo(() => {
       )}
       {musicOption === 'record' && (
         <div className="space-y-4 rounded-lg border bg-card/80 p-4">
-            <h4 className="font-semibold">{t('wizard.music.record.title')}</h4>
+            <h4 className="font-semibold">Gravador de Voz</h4>
              <div className="flex flex-col sm:flex-row items-center gap-4">
                 {recordingStatus === "idle" && (
-                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />{t('wizard.music.record.record')}</Button>
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
                 )}
                 {recordingStatus === "recording" && (
-                    <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />{t('wizard.music.record.stop')}</Button>
+                    <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
                 )}
                  {recordingStatus === "recorded" && (
-                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />{t('wizard.music.record.rerecord')}</Button>
+                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
                 )}
                 {recordingStatus === 'uploading' && (
-                    <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{t('wizard.music.record.uploading')}</Button>
+                    <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Enviando...</Button>
                 )}
                 {audioRecording?.url && (
                    <audio src={audioRecording.url} controls className="w-full" />
                 )}
              </div>
              <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
-                {recordingStatus === 'recording' && t('wizard.music.record.recording')}
-                {recordingStatus === 'recorded' && t('wizard.music.record.done')}
+                {recordingStatus === 'recording' && 'Gravando...'}
+                {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
             </p>
         </div>
       )}
@@ -1036,20 +1017,19 @@ MusicStep.displayName = 'MusicStep';
 
 const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
-    const { t } = useTranslation();
     const backgroundAnimation = watch("backgroundAnimation");
     const titleColor = watch("titleColor");
     const plan = watch("plan");
     const [isClient, setIsClient] = useState(false);
 
     const animationOptions = [
-        { id: "none", name: t('wizard.background.none') },
-        { id: "falling-hearts", name: t('wizard.background.hearts'), isFavorite: true },
-        { id: "starry-sky", name: t('wizard.background.stars'), requiredPlan: "avancado", isFavorite: true },
-        { id: "nebula", name: t('wizard.background.nebula') },
-        { id: 'mystic-flowers', name: t('wizard.background.mystic-flowers'), requiredPlan: "avancado", isFavorite: true },
-        { id: "floating-dots", name: t('wizard.background.dots'), requiredPlan: "avancado" },
-        { id: "clouds", name: t('wizard.background.clouds'), requiredPlan: "avancado" },
+        { id: "none", name: 'Nenhuma' },
+        { id: "falling-hearts", name: 'Chuva de Corações', isFavorite: true },
+        { id: "starry-sky", name: 'Céu Estrelado', requiredPlan: "avancado", isFavorite: true },
+        { id: "nebula", name: 'Nebulosa Galáctica' },
+        { id: 'mystic-flowers', name: 'Flores Nascendo', requiredPlan: "avancado", isFavorite: true },
+        { id: "floating-dots", name: 'Pontos Coloridos', requiredPlan: "avancado" },
+        { id: "clouds", name: 'Nuvens', requiredPlan: "avancado" },
     ];
     
     useEffect(() => {
@@ -1063,7 +1043,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                 name="backgroundAnimation"
                 render={({ field }) => (
                     <FormItem className="space-y-3">
-                        <FormLabel>{t('wizard.background.label')}</FormLabel>
+                        <FormLabel>Escolha a Animação</FormLabel>
                         <FormControl>
                             <RadioGroup
                                 onValueChange={field.onChange}
@@ -1110,7 +1090,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>{labelContent}</TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{t('wizard.background.exclusive')}</p>
+                                                            <p>Exclusivo do Plano Avançado</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
@@ -1133,7 +1113,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                     name="heartColor"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>{t('wizard.background.heartColor')}</FormLabel>
+                        <FormLabel>Cor dos Corações</FormLabel>
                         <FormControl>
                             <div className="relative flex items-center gap-4">
                             <Input
@@ -1141,7 +1121,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                 className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
                                 {...field}
                             />
-                            <span className="text-sm">{t('wizard.background.heartColor.description')}</span>
+                            <span className="text-sm">Clique no quadrado para escolher uma cor</span>
                             </div>
                         </FormControl>
                         <Button
@@ -1151,7 +1131,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                             onClick={() => setValue("heartColor", titleColor, { shouldDirty: true })}
                         >
                             <Pipette className="mr-2 h-4 w-4" />
-                            {t('wizard.background.useTitleColor')}
+                            Usar a cor do título
                         </Button>
                         <FormMessage />
                         </FormItem>
@@ -1170,7 +1150,6 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
     const puzzleImage = watch("puzzleImage");
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
-    const { t } = useTranslation();
 
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0] && user && storage) {
@@ -1181,16 +1160,16 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
                 await handleAutosave?.();
-                toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
+                toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
             } catch (error: any) {
                 console.error("Error processing puzzle image:", error);
                 const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
                 toast({
                     variant: 'destructive',
-                    title: t('toast.upload.error'),
+                    title: 'Erro no Upload',
                     description: (
                         <div>
-                            <p>{t('toast.upload.error.description')}</p>
+                            <p>Não foi possível enviar as imagens.</p>
                             <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                         </div>
                     )
@@ -1208,7 +1187,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
         }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
         await handleAutosave?.();
-        toast({ title: t('wizard.puzzle.image.remove') });
+        toast({ title: 'Remover Imagem' });
     };
     
     return (
@@ -1219,9 +1198,9 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                            <FormLabel className="text-base">{t('wizard.puzzle.enable')}</FormLabel>
+                            <FormLabel className="text-base">Ativar Quebra-Cabeça</FormLabel>
                             <FormDescription>
-                                {t('wizard.puzzle.description')}
+                                Exigir que o quebra-cabeça seja resolvido para ver a página.
                             </FormDescription>
                         </div>
                         <FormControl>
@@ -1232,7 +1211,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
             />
             {enablePuzzle && (
                  <div className="space-y-4">
-                    <FormLabel>{t('wizard.puzzle.image.label')}</FormLabel>
+                    <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
                      {!puzzleImage?.url ? (
                         <FormControl>
                         <label
@@ -1247,8 +1226,8 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                             ) : (
                                 <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
                             )}
-                            <p className="font-semibold">{isProcessing ? t('wizard.puzzle.image.processing') : t('wizard.puzzle.image.upload')}</p>
-                            <p className="text-xs text-muted-foreground">{t('wizard.puzzle.image.description')}</p>
+                            <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
+                            <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
                             <input
                                 id="puzzle-photo-upload"
                                 type="file"
@@ -1273,7 +1252,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                                  size="sm"
                              >
                                  <X className="mr-2 h-4 w-4" />
-                                 {t('wizard.puzzle.image.remove')}
+                                 Remover Imagem
                              </Button>
                         </div>
                      )}
@@ -1287,13 +1266,12 @@ PuzzleStep.displayName = 'PuzzleStep';
 const MemoryGameStep = React.memo(() => {
     const { control, watch, setValue } = useFormContext<PageData>();
     const { user, storage } = useFirebase();
-    const { t } = useTranslation();
+    const { toast } = useToast();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "memoryGameImages",
     });
     const [isUploading, setIsUploading] = useState(false);
-    const { toast } = useToast();
     const enableMemoryGame = watch("enableMemoryGame");
 
     const MAX_IMAGES = 8;
@@ -1315,16 +1293,16 @@ const MemoryGameStep = React.memo(() => {
 
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
-            toast({ title: t('toast.upload.success'), description: t('toast.upload.success.description') });
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
         } catch (error: any) {
             console.error("Error uploading memory game files:", error);
             const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
             toast({
                 variant: 'destructive',
-                title: t('toast.upload.error'),
+                title: 'Erro no Upload',
                 description: (
                     <div>
-                        <p>{t('toast.upload.error.description')}</p>
+                        <p>Não foi possível enviar as imagens.</p>
                         <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                     </div>
                 )
@@ -1351,8 +1329,8 @@ const MemoryGameStep = React.memo(() => {
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                            <FormLabel className="text-base">{t('wizard.memory.enable')}</FormLabel>
-                            <FormDescription>{t('wizard.memory.description')}</FormDescription>
+                            <FormLabel className="text-base">Ativar Jogo da Memória</FormLabel>
+                            <FormDescription>Crie um jogo de memória divertido com suas fotos.</FormDescription>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
@@ -1361,8 +1339,8 @@ const MemoryGameStep = React.memo(() => {
 
             {enableMemoryGame && (
                 <div className="space-y-4">
-                    <FormLabel>{t('wizard.memory.image.label')}</FormLabel>
-                    <ImageLimitWarning currentCount={fields.length} limit={MAX_IMAGES} itemType={t('wizard.imageLimit.item.memory')} />
+                    <FormLabel>Imagens para o Jogo da Memória</FormLabel>
+                    <ImageLimitWarning currentCount={fields.length} limit={MAX_IMAGES} itemType='fotos para o jogo' />
 
                     <FormControl>
                         <label
@@ -1373,8 +1351,8 @@ const MemoryGameStep = React.memo(() => {
                             )}
                         >
                             {isUploading ? <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" /> : <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />}
-                            <p className="font-semibold">{isUploading ? t('wizard.gallery.uploading') : t('wizard.memory.upload')}</p>
-                            <p className="text-xs text-muted-foreground">{t('wizard.memory.image.description')}</p>
+                            <p className="font-semibold">{isUploading ? 'Enviando...' : 'Adicionar fotos para o jogo'}</p>
+                            <p className="text-xs text-muted-foreground">Adicione de 2 a 8 fotos para o jogo.</p>
                             <input id="memory-game-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLimitReached || isUploading} />
                         </label>
                     </FormControl>
@@ -1404,7 +1382,6 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
         control,
         name: `quizQuestions.${qIndex}.options`,
     });
-    const { t } = useTranslation();
     const questionErrors = errors.quizQuestions?.[qIndex];
 
     return (
@@ -1418,17 +1395,17 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                     name={`quizQuestions.${qIndex}.questionText`}
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{t('wizard.quiz.question.label', { index: qIndex + 1 })}</FormLabel>
+                            <FormLabel>Pergunta {qIndex + 1}</FormLabel>
                             <FormControl>
-                                <Input placeholder={t('wizard.quiz.question.placeholder')} {...field} />
+                                <Input placeholder='Qual é a nossa música?' {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
                 <div className="space-y-2">
-                    <FormLabel>{t('wizard.quiz.options.label')}</FormLabel>
-                    <FormDescription>{t('wizard.quiz.options.description')}</FormDescription>
+                    <FormLabel>Opções de Resposta</FormLabel>
+                    <FormDescription>Marque a opção correta. Mínimo de 2, máximo de 5.</FormDescription>
                      <FormField
                         control={control}
                         name={`quizQuestions.${qIndex}.correctAnswerIndex`}
@@ -1444,7 +1421,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                                                         control={control}
                                                         name={`quizQuestions.${qIndex}.options.${oIndex}.text`}
                                                         render={({ field }) => (
-                                                            <Input placeholder={t('wizard.quiz.option.placeholder', { index: oIndex + 1 })} {...field} />
+                                                            <Input placeholder={`Opção ${oIndex + 1}`} {...field} />
                                                         )}
                                                     />
                                                 </div>
@@ -1462,7 +1439,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                 </div>
                  {fields.length < MAX_OPTIONS && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => append({ text: '' })}>
-                        <Plus className="mr-2 h-4 w-4" /> {t('wizard.quiz.button.addOption')}
+                        <Plus className="mr-2 h-4 w-4" /> Adicionar Opção
                     </Button>
                 )}
             </div>
@@ -1472,7 +1449,6 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
 
 const QuizStep = React.memo(() => {
     const { control, watch } = useFormContext<PageData>();
-    const { t } = useTranslation();
     const enableQuiz = watch("enableQuiz");
     const { fields, append, remove } = useFieldArray({
         control,
@@ -1495,8 +1471,8 @@ const QuizStep = React.memo(() => {
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                            <FormLabel className="text-base">{t('wizard.quiz.enable')}</FormLabel>
-                            <FormDescription>{t('wizard.quiz.description')}</FormDescription>
+                            <FormLabel className="text-base">Ativar Quiz do Casal</FormLabel>
+                            <FormDescription>Adicionar um quiz divertido sobre vocês dois.</FormDescription>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
@@ -1507,9 +1483,9 @@ const QuizStep = React.memo(() => {
                 <div className="space-y-6">
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>{t('wizard.quiz.alert.title')}</AlertTitle>
+                        <AlertTitle>Dica de Mestre</AlertTitle>
                         <AlertDescription>
-                            {t('wizard.quiz.alert.description')}
+                            Crie perguntas que só vocês dois saberiam a resposta para tornar o jogo mais íntimo e divertido!
                         </AlertDescription>
                     </Alert>
                     {fields.map((question, qIndex) => (
@@ -1517,7 +1493,7 @@ const QuizStep = React.memo(() => {
                     ))}
                     {fields.length < MAX_QUESTIONS && (
                         <Button type="button" variant="outline" onClick={addQuestion} className="w-full">
-                            <Plus className="mr-2" /> {t('wizard.quiz.button.addQuestion', { current: fields.length, max: MAX_QUESTIONS })}
+                            <Plus className="mr-2" /> Adicionar Pergunta ({fields.length}/{MAX_QUESTIONS})
                         </Button>
                     )}
                 </div>
@@ -1542,7 +1518,6 @@ const stepComponents: React.ComponentType<any>[] = [
 
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
-    const { t } = useTranslation();
     const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
     const { user } = useUser();
@@ -1586,7 +1561,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     }, []);
 
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
-    const basePriceBRL = plan === 'basico' ? 9.90 : 14.90;
+    const basePriceBRL = plan === 'basico' ? 14.90 : 24.90;
 
     const totalBRL = basePriceBRL;
     const totalUSD = basePriceUSD;
@@ -1598,10 +1573,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
         }
-        toast({ title: t('toast.payment.success'), description: t('toast.payment.success.description') });
+        toast({ title: 'Pagamento Aprovado!', description: 'Sua página foi criada com sucesso.' });
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
-    }, [setPageId, toast, t]);
+    }, [setPageId, toast]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
@@ -1637,7 +1612,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPixData(null);
 
         if (!user) {
-            setError({ message: t('toast.payment.session.invalid') });
+            setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' });
             return;
         }
 
@@ -1681,7 +1656,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const handleStripePayment = () => {
       setError(null);
       if (!user) {
-          setError({ message: t('toast.payment.session.invalid') });
+          setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' });
           return;
       }
   
@@ -1741,10 +1716,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             if (result.status === 'approved') {
                 handlePaymentSuccess(result.pageId);
             } else {
-                toast({ variant: 'default', title: t('toast.payment.pending'), description: t('toast.payment.pending.description') });
+                toast({ variant: 'default', title: 'Pagamento ainda não confirmado', description: 'Por favor, tente novamente em alguns instantes.' });
             }
         } catch (e: any) {
-            toast({ variant: 'destructive', title: t('toast.payment.verify.error'), description: t('toast.payment.verify.error.description') });
+            toast({ variant: 'destructive', title: 'Erro na Verificação', description: 'Não foi possível verificar o pagamento.' });
         } finally {
             setIsVerifying(false);
         }
@@ -1756,8 +1731,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                  <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-black tracking-tight text-white">{t('wizard.payment.title')}</h3>
-                    <p className="text-sm text-zinc-400">{t('wizard.payment.description')}</p>
+                    <h3 className="text-2xl font-black tracking-tight text-white">Quase lá!</h3>
+                    <p className="text-sm text-zinc-400">Sua página foi montada. Finalize para receber o link.</p>
                 </div>
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
                     <div className="absolute top-0 right-0 p-2">
@@ -1765,10 +1740,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                              {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
                         </span>
                     </div>
-                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">{t('wizard.payment.total')}</p>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total a Pagar</p>
                     <h2 className="text-5xl font-black text-white mb-1">${totalUSD.toFixed(2)}</h2>
                     <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
-                        <Clock size={12} /> {t('wizard.payment.immediate_access')}
+                        <Clock size={12} /> Pagamento único • Acesso imediato
                     </p>
                 </div>
 
@@ -1790,14 +1765,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         ) : (
                             <div className="flex items-center justify-center gap-2">
                                 <CreditCard size={20} />
-                                <span>{t('wizard.payment.card_button')}</span>
+                                <span>Pagar com Cartão</span>
                                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         )}
                     </Button>
                     <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
                         <Lock size={10} className="text-green-500" />
-                        <span>{t('wizard.payment.secure_stripe')}</span>
+                        <span>Pagamento seguro através da Stripe.</span>
                     </div>
                 </div>
 
@@ -1836,17 +1811,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         <div className="space-y-6 text-center">
             <div className="mb-8">
                 <h3 className="text-2xl font-bold font-headline mb-2">
-                    {t('wizard.payment.title')}
+                    Quase lá!
                 </h3>
                 <p className="text-muted-foreground">
-                    {t('wizard.payment.description')}
+                    Sua página foi montada. Finalize para receber o link.
                 </p>
             </div>
 
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
-                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">{t('wizard.payment.total')}</span>
+                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
                 <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
-                <p className="text-xs text-white/50">{t('wizard.payment.payment')}</p>
+                <p className="text-xs text-white/50">Pagamento único</p>
             </div>
 
             {!pixData ? (
@@ -1859,16 +1834,16 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     {isProcessing ? (
                         <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            <span>{t('wizard.payment.pix.generating')}</span>
+                            <span>Gerando QR Code do Mercado Pago...</span>
                         </>
                     ) : (
-                        <span>{t('wizard.payment.pix.pay_button')}</span>
+                        <span>Pagar com PIX via Mercado Pago</span>
                     )}
                 </Button>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
-                   <h3 className="text-xl font-bold font-headline">{t('wizard.payment.pix.title')}</h3>
-                    <p className="text-muted-foreground max-w-sm">{t('wizard.payment.pix.description')}</p>
+                   <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código "Copia e Cola".</p>
                     <div className="p-4 bg-white rounded-lg border">
                         {pixData.qrCodeBase64 ? (
                             <Image 
@@ -1881,18 +1856,18 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         ) : (
                             <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
                                 <Loader2 className="animate-spin mb-2" />
-                                <p className="text-xs">{t('wizard.payment.pix.generating_qr')}</p>
+                                <p className="text-xs">Gerando QR Code...</p>
                             </div>
                         )}
                     </div>
                     <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
                         <Copy className="mr-2 h-4 w-4" />
-                        {t('wizard.payment.pix.copy')}
+                        Copiar Código PIX
                     </Button>
-                    <p className="text-xs text-muted-foreground">{t('wizard.payment.pix.waiting')}</p>
+                    <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
                     <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
                             {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                            {t('wizard.payment.pix.verify')}
+                            Verificar Pagamento
                     </Button>
                 </div>
             )}
@@ -1906,7 +1881,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         disabled={isProcessing}
                         onClick={handleAdminFinalize}
                     >
-                        {isProcessing ? <Loader2 className="animate-spin" /> : t('wizard.payment.admin.cta')}
+                        {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
                     </Button>
                 </div>
             )}
@@ -1918,7 +1893,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             </Alert>}
             <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border/20 text-sm text-muted-foreground">
                 <Lock className="w-4 h-4" />
-                <span>{t('wizard.payment.secure_mp')}</span>
+                <span>Pagamento 100% seguro via Mercado Pago</span>
                 <Image 
                     src="https://i.imgur.com/QeYjEEv.png"
                     alt="Logo do Mercado Pago"
@@ -1932,7 +1907,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 };
 
 const SuccessStep = ({ pageId }: { pageId: string }) => {
-    const { t } = useTranslation();
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
 
@@ -1946,13 +1920,13 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
     return (
         <div className="flex flex-col items-center text-center gap-6">
             <CheckCircle className="w-16 h-16 text-green-500"/>
-            <h2 className="text-2xl font-bold font-headline">{t('wizard.success.title')}</h2>
-            <p className="text-muted-foreground">{t('wizard.success.description')}</p>
+            <h2 className="text-2xl font-bold font-headline">Página Criada com Sucesso!</h2>
+            <p className="text-muted-foreground">Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.</p>
             <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
                 <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0"/>
                 <Button onClick={handleCopy}>
                     {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
-                    {copied ? t('wizard.success.copied') : t('wizard.success.copy')}
+                    {copied ? 'Copiado!' : 'Copiar'}
                 </Button>
             </div>
             <div className="p-4 bg-white rounded-lg border mt-4">
@@ -1963,11 +1937,11 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
                     height={200}
                 />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">{t('wizard.success.qr.description')}</p>
+            <p className="text-xs text-muted-foreground mt-2">Você também pode salvar ou imprimir o QR Code acima.</p>
             <Button asChild className="mt-4">
                 <a href={pageUrl} target="_blank" rel="noopener noreferrer">
                     <View className="mr-2" />
-                    {t('wizard.success.cta')}
+                    Ver Página
                 </a>
             </Button>
         </div>
@@ -1981,7 +1955,6 @@ function WizardInternal() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
-  const { t, locale } = useTranslation();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
@@ -1991,26 +1964,26 @@ function WizardInternal() {
   const plan = searchParams.get('plan') || 'avancado';
 
   const steps = useMemo(() => [
-    { id: "title", title: t('wizard.steps.1.title'), description: t('wizard.steps.1.description'), fields: ["title", "titleColor"] },
-    { id: "message", title: t('wizard.steps.2.title'), description: t('wizard.steps.2.description'), fields: ["message", "messageFontSize", "messageFormatting"] },
-    { id: "specialDate", title: t('wizard.steps.3.title'), description: t('wizard.steps.3.description'), fields: ["specialDate", "countdownStyle", "countdownColor"] },
-    { id: "gallery", title: t('wizard.steps.4.title'), description: t('wizard.steps.4.description'), fields: ["galleryImages", "galleryStyle"] },
-    { id: "timeline", title: t('wizard.steps.5.title'), description: t('wizard.steps.5.description'), fields: ["timelineEvents"], requiredPlan: 'avancado' },
-    { id: "music", title: t('wizard.steps.6.title'), description: t('wizard.steps.6.description'), fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
-    { id: "background", title: t('wizard.steps.7.title'), description: t('wizard.steps.7.description'), fields: ["backgroundAnimation", "heartColor"] },
-    { id: "puzzle", title: t('wizard.steps.8.title'), description: t('wizard.steps.8.description'), fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-    { id: "memory", title: t('wizard.steps.memory.title'), description: t('wizard.steps.memory.description'), fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
-    { id: "quiz", title: t('wizard.steps.quiz.title'), description: t('wizard.steps.quiz.description'), fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
-    { id: "payment", title: t('wizard.steps.9.title'), description: t('wizard.steps.9.description'), fields: ["payment", "qrCodeDesign"] },
-  ], [t]);
+    { id: "title", title: 'Título da página', description: 'Escreva o título dedicatório. Ex: João & Maria.', fields: ["title", "titleColor"] },
+    { id: "message", title: 'Sua Mensagem de Amor', description: 'Escreva a mensagem principal.', fields: ["message", "messageFontSize", "messageFormatting"] },
+    { id: "specialDate", title: 'Data Especial', description: 'Informe a data que simboliza o início de tudo.', fields: ["specialDate", "countdownStyle", "countdownColor"] },
+    { id: "gallery", title: 'Galeria de Fotos', description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
+    { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"], requiredPlan: 'avancado' },
+    { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
+    { id: "background", title: 'Animação de Fundo', description: 'Escolha um efeito especial para o fundo.', fields: ["backgroundAnimation", "heartColor"] },
+    { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
+    { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
+    { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
+    { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
+  ], []);
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
     mode: 'onChange',
     defaultValues: { 
         plan: plan,
-        title: locale === 'pt' ? "Seu Título Aqui" : "Your Title Here",
-        message: locale === 'pt' ? "Sua mensagem de amor..." : "Your love message...",
+        title: "Seu Título Aqui",
+        message: "Sua mensagem de amor...",
         messageFontSize: "text-base",
         backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
         galleryStyle: "Coverflow",
@@ -2103,11 +2076,11 @@ function WizardInternal() {
         methods.reset();
         toast({
             variant: "destructive",
-            title: t('toast.autosave.error.load'),
-            description: t('toast.autosave.error.load.description')
+            title: 'Erro ao carregar rascunho',
+            description: 'Não foi possível carregar seu progresso salvo. Começando um novo.'
         });
     }
-  }, [methods, plan, toast, t]);
+  }, [methods, plan, toast]);
   
   useEffect(() => {
     setIsClient(true);
@@ -2151,8 +2124,8 @@ function WizardInternal() {
         if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
             toast({
                 variant: "destructive",
-                title: t('toast.puzzle.image.required'),
-                description: t('toast.puzzle.image.required.description')
+                title: 'Imagem Necessária',
+                description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.'
             });
             return;
         }
@@ -2161,7 +2134,7 @@ function WizardInternal() {
         const ok = await trigger(fieldsToValidate as any);
         if (!ok) {
             console.error("Erros de validação:", methods.formState.errors);
-            toast({ variant: "destructive", title: t('toast.validation.error'), description: t('toast.validation.error.description') });
+            toast({ variant: "destructive", title: 'Campos obrigatórios', description: 'Por favor, verifique se preencheu tudo corretamente antes de prosseguir.' });
             return;
         }
     }
@@ -2172,7 +2145,7 @@ function WizardInternal() {
     }
     
     if (steps[nextStepIndex]?.id === 'payment' && user) {
-        toast({ title: t('toast.payment.autosave'), description: t('toast.payment.autosave.description') });
+        toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
         await handleAutosave();
     }
     
@@ -2241,7 +2214,7 @@ function WizardInternal() {
                 showPuzzlePreview={showPuzzlePreview}
                 previewPuzzleRevealed={previewPuzzleRevealed}
                 setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                locale={locale}
+                locale='pt'
             />
         </div>
 
@@ -2249,7 +2222,7 @@ function WizardInternal() {
           <div className="flex justify-between items-center">
               <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
               <div className="flex-grow flex flex-col items-center gap-2 mx-4">
-                  <span className="text-xs text-muted-foreground font-sans">{t('wizard.step')} {currentStep + 1} {t('wizard.of')} {steps.length}</span>
+                  <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
                   <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
               </div>
               <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRightIcon /></Button>
@@ -2266,7 +2239,7 @@ function WizardInternal() {
 
           <div className="md:hidden mt-16 pb-16">
             <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
-                <p>{t('wizard.preview.title')}</p>
+                <p>Ou veja como está ficando</p>
                 <ChevronDown className="w-5 h-5 animate-bounce-subtle"/>
             </div>
             <div className='relative w-full'>
@@ -2277,7 +2250,7 @@ function WizardInternal() {
                     showPuzzlePreview={showPuzzlePreview}
                     previewPuzzleRevealed={previewPuzzleRevealed}
                     setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                    locale={locale}
+                    locale='pt'
                 />
             </div>
           </div>
@@ -2297,21 +2270,20 @@ export default function CreatePageWizard() {
 
 
 const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
-    const { t } = useTranslation();
     if (currentCount > limit) {
          return (
             <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{t('wizard.imageLimit.exceeded')}</AlertTitle>
-                <AlertDescription>{t('wizard.imageLimit.exceeded.description', { limit, itemType })}</AlertDescription>
+                <AlertTitle>Limite Excedido</AlertTitle>
+                <AlertDescription>{`Você excedeu o limite de ${limit} ${itemType}. Remova algumas para continuar.`}</AlertDescription>
             </Alert>
          )
     }
     return (
         <Alert variant={currentCount === limit ? "destructive" : "default"}>
             <Camera className="h-4 w-4" />
-            <AlertTitle>{t('wizard.imageLimit.title')}</AlertTitle>
-            <AlertDescription>{t('wizard.imageLimit.description', { currentCount, limit, itemType })}</AlertDescription>
+            <AlertTitle>Contador de Imagens</AlertTitle>
+            <AlertDescription>{`Você usou ${currentCount} de ${limit} ${itemType}.`}</AlertDescription>
         </Alert>
     )
 });
