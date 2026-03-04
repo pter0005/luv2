@@ -1,4 +1,3 @@
-
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 
@@ -447,506 +446,33 @@ const translations = {
     'toast.payment.verify.error': 'Erro na Verificação',
     'toast.payment.verify.error.description': 'Não foi possível verificar o pagamento.',
     'cookie.title': 'Aviso de Cookies',
-    'cookie.description': "These cookies won't break your diet. They just improve your time. We use them to ensure the best experience on our site.",
-    'cookie.privacyLink': 'Read our privacy policy.',
-    'cookie.manage': 'Manage preferences',
-    'cookie.accept': 'Accept',
-    'payment.success.title': 'Pagamento Exitoso!',
-    'payment.success.description': 'Tu pago ha sido procesado. Tu página de amor se está creando y aparecerá en "Mis Páginas" en breve. El webhook se está procesando en segundo plano.',
-    'payment.success.cta': 'Ir a Mis Páginas',
-    'payment.canceled.title': 'Pago Cancelado',
-    'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
-    'payment.canceled.cta': 'Volver al Creador de Páginas',
-    'creating.page.ready.title': '¡Tu página está lista!',
-    'creating.page.ready.description': 'El pago ha sido confirmado y tu sorpresa ha sido creada con éxito.',
-    'creating.page.ready.cta.view': 'Ver mi página',
-    'creating.page.ready.cta.myPages': 'Ir a Mis Páginas',
-    'creating.page.finalizing.title': 'Finalizando tu página...',
-    'creating.page.finalizing.description': 'Hemos recibido la aprobación de tu pago y ya estamos preparando todo. Esto puede tardar unos momentos.',
-    'creating.page.finalizing.tip': 'Puedes esperar o volver al sitio.',
-    'creating.page.finalizing.cta.myPages': 'Ir a Mis Páginas',
-    'memorygame.header': 'Juego de Memoria',
-    'memorygame.description': '¡Encuentra todos los pares de vuestras fotos! 💜',
-    'memorygame.progress': 'Progreso',
+    'cookie.description': 'Estes cookies não vão quebrar sua dieta. Eles apenas melhoram seu tempo. Nós os usamos para garantir a melhor experiência em nosso site.',
+    'cookie.privacyLink': 'Leia nossa política de privacidade.',
+    'cookie.manage': 'Gerenciar preferências',
+    'cookie.accept': 'Aceitar',
+    'payment.success.title': 'Pagamento Efetuado com Sucesso!',
+    'payment.success.description': 'Seu pagamento foi processado. Sua página de amor está sendo criada e aparecerá em "Minhas Páginas" em breve. O webhook está processando em segundo plano.',
+    'payment.success.cta': 'Ir para Minhas Páginas',
+    'payment.canceled.title': 'Pagamento Cancelado',
+    'payment.canceled.description': 'Seu pagamento não foi concluído. Você pode voltar e tentar novamente.',
+    'payment.canceled.cta': 'Voltar para o Criador de Páginas',
+    'creating.page.ready.title': 'Sua página está pronta!',
+    'creating.page.ready.description': 'O pagamento foi confirmado e sua surpresa foi criada com sucesso.',
+    'creating.page.ready.cta.view': 'Ver minha página',
+    'creating.page.ready.cta.myPages': 'Ir para Minhas Páginas',
+    'creating.page.finalizing.title': 'Finalizando sua página...',
+    'creating.page.finalizing.description': 'Recebemos a aprovação do seu pagamento e estamos preparando tudo. Isso pode levar alguns momentos.',
+    'creating.page.finalizing.tip': 'Você pode esperar ou voltar para o site.',
+    'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
+    'memorygame.header': 'Jogo da Memória',
+    'memorygame.description': 'Encontre todos os pares de fotos de vocês! 💜',
+    'memorygame.progress': 'Progresso',
     'memorygame.pairs': 'pares',
-    'memorygame.shuffle': 'Barajar',
-    'memorygame.win.title': '¡Felicidades!',
-    'memorygame.win.description': '¡Encontraste todos los pares!',
-    'memorygame.win.perfect': 'Vuestro amor es perfecto así 🌸',
-    'memorygame.win.playAgain': 'Jugar de Nuevo',
-    'memorygame.reset': 'Reiniciar',
-  },
-  es: {
-    'metadata.title': 'MyCupid - Crea Declaraciones de Amor Únicas',
-    'metadata.description': 'Transforma tus sentimientos en una obra de arte digital. Crea páginas de amor personalizadas con fotos, videos, música y más.',
-    'nav.recursos': 'Recursos',
-    'nav.planos': 'Planes',
-    'nav.avaliacoes': 'Reseñas',
-    'nav.comoFunciona': 'Cómo Funciona',
-    'user.myAccount': 'Mi Cuenta',
-    'user.myPages': 'Mis Páginas',
-    'user.signOut': 'Cerrar Sesión',
-    'lang.change': 'Cambiar idioma',
-    'lang.pt': 'Português (BR)',
-    'lang.en': 'English',
-    'lang.es': 'Español',
-    'profile.greeting': 'Hola',
-    'home.hero.title.line1': 'Declara tu amor',
-    'home.hero.subtitle.animated.1': '¡a alguien especial!',
-    'home.hero.subtitle.animated.2': '¡de una manera única!',
-    'home.hero.subtitle.animated.3': '¡a quien se lo merece!',
-    'home.hero.description': 'Transforma tus sentimientos en una obra de arte digital. Una experiencia exclusiva, creada para celebrar momentos que merecen ser eternos.',
-    'home.hero.cta': 'Crear mi página',
-    'home.hero.join': 'Únete a',
-    'home.hero.couples': '+20.000 Parejas',
-    'home.hero.example': 'Ver Ejemplo',
-    'home.hero.support': 'Soporte',
-    'home.hero.customDesign': 'Diseño Personalizado',
-    'home.hero.userRating': 'Evaluación de usuarios',
-    'home.howitworks.title': 'Crea un regalo inolvidable en 4 sencillos pasos',
-    'home.howitworks.description': 'Nuestra plataforma facilita la creación de una experiencia digital personalizada que emocionará a quien amas.',
-    'home.howitworks.step1.title': 'Cuenta tu historia de amor',
-    'home.howitworks.step1.description': 'Completa los datos de tu relación y elige elementos únicos para sorprender a tu ser amado.',
-    'home.howitworks.step2.title': 'Personaliza cada detalle',
-    'home.howitworks.step2.description': '¡Elige tus fotos, añade vuestra canción y escribe un mensaje especial. ¡Aquí es donde ocurre la magia!',
-    'home.howitworks.step3.title': 'Recibe tu Código QR',
-    'home.howitworks.step3.description': 'Al finalizar, recibirás al instante el código QR para acceder a tu regalo personalizado.',
-    'home.howitworks.step4.title': 'Sorprende con amor',
-    'home.howitworks.step4.description': 'Comparte el código QR y observa la emoción al descubrir un regalo que habla directamente al corazón.',
-    'home.features.title': 'Crea una página de amor',
-    'home.features.subtitle': 'Totalmente Personalizada',
-    'home.features.description': 'Usa el asistente paso a paso para configurar cada detalle.',
-    'featuresCarousel.slide1.title': 'Línea de Tiempo',
-    'featuresCarousel.slide1.description': 'Revive vuestro viaje con una elegante y animada línea de tiempo.',
-    'featuresCarousel.slide2.title': 'Rompecabezas Interactivo',
-    'featuresCarousel.slide2.description': '¡Empieza con un juego! Tu ser amado arma una foto especial para revelar la sorpresa.',
-    'featuresCarousel.slide3.title': 'Contador de Tiempo',
-    'featuresCarousel.slide3.description': 'Muestra el tiempo exacto que han compartido, desde años hasta segundos.',
-    'featuresCarousel.cta': 'Crear mi regalo',
-    'home.demo.badge': 'Nueva Experiencia',
-    'home.demo.title.line1': 'Prueba Nuestra',
-    'home.demo.title.line2': 'página de',
-    'home.demo.title.line3': 'Demostración',
-    'home.demo.description1': 'Ve en la práctica cómo tu declaración puede convertirse en una',
-    'home.demo.description2': 'experiencia inolvidable',
-    'home.demo.cta': 'Probar Ahora',
-    'home.testimonials.badge': '+10.000 PAREJAS FELICES',
-    'home.testimonials.title.part1': 'Lo que dicen',
-    'home.testimonials.title.part2': 'nuestros clientes',
-    'home.testimonials.title.part3': '',
-    'home.testimonials.description': 'Historias reales de personas que crearon páginas únicas para sorprender a alguien especial con MyCupid.',
-    'testimonials.t1.name': 'Lucas & Mari',
-    'testimonials.t1.text': 'Tío, en serio... lloró a mares cuando lo vio jajaja. Quedó demasiado perfecto, de verdad.',
-    'testimonials.t2.name': 'Bia & Thiago',
-    'testimonials.t2.text': 'Gente, ¿qué es esta línea de tiempo? Nos quedamos un montón de tiempo recordando nuestros viajes. Surreal.',
-    'testimonials.t3.name': 'Rafa & Ju',
-    'testimonials.t3.text': 'Soy cero creativo para los regalos, pero esto me salvó la vida. Lo monté en 20 minutos y quedó genial.',
-    'testimonials.t4.name': 'Gui & Lau',
-    'testimonials.t4.text': 'El rompecabezas del principio es genial, ella se quedó como "¿qué es esto?" y luego le encantó la sorpresa.',
-    'testimonials.t5.name': 'Matheus & Isa',
-    'testimonials.t5.text': 'El mejor regalo, sin rodeos. Mucho mejor que solo dar chocolate o ropa. Lo publicó en todas partes.',
-    'testimonials.t6.name': 'Bru & Manu',
-    'testimonials.t6.text': 'Pensé que sería difícil de hacer pero es súper fácil. La música de fondo creó un ambiente genial 😍',
-    'testimonials.t7.name': 'Fe & Gi',
-    'testimonials.t7.text': 'El código QR funcionó perfectamente en la cena. Fue el momento cumbre de la noche, ¡muchas gracias!',
-    'testimonials.t8.name': 'Dani & Lice',
-    'testimonials.t8.text': 'Tío, qué pasada. Es algo que dura para siempre, ¿sabes? No es como un regalo que se acaba o se rompe.',
-    'testimonials.t9.name': 'Du & Sophia',
-    'testimonials.t9.text': 'Nuestra historia quedó preciosa ahí. Lloré junto a ella, lo admito jajaja.',
-    'testimonials.t10.name': 'Vini & Valen',
-    'testimonials.t10.text': 'El soporte me ayudó rapidísimo con una foto que estaba torcida. Atención al cliente 10/10.',
-    'testimonials.t11.name': 'Dedé & Lena',
-    'testimonials.t11.text': 'Sin palabras... ¡quedó súper profesional! Parece que pagué una fortuna a un diseñador.',
-    'testimonials.t12.name': 'Léo & Lu',
-    'testimonials.t12.text': 'Mi chica se quedó flipando. Dijo que fue el regalo más creativo que le he hecho. ¡Sois geniales!',
-    'testimonials.t13.name': 'Rô & Liv',
-    'testimonials.t13.text': 'Las fotos en 3D le dan un toque especial. Nos quedamos viéndolas en el móvil un buen rato.',
-    'testimonials.t14.name': 'Gabs & Clara',
-    'testimonials.t14.text': 'Lo hice para el día de San Valentín, fue un éxito total. Todo el mundo me preguntó cómo lo hice jaja.',
-    'testimonials.t15.name': 'Ale & Gabi',
-    'testimonials.t15.text': 'Vale cada céntimo, de verdad. Es muy barato para lo mucho que emociona.',
-    'testimonials.t16.name': 'Di & Yas',
-    'testimonials.t16.text': 'Los corazoncitos cayendo en la pantalla... ¡qué amor! ❤️ Le encantó.',
-    'testimonials.t17.name': 'Rick & Lê',
-    'testimonials.t17.text': 'Usé la IA para escribir el texto porque soy pésimo con las palabras y quedó precioso.',
-    'testimonials.t18.name': 'Serginho & Nick',
-    'testimonials.t18.text': 'Sencillo, rápido y emocionante. El combo perfecto para quien quiere sorprender.',
-    'testimonials.t19.name': 'Fer & Sah',
-    'testimonials.t19.text': 'No tenía ni idea de qué regalar y esto salvó mi relación jajaja, es broma, ¡pero ayudó mucho!',
-    'testimonials.t20.name': 'Will & Carol',
-    'testimonials.t20.text': 'Ese contador de tiempo es hipnótico. Nos quedamos mirando los segundos pasar juntitos.',
-    'home.plans.title': 'Elige tu Plan para Probar',
-    'home.plans.description': 'Tenemos la opción ideal para inmortalizar tu momento, con la flexibilidad que necesitas.',
-    'home.plans.recommended': 'RECOMENDADO',
-    'home.plans.avancado.title': 'Plan Avanzado',
-    'home.plans.avancado.description': 'Todas las funciones desbloqueadas para la mejor experiencia.',
-    'home.plans.feature.gallery_advanced': 'Galería de fotos (hasta 6)',
-    'home.plans.feature.music': 'Música de fondo',
-    'home.plans.feature.puzzle': 'Rompecabezas Interactivo',
-    'home.plans.feature.timeline_advanced': 'Línea de Tiempo 3D (hasta 20 momentos)',
-    'home.plans.avancado.cta': 'Probar Plan Avanzado',
-    'home.plans.basico.title': 'Plan Económico',
-    'home.plans.basico.description': 'Ideal para una sorpresa más directa y emocionante.',
-    'home.plans.feature.gallery_basic': 'Galería de fotos (hasta 2)',
-    'home.plans.feature.timeline_basic': 'Línea de Tiempo 3D (hasta 5 momentos)',
-    'home.plans.basico.cta': 'Probar Plan Económico',
-    'home.plans.payment': 'Pago único',
-    'footer.copyright': '© {year} MyCupid. Todos los derechos reservados.',
-    'footer.terms': 'Términos de uso',
-    'footer.privacy': 'Política de privacidad',
-    'footer.platform': 'Plataforma',
-    'footer.createPage': 'Crear Página',
-    'footer.myCreations': 'Mis Creaciones',
-    'footer.login': 'Iniciar Sesión / Registrarse',
-    'footer.plans': 'Planes y Precios',
-    'footer.support': 'Soporte',
-    'footer.helpCenter': 'Centro de Ayuda',
-    'footer.development': 'Desarrollo',
-    'footer.poweredBy': 'Desarrollado por',
-    'footer.tagline': 'Transformando sentimientos en experiencias digitales inolvidables. Crea, sorprende e inmortaliza tu amor.',
-    'footer.madeWith': 'Hecho con',
-    'footer.forCouples': 'para parejas enamoradas.',
-    'footer.follow_us': 'Síguenos',
-    'banner.title': 'Oferta de Lanzamiento: 50% de descuento en las próximas',
-    'howitworks.back': 'Volver al Inicio',
-    'howitworks.title': 'Una Revelación',
-    'howitworks.title.highlight': 'Inolvidable',
-    'howitworks.description': 'El Rompecabezas Interactivo es la forma más creativa y emocionante de revelar tu página personalizada. En lugar de solo enviar un enlace, entregas una experiencia única y divertida.',
-    'howitworks.puzzle.title': 'Un Enigma Personalizado',
-    'howitworks.puzzle.description': 'Eliges una foto especial. El sistema la convierte en un rompecabezas interactivo. Tu ser amado deberá arrastrar y cambiar las piezas para armar la imagen y descubrir la sorpresa.',
-    'howitworks.reward.title': 'La Gran Recompensa',
-    'howitworks.reward.description': 'Al armar la imagen, se revela la recompensa: la página de amor que creaste aparece en la pantalla, haciendo del descubrimiento una sorpresa emocionante.',
-    'howitworks.demo.title': 'Ver en Acción',
-    'howitworks.demo.subtitle': '¡Intenta armarlo!',
-    'howitworks.demo.description': 'Arrastra las piezas para intercambiarlas y revelar la imagen.',
-    'create.title': 'Comienza tu',
-    'create.title.highlight': 'obra de arte',
-    'create.description': 'Elige cómo quieres empezar tu viaje creativo.',
-    'create.diy.title': 'Hacerlo yo mismo',
-    'create.diy.description': 'Empieza desde cero con un lienzo en blanco y total libertad creativa.',
-    'create.diy.cta': 'Empezar desde Cero',
-    'create.templates.title': 'Usar una Plantilla',
-    'create.templates.description': 'Explora plantillas profesionales y solo añade tu toque personal. (¡Próximamente!)',
-    'create.templates.cta': 'Ver Plantillas',
-    'create.back': 'Volver al inicio',
-    'create.feature.permanente': 'Página permanente con copia de seguridad infinita',
-    'create.feature.temp': 'Página disponible por 24h',
-    'create.feature.backup': 'Copia de seguridad en la nube',
-    'diy.title': 'Crea una página de amor',
-    'diy.title.highlight': 'Totalmente Personalizada',
-    'diy.description': 'Usa el asistente paso a paso para configurar cada detalle.',
-    'countdown.prefix': 'Compartiendo momentos desde hace',
-    'countdown.years': 'años',
-    'countdown.months': 'meses',
-    'countdown.days': 'días',
-    'countdown.hours': 'horas',
-    'countdown.minutes': 'minutos',
-    'countdown.seconds': 'segundos',
-    'countdown.labels.years': 'Años',
-    'countdown.labels.months': 'Meses',
-    'countdown.labels.days': 'Días',
-    'countdown.labels.hours': 'Horas',
-    'countdown.labels.minutes': 'Minutos',
-    'countdown.labels.seconds': 'Segundos',
-    'login.title': 'Accede a tu Cuenta',
-    'login.description': 'Inicia sesión o crea una cuenta para guardar y gestionar tus páginas.',
-    'login.google': 'Continuar con Google',
-    'login.separator': 'O continúa con',
-    'login.email': 'Correo electrónico',
-    'login.password': 'Contraseña',
-    'login.email.placeholder': 'tu@email.com',
-    'login.password.placeholder': 'Tu contraseña',
-    'login.login': 'Iniciar Sesión',
-    'login.register': 'Registrarse',
-    'login.terms.prefix': 'Al continuar, aceptas nuestros',
-    'login.terms.link': 'Términos de Servicio',
-    'login.terms.separator': 'y',
-    'login.privacy.link': 'Política de Privacidad',
-    'login.toast.success.register': '¡Cuenta creada con éxito!',
-    'login.toast.success.login': '¡Inicio de sesión exitoso!',
-    'login.toast.redirect': 'Serás redirigido en breve.',
-    'login.toast.fail': 'Fallo en la Autenticación',
-    'login.toast.google.fail': 'Fallo al Iniciar Sesión con Google',
-    'login.loading': 'Cargando...',
-    'login.auth.invalid-credential': 'El correo electrónico o la contraseña que ingresaste son incorrectos. Verifica tus datos e inténtalo de nuevo.',
-    'login.auth.user-not-found': 'No se encontró ninguna cuenta con este correo. Considera registrarte.',
-    'login.auth.wrong-password': 'La contraseña es incorrecta. Por favor, inténtalo de nuevo.',
-    'login.auth.email-already-in-use': 'Este correo ya ha sido utilizado para crear una cuenta. Intenta iniciar sesión o usa otro correo.',
-    'login.auth.weak-password': 'La contraseña debe tener al menos 6 caracteres.',
-    'login.auth.invalid-email': 'El formato del correo electrónico ingresado no es válido.',
-    'login.auth.operation-not-allowed': 'El inicio de sesión con correo y contraseña no está habilitado en este proyecto. Contacta al soporte.',
-    'login.auth.too-many-requests': 'El acceso a esta cuenta ha sido deshabilitado temporalmente debido a muchos intentos de inicio de sesión. Inténtalo de nuevo más tarde.',
-    'login.auth.network-request-failed': 'No se pudo conectar al servidor de autenticación. Verifica tu conexión a internet.',
-    'login.auth.generic': 'Ocurrió un problema no catalogado. Revisa la consola para más detalles.',
-    'login.auth.google.exists': 'Ya existe una cuenta con este correo. Inicia sesión con el método que usaste originalmente.',
-    'login.auth.google.invalid': 'La credencial de autenticación proporcionada está malformada o ha expirado.',
-    'login.auth.google.not-allowed': 'El inicio de sesión con Google no está habilitado.',
-    'login.auth.google.popup-blocked': 'La ventana emergente de inicio de sesión fue bloqueada por el navegador. Habilita las ventanas emergentes para este sitio.',
-    'login.auth.google.popup-closed': 'La ventana emergente de inicio de sesión se cerró antes de completarse.',
-    'login.auth.google.unauthorized': 'Este dominio no está autorizado para operaciones OAuth.',
-    'login.auth.google.generic': 'Ocurrió un error durante el inicio de sesión con Google. Inténtalo de nuevo.',
-    'mypages.title': 'Mis Páginas de Amor',
-    'mypages.description': 'Gestiona todas tus creaciones aquí.',
-    'mypages.cta': 'Crear Nueva Página',
-    'mypages.index.title': 'Acción Requerida: Crear Índice en Firestore',
-    'mypages.index.description': 'La búsqueda de tus páginas requiere un índice que no existe en la base de datos. Para solucionarlo, abre la consola del navegador (F12), encuentra el error de Firestore y haz clic en el enlace proporcionado para crear el índice.',
-    'mypages.empty.title': 'Aún no has creado ninguna página',
-    'mypages.empty.description': '¿Qué tal si comienzas tu primera obra de arte?',
-    'mypages.empty.cta': 'Crear mi primera página',
-    'mypages.loading': 'Verificando tu sesión...',
-    'mypages.card.createdAt': 'Creado el',
-    'mypages.card.noTitle': 'Sin Título',
-    'mypages.card.recent': 'Reciente',
-    'mypages.share.title': 'Comparte tu Página',
-    'mypages.share.description': 'Escanea el Código QR o copia el enlace a continuación.',
-    'mypages.share.cta': 'Acceder a la Página',
-    'publicpage.timeline.title': 'Nuestra Línea de Tiempo',
-    'publicpage.timeline.description': 'Toca y arrastra para girar',
-    'publicpage.puzzle.title.part1': 'Un Enigma de',
-    'publicpage.puzzle.title.part2': 'Amor',
-    'publicpage.puzzle.description': 'Resuelve el rompecabezas para revelar una sorpresa especial.',
-    'publicpage.puzzle.complete': '¡Reto Completado!',
-    'publicpage.loading': 'Cargando tu sorpresa...',
-    'publicpage.error.title': 'Error',
-    'publicpage.error.description': 'El enlace que seguiste puede estar roto, o la página puede haber sido eliminada.',
-    'publicpage.error.generic': 'Esta página de amor no existe o no se pudo encontrar.',
-    'publicpage.error.notfound': 'Esta página de amor no existe o puede haber sido eliminada.',
-    'publicpage.error.dbConfig': 'El sistema de base de datos no está configurado correctamente. Por favor, contacta al soporte.',
-    'publicpage.error.fetch': 'Ocurrió un error al obtener los datos de la página. Por favor, inténtalo de nuevo más tarde.',
-    'publicpage.error.unknown': 'Ocurrió un error desconocido al obtener los datos de la página.',
-    'publicpage.error.processing': 'Ocurrió un error al procesar los datos de la página.',
-    'publicpage.error.unauthenticated.title': 'Error de Autenticación del Servidor',
-    'publicpage.error.unauthenticated.description': 'El servidor no pudo conectarse a Firebase.',
-    'publicpage.error.unauthenticated.analysis': 'ANÁLISIS DEL PROBLEMA:',
-    'publicpage.error.unauthenticated.cause': 'Este error `UNAUTHENTICATED` casi siempre significa que las Variables de Entorno en tu proveedor de alojamiento (Netlify, Vercel) son incorrectas o faltan.',
-    'publicpage.error.unauthenticated.solution.title': 'CMD_LOG: CÓMO SOLUCIONARLO',
-    'publicpage.error.unauthenticated.solution.step1': '1. Ve al panel de tu proveedor de alojamiento.',
-    'publicpage.error.unauthenticated.solution.step2': '2. Encuentra la sección "Environment Variables" en la configuración de tu sitio.',
-    'publicpage.error.unauthenticated.solution.step3': '3. Verifica que las siguientes variables existan y sus valores sean correctos:',
-    'publicpage.error.unauthenticated.solution.tip_title': 'CONSEJO IMPORTANTE:',
-    'publicpage.error.unauthenticated.solution.tip': 'El valor de `FIREBASE_PRIVATE_KEY` debe copiarse exactamente como está, incluyendo `-----BEGIN PRIVATE KEY-----` y `-----END PRIVATE KEY-----`.',
-    'publicpage.alt.timelineImage': 'Imagen de la línea de tiempo',
-    'publicpage.memory.title': 'Un juego de memoria para ti',
-    'publicpage.games.title': '¿Jugamos?',
-    'publicpage.games.selectTitle': 'Elige un Juego',
-    'publicpage.games.memory.title': 'Juego de Memoria',
-    'publicpage.games.memory.description': 'Encuentra las parejas de tus fotos especiales.',
-    'publicpage.games.comingSoon': 'Próximamente',
-    'puzzle.loading': 'Cargando rompecabezas...',
-    'puzzle.perfect': '¡Perfecto!',
-    'privacy.back': 'Volver al inicio',
-    'terms.title': 'Términos de Uso',
-    'terms.description': 'Al usar nuestros servicios, aceptas estas reglas.',
-    'terms.back': 'Volver al inicio',
-    'wizard.steps.1.title': 'Título de la página',
-    'wizard.steps.1.description': 'Escribe el título dedicatorio. Ej: Juan & María.',
-    'wizard.steps.2.title': 'Tu Mensaje de Amor',
-    'wizard.steps.2.description': 'Escribe el mensaje principal.',
-    'wizard.steps.3.title': 'Fecha Especial',
-    'wizard.steps.3.description': 'Introduce la fecha que simboliza el inicio de todo.',
-    'wizard.steps.4.title': 'Galería de Fotos',
-    'wizard.steps.4.description': 'Añade las fotos que marcaron vuestra historia.',
-    'wizard.steps.5.title': 'Línea de Tiempo 3D',
-    'wizard.steps.5.description': 'Momentos flotantes para un viaje nostálgico.',
-    'wizard.steps.6.title': 'Música Dedicada',
-    'wizard.steps.6.description': 'Elige una banda sonora o graba tu voz.',
-    'wizard.steps.7.title': 'Animación de Fondo',
-    'wizard.steps.7.description': 'Elige un efecto especial para el fondo.',
-    'wizard.steps.8.title': 'Rompecabezas Interactivo',
-    'wizard.steps.8.description': '¡Un desafío antes de revelar la sorpresa!',
-    'wizard.steps.memory.title': 'Juego de Memoria',
-    'wizard.steps.memory.description': 'Crea un juego de memoria personalizado con tus fotos.',
-    'wizard.steps.quiz.title': 'Quiz de Pareja',
-    'wizard.steps.quiz.description': 'Crea un divertido quiz sobre vosotros.',
-    'wizard.steps.9.title': 'Finalizar',
-    'wizard.steps.9.description': 'Paga para generar el enlace y el Código QR.',
-    'wizard.step': 'Paso',
-    'wizard.of': 'de',
-    'wizard.preview.title': 'O mira cómo va quedando',
-    'wizard.puzzle.preview.title': 'Un Enigma de Amor',
-    'wizard.puzzle.preview.description': 'Arma la imagen para probar la gran revelación.',
-    'wizard.plan.locked': 'Función del Plan Avanzado.',
-    'wizard.title.label': 'Título',
-    'wizard.title.placeholder': 'Ej: Juan & María',
-    'wizard.title.color.label': 'Color del título',
-    'wizard.title.color.description': 'Elige un color para el texto',
-    'wizard.message.label': 'Tu Mensaje',
-    'wizard.message.placeholder': 'Tu declaración...',
-    'wizard.date.label': 'Inicio de la relación',
-    'wizard.date.description': 'Esta fecha se usará para el contador.',
-    'wizard.date.countdownStyle': 'Modo de Visualización del Contador',
-    'wizard.date.countdownStyle.default': 'Estándar',
-    'wizard.date.countdownStyle.simple': 'Simple',
-    'wizard.date.countdownColor': 'Color del Contador',
-    'wizard.date.countdownColor.description': 'Haz clic en el cuadrado para elegir un color',
-    'wizard.date.useTitleColor': 'Usar el color del título',
-    'wizard.gallery.label': 'Tus Fotos para la galería',
-    'wizard.gallery.upload': 'Haz clic para añadir fotos',
-    'wizard.gallery.upload.description': 'PNG, JPG, GIF (Calidad original)',
-    'wizard.gallery.uploading': 'Subiendo...',
-    'wizard.gallery.style': 'Modo de Visualización de la Galería',
-    'wizard.timeline.description': 'Añade momentos importantes. Aparecerán en tu línea de tiempo 3D.',
-    'wizard.timeline.empty': 'Tu línea de tiempo está vacía',
-    'wizard.timeline.empty.description': 'Usa el botón de abajo para añadir tus momentos.',
-    'wizard.timeline.add': 'Añadir Fotos para la Línea de Tiempo',
-    'wizard.timeline.event.placeholder': 'Describe este momento...',
-    'wizard.timeline.event.date': 'Elige la fecha',
-    'wizard.music.label': 'Elige la banda sonora',
-    'wizard.music.none': 'Sin Sonido',
-    'wizard.music.record': 'Grabar Mensaje de Voz',
-    'wizard.music.youtube': 'Usar Música de YouTube',
-    'wizard.music.youtube.song': 'Nombre de la Canción',
-    'wizard.music.youtube.song.placeholder': 'Ej: Perfect',
-    'wizard.music.youtube.artist': 'Nombre del Artista',
-    'wizard.music.youtube.artist.placeholder': 'Ej: Ed Sheeran',
-    'wizard.music.youtube.search': 'Buscar con IA',
-    'wizard.music.youtube.wrong': '¿La canción no es correcta?',
-    'wizard.music.youtube.manual': 'Usar un enlace directo de YouTube',
-    'wizard.music.youtube.manual.placeholder': 'Pega el enlace aquí...',
-    'wizard.music.youtube.manual.ok': 'OK',
-    'wizard.music.record.title': 'Grabadora de Voz',
-    'wizard.music.record.record': 'Grabar',
-    'wizard.music.record.stop': 'Detener',
-    'wizard.music.record.rerecord': 'Grabar de Nuevo',
-    'wizard.music.record.uploading': 'Subiendo...',
-    'wizard.music.record.recording': 'Grabando...',
-    'wizard.music.record.done': 'Grabación completada. Escúchala arriba.',
-    'wizard.background.label': 'Elige la Animación',
-    'wizard.background.none': 'Ninguna',
-    'wizard.background.hearts': 'Lluvia de Corazones',
-    'wizard.background.stars': 'Cielo Estrellado',
-    'wizard.background.nebula': 'Nebulosa Galáctica',
-    'wizard.background.mystic-flowers': 'Flores Nacientes',
-    'wizard.background.dots': 'Puntos de Colores',
-    'wizard.background.clouds': 'Nubes',
-    'wizard.background.exclusive': 'Exclusivo del Plan Avanzado',
-    'wizard.background.heartColor': 'Color de los Corazones',
-    'wizard.background.heartColor.description': 'Haz clic en el cuadrado para elegir un color',
-    'wizard.background.useTitleColor': 'Usar el color del título',
-    'wizard.puzzle.enable': 'Activar Rompecabezas',
-    'wizard.puzzle.description': 'Requerir que se resuelva el rompecabezas para ver la página.',
-    'wizard.puzzle.image.label': 'Imagen del Rompecabezas',
-    'wizard.puzzle.image.upload': 'Haz clic para añadir una foto',
-    'wizard.puzzle.image.description': 'La imagen se convertirá en un rompecabezas.',
-    'wizard.puzzle.image.processing': 'Procesando...',
-    'wizard.puzzle.image.remove': 'Eliminar Imagen',
-    'wizard.memory.enable': 'Activar Juego de Memoria',
-    'wizard.memory.description': 'Añade un divertido juego de memoria con tus fotos.',
-    'wizard.memory.upload': 'Añadir fotos para el juego',
-    'wizard.memory.image.label': 'Imágenes para el Juego de Memoria',
-    'wizard.memory.image.description': 'Añade de 2 a 8 fotos para el juego.',
-    'wizard.quiz.enable': 'Activar Quiz de Pareja',
-    'wizard.quiz.description': 'Añade un divertido quiz sobre vosotros dos.',
-    'wizard.quiz.question.label': 'Pregunta {index}',
-    'wizard.quiz.question.placeholder': '¿Cuál es nuestra canción?',
-    'wizard.quiz.options.label': 'Opciones de Respuesta',
-    'wizard.quiz.options.description': 'Marca la opción correcta. Mínimo de 2, máximo de 5.',
-    'wizard.quiz.option.placeholder': 'Opción {index}',
-    'wizard.quiz.button.addOption': 'Añadir Opción',
-    'wizard.quiz.alert.title': 'Consejo Pro',
-    'wizard.quiz.alert.description': '¡Crea preguntas que solo vosotros dos sabríais la respuesta para que el juego sea más íntimo y divertido!',
-    'wizard.quiz.button.addQuestion': 'Añadir Pregunta ({current}/{max})',
-    'wizard.payment.title': '¡Casi listo!',
-    'wizard.payment.description': 'Tu página ha sido ensamblada. Finaliza para recibir el enlace.',
-    'wizard.payment.total': 'Total a Pagar',
-    'wizard.payment.payment': 'Pago único',
-    'wizard.payment.immediate_access': 'Pago único • Acceso inmediato',
-    'wizard.payment.admin.cta': 'Finalizar como Admin (PRUEBA)',
-    'wizard.payment.pix.pay_button': 'Pagar con PIX via Mercado Pago',
-    'wizard.payment.pix.generating': 'Generando código QR de Mercado Pago...',
-    'wizard.payment.pix.generating_qr': 'Generando código QR...',
-    'wizard.payment.pix.title': 'Paga con PIX para Finalizar',
-    'wizard.payment.pix.description': 'Escanea el código QR con la app de tu banco o usa el código "Copia y Pega".',
-    'wizard.payment.pix.copy': 'Copiar Código PIX',
-    'wizard.payment.pix.waiting': 'Esperando pago... La página se liberará automáticamente.',
-    'wizard.payment.pix.verify': 'Verificar Pago',
-    'wizard.payment.secure_mp': 'Pago 100% seguro a través de Mercado Pago',
-    'wizard.payment.card_button': 'Pagar con Tarjeta',
-    'wizard.payment.secure_stripe': 'Pago seguro a través de Stripe.',
-    'wizard.success.title': '¡Página Creada con Éxito!',
-    'wizard.success.description': 'Tu obra de arte está lista. Comparte el enlace a continuación con tu amor.',
-    'wizard.success.copy': 'Copiar',
-    'wizard.success.copied': '¡Copiado!',
-    'wizard.success.qr.description': 'También puedes guardar o imprimir el Código QR de arriba.',
-    'wizard.success.cta': 'Ver Página',
-    'wizard.imageLimit.title': 'Contador de Imágenes',
-    'wizard.imageLimit.description': 'Has usado {currentCount} de {limit} {itemType}.',
-    'wizard.imageLimit.exceeded': 'Límite Excedido',
-    'wizard.imageLimit.exceeded.description': 'Has excedido el límite de {limit} {itemType}. Elimina algunas para continuar.',
-    'wizard.imageLimit.item.gallery': 'fotos en la galería',
-    'wizard.imageLimit.item.timeline': 'momentos en la línea de tiempo',
-    'wizard.imageLimit.item.memory': 'fotos para el juego',
-    'wizard.qr.title': 'Código QR Personalizado',
-    'wizard.qr.upsell': 'Destacado',
-    'wizard.qr.free': 'GRATIS',
-    'toast.error': 'Error',
-    'toast.success': 'Éxito',
-    'toast.warning': 'Advertencia',
-    'toast.info': 'Información',
-    'toast.upload.success': '¡Imágenes subidas!',
-    'toast.upload.success.description': 'Tus fotos han sido añadidas.',
-    'toast.upload.error': 'Error de Subida',
-    'toast.upload.error.description': 'No se pudieron subir las imágenes.',
-    'toast.mic.error': 'Error de Micrófono',
-    'toast.mic.error.description': 'No se pudo acceder al micrófono. Revisa los permisos del navegador.',
-    'toast.record.success': '¡Grabación Guardada!',
-    'toast.record.success.description': 'Tu mensaje de voz ha sido guardado de forma segura.',
-    'toast.record.error': 'Error de Subida',
-    'toast.record.error.description': 'No se pudo guardar tu grabación.',
-    'toast.youtube.error': 'Error de Búsqueda',
-    'toast.youtube.error.description': 'No se pudo encontrar un video.',
-    'toast.youtube.success': '¡Música conectada!',
-    'toast.youtube.success.description': 'Tu canción fue encontrada en YouTube.',
-    'toast.youtube.manual.success': '¡Enlace añadido!',
-    'toast.youtube.manual.success.description': 'La música del enlace ha sido añadida.',
-    'toast.youtube.manual.error': 'Enlace inválido',
-    'toast.youtube.manual.error.description': 'Por favor, introduce un enlace válido de YouTube.',
-    'toast.songName.required': 'El nombre de la canción es obligatorio',
-    'toast.puzzle.image.required': 'Imagen Requerida',
-    'toast.puzzle.image.required.description': 'Para activar el rompecabezas, necesitas subir una imagen.',
-    'toast.validation.error': 'Campos obligatorios',
-    'toast.validation.error.description': 'Por favor, comprueba si has rellenado todo correctamente antes de continuar.',
-    'toast.autosave.error.load': 'Error al cargar el borrador',
-    'toast.autosave.error.load.description': 'No se pudo cargar tu progreso guardado. Empezando uno nuevo.',
-    'toast.payment.payer.invalid': '¡Vaya!',
-    'toast.payment.payer.invalid.description': 'Por favor, completa correctamente el Nombre, Email y CPF.',
-    'toast.payment.session.invalid': 'Sesión de usuario inválida. Por favor, inicia sesión de nuevo.',
-    'toast.payment.autosave': 'Guardando borrador...',
-    'toast.payment.autosave.description': 'Preparando pago seguro.',
-    'toast.payment.success': '¡Pago Aprobado!',
-    'toast.payment.success.description': 'Tu página ha sido creada con éxito.',
-    'toast.payment.pending': 'Pago aún no confirmado',
-    'toast.payment.pending.description': 'Por favor, inténtalo de nuevo en unos momentos.',
-    'toast.payment.verify.error': 'Error de Verificación',
-    'toast.payment.verify.error.description': 'No se pudo verificar el pago.',
-    'cookie.title': 'Aviso de Cookies',
-    'cookie.description': 'Estas cookies no romperán tu dieta. Solo mejoran tu tiempo. Las usamos para asegurar la mejor experiencia en nuestro sitio web.',
-    'cookie.privacyLink': 'Lee nuestra política de privacidad.',
-    'cookie.manage': 'Gestionar preferencias',
-    'cookie.accept': 'Aceptar',
-    'payment.success.title': '¡Pago Exitoso!',
-    'payment.success.description': 'Tu pago ha sido procesado. Tu página de amor se está creando y aparecerá en "Mis Páginas" en breve. El webhook se está procesando en segundo plano.',
-    'payment.success.cta': 'Ir a Mis Páginas',
-    'payment.canceled.title': 'Pago Cancelado',
-    'payment.canceled.description': 'Tu pago no se completó. Puedes volver e intentarlo de nuevo.',
-    'payment.canceled.cta': 'Volver al Creador de Páginas',
-    'creating.page.ready.title': '¡Tu página está lista!',
-    'creating.page.ready.description': 'El pago ha sido confirmado y tu sorpresa ha sido creada con éxito.',
-    'creating.page.ready.cta.view': 'Ver mi página',
-    'creating.page.ready.cta.myPages': 'Ir a Mis Páginas',
-    'creating.page.finalizing.title': 'Finalizando tu página...',
-    'creating.page.finalizing.description': 'Hemos recibido la aprobación de tu pago y ya estamos preparando todo. Esto puede tardar unos momentos.',
-    'creating.page.finalizing.tip': 'Puedes esperar o volver al sitio.',
-    'creating.page.finalizing.cta.myPages': 'Ir a Mis Páginas',
-    'memorygame.header': 'Juego de Memoria',
-    'memorygame.description': '¡Encuentra todos los pares de vuestras fotos! 💜',
-    'memorygame.progress': 'Progreso',
-    'memorygame.pairs': 'pares',
-    'memorygame.shuffle': 'Barajar',
-    'memorygame.win.title': '¡Felicidades!',
-    'memorygame.win.description': '¡Encontraste todos los pares!',
-    'memorygame.win.perfect': 'Vuestro amor es perfecto así 🌸',
-    'memorygame.win.playAgain': 'Jugar de Nuevo',
+    'memorygame.shuffle': 'Embaralhar',
+    'memorygame.win.title': 'Parabéns!',
+    'memorygame.win.description': 'Você encontrou todos os pares!',
+    'memorygame.win.perfect': 'O amor de vocês é perfeito assim 🌸',
+    'memorygame.win.playAgain': 'Jogar Novamente',
     'memorygame.reset': 'Reiniciar',
   },
 };
@@ -966,7 +492,7 @@ export const LanguageProvider = ({ children, initialLocale = 'pt' }: { children:
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => {
-    let translation = translations[locale]?.[key] || translations['en']?.[key] || key;
+    let translation: string = (translations[locale] as any)?.[key] || (translations['en'] as any)?.[key] || key;
     if (vars) {
       Object.keys(vars).forEach(varKey => {
         const regex = new RegExp(`\\{${varKey}\\}`, 'g');
@@ -992,3 +518,127 @@ export const useTranslation = () => {
   }
   return context;
 };
+```
+I am still seeing the error. Can you please fix it?
+Failed to compile.
+10:25:06 AM: 
+10:25:06 AM: ./src/lib/i18n.tsx:955:75
+10:25:06 AM: Type error: Property 'en' does not exist on type '{ pt: { 'metadata.title': string; 'metadata.description': string; 'nav.recursos': string; 'nav.planos': string; 'nav.avaliacoes': string; 'nav.comoFunciona': string; 'user.myAccount': string; 'user.myPages': string; ... 462 more ...; 'memorygame.reset': string; }; es: { ...; }; }'.
+10:25:06 AM:   953 |
+10:25:06 AM:   954 | type Locale = 'pt' | 'en' | 'es';
+10:25:06 AM: > 955 | type TranslationKey = keyof (typeof translations.pt & typeof translations.en & typeof translations.es);
+10:25:06 AM:       |                                                                           ^
+10:25:06 AM:   956 |
+10:25:06 AM:   957 | interface LanguageContextType {
+10:25:06 AM:   958 |   locale: Locale;
+10:25:06 AM: Next.js build worker exited with code: 1 and signal: null
+10:25:06 AM: ​
+10:25:06 AM: "build.command" failed                                        
+10:25:06 AM: ────────────────────────────────────────────────────────────────
+10:25:06 AM: ​
+10:25:06 AM:   Error message
+10:25:06 AM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
+10:25:06 AM: ​
+10:25:06 AM:   Error location
+10:25:06 AM:   In build.command from netlify.toml:
+10:25:06 AM:   npm run build
+10:25:06 AM: ​
+10:25:06 AM:   Resolved config
+10:25:06 AM:   build:
+10:25:06 AM:     command: npm run build
+10:25:06 AM:     commandOrigin: config
+10:25:06 AM:     environment:
+10:25:06 AM:       - ADMIN_JWT_SECRET
+10:25:06 AM:       - ADMIN_PASS
+10:25:06 AM:       - ADMIN_USER
+10:25:06 AM:       - FIREBASE_CLIENT_EMAIL
+10:25:06 AM:       - FIREBASE_PRIVATE_KEY
+10:25:06 AM:       - FIREBASE_PROJECT_ID
+10:25:06 AM:       - GEMINI_API_KEY
+10:25:06 AM:       - MERCADO_PAGO_ACCESS_TOKEN
+10:25:06 AM:       - MERCADO_PAGO_WEBHOOK_SECRET
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_API_KEY
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_APP_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+10:25:06 AM:       - NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
+10:25:06 AM:       - NEXT_PUBLIC_PAYPAL_CLIENT_ID
+10:25:06 AM:       - NEXT_PUBLIC_SITE_URL
+10:25:06 AM:       - PAYPAL_CLIENT_SECRET
+10:25:06 AM:       - PAYPAL_WEBHOOK_ID
+10:25:06 AM:       - STRIPE_PUBLISHABLE_KEY
+10:25:06 AM:       - STRIPE_SECRET_KEY
+10:25:06 AM:       - STRIPE_WEBHOOK_SECRET
+10:25:06 AM:     publish: /opt/build/repo/.next
+10:25:06 AM:     publishOrigin: config
+10:25:06 AM:   plugins:
+10:25:06 AM:     - inputs: {}
+10:25:06 AM:       origin: config
+10:25:06 AM:       package: "@netlify/plugin-nextjs"
+10:25:07 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+10:25:07 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+10:25:07 AM: Failing build: Failed to build site
+10:25:07 AM: Finished processing build request in 43.031sI am still seeing the error. Can you please fix it?
+Failed to compile.
+10:25:06 AM: 
+10:25:06 AM: ./src/lib/i18n.tsx:955:75
+10:25:06 AM: Type error: Property 'en' does not exist on type '{ pt: { 'metadata.title': string; 'metadata.description': string; 'nav.recursos': string; 'nav.planos': string; 'nav.avaliacoes': string; 'nav.comoFunciona': string; 'user.myAccount': string; 'user.myPages': string; ... 462 more ...; 'memorygame.reset': string; }; es: { ...; }; }'.
+10:25:06 AM:   953 |
+10:25:06 AM:   954 | type Locale = 'pt' | 'en' | 'es';
+10:25:06 AM: > 955 | type TranslationKey = keyof (typeof translations.pt & typeof translations.en & typeof translations.es);
+10:25:06 AM:       |                                                                           ^
+10:25:06 AM:   956 |
+10:25:06 AM:   957 | interface LanguageContextType {
+10:25:06 AM:   958 |   locale: Locale;
+10:25:06 AM: Next.js build worker exited with code: 1 and signal: null
+10:25:06 AM: ​
+10:25:06 AM: "build.command" failed                                        
+10:25:06 AM: ────────────────────────────────────────────────────────────────
+10:25:06 AM: ​
+10:25:06 AM:   Error message
+10:25:06 AM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
+10:25:06 AM: ​
+10:25:06 AM:   Error location
+10:25:06 AM:   In build.command from netlify.toml:
+10:25:06 AM:   npm run build
+10:25:06 AM: ​
+10:25:06 AM:   Resolved config
+10:25:06 AM:   build:
+10:25:06 AM:     command: npm run build
+10:25:06 AM:     commandOrigin: config
+10:25:06 AM:     environment:
+10:25:06 AM:       - ADMIN_JWT_SECRET
+10:25:06 AM:       - ADMIN_PASS
+10:25:06 AM:       - ADMIN_USER
+10:25:06 AM:       - FIREBASE_CLIENT_EMAIL
+10:25:06 AM:       - FIREBASE_PRIVATE_KEY
+10:25:06 AM:       - FIREBASE_PROJECT_ID
+10:25:06 AM:       - GEMINI_API_KEY
+10:25:06 AM:       - MERCADO_PAGO_ACCESS_TOKEN
+10:25:06 AM:       - MERCADO_PAGO_WEBHOOK_SECRET
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_API_KEY
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_APP_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+10:25:06 AM:       - NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
+10:25:06 AM:       - NEXT_PUBLIC_PAYPAL_CLIENT_ID
+10:25:06 AM:       - NEXT_PUBLIC_SITE_URL
+10:25:06 AM:       - PAYPAL_CLIENT_SECRET
+10:25:06 AM:       - PAYPAL_WEBHOOK_ID
+10:25:06 AM:       - STRIPE_PUBLISHABLE_KEY
+10:25:06 AM:       - STRIPE_SECRET_KEY
+10:25:06 AM:       - STRIPE_WEBHOOK_SECRET
+10:25:06 AM:     publish: /opt/build/repo/.next
+10:25:06 AM:     publishOrigin: config
+10:25:06 AM:   plugins:
+10:25:06 AM:     - inputs: {}
+10:25:06 AM:       origin: config
+10:25:06 AM:       package: "@netlify/plugin-nextjs"
+10:25:07 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+10:25:07 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
+10:25:07 AM: Failing build: Failed to build site
+10:25:07 AM: Finished processing build request in 43.031s
