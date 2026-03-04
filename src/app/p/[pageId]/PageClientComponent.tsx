@@ -220,9 +220,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         <Image
           src={headerLogoUrl}
           alt="MyCupid Logo"
-          width={160}
-          height={40}
-          className="w-auto h-10 object-contain"
+          width={224}
+          height={56}
+          className="w-auto h-14 object-contain"
           priority
         />
       </header>
