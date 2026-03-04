@@ -394,8 +394,6 @@ const translations = {
     'wizard.puzzle.image.description': 'A imagem será transformada em quebra-cabeça.',
     'wizard.puzzle.image.processing': 'Processando...',
     'wizard.puzzle.image.remove': 'Remover Imagem',
-    'wizard.memory.enable': 'Ativar Jogo da Memória',
-    'wizard.memory.description': 'Crie um jogo de memória divertido com suas fotos.',
     'wizard.memory.upload': 'Adicionar fotos para o jogo',
     'wizard.memory.image.label': 'Imagens para o Jogo da Memória',
     'wizard.memory.image.description': 'Adicione de 2 a 8 fotos para o jogo.',
@@ -432,6 +430,15 @@ const translations = {
     'wizard.qr.title': 'Código QR Personalizado',
     'wizard.qr.upsell': 'Destaque',
     'wizard.qr.free': 'GRÁTIS',
+    'wizard.quiz.question.label': 'Pergunta {index}',
+    'wizard.quiz.question.placeholder': 'Qual é a nossa música?',
+    'wizard.quiz.options.label': 'Opções de Resposta',
+    'wizard.quiz.options.description': 'Marque a opção correta. Mínimo de 2, máximo de 5.',
+    'wizard.quiz.option.placeholder': 'Opção {index}',
+    'wizard.quiz.button.addOption': 'Adicionar Opção',
+    'wizard.quiz.alert.title': 'Dica de Mestre',
+    'wizard.quiz.alert.description': 'Crie perguntas que só vocês dois saberiam a resposta para tornar o jogo mais íntimo e divertido!',
+    'wizard.quiz.button.addQuestion': 'Adicionar Pergunta ({current}/{max})',
  
      // Toasts
      'toast.error': 'Erro',
@@ -509,6 +516,7 @@ const translations = {
     'memorygame.win.description': 'Você encontrou todos os pares!',
     'memorygame.win.perfect': 'O amor de vocês é perfeito assim 🌸',
     'memorygame.win.playAgain': 'Jogar Novamente',
+    'memorygame.reset': 'Reiniciar',
   },
   en: {
     // Metadata
@@ -901,8 +909,6 @@ const translations = {
     'wizard.puzzle.image.description': 'The image will be turned into a puzzle.',
     'wizard.puzzle.image.processing': 'Processing...',
     'wizard.puzzle.image.remove': 'Remove Image',
-    'wizard.memory.enable': 'Enable Memory Game',
-    'wizard.memory.description': 'Create a fun memory game with your photos.',
     'wizard.memory.upload': 'Add photos for the game',
     'wizard.memory.image.label': 'Images for the Memory Game',
     'wizard.memory.image.description': 'Add 2 to 8 photos for the game.',
@@ -939,6 +945,15 @@ const translations = {
     'wizard.qr.title': 'Custom QR Code',
     'wizard.qr.upsell': 'Highlight',
     'wizard.qr.free': 'FREE',
+    'wizard.quiz.question.label': 'Question {index}',
+    'wizard.quiz.question.placeholder': 'What is our song?',
+    'wizard.quiz.options.label': 'Answer Options',
+    'wizard.quiz.options.description': 'Select the correct option. Minimum of 2, maximum of 5.',
+    'wizard.quiz.option.placeholder': 'Option {index}',
+    'wizard.quiz.button.addOption': 'Add Option',
+    'wizard.quiz.alert.title': 'Pro Tip',
+    'wizard.quiz.alert.description': 'Create questions that only the two of you would know the answer to make the game more intimate and fun!',
+    'wizard.quiz.button.addQuestion': 'Add Question ({current}/{max})',
  
      // Toasts
      'toast.error': 'Error',
@@ -1016,6 +1031,7 @@ const translations = {
     'memorygame.win.description': 'You found all the pairs!',
     'memorygame.win.perfect': 'Your love is perfect just like this 🌸',
     'memorygame.win.playAgain': 'Play Again',
+    'memorygame.reset': 'Reset',
   },
   es: {
     // Metadata
@@ -1372,8 +1388,6 @@ const translations = {
     'wizard.puzzle.image.description': 'La imagen se convertirá en un rompecabezas.',
     'wizard.puzzle.image.processing': 'Procesando...',
     'wizard.puzzle.image.remove': 'Eliminar Imagen',
-    'wizard.memory.enable': 'Activar Juego de Memoria',
-    'wizard.memory.description': 'Crea un divertido juego de memoria con tus fotos.',
     'wizard.memory.upload': 'Añadir fotos para el juego',
     'wizard.memory.image.label': 'Imágenes para el Juego de Memoria',
     'wizard.memory.image.description': 'Añade de 2 a 8 fotos para el juego.',
@@ -1410,6 +1424,15 @@ const translations = {
     'wizard.qr.title': 'Código QR Personalizado',
     'wizard.qr.upsell': 'Destacado',
     'wizard.qr.free': 'GRATIS',
+    'wizard.quiz.question.label': 'Pregunta {index}',
+    'wizard.quiz.question.placeholder': '¿Cuál es nuestra canción?',
+    'wizard.quiz.options.label': 'Opciones de Respuesta',
+    'wizard.quiz.options.description': 'Marca la opción correcta. Mínimo de 2, máximo de 5.',
+    'wizard.quiz.option.placeholder': 'Opción {index}',
+    'wizard.quiz.button.addOption': 'Añadir Opción',
+    'wizard.quiz.alert.title': 'Consejo Pro',
+    'wizard.quiz.alert.description': '¡Crea preguntas que solo vosotros dos sabríais la respuesta para que el juego sea más íntimo y divertido!',
+    'wizard.quiz.button.addQuestion': 'Añadir Pregunta ({current}/{max})',
     'toast.error': 'Error',
     'toast.success': 'Éxito',
     'toast.warning': 'Advertencia',
@@ -1478,6 +1501,7 @@ const translations = {
     'memorygame.win.description': '¡Encontraste todos los pares!',
     'memorygame.win.perfect': 'Vuestro amor es perfecto así 🌸',
     'memorygame.win.playAgain': 'Jugar de Nuevo',
+    'memorygame.reset': 'Reiniciar',
   }
 };
 
