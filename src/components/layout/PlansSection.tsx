@@ -1,4 +1,3 @@
-
 "use client";
 import Link from 'next/link';
 import { Star, TestTube, Hourglass, DatabaseZap } from 'lucide-react';
@@ -45,11 +44,11 @@ const PlansSection = () => {
                         <p className="text-sm text-muted-foreground">Pagamento único</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
-                        <PlanFeature text='Galeria de fotos (até 2)' />
-                         <PlanFeature text='Linha do Tempo 3D (até 5 momentos)' />
+                        <PlanFeature text='Galeria de fotos (até 6)' />
+                        <PlanFeature text='Música de fundo' />
+                        <PlanFeature text='Quebra-cabeça Interativo' />
+                        <PlanFeature text='Linha do Tempo 3D (até 20 momentos)' />
                         <PlanFeature text='Página disponível por 24h' icon={Hourglass} />
-                        <PlanFeature text='Música de fundo' included={false} />
-                        <PlanFeature text='Quebra-cabeça Interativo' included={false}/>
                     </ul>
                      <Button asChild size="lg" className="w-full mt-auto" variant="secondary">
                         <Link href="/login?redirect=/criar?plan=basico&new=true"><TestTube className="mr-2" />Testar Plano Econômico</Link>

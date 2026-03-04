@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -86,9 +84,9 @@ const cpfMask = (v: string) => {
 };
 
 
-const MAX_GALLERY_IMAGES_BASICO = 2;
+const MAX_GALLERY_IMAGES_BASICO = 6;
 const MAX_GALLERY_IMAGES_AVANCADO = 6;
-const MAX_TIMELINE_IMAGES_BASICO = 5;
+const MAX_TIMELINE_IMAGES_BASICO = 20;
 const MAX_TIMELINE_IMAGES_AVANCADO = 20;
 
 
@@ -162,27 +160,6 @@ const pageSchema = z.object({
 
 
 export type PageData = z.infer<typeof pageSchema>;
-
-const PlanLockWrapper = React.memo(({ children, requiredPlan }: { children: React.ReactNode, requiredPlan?: string }) => {
-    const { watch } = useFormContext<PageData>();
-    const plan = watch('plan');
-    const isLocked = requiredPlan && plan !== requiredPlan;
-
-    if (isLocked) {
-        return (
-            <div className="relative blur-sm pointer-events-none opacity-60">
-                {children}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg z-50">
-                    <Lock className="w-12 h-12 text-primary mb-4" />
-                    <p className="font-semibold text-center text-white">Recurso do Plano Avançado.</p>
-                </div>
-            </div>
-        );
-    }
-    return <>{children}</>;
-});
-PlanLockWrapper.displayName = 'PlanLockWrapper';
-
 
 // Componentes de Passo simplificados para o Wizard
 const TitleStep = React.memo(() => {
@@ -1025,11 +1002,11 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const animationOptions = [
         { id: "none", name: 'Nenhuma' },
         { id: "falling-hearts", name: 'Chuva de Corações', isFavorite: true },
-        { id: "starry-sky", name: 'Céu Estrelado', requiredPlan: "avancado", isFavorite: true },
+        { id: "starry-sky", name: 'Céu Estrelado', isFavorite: true },
         { id: "nebula", name: 'Nebulosa Galáctica' },
-        { id: 'mystic-flowers', name: 'Flores Nascendo', requiredPlan: "avancado", isFavorite: true },
-        { id: "floating-dots", name: 'Pontos Coloridos', requiredPlan: "avancado" },
-        { id: "clouds", name: 'Nuvens', requiredPlan: "avancado" },
+        { id: 'mystic-flowers', name: 'Flores Nascendo', isFavorite: true },
+        { id: "floating-dots", name: 'Pontos Coloridos' },
+        { id: "clouds", name: 'Nuvens' },
     ];
     
     useEffect(() => {
@@ -1051,19 +1028,15 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                 className="grid grid-cols-2 gap-4"
                             >
                                 {animationOptions.map((option) => {
-                                    const isDisabled = option.requiredPlan && plan !== option.requiredPlan;
                                     const labelContent = (
                                          <Label
                                             htmlFor={`anim-${option.id}`}
                                             className={cn(
-                                                "flex flex-col items-center justify-center rounded-md border-2 bg-popover p-4 h-24 text-sm relative overflow-hidden group/item",
-                                                isDisabled
-                                                    ? "border-muted/50 text-muted-foreground/50 cursor-not-allowed"
-                                                    : "cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
-                                                field.value === option.id && !isDisabled ? "border-primary" : "border-muted"
+                                                "flex flex-col items-center justify-center rounded-md border-2 bg-popover p-4 h-24 text-sm relative overflow-hidden group/item cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                                field.value === option.id ? "border-primary" : "border-muted"
                                             )}
                                         >
-                                            {isClient && isVisible && !isDisabled && (
+                                            {isClient && isVisible && (
                                                 <div className="absolute inset-0 w-full h-full opacity-30 group-hover/item:opacity-40 -z-10">
                                                     {option.id === "falling-hearts" && <div className="w-full h-full relative overflow-hidden"><FallingHearts count={50} color={watch("heartColor")} /></div>}
                                                     {option.id === "starry-sky" && <div className="w-full h-full relative overflow-hidden"><StarrySky /></div>}
@@ -1074,7 +1047,6 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                                     {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4"/></video>}
                                                 </div>
                                             )}
-                                            {isDisabled && <Lock className="absolute top-2 right-2 w-4 h-4" />}
                                             {option.isFavorite && <Heart className="absolute top-2 left-2 w-4 h-4 text-pink-400 fill-pink-400" />}
                                             <span className="relative z-10">{option.name}</span>
                                         </Label>
@@ -1083,20 +1055,9 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                     return (
                                         <FormItem key={option.id}>
                                             <FormControl>
-                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" disabled={!!isDisabled} />
+                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" />
                                             </FormControl>
-                                            {isDisabled ? (
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>{labelContent}</TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>Exclusivo do Plano Avançado</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            ) : (
-                                                labelContent
-                                            )}
+                                            {labelContent}
                                         </FormItem>
                                     );
                                 })}
@@ -1968,12 +1929,12 @@ function WizardInternal() {
     { id: "message", title: 'Sua Mensagem de Amor', description: 'Escreva a mensagem principal.', fields: ["message", "messageFontSize", "messageFormatting"] },
     { id: "specialDate", title: 'Data Especial', description: 'Informe a data que simboliza o início de tudo.', fields: ["specialDate", "countdownStyle", "countdownColor"] },
     { id: "gallery", title: 'Galeria de Fotos', description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
-    { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"], requiredPlan: 'avancado' },
-    { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"], requiredPlan: 'avancado' },
+    { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"] },
+    { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"] },
     { id: "background", title: 'Animação de Fundo', description: 'Escolha um efeito especial para o fundo.', fields: ["backgroundAnimation", "heartColor"] },
-    { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"], requiredPlan: 'avancado' },
-    { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"], requiredPlan: 'avancado' },
-    { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"], requiredPlan: 'avancado' },
+    { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"] },
+    { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
+    { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"] },
     { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
   ], []);
 
@@ -1985,15 +1946,15 @@ function WizardInternal() {
         title: "Seu Título Aqui",
         message: "Sua mensagem de amor...",
         messageFontSize: "text-base",
-        backgroundAnimation: plan === 'basico' ? 'falling-hearts' : 'none',
+        backgroundAnimation: "falling-hearts",
         galleryStyle: "Coverflow",
         galleryImages: [], 
         timelineEvents: [],
-        enablePuzzle: plan === 'avancado',
-        enableMemoryGame: plan === 'avancado',
-        enableQuiz: plan === 'avancado',
+        enablePuzzle: true,
+        enableMemoryGame: true,
+        enableQuiz: true,
         quizQuestions: [],
-        musicOption: plan === 'basico' ? 'none' : 'none',
+        musicOption: 'none',
         qrCodeDesign: "classic",
     }
   });
@@ -2139,10 +2100,7 @@ function WizardInternal() {
         }
     }
 
-    let nextStepIndex = currentStep + 1;
-    while(nextStepIndex < steps.length && steps[nextStepIndex].requiredPlan && plan !== steps[nextStepIndex].requiredPlan) {
-        nextStepIndex++;
-    }
+    const nextStepIndex = currentStep + 1;
     
     if (steps[nextStepIndex]?.id === 'payment' && user) {
         toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
@@ -2152,11 +2110,8 @@ function WizardInternal() {
     setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
   };
   
-  const handleBack = async () => {
-      let prevStepIndex = currentStep - 1;
-      while(prevStepIndex > 0 && steps[prevStepIndex].requiredPlan && plan !== steps[prevStepIndex].requiredPlan) {
-          prevStepIndex--;
-      }
+  const handleBack = () => {
+      const prevStepIndex = currentStep - 1;
       setCurrentStep(Math.max(0, prevStepIndex));
   };
   
@@ -2193,11 +2148,7 @@ function WizardInternal() {
     if (currentStepId === 'puzzle') {
         props.handleAutosave = handleAutosave;
     }
-    StepComponent = (
-        <PlanLockWrapper requiredPlan={currentStepInfo.requiredPlan}>
-            <Comp {...props} />
-        </PlanLockWrapper>
-    );
+    StepComponent = <Comp {...props} />;
   }
   
   const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
@@ -2304,3 +2255,4 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
     
+
