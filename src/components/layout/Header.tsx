@@ -163,19 +163,16 @@ export default function Header() {
             : "bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm"
         )}
       >
-        <div className="container flex items-center justify-between h-20 px-4 md:px-6">
+        <div className="container flex items-center justify-between h-28 px-4 md:px-6">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <motion.div whileHover={{ scale: 1.04 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={headerLogoUrl}
                 alt="MyCupid Logo"
-                width={400}
-                height={100}
-                className="w-auto h-12 md:h-14 object-contain"
-                data-ai-hint="logo"
-                priority
+                style={{ height: "80px", width: "auto", objectFit: "contain" }}
               />
             </motion.div>
           </Link>

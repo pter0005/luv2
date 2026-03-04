@@ -84,10 +84,8 @@ const cpfMask = (v: string) => {
 };
 
 
-const MAX_GALLERY_IMAGES_BASICO = 6;
-const MAX_GALLERY_IMAGES_AVANCADO = 6;
-const MAX_TIMELINE_IMAGES_BASICO = 20;
-const MAX_TIMELINE_IMAGES_AVANCADO = 20;
+const MAX_GALLERY_IMAGES = 6;
+const MAX_TIMELINE_IMAGES = 20;
 
 
 const paymentSchema = z.object({
@@ -367,7 +365,6 @@ const GalleryStep = React.memo(() => {
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     
-    const MAX_GALLERY_IMAGES = plan === 'avancado' ? MAX_GALLERY_IMAGES_AVANCADO : MAX_GALLERY_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -527,7 +524,6 @@ const TimelineStep = React.memo(() => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const fnsLocale = ptBR;
 
-    const MAX_TIMELINE_IMAGES = plan === 'avancado' ? MAX_TIMELINE_IMAGES_AVANCADO : MAX_TIMELINE_IMAGES_BASICO;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
     
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -2255,4 +2251,5 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
     
+
 

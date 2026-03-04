@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Star, TestTube, Hourglass, DatabaseZap } from 'lucide-react';
+import { Star, TestTube, Hourglass, DatabaseZap, Gamepad2, Puzzle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlanFeature } from '@/components/layout/PlanFeature';
 import { memo } from 'react';
@@ -9,7 +9,7 @@ const PlansSection = () => {
     return (
         <div className="container max-w-5xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Escolha seu plano para testar</h2>
+                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Escolha seu plano</h2>
                 <p className="mt-4 text-base text-muted-foreground">Temos a opção ideal para eternizar seu momento, com a flexibilidade que você precisa.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -18,7 +18,7 @@ const PlansSection = () => {
                         <Star className="w-4 h-4" /> RECOMENDADO
                     </div>
                     <h3 className="text-2xl font-bold text-primary">Plano Avançado</h3>
-                    <p className="text-muted-foreground text-sm mb-4">Todos os recursos liberados para a melhor experiência.</p>
+                    <p className="text-muted-foreground text-sm mb-4">A experiência completa e eterna.</p>
                     <div className="text-center my-6 space-y-1">
                         <div className="flex items-baseline justify-center gap-2">
                             <span className="text-4xl font-bold text-foreground">R$24,90</span>
@@ -27,31 +27,33 @@ const PlansSection = () => {
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text='Galeria de fotos (até 6)' />
-                        <PlanFeature text='Música de fundo' />
-                        <PlanFeature text='Quebra-cabeça Interativo' />
+                        <PlanFeature text='Música de fundo e gravação de voz' />
                         <PlanFeature text='Linha do Tempo 3D (até 20 momentos)' />
+                        <PlanFeature text='Quebra-cabeça Interativo' icon={Puzzle}/>
+                        <PlanFeature text='Jogo da Memória e Quiz do Casal' icon={Gamepad2}/>
                         <PlanFeature text='Página permanente com backup infinito' icon={DatabaseZap} />
                     </ul>
                     <Button asChild size="lg" className="w-full mt-auto">
-                        <Link href="/login?redirect=/criar?plan=avancado&new=true"><TestTube className="mr-2" />Testar Plano Avançado</Link>
+                        <Link href="/login?redirect=/criar?plan=avancado&new=true">Criar com Plano Avançado</Link>
                     </Button>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md border border-border p-8 rounded-2xl flex flex-col">
                     <h3 className="text-2xl font-bold">Plano Econômico</h3>
-                    <p className="text-muted-foreground text-sm mb-4">Ideal para uma surpresa mais direta e emocionante.</p>
+                    <p className="text-muted-foreground text-sm mb-4">Uma surpresa emocionante com prazo definido.</p>
                     <div className="text-center my-6">
                         <p className="text-4xl font-bold text-foreground">R$14,90</p>
                         <p className="text-sm text-muted-foreground">Pagamento único</p>
                     </div>
                     <ul className="space-y-4 mb-10 flex-grow">
                         <PlanFeature text='Galeria de fotos (até 6)' />
-                        <PlanFeature text='Música de fundo' />
-                        <PlanFeature text='Quebra-cabeça Interativo' />
+                        <PlanFeature text='Música de fundo e gravação de voz' />
                         <PlanFeature text='Linha do Tempo 3D (até 20 momentos)' />
+                        <PlanFeature text='Quebra-cabeça Interativo' icon={Puzzle} />
+                        <PlanFeature text='Jogo da Memória e Quiz do Casal' icon={Gamepad2} />
                         <PlanFeature text='Página disponível por 24h' icon={Hourglass} />
                     </ul>
                      <Button asChild size="lg" className="w-full mt-auto" variant="secondary">
-                        <Link href="/login?redirect=/criar?plan=basico&new=true"><TestTube className="mr-2" />Testar Plano Econômico</Link>
+                        <Link href="/login?redirect=/criar?plan=basico&new=true">Criar com Plano Econômico</Link>
                     </Button>
                 </div>
             </div>
