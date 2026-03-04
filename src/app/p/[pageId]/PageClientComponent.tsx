@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -220,9 +219,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         <Image
           src={headerLogoUrl}
           alt="MyCupid Logo"
-          width={224}
-          height={56}
-          className="w-auto h-14 object-contain"
+          width={384}
+          height={96}
+          className="w-auto h-24 object-contain"
           priority
         />
       </header>
@@ -452,7 +451,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   <div className="space-y-2">
                       <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
                           Um Enigma de{' '}
-                          <span className="gradient-text">Amor</span>
+                          <span className="gradient-text">
+                            Amor
+                          </span>
                       </h2>
                       <p className="text-white/70 text-sm max-w-xs mx-auto">
                           Resolva o quebra-cabeça para revelar uma surpresa especial.

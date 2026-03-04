@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -54,9 +53,9 @@ export default function Footer() {
               <Image
                 src={logoUrl}
                 alt="MyCupid Logo"
-                width={224}
-                height={64}
-                className="w-56 h-auto object-contain"
+                width={288}
+                height={82}
+                className="w-72 h-auto object-contain"
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">

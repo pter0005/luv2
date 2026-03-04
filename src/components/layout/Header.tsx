@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -158,9 +157,9 @@ export default function Header() {
               <Image
                   src={headerLogoUrl}
                   alt="MyCupid Logo"
-                  width={224}
-                  height={56}
-                  className="w-auto h-14 object-contain transition-all duration-300"
+                  width={256}
+                  height={64}
+                  className="w-auto h-16 object-contain transition-all duration-300"
                   data-ai-hint="logo"
                   priority
               />
@@ -195,9 +194,9 @@ export default function Header() {
                         <Image
                           src={headerLogoUrl}
                           alt="MyCupid Logo"
-                          width={192}
-                          height={48}
-                          className="w-auto h-12"
+                          width={256}
+                          height={64}
+                          className="w-auto h-16"
                           data-ai-hint="logo"
                         />
                         </SheetTitle>
