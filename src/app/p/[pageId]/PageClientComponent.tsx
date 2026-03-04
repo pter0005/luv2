@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -230,12 +229,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       </header>
       
       <div className="fixed inset-0 w-full h-full z-0 pointer-events-none translate-z-0">
-        {pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
-        {pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
-        {pageData.backgroundAnimation === 'nebula' && <NebulaBackground />}
-        {pageData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
-        {pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
-        {pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'nebula' && <NebulaBackground />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
       </div>
 
       <motion.main 
@@ -325,7 +324,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   songName={pageData.songName}
                   artistName={pageData.artistName}
                   volume={0.6}
-                  autoplay={puzzleRevealed}
                 />
              )}
              

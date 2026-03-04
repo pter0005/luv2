@@ -37,7 +37,7 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
   const [hasWindow, setHasWindow] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(() => !!autoplay);
+  const [isMuted, setIsMuted] = useState(true); // Always start muted for autoplay to work
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
@@ -50,12 +50,6 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
       setHasWindow(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (autoplay && isReady) {
-      setIsPlaying(true);
-    }
-  }, [autoplay, isReady]);
 
   useImperativeHandle(ref, () => ({
     play: () => {
@@ -75,7 +69,7 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
   };
   
   const handleManualPlayPause = () => {
-    setIsMuted(false);
+    setIsMuted(false); // Unmute on first manual interaction
     setIsPlaying(!isPlaying);
   };
 
