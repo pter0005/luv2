@@ -281,7 +281,6 @@ const translations = {
     'wizard.steps.8.title': 'Quebra-Cabeça Interativo',
     'wizard.steps.8.description': 'Um desafio antes de revelar a surpresa!',
     'wizard.steps.memory.title': 'Jogo da Memória',
-    'wizard.steps.memory.description': 'Crie um jogo de memória divertido com suas fotos.',
     'wizard.steps.quiz.title': 'Quiz do Casal',
     'wizard.steps.quiz.description': 'Crie um quiz divertido sobre vocês.',
     'wizard.steps.9.title': 'Finalizar',
@@ -357,7 +356,7 @@ const translations = {
     'wizard.puzzle.image.processing': 'Processando...',
     'wizard.puzzle.image.remove': 'Remover Imagem',
     'wizard.memory.enable': 'Ativar Jogo da Memória',
-    'wizard.memory.description': 'Adicione um jogo de memória divertido com suas fotos.',
+    'wizard.memory.description': 'Crie um jogo de memória divertido com suas fotos.',
     'wizard.memory.upload': 'Adicionar fotos para o jogo',
     'wizard.memory.image.label': 'Imagens para o Jogo da Memória',
     'wizard.memory.image.description': 'Adicione de 2 a 8 fotos para o jogo.',
@@ -449,30 +448,30 @@ const translations = {
     'cookie.description': 'Estes cookies não vão quebrar sua dieta. Eles apenas melhoram seu tempo. Nós os usamos para garantir a melhor experiência em nosso site.',
     'cookie.privacyLink': 'Leia nossa política de privacidade.',
     'cookie.manage': 'Gerenciar preferências',
-    'cookie.accept': 'Aceitar',
-    'payment.success.title': 'Pagamento Efetuado com Sucesso!',
-    'payment.success.description': 'Seu pagamento foi processado. Sua página de amor está sendo criada e aparecerá em "Minhas Páginas" em breve. O webhook está processando em segundo plano.',
-    'payment.success.cta': 'Ir para Minhas Páginas',
-    'payment.canceled.title': 'Pagamento Cancelado',
-    'payment.canceled.description': 'Seu pagamento não foi concluído. Você pode voltar e tentar novamente.',
-    'payment.canceled.cta': 'Voltar para o Criador de Páginas',
-    'creating.page.ready.title': 'Sua página está pronta!',
-    'creating.page.ready.description': 'O pagamento foi confirmado e sua surpresa foi criada com sucesso.',
-    'creating.page.ready.cta.view': 'Ver minha página',
-    'creating.page.ready.cta.myPages': 'Ir para Minhas Páginas',
-    'creating.page.finalizing.title': 'Finalizando sua página...',
-    'creating.page.finalizing.description': 'Recebemos a aprovação do seu pagamento e estamos preparando tudo. Isso pode levar alguns momentos.',
-    'creating.page.finalizing.tip': 'Você pode esperar ou voltar para o site.',
-    'creating.page.finalizing.cta.myPages': 'Ir para Minhas Páginas',
-    'memorygame.header': 'Jogo da Memória',
-    'memorygame.description': 'Encontre todos os pares de fotos de vocês! 💜',
-    'memorygame.progress': 'Progresso',
+    'cookie.accept': 'Aceptar',
+    'payment.success.title': '¡Pago Realizado con Éxito!',
+    'payment.success.description': 'Tu pago ha sido procesado. Tu página de amor se está creando y aparecerá en "Mis Páginas" en breve. El webhook se está procesando en segundo plano.',
+    'payment.success.cta': 'Ir a Mis Páginas',
+    'payment.canceled.title': 'Pago Cancelado',
+    'payment.canceled.description': 'Tu pago no fue completado. Puedes volver e intentarlo de nuevo.',
+    'payment.canceled.cta': 'Volver al Creador de Páginas',
+    'creating.page.ready.title': '¡Tu página está lista!',
+    'creating.page.ready.description': 'El pago ha sido confirmado y tu sorpresa ha sido creada con éxito.',
+    'creating.page.ready.cta.view': 'Ver mi página',
+    'creating.page.ready.cta.myPages': 'Ir a Mis Páginas',
+    'creating.page.finalizing.title': 'Finalizando tu página...',
+    'creating.page.finalizing.description': 'Hemos recibido la aprobación de tu pago y estamos preparando todo. Esto puede tomar unos momentos.',
+    'creating.page.finalizing.tip': 'Puedes esperar o volver al sitio.',
+    'creating.page.finalizing.cta.myPages': 'Ir a Mis Páginas',
+    'memorygame.header': 'Juego de Memoria',
+    'memorygame.description': '¡Encuentra todos los pares de fotos de ustedes! 💜',
+    'memorygame.progress': 'Progreso',
     'memorygame.pairs': 'pares',
-    'memorygame.shuffle': 'Embaralhar',
-    'memorygame.win.title': 'Parabéns!',
-    'memorygame.win.description': 'Você encontrou todos os pares!',
-    'memorygame.win.perfect': 'O amor de vocês é perfeito assim 🌸',
-    'memorygame.win.playAgain': 'Jogar Novamente',
+    'memorygame.shuffle': 'Barajar',
+    'memorygame.win.title': '¡Felicitaciones!',
+    'memorygame.win.description': '¡Encontraste todos los pares!',
+    'memorygame.win.perfect': 'Su amor es perfecto así 🌸',
+    'memorygame.win.playAgain': 'Jugar de Nuevo',
     'memorygame.reset': 'Reiniciar',
   },
 };
@@ -492,7 +491,7 @@ export const LanguageProvider = ({ children, initialLocale = 'pt' }: { children:
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
   const t = useCallback((key: TranslationKey, vars?: Record<string, string | number>) => {
-    let translation: string = (translations[locale] as any)?.[key] || (translations['en'] as any)?.[key] || key;
+    let translation = (translations[locale] as any)?.[key] || (translations['en'] as any)?.[key] || key;
     if (vars) {
       Object.keys(vars).forEach(varKey => {
         const regex = new RegExp(`\\{${varKey}\\}`, 'g');
@@ -518,127 +517,3 @@ export const useTranslation = () => {
   }
   return context;
 };
-```
-I am still seeing the error. Can you please fix it?
-Failed to compile.
-10:25:06 AM: 
-10:25:06 AM: ./src/lib/i18n.tsx:955:75
-10:25:06 AM: Type error: Property 'en' does not exist on type '{ pt: { 'metadata.title': string; 'metadata.description': string; 'nav.recursos': string; 'nav.planos': string; 'nav.avaliacoes': string; 'nav.comoFunciona': string; 'user.myAccount': string; 'user.myPages': string; ... 462 more ...; 'memorygame.reset': string; }; es: { ...; }; }'.
-10:25:06 AM:   953 |
-10:25:06 AM:   954 | type Locale = 'pt' | 'en' | 'es';
-10:25:06 AM: > 955 | type TranslationKey = keyof (typeof translations.pt & typeof translations.en & typeof translations.es);
-10:25:06 AM:       |                                                                           ^
-10:25:06 AM:   956 |
-10:25:06 AM:   957 | interface LanguageContextType {
-10:25:06 AM:   958 |   locale: Locale;
-10:25:06 AM: Next.js build worker exited with code: 1 and signal: null
-10:25:06 AM: ​
-10:25:06 AM: "build.command" failed                                        
-10:25:06 AM: ────────────────────────────────────────────────────────────────
-10:25:06 AM: ​
-10:25:06 AM:   Error message
-10:25:06 AM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
-10:25:06 AM: ​
-10:25:06 AM:   Error location
-10:25:06 AM:   In build.command from netlify.toml:
-10:25:06 AM:   npm run build
-10:25:06 AM: ​
-10:25:06 AM:   Resolved config
-10:25:06 AM:   build:
-10:25:06 AM:     command: npm run build
-10:25:06 AM:     commandOrigin: config
-10:25:06 AM:     environment:
-10:25:06 AM:       - ADMIN_JWT_SECRET
-10:25:06 AM:       - ADMIN_PASS
-10:25:06 AM:       - ADMIN_USER
-10:25:06 AM:       - FIREBASE_CLIENT_EMAIL
-10:25:06 AM:       - FIREBASE_PRIVATE_KEY
-10:25:06 AM:       - FIREBASE_PROJECT_ID
-10:25:06 AM:       - GEMINI_API_KEY
-10:25:06 AM:       - MERCADO_PAGO_ACCESS_TOKEN
-10:25:06 AM:       - MERCADO_PAGO_WEBHOOK_SECRET
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_API_KEY
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_APP_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_PROJECT_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-10:25:06 AM:       - NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
-10:25:06 AM:       - NEXT_PUBLIC_PAYPAL_CLIENT_ID
-10:25:06 AM:       - NEXT_PUBLIC_SITE_URL
-10:25:06 AM:       - PAYPAL_CLIENT_SECRET
-10:25:06 AM:       - PAYPAL_WEBHOOK_ID
-10:25:06 AM:       - STRIPE_PUBLISHABLE_KEY
-10:25:06 AM:       - STRIPE_SECRET_KEY
-10:25:06 AM:       - STRIPE_WEBHOOK_SECRET
-10:25:06 AM:     publish: /opt/build/repo/.next
-10:25:06 AM:     publishOrigin: config
-10:25:06 AM:   plugins:
-10:25:06 AM:     - inputs: {}
-10:25:06 AM:       origin: config
-10:25:06 AM:       package: "@netlify/plugin-nextjs"
-10:25:07 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
-10:25:07 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
-10:25:07 AM: Failing build: Failed to build site
-10:25:07 AM: Finished processing build request in 43.031sI am still seeing the error. Can you please fix it?
-Failed to compile.
-10:25:06 AM: 
-10:25:06 AM: ./src/lib/i18n.tsx:955:75
-10:25:06 AM: Type error: Property 'en' does not exist on type '{ pt: { 'metadata.title': string; 'metadata.description': string; 'nav.recursos': string; 'nav.planos': string; 'nav.avaliacoes': string; 'nav.comoFunciona': string; 'user.myAccount': string; 'user.myPages': string; ... 462 more ...; 'memorygame.reset': string; }; es: { ...; }; }'.
-10:25:06 AM:   953 |
-10:25:06 AM:   954 | type Locale = 'pt' | 'en' | 'es';
-10:25:06 AM: > 955 | type TranslationKey = keyof (typeof translations.pt & typeof translations.en & typeof translations.es);
-10:25:06 AM:       |                                                                           ^
-10:25:06 AM:   956 |
-10:25:06 AM:   957 | interface LanguageContextType {
-10:25:06 AM:   958 |   locale: Locale;
-10:25:06 AM: Next.js build worker exited with code: 1 and signal: null
-10:25:06 AM: ​
-10:25:06 AM: "build.command" failed                                        
-10:25:06 AM: ────────────────────────────────────────────────────────────────
-10:25:06 AM: ​
-10:25:06 AM:   Error message
-10:25:06 AM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
-10:25:06 AM: ​
-10:25:06 AM:   Error location
-10:25:06 AM:   In build.command from netlify.toml:
-10:25:06 AM:   npm run build
-10:25:06 AM: ​
-10:25:06 AM:   Resolved config
-10:25:06 AM:   build:
-10:25:06 AM:     command: npm run build
-10:25:06 AM:     commandOrigin: config
-10:25:06 AM:     environment:
-10:25:06 AM:       - ADMIN_JWT_SECRET
-10:25:06 AM:       - ADMIN_PASS
-10:25:06 AM:       - ADMIN_USER
-10:25:06 AM:       - FIREBASE_CLIENT_EMAIL
-10:25:06 AM:       - FIREBASE_PRIVATE_KEY
-10:25:06 AM:       - FIREBASE_PROJECT_ID
-10:25:06 AM:       - GEMINI_API_KEY
-10:25:06 AM:       - MERCADO_PAGO_ACCESS_TOKEN
-10:25:06 AM:       - MERCADO_PAGO_WEBHOOK_SECRET
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_API_KEY
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_APP_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_PROJECT_ID
-10:25:06 AM:       - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-10:25:06 AM:       - NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY
-10:25:06 AM:       - NEXT_PUBLIC_PAYPAL_CLIENT_ID
-10:25:06 AM:       - NEXT_PUBLIC_SITE_URL
-10:25:06 AM:       - PAYPAL_CLIENT_SECRET
-10:25:06 AM:       - PAYPAL_WEBHOOK_ID
-10:25:06 AM:       - STRIPE_PUBLISHABLE_KEY
-10:25:06 AM:       - STRIPE_SECRET_KEY
-10:25:06 AM:       - STRIPE_WEBHOOK_SECRET
-10:25:06 AM:     publish: /opt/build/repo/.next
-10:25:06 AM:     publishOrigin: config
-10:25:06 AM:   plugins:
-10:25:06 AM:     - inputs: {}
-10:25:06 AM:       origin: config
-10:25:06 AM:       package: "@netlify/plugin-nextjs"
-10:25:07 AM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
-10:25:07 AM: Build failed due to a user error: Build script returned non-zero exit code: 2
-10:25:07 AM: Failing build: Failed to build site
-10:25:07 AM: Finished processing build request in 43.031s
