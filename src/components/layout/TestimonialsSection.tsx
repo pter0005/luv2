@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -9,11 +8,11 @@ import { Star } from 'lucide-react';
 
 // Avatares reais dos depoimentos — mesmos do TestimonialsMarquee
 const AVATAR_URLS = [
-  "https://i.imgur.com/wVfQ3Nq.jpg",
-  "https://i.imgur.com/iHhG0L3.jpg",
-  "https://i.imgur.com/zV5V76E.jpg",
-  "https://i.imgur.com/4xP4k8L.jpg",
-  "https://i.imgur.com/v8f9HGr.jpg",
+  "https://i.imgur.com/YnmbwMB.png",
+  "https://i.imgur.com/DKzAqTc.png",
+  "https://i.imgur.com/6EWde45.png",
+  "https://i.imgur.com/kKN8SLq.png",
+  "https://i.imgur.com/NHVZplW.png",
 ];
 
 const TestimonialsSection = () => {
