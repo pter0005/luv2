@@ -528,8 +528,6 @@ const TimelineStep = React.memo(() => {
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
 
-        // FIX ①: feedback explícito quando storage/user não estão prontos
-        // O código original retornava silenciosamente — o usuário clicava e nada acontecia
         if (!user) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
@@ -550,37 +548,18 @@ const TimelineStep = React.memo(() => {
 
         try {
             const uploadPromises = filesToUpload.map(async (file) => {
-                // FIX ②: compressão de volta para evitar timeout em arquivos grandes
-                // O código original tinha "Remove compression for original quality"
-                // mas sem compressão arquivos acima de 5MB causam timeout no Firebase
                 const compressedFile = await compressImage(file, 1280, 0.85);
                 return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
 
             const uploadedFiles = await Promise.all(uploadPromises);
 
-            // FIX ③: removido o campo "id" manual do evento.
-            // PROBLEMA ORIGINAL: o código passava id: new Date().getTime().toString() + Math.random()
-            // O RHF (react-hook-form) useFieldArray gerencia seus próprios IDs internamente.
-            // Passar um id manual pode causar conflito silencioso onde o campo é registrado
-            // pelo RHF com um id diferente do que foi passado, fazendo o display não encontrar
-            // o campo correto no array e a imagem "sumir" mesmo após o append.
-            //
-            // FIX ④: "date" como undefined (não new Date()).
-            // O mode:'onChange' do RHF revalida todos os campos na hora do append.
-            // new Date() é tecnicamente válido para z.date(), MAS em alguns edge cases
-            // a revalidação pode forçar um re-render que reseta o campo antes do display
-            // conseguir ler o valor. Undefined é mais seguro para campos opcionais.
             const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
-                image: fileData,        // { url, path } — FileWithPreview
-                description: '',        // string vazia OK para z.string().optional()
-                date: undefined,        // FIX: undefined, não new Date()
-                // SEM "id" aqui — deixa o RHF gerenciar
+                image: fileData,
+                description: '',
+                date: undefined,
             }));
 
-            // FIX ⑤: append tipado corretamente sem "as any"
-            // "as any" escondia que o tipo passado era incompatível.
-            // Agora o TypeScript valida a estrutura antes do append.
             append(newEvents);
 
             toast({
@@ -603,14 +582,12 @@ const TimelineStep = React.memo(() => {
             });
         } finally {
             setIsUploading(false);
-            // Limpa o input para permitir re-upload do mesmo arquivo
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
     const handleRemove = (index: number) => {
         const eventToRemove = fields[index];
-        // Tenta deletar do Storage sem bloquear a UI
         if ((eventToRemove as any).image?.path && storage) {
             const imageRef = storageRef(storage, (eventToRemove as any).image.path);
             deleteObject(imageRef).catch(err =>
@@ -638,7 +615,6 @@ const TimelineStep = React.memo(() => {
                 Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.
             </p>
 
-            {/* Lista de eventos */}
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.length === 0 && !isUploading && (
                     <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
@@ -649,9 +625,6 @@ const TimelineStep = React.memo(() => {
                 )}
 
                 {fields.map((field, index) => {
-                    // FIX ⑥: acessar image.url de forma segura
-                    // O código original usava "(field as any).image && (field as any).image.url"
-                    // que podia retornar o objeto inteiro como truthy sem ter a .url string
                     const imageUrl: string | undefined = (field as any)?.image?.url;
 
                     return (
@@ -659,7 +632,6 @@ const TimelineStep = React.memo(() => {
                             key={field.id}
                             className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative"
                         >
-                            {/* Thumbnail */}
                             <div className="flex-shrink-0">
                                 <div
                                     className={cn(
@@ -668,10 +640,6 @@ const TimelineStep = React.memo(() => {
                                     )}
                                 >
                                     {imageUrl ? (
-                                        // FIX ⑦: <img> nativa em vez de Next <Image> aqui
-                                        // Next Image com width/height fixo dentro de um container
-                                        // relative precisa de "fill" ou "layout=fixed".
-                                        // Usar <img> nativa é mais simples e sem overhead aqui.
                                         <img
                                             src={imageUrl}
                                             alt={`Momento ${index + 1}`}
@@ -684,7 +652,6 @@ const TimelineStep = React.memo(() => {
                                 </div>
                             </div>
 
-                            {/* Campos de edição */}
                             <div className="flex-grow space-y-2">
                                 <FormField
                                     control={control}
@@ -747,7 +714,6 @@ const TimelineStep = React.memo(() => {
                                 />
                             </div>
 
-                            {/* Botão remover */}
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -762,7 +728,6 @@ const TimelineStep = React.memo(() => {
                 })}
             </div>
 
-            {/* Botão de upload */}
             <FormControl>
                 <label
                     htmlFor="timeline-images-upload"
@@ -1997,7 +1962,7 @@ function WizardInternal() {
   const { user, isUserLoading } = useUser();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const [pageId, setPageId] = useState<string | null>(null);
+  const [pageId, setPageId] = useState<string | null>(pageId);
   
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
@@ -2028,7 +1993,7 @@ function WizardInternal() {
         title: "Seu Título Aqui",
         message: "Sua mensagem de amor...",
         messageFontSize: "text-base",
-        backgroundAnimation: "falling-hearts",
+        backgroundAnimation: "none",
         galleryStyle: "Coverflow",
         galleryImages: [], 
         timelineEvents: [],
@@ -2340,3 +2305,6 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
 
+
+
+    
