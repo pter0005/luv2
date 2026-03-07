@@ -688,23 +688,30 @@ const TimelineStep = React.memo(() => {
             </div>
 
             <FormControl>
-              <Input
-                id="timeline-images-upload"
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={handleBulkImageUpload}
-                disabled={isLimitReached || isUploading}
-                ref={fileInputRef}
-              />
+              <label
+                htmlFor="timeline-images-upload"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "w-full",
+                  (isLimitReached || isUploading)
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
+                )}
+              >
+                <Input
+                  id="timeline-images-upload"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleBulkImageUpload}
+                  disabled={isLimitReached || isUploading}
+                  ref={fileInputRef}
+                />
+                {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
+                {isUploading ? 'Enviando...' : 'Adicionar Fotos para a Linha do Tempo'}
+              </label>
             </FormControl>
-            <Button asChild size="lg" className="w-full" disabled={isLimitReached || isUploading}>
-                <label htmlFor="timeline-images-upload" className={cn("cursor-pointer", (isLimitReached || isUploading) && "cursor-not-allowed")}>
-                    {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
-                    {isUploading ? 'Enviando...' : 'Adicionar Fotos para a Linha do Tempo'}
-                </label>
-            </Button>
         </div>
     );
 });
@@ -2252,6 +2259,5 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
     
-
 
 
