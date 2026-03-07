@@ -9,11 +9,11 @@ import { Star } from 'lucide-react';
 
 // Avatares reais dos depoimentos — mesmos do TestimonialsMarquee
 const AVATAR_URLS = [
-  "https://i.imgur.com/cCguFSg.png",
-  "https://i.imgur.com/FaY4ns0.png",
-  "https://i.imgur.com/qhAqK7e.png",
-  "https://i.imgur.com/cNpWi4g.png",
-  "https://i.imgur.com/07VjZa7.png",
+  "https://i.imgur.com/wVfQ3Nq.jpg",
+  "https://i.imgur.com/iHhG0L3.jpg",
+  "https://i.imgur.com/zV5V76E.jpg",
+  "https://i.imgur.com/4xP4k8L.jpg",
+  "https://i.imgur.com/v8f9HGr.jpg",
 ];
 
 const TestimonialsSection = () => {
