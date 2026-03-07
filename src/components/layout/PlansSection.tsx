@@ -204,7 +204,7 @@ function EconomicCard() {
           <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" included />
           <PlanFeature text="Quebra-cabeça Interativo" icon={Puzzle} included />
           <PlanFeature text="Jogo da Memória + Quiz do Casal" icon={Gamepad2} included />
-          <PlanFeature text="Página disponível por apenas 12h" icon={Hourglass} included={false} />
+          <PlanFeature text="Página disponível por apenas 25h" icon={Hourglass} included={false} />
           <PlanFeature text="Página permanente + backup infinito" icon={DatabaseZap} included={false} />
         </ul>
 
@@ -213,7 +213,7 @@ function EconomicCard() {
           style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
           <Hourglass className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-yellow-300/70 leading-relaxed">
-            Atenção: a página expira após 12h do envio. Sem possibilidade de recuperação depois disso.
+            Atenção: a página expira após 25h do envio. Sem possibilidade de recuperação depois disso.
           </p>
         </div>
 

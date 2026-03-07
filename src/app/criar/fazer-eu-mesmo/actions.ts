@@ -272,7 +272,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
 
         // Set an expiry date ONLY if the plan is 'basico' AND it's a regular user payment.
         if (finalData.plan === 'basico' && !isAdminFinalization) {
-            finalData.expireAt = Timestamp.fromMillis(Date.now() + 12 * 60 * 60 * 1000); // 12 hours TTL
+            finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000); // 25 hours TTL
         }
 
         await db.collection('lovepages').doc(newPageId).set(finalData);
