@@ -72,23 +72,19 @@ const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     loading: () => <Skeleton className="w-full aspect-square" />
 });
 
-
 const Timeline = dynamic(() => import('./Timeline'), { ssr: false });
 
 const cpfMask = (v: string) => {
-    v = v.replace(/\D/g, ""); // Remove tudo que não é número
-    if (v.length > 11) v = v.slice(0, 11); // Limita aos 11 dígitos do CPF
-    
+    v = v.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
     return v
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 };
 
-
 const MAX_GALLERY_IMAGES = 6;
 const MAX_TIMELINE_IMAGES = 20;
-
 
 const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
@@ -102,7 +98,6 @@ export const fileWithPreviewSchema = z.object({
     path: z.string(),
 });
 export type FileWithPreview = z.infer<typeof fileWithPreviewSchema>;
-
 
 export const timelineEventSchema = z.object({
     id: z.string().optional(),
@@ -122,8 +117,6 @@ const quizQuestionSchema = z.object({
   correctAnswerIndex: z.number({ required_error: "Selecione a resposta correta." }).nullable(),
 });
 
-
-// Esquema do formulário completo
 const pageSchema = z.object({
   plan: z.string().default('avancado'),
   intentId: z.string().optional(),
@@ -158,10 +151,12 @@ const pageSchema = z.object({
   payment: paymentSchema.optional(),
 });
 
-
 export type PageData = z.infer<typeof pageSchema>;
 
-// Componentes de Passo simplificados para o Wizard
+// ─────────────────────────────────────────────
+// STEP COMPONENTS
+// ─────────────────────────────────────────────
+
 const TitleStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     return (
@@ -212,7 +207,6 @@ const MessageStep = React.memo(() => {
 });
 MessageStep.displayName = 'MessageStep';
 
-
 const SpecialDateStep = React.memo(() => {
   const { control, setValue, watch } = useFormContext<PageData>();
   const countdownStyle = watch("countdownStyle");
@@ -221,7 +215,6 @@ const SpecialDateStep = React.memo(() => {
 
   return (
     <div className="space-y-12">
-      {/* Calendar Section */}
       <div className="space-y-4">
         <FormLabel>Início do relacionamento</FormLabel>
         <FormField
@@ -248,7 +241,6 @@ const SpecialDateStep = React.memo(() => {
         </FormDescription>
       </div>
 
-      {/* Countdown Style Section */}
       <div className="space-y-4">
         <FormLabel>Modo de Exibição do Contador</FormLabel>
         <FormField
@@ -293,7 +285,6 @@ const SpecialDateStep = React.memo(() => {
         />
       </div>
 
-      {/* Countdown Color Section */}
       <div className="space-y-4">
         <FormLabel>Cor do Contador</FormLabel>
         <FormField
@@ -329,47 +320,37 @@ const SpecialDateStep = React.memo(() => {
 });
 SpecialDateStep.displayName = 'SpecialDateStep';
 
-// Helper function to upload a file to Firebase Storage
+// Helper: upload a file to Firebase Storage
 const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
     if (!userId) throw new Error("Usuário não identificado para upload.");
-
     const timestamp = Date.now();
-    // Limpa o nome do arquivo para evitar caracteres estranhos
     const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
     const fileName = `${timestamp}-${safeName}`;
-    
-    // O SEGREDO ESTÁ AQUI: O caminho TEM que começar com temp/{userId}
-    // Exemplo final: temp/12345/gallery/foto.jpg
     const fullPath = `temp/${userId}/${folderName}/${fileName}`;
     const fileRef = storageRef(storage, fullPath);
-
     try {
         await uploadBytes(fileRef, file);
         const downloadURL = await getDownloadURL(fileRef);
         return { url: downloadURL, path: fullPath };
     } catch (error: any) {
         console.error("Erro detalhado no upload:", error);
-        // Se der erro aqui, é certeza que a regra do Storage bloqueou ou o caminho tá errado
         throw error;
     }
 };
 
-
+// ─────────────────────────────────────────────
+// GALLERY STEP
+// ─────────────────────────────────────────────
 const GalleryStep = React.memo(() => {
     const { control, formState: { errors } } = useFormContext<PageData>();
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "galleryImages",
-    });
+    const { fields, append, remove } = useFieldArray({ control, name: "galleryImages" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
-    
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
-
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -378,19 +359,15 @@ const GalleryStep = React.memo(() => {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
         }
-
         const availableSlots = MAX_GALLERY_IMAGES - fields.length;
         if (availableSlots <= 0) return;
-
         const filesArray = Array.from(event.target.files).slice(0, availableSlots);
         setIsUploading(true);
-        
         try {
             const uploadPromises = filesArray.map(async file => {
                 const compressedFile = await compressImage(file, 1280, 0.9);
                 return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
-
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
             toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
@@ -420,11 +397,10 @@ const GalleryStep = React.memo(() => {
         }
         remove(index);
     };
-    
+
     return (
         <div className="space-y-8">
             <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType='fotos na galeria' />
-            
             <div className="space-y-2">
                 <FormLabel>Suas Fotos para a galeria</FormLabel>
                 <FormControl>
@@ -453,7 +429,6 @@ const GalleryStep = React.memo(() => {
                         />
                     </label>
                 </FormControl>
-                
                 {fields && fields.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
                         {fields.map((field, index) => (
@@ -478,7 +453,6 @@ const GalleryStep = React.memo(() => {
                     </div>
                 )}
             </div>
-
             <div className="space-y-4 pt-6 border-t">
                 <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
                 <FormField
@@ -518,24 +492,21 @@ const GalleryStep = React.memo(() => {
 });
 GalleryStep.displayName = 'GalleryStep';
 
+// ─────────────────────────────────────────────
+// TIMELINE STEP
+// ─────────────────────────────────────────────
 const TimelineStep = React.memo(() => {
-    const { control, formState: { errors }, getValues, setValue } = useFormContext<PageData>();
-    const { fields, remove, append } = useFieldArray({
-        control,
-        name: "timelineEvents",
-    });
-
+    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { fields, remove, append } = useFieldArray({ control, name: "timelineEvents" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const fnsLocale = ptBR;
-
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
 
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
-
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -544,37 +515,30 @@ const TimelineStep = React.memo(() => {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
         }
-
         const availableSlots = MAX_TIMELINE_IMAGES - fields.length;
         if (availableSlots <= 0) {
             toast({ variant: 'destructive', title: 'Limite Excedido', description: `Você já atingiu o limite de ${MAX_TIMELINE_IMAGES} momentos.` });
             return;
         }
-
         const filesToUpload = Array.from(event.target.files).slice(0, availableSlots);
         setIsUploading(true);
-
         try {
             const uploadPromises = filesToUpload.map(async (file) => {
                 const compressedFile = await compressImage(file, 1280, 0.85);
                 return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
-
             const uploadedFiles = await Promise.all(uploadPromises);
-
+            // FIX: sem id manual — useFieldArray gerencia IDs sozinho
             const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
                 image: fileData,
                 description: '',
                 date: undefined,
             }));
-
             append(newEvents);
-
             toast({
                 title: `${uploadedFiles.length} foto${uploadedFiles.length > 1 ? 's' : ''} adicionada${uploadedFiles.length > 1 ? 's' : ''}!`,
                 description: 'Adicione uma descrição e data para cada momento.',
             });
-
         } catch (error: any) {
             console.error("Erro no upload da timeline:", error);
             const errorCode = error instanceof FirebaseError ? error.code : (error?.message || 'unknown');
@@ -598,31 +562,20 @@ const TimelineStep = React.memo(() => {
         const eventToRemove = fields[index];
         if ((eventToRemove as any).image?.path && storage) {
             const imageRef = storageRef(storage, (eventToRemove as any).image.path);
-            deleteObject(imageRef).catch(err =>
-                console.error("Erro ao deletar imagem do storage:", err)
-            );
+            deleteObject(imageRef).catch(err => console.error("Erro ao deletar imagem do storage:", err));
         }
         remove(index);
     };
 
     return (
         <div className="space-y-6">
-            <ImageLimitWarning
-                currentCount={fields.length}
-                limit={MAX_TIMELINE_IMAGES}
-                itemType="momentos na linha do tempo"
-            />
-
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType="momentos na linha do tempo" />
             {errors.timelineEvents?.root && (
-                <p className="text-sm font-medium text-destructive">
-                    {errors.timelineEvents.root.message}
-                </p>
+                <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
             )}
-
             <p className="text-sm text-muted-foreground">
                 Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.
             </p>
-
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
                 {fields.length === 0 && !isUploading && (
                     <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
@@ -631,35 +584,22 @@ const TimelineStep = React.memo(() => {
                         <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
                     </div>
                 )}
-
                 {fields.map((field, index) => {
                     const imageUrl: string | undefined = (field as any)?.image?.url;
-
                     return (
-                        <Card
-                            key={field.id}
-                            className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative"
-                        >
+                        <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
                             <div className="flex-shrink-0">
-                                <div
-                                    className={cn(
-                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center overflow-hidden relative bg-background",
-                                        imageUrl && "border-solid border-primary/30"
-                                    )}
-                                >
+                                <div className={cn(
+                                    "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center overflow-hidden relative bg-background",
+                                    imageUrl && "border-solid border-primary/30"
+                                )}>
                                     {imageUrl ? (
-                                        <img
-                                            src={imageUrl}
-                                            alt={`Momento ${index + 1}`}
-                                            className="w-full h-full object-cover rounded-md"
-                                            loading="lazy"
-                                        />
+                                        <img src={imageUrl} alt={`Momento ${index + 1}`} className="w-full h-full object-cover rounded-md" loading="lazy" />
                                     ) : (
                                         <Camera className="w-6 h-6 text-muted-foreground" />
                                     )}
                                 </div>
                             </div>
-
                             <div className="flex-grow space-y-2">
                                 <FormField
                                     control={control}
@@ -667,11 +607,7 @@ const TimelineStep = React.memo(() => {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormControl>
-                                                <Textarea
-                                                    {...field}
-                                                    placeholder="Descreva este momento..."
-                                                    className="bg-background min-h-[50px] sm:min-h-[80px]"
-                                                />
+                                                <Textarea {...field} placeholder="Descreva este momento..." className="bg-background min-h-[50px] sm:min-h-[80px]" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -687,10 +623,7 @@ const TimelineStep = React.memo(() => {
                                                     <FormControl>
                                                         <Button
                                                             variant="outline"
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
+                                                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                                                         >
                                                             {field.value
                                                                 ? format(new Date(field.value), "PPP", { locale: fnsLocale })
@@ -705,9 +638,7 @@ const TimelineStep = React.memo(() => {
                                                         mode="single"
                                                         selected={field.value ? new Date(field.value) : undefined}
                                                         onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            date > new Date() || date < new Date("1900-01-01")
-                                                        }
+                                                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                                         initialFocus
                                                         locale={fnsLocale}
                                                         captionLayout="dropdown-buttons"
@@ -721,7 +652,6 @@ const TimelineStep = React.memo(() => {
                                     )}
                                 />
                             </div>
-
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -735,16 +665,13 @@ const TimelineStep = React.memo(() => {
                     );
                 })}
             </div>
-
             <FormControl>
                 <label
                     htmlFor="timeline-images-upload"
                     className={cn(
                         buttonVariants({ size: "lg" }),
                         "w-full",
-                        isLimitReached || isUploading
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer"
+                        isLimitReached || isUploading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                     )}
                 >
                     <input
@@ -768,6 +695,9 @@ const TimelineStep = React.memo(() => {
 });
 TimelineStep.displayName = 'TimelineStep';
 
+// ─────────────────────────────────────────────
+// MUSIC STEP
+// ─────────────────────────────────────────────
 const MusicStep = React.memo(() => {
     const { control, setValue, getValues } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
@@ -777,25 +707,18 @@ const MusicStep = React.memo(() => {
     const [isSearching, startSearchTransition] = useTransition();
     const [showManualLinkInput, setShowManualLinkInput] = useState(false);
     const manualLinkInputRef = useRef<HTMLInputElement>(null);
-    
-    // Audio recording state
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'recorded' | 'uploading'>('idle');
     const audioRecording = useWatch({ control, name: "audioRecording" });
 
-
     const handleSearchMusic = () => {
         const sName = getValues("songName");
         const aName = getValues("artistName");
         if (!sName) {
-            toast({
-                variant: "destructive",
-                title: 'O nome da música é obrigatório',
-            });
+            toast({ variant: "destructive", title: 'O nome da música é obrigatório' });
             return;
         }
-    
         startSearchTransition(async () => {
             try {
                 const result = await findYoutubeVideo({ songName: sName, artistName: aName || '' });
@@ -803,252 +726,182 @@ const MusicStep = React.memo(() => {
                     setValue("youtubeUrl", result.url, { shouldDirty: true });
                     toast({ title: 'Música conectada!', description: 'Sua música foi encontrada no YouTube.' });
                 }
-            } catch (e: any) { 
-                toast({ 
-                    variant: "destructive", 
-                    title: 'Erro na Busca',
-                    description: e.message || 'Não foi possível encontrar um vídeo.'
-                }); 
+            } catch (e: any) {
+                toast({ variant: "destructive", title: 'Erro na Busca', description: e.message || 'Não foi possível encontrar um vídeo.' });
             }
         });
     };
-    
+
     const handleSetManualLink = () => {
-      const manualUrl = manualLinkInputRef.current?.value;
-      if (manualUrl && manualUrl.startsWith("http")) {
-        setValue("youtubeUrl", manualUrl, { shouldDirty: true, shouldValidate: true });
-         toast({
-            title: 'Link adicionado!',
-            description: 'A música do link foi adicionada.',
-         });
-      } else {
-         toast({
-            variant: "destructive",
-            title: 'Link inválido',
-            description: 'Por favor, insira um link válido do YouTube.',
-         });
-      }
-    }
+        const manualUrl = manualLinkInputRef.current?.value;
+        if (manualUrl && manualUrl.startsWith("http")) {
+            setValue("youtubeUrl", manualUrl, { shouldDirty: true, shouldValidate: true });
+            toast({ title: 'Link adicionado!', description: 'A música do link foi adicionada.' });
+        } else {
+            toast({ variant: "destructive", title: 'Link inválido', description: 'Por favor, insira um link válido do YouTube.' });
+        }
+    };
 
-  const uploadRecording = async (audioBlob: Blob) => {
-    if (isUserLoading) {
-        toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
-        return;
-    }
-    if (!storage || !user) {
-        toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação. Faça login novamente.' });
-        return;
-    }
-    setRecordingStatus('uploading');
-    try {
-        const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
-        setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
-        setRecordingStatus('recorded');
-        toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi salva com segurança.' });
-    } catch (error: any) {
-        console.error("Error uploading audio:", error);
-        setRecordingStatus('recorded');
-        const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
-        toast({
-            variant: 'destructive',
-            title: 'Erro no Upload',
-            description: (
-                <div>
-                    <p>Não foi possível salvar sua gravação.</p>
-                    <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                </div>
-            )
-        });
-    }
-  };
+    const uploadRecording = async (audioBlob: Blob) => {
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!storage || !user) {
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação. Faça login novamente.' });
+            return;
+        }
+        setRecordingStatus('uploading');
+        try {
+            const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
+            setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
+            setRecordingStatus('recorded');
+            toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi salva com segurança.' });
+        } catch (error: any) {
+            console.error("Error uploading audio:", error);
+            setRecordingStatus('recorded');
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível salvar sua gravação.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        }
+    };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-      setValue("audioRecording", undefined, { shouldDirty: true });
-      
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+            setValue("audioRecording", undefined, { shouldDirty: true });
+            mediaRecorderRef.current.ondataavailable = (event) => { audioChunksRef.current.push(event.data); };
+            mediaRecorderRef.current.onstop = () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+                uploadRecording(audioBlob);
+                audioChunksRef.current = [];
+            };
+            mediaRecorderRef.current.start();
+            setRecordingStatus("recording");
+        } catch (err: any) {
+            console.error("Error accessing microphone:", err);
+            toast({
+                variant: "destructive",
+                title: 'Erro no Microfone',
+                description: (
+                    <div>
+                        <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {err.name || 'unknown'}</p>
+                    </div>
+                )
+            });
+        }
+    };
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
-        uploadRecording(audioBlob);
-        audioChunksRef.current = [];
-      };
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && recordingStatus === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+    };
 
-      mediaRecorderRef.current.start();
-      setRecordingStatus("recording");
-    } catch (err: any) {
-      console.error("Error accessing microphone:", err);
-      const errorCode = err.name || 'unknown';
-      toast({
-          variant: "destructive",
-          title: 'Erro no Microfone',
-          description: (
-            <div>
-                <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
-
-                <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-            </div>
-          )
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recordingStatus === "recording") {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-
-  return (
-    <div className="space-y-8">
-      <FormField
-        control={control}
-        name="musicOption"
-        render={({ field }) => (
-          <FormItem className="space-y-3">
-            <FormLabel>Escolha a trilha sonora</FormLabel>
-            <FormControl>
-              <RadioGroup
-                onValueChange={(value) => {
-                    field.onChange(value);
-                    setValue("youtubeUrl", ""); // Limpa a URL ao trocar de opção
-                    setShowManualLinkInput(false);
-                }}
-                defaultValue={field.value}
-                className="flex flex-col space-y-2"
-              >
-                <FormItem>
-                  <FormControl>
-                    <RadioGroupItem value="none" id="music-none" className="peer sr-only" />
-                  </FormControl>
-                  <Label
-                    htmlFor="music-none"
-                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                  >
-                    Nenhum Som
-                  </Label>
-                </FormItem>
-                <FormItem>
-                  <FormControl>
-                    <RadioGroupItem value="record" id="music-record" className="peer sr-only" />
-                  </FormControl>
-                  <Label
-                    htmlFor="music-record"
-                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                  >
-                    Gravar Mensagem de Voz <Mic className="h-5 w-5" />
-                  </Label>
-                </FormItem>
-                <FormItem>
-                  <FormControl>
-                    <RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" />
-                  </FormControl>
-                  <Label
-                    htmlFor="music-youtube"
-                    className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                  >
-                    Usar Música do YouTube <Youtube className="h-5 w-5" />
-                  </Label>
-                </FormItem>
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      {musicOption === 'youtube' && (
-        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                    control={control}
-                    name="songName"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Nome da Música</FormLabel>
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="musicOption"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Escolha a trilha sonora</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: Perfect" {...field} />
+                            <RadioGroup
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setValue("youtubeUrl", "");
+                                    setShowManualLinkInput(false);
+                                }}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-2"
+                            >
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="none" id="music-none" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-none" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Nenhum Som</Label>
+                                </FormItem>
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="record" id="music-record" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-record" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Gravar Mensagem de Voz <Mic className="h-5 w-5" /></Label>
+                                </FormItem>
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-youtube" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Usar Música do YouTube <Youtube className="h-5 w-5" /></Label>
+                                </FormItem>
+                            </RadioGroup>
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={control}
-                    name="artistName"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Nome do Artista</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ex: Ed Sheeran" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
-                {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
-                Buscar com IA
-            </Button>
-            
-            {youtubeUrl && !isSearching && (
-                <div className="mt-4 pt-4 border-t border-border/50">
-                    <p className="text-sm text-center text-muted-foreground mb-2">A música não está correta?</p>
-                     <Button type="button" variant="secondary" className="w-full" onClick={() => setShowManualLinkInput(!showManualLinkInput)}>
-                        Usar um link direto do YouTube
+                    </FormItem>
+                )}
+            />
+            {musicOption === 'youtube' && (
+                <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField control={control} name="songName" render={({ field }) => (
+                            <FormItem><FormLabel>Nome da Música</FormLabel><FormControl><Input placeholder="Ex: Perfect" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={control} name="artistName" render={({ field }) => (
+                            <FormItem><FormLabel>Nome do Artista</FormLabel><FormControl><Input placeholder="Ex: Ed Sheeran" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </div>
+                    <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
+                        {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
+                        Buscar com IA
                     </Button>
+                    {youtubeUrl && !isSearching && (
+                        <div className="mt-4 pt-4 border-t border-border/50">
+                            <p className="text-sm text-center text-muted-foreground mb-2">A música não está correta?</p>
+                            <Button type="button" variant="secondary" className="w-full" onClick={() => setShowManualLinkInput(!showManualLinkInput)}>
+                                Usar um link direto do YouTube
+                            </Button>
+                        </div>
+                    )}
+                    {showManualLinkInput && (
+                        <div className="mt-4 space-y-2">
+                            <FormLabel htmlFor="manual-link">Usar um link direto do YouTube</FormLabel>
+                            <div className="flex gap-2">
+                                <Input id="manual-link" ref={manualLinkInputRef} placeholder="Cole o link aqui..." />
+                                <Button type="button" onClick={handleSetManualLink}>OK</Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
-            
-            {showManualLinkInput && (
-              <div className="mt-4 space-y-2">
-                  <FormLabel htmlFor="manual-link">Usar um link direto do YouTube</FormLabel>
-                   <div className="flex gap-2">
-                      <Input id="manual-link" ref={manualLinkInputRef} placeholder="Cole o link aqui..." />
-                      <Button type="button" onClick={handleSetManualLink}>OK</Button>
-                   </div>
-              </div>
+            {musicOption === 'record' && (
+                <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+                    <h4 className="font-semibold">Gravador de Voz</h4>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        {recordingStatus === "idle" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>}
+                        {recordingStatus === "recording" && <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>}
+                        {recordingStatus === "recorded" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>}
+                        {recordingStatus === 'uploading' && <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</Button>}
+                        {audioRecording?.url && <audio src={audioRecording.url} controls className="w-full" />}
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
+                        {recordingStatus === 'recording' && 'Gravando...'}
+                        {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
+                    </p>
+                </div>
             )}
         </div>
-      )}
-      {musicOption === 'record' && (
-        <div className="space-y-4 rounded-lg border bg-card/80 p-4">
-            <h4 className="font-semibold">Gravador de Voz</h4>
-             <div className="flex flex-col sm:flex-row items-center gap-4">
-                {recordingStatus === "idle" && (
-                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>
-                )}
-                {recordingStatus === "recording" && (
-                    <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>
-                )}
-                 {recordingStatus === "recorded" && (
-                    <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>
-                )}
-                {recordingStatus === 'uploading' && (
-                    <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Enviando...</Button>
-                )}
-                {audioRecording?.url && (
-                   <audio src={audioRecording.url} controls className="w-full" />
-                )}
-             </div>
-             <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
-                {recordingStatus === 'recording' && 'Gravando...'}
-                {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
-            </p>
-        </div>
-      )}
-    </div>
-  );
+    );
 });
 MusicStep.displayName = 'MusicStep';
 
-
+// ─────────────────────────────────────────────
+// BACKGROUND STEP
+// ─────────────────────────────────────────────
 const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const backgroundAnimation = watch("backgroundAnimation");
@@ -1064,10 +917,8 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
         { id: "floating-dots", name: 'Pontos Coloridos' },
         { id: "clouds", name: 'Nuvens' },
     ];
-    
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+
+    useEffect(() => { setIsClient(true); }, []);
 
     return (
         <div className="space-y-8">
@@ -1078,14 +929,13 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                     <FormItem className="space-y-3">
                         <FormLabel>Escolha a Animação</FormLabel>
                         <FormControl>
-                            <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="grid grid-cols-2 gap-4"
-                            >
-                                {animationOptions.map((option) => {
-                                    const labelContent = (
-                                         <Label
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4">
+                                {animationOptions.map((option) => (
+                                    <FormItem key={option.id}>
+                                        <FormControl>
+                                            <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" />
+                                        </FormControl>
+                                        <Label
                                             htmlFor={`anim-${option.id}`}
                                             className={cn(
                                                 "flex flex-col items-center justify-center rounded-md border-2 bg-popover p-4 h-24 text-sm relative overflow-hidden group/item cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
@@ -1099,58 +949,38 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
                                                     {option.id === "nebula" && <div className="w-full h-full relative overflow-hidden"><NebulaBackground /></div>}
                                                     {option.id === "floating-dots" && <div className="w-full h-full relative overflow-hidden"><FloatingDots /></div>}
                                                     {option.id === 'mystic-flowers' && <div className="w-full h-full relative overflow-hidden"><MysticFlowers /></div>}
-                                                    {option.id === "mystic-fog" && <><div className="mystic-fog-1 !opacity-50 !-z-0"></div><div className="mystic-fog-2 !opacity-50 !-z-0"></div></>}
-                                                    {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4"/></video>}
+                                                    {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" /></video>}
                                                 </div>
                                             )}
                                             {option.isFavorite && <Heart className="absolute top-2 left-2 w-4 h-4 text-pink-400 fill-pink-400" />}
                                             <span className="relative z-10">{option.name}</span>
                                         </Label>
-                                    );
-
-                                    return (
-                                        <FormItem key={option.id}>
-                                            <FormControl>
-                                                <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" />
-                                            </FormControl>
-                                            {labelContent}
-                                        </FormItem>
-                                    );
-                                })}
+                                    </FormItem>
+                                ))}
                             </RadioGroup>
                         </FormControl>
                         <FormMessage />
                     </FormItem>
                 )}
             />
-
             {backgroundAnimation === 'falling-hearts' && (
-                 <FormField
+                <FormField
                     control={control}
                     name="heartColor"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Cor dos Corações</FormLabel>
-                        <FormControl>
-                            <div className="relative flex items-center gap-4">
-                            <Input
-                                type="color"
-                                className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
-                                {...field}
-                            />
-                            <span className="text-sm">Clique no quadrado para escolher uma cor</span>
-                            </div>
-                        </FormControl>
-                        <Button
-                            type="button"
-                            variant="link"
-                            className="p-0 h-auto"
-                            onClick={() => setValue("heartColor", titleColor, { shouldDirty: true })}
-                        >
-                            <Pipette className="mr-2 h-4 w-4" />
-                            Usar a cor do título
-                        </Button>
-                        <FormMessage />
+                            <FormLabel>Cor dos Corações</FormLabel>
+                            <FormControl>
+                                <div className="relative flex items-center gap-4">
+                                    <Input type="color" className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0" {...field} />
+                                    <span className="text-sm">Clique no quadrado para escolher uma cor</span>
+                                </div>
+                            </FormControl>
+                            <Button type="button" variant="link" className="p-0 h-auto" onClick={() => setValue("heartColor", titleColor, { shouldDirty: true })}>
+                                <Pipette className="mr-2 h-4 w-4" />
+                                Usar a cor do título
+                            </Button>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
@@ -1160,6 +990,9 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
 });
 BackgroundStep.displayName = 'BackgroundStep';
 
+// ─────────────────────────────────────────────
+// PUZZLE STEP — FIX #5: toast quando !user || !storage
+// ─────────────────────────────────────────────
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
@@ -1173,7 +1006,12 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
         }
-        if (event.target.files && event.target.files[0] && user && storage) {
+        // FIX #5: error toast quando user/storage null após loading
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             setIsProcessing(true);
             try {
@@ -1181,7 +1019,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
                 await handleAutosave?.();
-                toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+                toast({ title: 'Imagem enviada!', description: 'Sua foto foi adicionada.' });
             } catch (error: any) {
                 console.error("Error processing puzzle image:", error);
                 const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
@@ -1190,7 +1028,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                     title: 'Erro no Upload',
                     description: (
                         <div>
-                            <p>Não foi possível enviar as imagens.</p>
+                            <p>Não foi possível enviar a imagem.</p>
                             <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
                         </div>
                     )
@@ -1200,7 +1038,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
             }
         }
     };
-    
+
     const removePuzzleImage = async () => {
         if (puzzleImage?.path && storage) {
             const imageRef = storageRef(storage, puzzleImage.path);
@@ -1208,9 +1046,9 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
         }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
         await handleAutosave?.();
-        toast({ title: 'Remover Imagem' });
+        toast({ title: 'Imagem removida' });
     };
-    
+
     return (
         <div className="space-y-8">
             <FormField
@@ -1220,63 +1058,44 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
                             <FormLabel className="text-base">Ativar Quebra-Cabeça</FormLabel>
-                            <FormDescription>
-                                Exigir que o quebra-cabeça seja resolvido para ver a página.
-                            </FormDescription>
+                            <FormDescription>Exigir que o quebra-cabeça seja resolvido para ver a página.</FormDescription>
                         </div>
-                        <FormControl>
-                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                     </FormItem>
                 )}
             />
             {enablePuzzle && (
-                 <div className="space-y-4">
+                <div className="space-y-4">
                     <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
-                     {!puzzleImage?.url ? (
+                    {!puzzleImage?.url ? (
                         <FormControl>
-                        <label
-                            htmlFor="puzzle-photo-upload"
-                            className={cn(
-                                "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
-                                isProcessing && "cursor-not-allowed opacity-50"
-                            )}
-                        >
-                            {isProcessing ? (
-                                <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
-                            ) : (
-                                <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-                            )}
-                            <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
-                            <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
-                            <input
-                                id="puzzle-photo-upload"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handlePuzzleImageChange}
-                                disabled={isProcessing}
-                            />
-                        </label>
+                            <label
+                                htmlFor="puzzle-photo-upload"
+                                className={cn(
+                                    "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                    isProcessing && "cursor-not-allowed opacity-50"
+                                )}
+                            >
+                                {isProcessing ? (
+                                    <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                                ) : (
+                                    <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                                )}
+                                <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
+                                <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
+                                <input id="puzzle-photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePuzzleImageChange} disabled={isProcessing} />
+                            </label>
                         </FormControl>
-                     ) : (
+                    ) : (
                         <div className="w-full flex flex-col items-center gap-6">
-                             <div className="w-full max-w-[300px] mx-auto">
-                                <RealPuzzle
-                                    imageSrc={puzzleImage.url}
-                                />
-                             </div>
-                             <Button
-                                 type="button"
-                                 variant="destructive"
-                                 onClick={removePuzzleImage}
-                                 size="sm"
-                             >
-                                 <X className="mr-2 h-4 w-4" />
-                                 Remover Imagem
-                             </Button>
+                            <div className="w-full max-w-[300px] mx-auto">
+                                <RealPuzzle imageSrc={puzzleImage.url} />
+                            </div>
+                            <Button type="button" variant="destructive" onClick={removePuzzleImage} size="sm">
+                                <X className="mr-2 h-4 w-4" />Remover Imagem
+                            </Button>
                         </div>
-                     )}
+                    )}
                 </div>
             )}
         </div>
@@ -1284,22 +1103,23 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
 });
 PuzzleStep.displayName = 'PuzzleStep';
 
+// ─────────────────────────────────────────────
+// MEMORY GAME STEP — FIX #4: isUserLoading adicionado
+// ─────────────────────────────────────────────
 const MemoryGameStep = React.memo(() => {
-    const { control, watch, setValue } = useFormContext<PageData>();
+    const { control, watch } = useFormContext<PageData>();
+    // FIX #4: isUserLoading incluído para evitar falha silenciosa
     const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "memoryGameImages",
-    });
+    const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
     const [isUploading, setIsUploading] = useState(false);
     const enableMemoryGame = watch("enableMemoryGame");
-
     const MAX_IMAGES = 8;
     const isLimitReached = fields.length >= MAX_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
+        // FIX #4: guard isUserLoading antes de tentar upload
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -1308,19 +1128,15 @@ const MemoryGameStep = React.memo(() => {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
         }
-
         const availableSlots = MAX_IMAGES - fields.length;
         if (availableSlots <= 0) return;
-
         const filesArray = Array.from(event.target.files).slice(0, availableSlots);
         setIsUploading(true);
-        
         try {
             const uploadPromises = filesArray.map(async file => {
                 const compressedFile = await compressImage(file, 400, 0.8);
                 return uploadFile(storage, user.uid, compressedFile, 'memory-game');
             });
-
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
             toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
@@ -1366,12 +1182,10 @@ const MemoryGameStep = React.memo(() => {
                     </FormItem>
                 )}
             />
-
             {enableMemoryGame && (
                 <div className="space-y-4">
                     <FormLabel>Imagens para o Jogo da Memória</FormLabel>
                     <ImageLimitWarning currentCount={fields.length} limit={MAX_IMAGES} itemType='fotos para o jogo' />
-
                     <FormControl>
                         <label
                             htmlFor="memory-game-upload"
@@ -1386,7 +1200,6 @@ const MemoryGameStep = React.memo(() => {
                             <input id="memory-game-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLimitReached || isUploading} />
                         </label>
                     </FormControl>
-
                     {fields.length > 0 && (
                         <div className="grid grid-cols-4 gap-2 sm:gap-4 mt-4">
                             {fields.map((field, index) => (
@@ -1406,12 +1219,12 @@ const MemoryGameStep = React.memo(() => {
 });
 MemoryGameStep.displayName = 'MemoryGameStep';
 
+// ─────────────────────────────────────────────
+// QUIZ STEP
+// ─────────────────────────────────────────────
 const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: number, removeQuestion: (index: number) => void, MAX_OPTIONS: number }) => {
     const { control, formState: { errors } } = useFormContext<PageData>();
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: `quizQuestions.${qIndex}.options`,
-    });
+    const { fields, append, remove } = useFieldArray({ control, name: `quizQuestions.${qIndex}.options` });
     const questionErrors = errors.quizQuestions?.[qIndex];
 
     return (
@@ -1426,9 +1239,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Pergunta {qIndex + 1}</FormLabel>
-                            <FormControl>
-                                <Input placeholder='Qual é a nossa música?' {...field} />
-                            </FormControl>
+                            <FormControl><Input placeholder='Qual é a nossa música?' {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -1436,7 +1247,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                 <div className="space-y-2">
                     <FormLabel>Opções de Resposta</FormLabel>
                     <FormDescription>Marque a opção correta. Mínimo de 2, máximo de 5.</FormDescription>
-                     <FormField
+                    <FormField
                         control={control}
                         name={`quizQuestions.${qIndex}.correctAnswerIndex`}
                         render={({ field }) => (
@@ -1447,12 +1258,10 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                                             <div key={option.id} className="flex items-center gap-2">
                                                 <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}-o${oIndex}`} />
                                                 <div className="flex-grow">
-                                                     <FormField
+                                                    <FormField
                                                         control={control}
                                                         name={`quizQuestions.${qIndex}.options.${oIndex}.text`}
-                                                        render={({ field }) => (
-                                                            <Input placeholder={`Opção ${oIndex + 1}`} {...field} />
-                                                        )}
+                                                        render={({ field }) => <Input placeholder={`Opção ${oIndex + 1}`} {...field} />}
                                                     />
                                                 </div>
                                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(oIndex)} disabled={fields.length <= 2}>
@@ -1467,7 +1276,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                         )}
                     />
                 </div>
-                 {fields.length < MAX_OPTIONS && (
+                {fields.length < MAX_OPTIONS && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => append({ text: '' })}>
                         <Plus className="mr-2 h-4 w-4" /> Adicionar Opção
                     </Button>
@@ -1475,16 +1284,12 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
             </div>
         </Card>
     );
-}
+};
 
 const QuizStep = React.memo(() => {
     const { control, watch } = useFormContext<PageData>();
     const enableQuiz = watch("enableQuiz");
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "quizQuestions",
-    });
-
+    const { fields, append, remove } = useFieldArray({ control, name: "quizQuestions" });
     const MAX_QUESTIONS = 5;
 
     const addQuestion = () => {
@@ -1508,15 +1313,12 @@ const QuizStep = React.memo(() => {
                     </FormItem>
                 )}
             />
-
             {enableQuiz && (
                 <div className="space-y-6">
                     <Alert>
                         <Info className="h-4 w-4" />
                         <AlertTitle>Dica de Mestre</AlertTitle>
-                        <AlertDescription>
-                            Crie perguntas que só vocês dois saberiam a resposta para tornar o jogo mais íntimo e divertido!
-                        </AlertDescription>
+                        <AlertDescription>Crie perguntas que só vocês dois saberiam a resposta para tornar o jogo mais íntimo e divertido!</AlertDescription>
                     </Alert>
                     {fields.map((question, qIndex) => (
                         <QuizQuestionForm key={question.id} qIndex={qIndex} removeQuestion={remove} MAX_OPTIONS={5} />
@@ -1533,6 +1335,9 @@ const QuizStep = React.memo(() => {
 });
 QuizStep.displayName = 'QuizStep';
 
+// ─────────────────────────────────────────────
+// PLAN STEP
+// ─────────────────────────────────────────────
 const PlanStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     const { field } = useController({ name: 'plan', control });
@@ -1565,11 +1370,7 @@ const PlanStep = React.memo(() => {
     ];
 
     return (
-        <RadioGroup
-            onValueChange={field.onChange}
-            value={field.value}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
+        <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {plans.map((planInfo) => {
                 const isSelected = field.value === planInfo.id;
                 return (
@@ -1598,7 +1399,7 @@ const PlanStep = React.memo(() => {
                                 ))}
                             </ul>
                         </div>
-                         <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
+                        <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
                             {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
                         </div>
                     </Label>
@@ -1609,47 +1410,76 @@ const PlanStep = React.memo(() => {
 });
 PlanStep.displayName = "PlanStep";
 
+// ─────────────────────────────────────────────
+// FIX #1: stepComponents array — ERA ESTE QUE FALTAVA, CAUSA DO CRASH TOTAL
+// Deve mapear exatamente os índices dos steps definidos em WizardInternal
+// índice 0→TitleStep, 1→MessageStep, ..., 10→PlanStep
+// índice 11 (payment) é tratado separadamente no WizardInternal
+// ─────────────────────────────────────────────
+const stepComponents: React.ComponentType<any>[] = [
+    TitleStep,       // 0 - title
+    MessageStep,     // 1 - message
+    SpecialDateStep, // 2 - specialDate
+    GalleryStep,     // 3 - gallery
+    TimelineStep,    // 4 - timeline
+    MusicStep,       // 5 - music
+    BackgroundStep,  // 6 - background
+    PuzzleStep,      // 7 - puzzle
+    MemoryGameStep,  // 8 - memory
+    QuizStep,        // 9 - quiz
+    PlanStep,        // 10 - plan
+];
+
+// ─────────────────────────────────────────────
+// PAYMENT STEP
+// ─────────────────────────────────────────────
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
     const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
-    const { user } = useFirebase();
+    const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState<{ message: string; details?: any } | null>(null);
     const { toast } = useToast();
-    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string, paymentId: string } | null>(null);
+    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string; paymentId: string } | null>(null);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
-    // LOGIC FOR SPECIAL USER
+    // ── SPECIAL USER (ZALMIR) CREDIT SYSTEM ──────────────────────
     const { firestore } = useFirebase();
     const [specialUserCredits, setSpecialUserCredits] = useState(0);
     const [isSpecialUser, setIsSpecialUser] = useState(false);
 
-    const specialUserEmail = 'zalmirparedes@gmail.com';
-    const totalCredits = 2;
+    const SPECIAL_USER_EMAIL = 'zalmirparedes@gmail.com';
+    const TOTAL_CREDITS = 2;
 
+    // Query só roda se for o usuário especial
     const userPagesQuery = useMemoFirebase(() => {
-        if (!user || !firestore || user.email !== specialUserEmail) return null;
+        if (!user || !firestore || user.email !== SPECIAL_USER_EMAIL) return null;
         return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
     }, [user, firestore]);
 
-    const { data: createdPages, isLoading: isLoadingPages } = useCollection(userPagesQuery);
+    const { data: createdPages, isLoading: isLoadingPagesRaw } = useCollection(userPagesQuery);
+
+    // FIX #2: isLoading só bloqueia se for o usuário especial
+    // Usuários normais não precisam aguardar essa query (que é null para eles)
+    const isLoadingPages = isSpecialUser ? isLoadingPagesRaw : false;
 
     useEffect(() => {
-        if (user?.email === specialUserEmail) {
+        if (user?.email === SPECIAL_USER_EMAIL) {
             setIsSpecialUser(true);
-            if (createdPages) {
+            if (createdPages !== undefined && createdPages !== null) {
                 const creditsUsed = createdPages.length;
-                setSpecialUserCredits(Math.max(0, totalCredits - creditsUsed));
+                setSpecialUserCredits(Math.max(0, TOTAL_CREDITS - creditsUsed));
             }
         } else {
             setIsSpecialUser(false);
+            setSpecialUserCredits(0);
         }
     }, [user, createdPages]);
-    // END SPECIAL USER LOGIC
+    // ── FIM SPECIAL USER ─────────────────────────────────────────
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1658,7 +1488,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
                 if (result.success) {
                     setValue('intentId', result.intentId, { shouldDirty: false });
-                    console.log("Forced intent creation, ID:", result.intentId);
                 } else {
                     console.error("Failed to force create intent:", result.error, result.details);
                     setError({ message: result.error, details: result.details });
@@ -1668,21 +1497,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     }, [user, intentId, getValues, setValue]);
 
-
     useEffect(() => {
-        // This check ensures we're on the client side
         if (typeof window !== 'undefined') {
             const hostname = window.location.hostname;
             const isProdBr = hostname.endsWith('mycupid.com.br');
             const isProdIntl = hostname.endsWith('mycupid.net');
-            // Treat as Brazil if it's the BR domain or any development environment (not .net)
             setIsBrazilDomain(isProdBr || !isProdIntl);
         }
     }, []);
 
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
     const basePriceBRL = plan === 'basico' ? 14.90 : 24.90;
-
     const totalBRL = basePriceBRL;
     const totalUSD = basePriceUSD;
 
@@ -1690,9 +1515,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const isAdmin = user?.email && adminEmails.includes(user.email);
 
     const handlePaymentSuccess = useCallback((pageId: string) => {
-        if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-        }
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
@@ -1700,11 +1523,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
-
         pollingIntervalRef.current = setInterval(async () => {
             const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
-            console.log("Status do pagamento:", result.status);
-            
             if (result.status === 'approved') {
                 clearInterval(pollingIntervalRef.current!);
                 handlePaymentSuccess(result.pageId);
@@ -1716,104 +1536,66 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     }, [handlePaymentSuccess]);
 
     useEffect(() => {
-        if (pixData?.paymentId && intentId) {
-            startPolling(pixData.paymentId, intentId);
-        }
-
-        return () => {
-            if (pollingIntervalRef.current) {
-                clearInterval(pollingIntervalRef.current);
-            }
-        };
+        if (pixData?.paymentId && intentId) startPolling(pixData.paymentId, intentId);
+        return () => { if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current); };
     }, [pixData, intentId, startPolling]);
 
     const handleOneClickPix = () => {
         setError(null);
         setPixData(null);
-
-        if (!user) {
-            setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' });
-            return;
-        }
-
-        if (user.email) {
-            setValue('payment.payerEmail', user.email, { shouldDirty: true });
-        }
-    
+        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        if (user.email) setValue('payment.payerEmail', user.email, { shouldDirty: true });
         startTransition(async () => {
             try {
                 const fullData = { ...getValues(), userId: user.uid };
-                
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
-
                 if (!saveResult.success) {
                     const { error, details } = saveResult;
                     setError({ message: error, details });
-                    if (error?.includes("NOT_FOUND")) {
-                        setValue('intentId', undefined, { shouldDirty: false });
-                    }
+                    if (error?.includes("NOT_FOUND")) setValue('intentId', undefined, { shouldDirty: false });
                     return;
                 }
-                
                 setValue('intentId', saveResult.intentId);
                 const paymentResult = await processPixPayment(saveResult.intentId, totalBRL);
-                
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
-                    setPixData({ 
-                        qrCode: paymentResult.qrCode, 
-                        qrCodeBase64: paymentResult.qrCodeBase64, 
-                        paymentId: paymentResult.paymentId
-                    });
+                    setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
                 }
             } catch (err: any) {
                 setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
             }
         });
     };
-    
+
     const handleStripePayment = () => {
-      setError(null);
-      if (!user) {
-          setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' });
-          return;
-      }
-  
-      startTransition(async () => {
-          try {
-              const fullData = { ...getValues(), userId: user.uid };
-              const saveResult = await createOrUpdatePaymentIntent(fullData);
-  
-              if (!saveResult.success) {
-                const { error, details } = saveResult;
-                setError({ message: error || "Could not save draft before payment.", details });
-                return;
-              }
-    
-              setValue('intentId', saveResult.intentId);
-              const planValue = getValues('plan') as 'basico' | 'avancado';
-              const domain = window.location.origin;
-
-              const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
-
-              if (!sessionResult.success) {
-                  setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
-              } else {
-                  window.location.href = sessionResult.url;
-              }
-          } catch (err: any) {
-              setError({ message: "Error connecting to the payment service.", details: err });
-          }
-      });
+        setError(null);
+        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        startTransition(async () => {
+            try {
+                const fullData = { ...getValues(), userId: user.uid };
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+                if (!saveResult.success) {
+                    setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
+                    return;
+                }
+                setValue('intentId', saveResult.intentId);
+                const planValue = getValues('plan') as 'basico' | 'avancado';
+                const domain = window.location.origin;
+                const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
+                if (!sessionResult.success) {
+                    setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
+                } else {
+                    window.location.href = sessionResult.url;
+                }
+            } catch (err: any) {
+                setError({ message: "Error connecting to the payment service.", details: err });
+            }
+        });
     };
-    
-    const handleAdminFinalize = async () => {
-        if (!user || !intentId) {
-            toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' });
-            return;
-        }
 
+    const handleAdminFinalize = async () => {
+        if (!user || !intentId) { toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' }); return; }
         startTransition(async () => {
             try {
                 const result = await adminFinalizePage(intentId, user.uid);
@@ -1826,7 +1608,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 setError({ message: "Erro de servidor ao finalizar como admin.", details: e });
             }
         });
-    }
+    };
 
     const handleManualVerification = async () => {
         if (!pixData?.paymentId || !intentId) return;
@@ -1845,26 +1627,26 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
+    // FIX #3: removido !intentId do guard — race condition eliminada
+    // A função já cria o intent internamente se necessário
     const handleCreditFinalize = async () => {
-        if (!user || !intentId || !isSpecialUser || specialUserCredits <= 0) {
+        if (!user || !isSpecialUser || specialUserCredits <= 0) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
             return;
         }
-
         startTransition(async () => {
             try {
-                // Ensure plan is 'avancado' before finalizing
                 const fullData = getValues();
+                // FIX #7: força plan='avancado' tanto no objeto quanto no form
                 fullData.plan = 'avancado';
-                const saveResult = await createOrUpdatePaymentIntent({ ...fullData, userId: user.uid });
+                setValue('plan', 'avancado', { shouldDirty: true });
 
+                const saveResult = await createOrUpdatePaymentIntent({ ...fullData, userId: user.uid });
                 if (!saveResult.success) {
                     setError({ message: saveResult.error, details: saveResult.details });
                     return;
                 }
-
                 const finalIntentId = saveResult.intentId;
-
                 const result = await adminFinalizePage(finalIntentId, user.uid);
                 if (!result.success) {
                     setError({ message: result.error || "Falha ao finalizar com crédito.", details: result.details });
@@ -1877,48 +1659,84 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         });
     };
 
-    if (isLoadingPages || isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+    // Mostra spinner só enquanto necessário:
+    // - usuário especial: aguarda query de páginas + isBrazilDomain
+    // - usuário normal: aguarda só isBrazilDomain
+    if (isLoadingPages || isBrazilDomain === null) {
+        return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+    }
 
+    // ── TELA EXCLUSIVA DO ZALMIR (créditos disponíveis) ───────────
     if (isSpecialUser && specialUserCredits > 0) {
         return (
             <div className="space-y-6 text-center">
-                <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl mb-6">
+                <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl">
+                    <span className="block text-xs text-green-400 font-bold uppercase tracking-widest mb-3">✦ Acesso Especial ✦</span>
                     <span className="block text-sm text-green-300 font-bold uppercase tracking-wider mb-2">Crédito de Cortesia</span>
-                    <p className="text-white text-lg">Você tem <span className="font-black text-2xl">{specialUserCredits}</span> crédito(s) para criar uma página <span className="font-bold">Avançada</span> gratuitamente.</p>
+                    <p className="text-white text-lg">
+                        Você tem <span className="font-black text-3xl text-green-400">{specialUserCredits}</span> crédito{specialUserCredits > 1 ? 's' : ''} disponível{specialUserCredits > 1 ? 'is' : ''}
+                    </p>
+                    <p className="text-white/70 text-sm mt-1">
+                        Cada crédito cria 1 página no <span className="font-bold text-white">Plano Avançado</span> — gratuitamente.
+                    </p>
                 </div>
+
+                <div className="space-y-2 text-left p-4 rounded-xl bg-card/50 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">O que está incluído:</p>
+                    {[
+                        'Todos os recursos de personalização',
+                        'Quebra-cabeça, Jogo da Memória e Quiz',
+                        'Página permanente + backup infinito',
+                        'Acesso imediato ao link e QR Code',
+                    ].map((item) => (
+                        <div key={item} className="flex items-center gap-2 text-sm text-white/80">
+                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                            <span>{item}</span>
+                        </div>
+                    ))}
+                </div>
+
                 <Button
                     onClick={handleCreditFinalize}
                     disabled={isProcessing}
                     size="lg"
-                    className="w-full h-auto py-4 text-lg font-bold bg-green-600 hover:bg-green-700"
+                    className="w-full h-auto py-4 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/30"
                 >
                     {isProcessing ? (
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Criando sua página...</>
                     ) : (
-                        <Gift className="mr-2 h-5 w-5" />
+                        <><Gift className="mr-2 h-5 w-5" /> Usar 1 Crédito e Criar Página</>
                     )}
-                    Usar 1 Crédito e Criar Página
                 </Button>
-                {error && <Alert variant="destructive" className="mt-4">
-                    <Terminal className="h-4 w-4" />
-                    <AlertTitle>{error?.message}</AlertTitle>
-                    {typeof (error?.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
-                </Alert>}
+                <p className="text-xs text-muted-foreground">
+                    Após usar este crédito, restarão <span className="font-bold">{Math.max(0, specialUserCredits - 1)}</span> crédito{specialUserCredits - 1 !== 1 ? 's' : ''}.
+                </p>
+
+                {error && (
+                    <Alert variant="destructive" className="mt-4 text-left">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error?.message}</AlertTitle>
+                        {typeof (error?.details) === 'object' && (error.details as any)?.log && (
+                            <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>
+                        )}
+                    </Alert>
+                )}
             </div>
         );
     }
-    
+
+    // ── TELA INTERNACIONAL (Stripe + PayPal) ─────────────────────
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                 <div className="text-center space-y-2">
+                <div className="text-center space-y-2">
                     <h3 className="text-2xl font-black tracking-tight text-white">Quase lá!</h3>
                     <p className="text-sm text-zinc-400">Sua página foi montada. Finalize para receber o link.</p>
                 </div>
                 <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
                     <div className="absolute top-0 right-0 p-2">
                         <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
-                             {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
+                            {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
                         </span>
                     </div>
                     <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total a Pagar</p>
@@ -1927,20 +1745,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <Clock size={12} /> Pagamento único • Acesso imediato
                     </p>
                 </div>
-
                 <div className="space-y-3">
-                     <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center justify-between px-1">
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
                         <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
-                    <Button 
-                        onClick={handleStripePayment}
-                        disabled={isProcessing}
-                        className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group"
-                    >
+                    <Button onClick={handleStripePayment} disabled={isProcessing} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
                         {isProcessing ? (
                             <Loader2 className="animate-spin" />
                         ) : (
@@ -1956,13 +1769,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <span>Pagamento seguro através da Stripe.</span>
                     </div>
                 </div>
-
                 <div className="relative flex items-center py-2">
                     <div className="flex-grow border-t border-zinc-800"></div>
                     <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
                     <div className="flex-grow border-t border-zinc-800"></div>
                 </div>
-
                 <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
                     {intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
@@ -1975,7 +1786,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </div>
                     )}
                 </div>
-
                 {error && (
                     <Alert variant="destructive" className="mt-4">
                         <Terminal className="h-4 w-4" />
@@ -1986,54 +1796,34 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             </div>
         );
     }
-    
-    // --- VIEW BRASIL (PIX) ---
+
+    // ── TELA BRASIL (PIX / Mercado Pago) ─────────────────────────
     return (
         <div className="space-y-6 text-center">
             <div className="mb-8">
-                <h3 className="text-2xl font-bold font-headline mb-2">
-                    Quase lá!
-                </h3>
-                <p className="text-muted-foreground">
-                    Sua página foi montada. Finalize para receber o link.
-                </p>
+                <h3 className="text-2xl font-bold font-headline mb-2">Quase lá!</h3>
+                <p className="text-muted-foreground">Sua página foi montada. Finalize para receber o link.</p>
             </div>
-
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
                 <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
                 <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
                 <p className="text-xs text-white/50">Pagamento único</p>
             </div>
-
             {!pixData ? (
-                <Button
-                    onClick={handleOneClickPix}
-                    disabled={isProcessing}
-                    size="lg"
-                    className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]"
-                >
+                <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
                     {isProcessing ? (
-                        <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            <span>Gerando QR Code do Mercado Pago...</span>
-                        </>
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /><span>Gerando QR Code do Mercado Pago...</span></>
                     ) : (
                         <span>Pagar com PIX via Mercado Pago</span>
                     )}
                 </Button>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
-                   <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                     <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código "Copia e Cola".</p>
                     <div className="p-4 bg-white rounded-lg border">
                         {pixData.qrCodeBase64 ? (
-                            <Image 
-                                src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                                alt="PIX QR Code"
-                                width={256}
-                                height={256}
-                                unoptimized
-                            />
+                            <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={256} height={256} unoptimized />
                         ) : (
                             <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
                                 <Loader2 className="animate-spin mb-2" />
@@ -2042,51 +1832,41 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         )}
                     </div>
                     <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copiar Código PIX
+                        <Copy className="mr-2 h-4 w-4" />Copiar Código PIX
                     </Button>
                     <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
                     <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
-                            {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4"/>}
-                            Verificar Pagamento
+                        {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Verificar Pagamento
                     </Button>
                 </div>
             )}
-            
             {isAdmin && intentId && (
                 <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
-                     <Button 
-                        type="button" 
-                        size="lg" 
-                        className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" 
-                        disabled={isProcessing}
-                        onClick={handleAdminFinalize}
-                    >
+                    <Button type="button" size="lg" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" disabled={isProcessing} onClick={handleAdminFinalize}>
                         {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
                     </Button>
                 </div>
             )}
-
-            {error && <Alert variant="destructive" className="mt-4">
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>{error.message}</AlertTitle>
-                {typeof (error.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
-            </Alert>}
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof (error.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
+                </Alert>
+            )}
             <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border/20 text-sm text-muted-foreground">
                 <Lock className="w-4 h-4" />
                 <span>Pagamento 100% seguro via Mercado Pago</span>
-                <Image 
-                    src="https://i.imgur.com/QeYjEEv.png"
-                    alt="Logo do Mercado Pago"
-                    width={90}
-                    height={20}
-                    className="opacity-90"
-                />
+                <Image src="https://i.imgur.com/QeYjEEv.png" alt="Logo do Mercado Pago" width={90} height={20} className="opacity-90" />
             </div>
         </div>
     );
 };
 
+// ─────────────────────────────────────────────
+// SUCCESS STEP
+// ─────────────────────────────────────────────
 const SuccessStep = ({ pageId }: { pageId: string }) => {
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
@@ -2097,356 +1877,291 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
             setTimeout(() => setCopied(false), 2000);
         });
     };
-    
+
     return (
         <div className="flex flex-col items-center text-center gap-6">
-            <CheckCircle className="w-16 h-16 text-green-500"/>
+            <CheckCircle className="w-16 h-16 text-green-500" />
             <h2 className="text-2xl font-bold font-headline">Página Criada com Sucesso!</h2>
             <p className="text-muted-foreground">Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.</p>
             <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
-                <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0"/>
+                <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0" />
                 <Button onClick={handleCopy}>
-                    {copied ? <CheckCircle className="mr-2"/> : <Copy className="mr-2"/>}
+                    {copied ? <CheckCircle className="mr-2" /> : <Copy className="mr-2" />}
                     {copied ? 'Copiado!' : 'Copiar'}
                 </Button>
             </div>
             <div className="p-4 bg-white rounded-lg border mt-4">
-                <Image 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
-                    alt="QR Code da Página"
-                    width={200}
-                    height={200}
-                />
+                <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`} alt="QR Code da Página" width={200} height={200} />
             </div>
             <p className="text-xs text-muted-foreground mt-2">Você também pode salvar ou imprimir o QR Code acima.</p>
             <Button asChild className="mt-4">
                 <a href={pageUrl} target="_blank" rel="noopener noreferrer">
-                    <View className="mr-2" />
-                    Ver Página
+                    <View className="mr-2" />Ver Página
                 </a>
             </Button>
         </div>
     );
 };
 
-const stepComponents = [
-    TitleStep,
-    MessageStep,
-    SpecialDateStep,
-    GalleryStep,
-    TimelineStep,
-    MusicStep,
-    BackgroundStep,
-    PuzzleStep,
-    MemoryGameStep,
-    QuizStep,
-    PlanStep,
-];
-
+// ─────────────────────────────────────────────
+// WIZARD INTERNAL
+// ─────────────────────────────────────────────
 function WizardInternal() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isClient, setIsClient] = useState(false);
-  const [showTimelinePreview, setShowTimelinePreview] = useState(false);
-  const { toast } = useToast();
-  const searchParams = useSearchParams();
-  const { user, isUserLoading } = useFirebase();
-  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const [pageId, setPageId] = useState<string | null>(null);
-  
-  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [isClient, setIsClient] = useState(false);
+    const [showTimelinePreview, setShowTimelinePreview] = useState(false);
+    const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const { user, isUserLoading } = useUser();
+    const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [pageId, setPageId] = useState<string | null>(null);
+    const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
-  const plan = searchParams.get('plan') || 'avancado';
+    const plan = searchParams.get('plan') || 'avancado';
 
-  const steps = useMemo(() => {
-    const allSteps = [
-      { id: "title", title: 'Título da página', description: 'Escreva o título dedicatório. Ex: João & Maria.', fields: ["title", "titleColor"] },
-      { id: "message", title: 'Sua Mensagem de Amor', description: 'Escreva a mensagem principal.', fields: ["message", "messageFontSize", "messageFormatting"] },
-      { id: "specialDate", title: 'Data Especial', description: 'Informe a data que simboliza o início de tudo.', fields: ["specialDate", "countdownStyle", "countdownColor"] },
-      { id: "gallery", title: 'Galeria de Fotos', description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
-      { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"] },
-      { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"] },
-      { id: "background", title: 'Animação de Fundo', description: 'Escolha um efeito especial para o fundo.', fields: ["backgroundAnimation", "heartColor"] },
-      { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"] },
-      { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
-      { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"] },
-      { id: "plan", title: 'Escolha seu Plano', description: 'Selecione o plano ideal para sua página.', fields: ["plan"] },
-      { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
-    ];
-    return allSteps;
-  }, []);
+    const steps = useMemo(() => [
+        { id: "title",      title: 'Título da página',           description: 'Escreva o título dedicatório. Ex: João & Maria.',  fields: ["title", "titleColor"] },
+        { id: "message",    title: 'Sua Mensagem de Amor',       description: 'Escreva a mensagem principal.',                    fields: ["message", "messageFontSize", "messageFormatting"] },
+        { id: "specialDate",title: 'Data Especial',              description: 'Informe a data que simboliza o início de tudo.',   fields: ["specialDate", "countdownStyle", "countdownColor"] },
+        { id: "gallery",    title: 'Galeria de Fotos',           description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
+        { id: "timeline",   title: 'Linha do Tempo 3D',          description: 'Momentos flutuantes para uma viagem nostálgica.',  fields: ["timelineEvents"] },
+        { id: "music",      title: 'Música Dedicada',            description: 'Escolha uma trilha sonora ou grave sua voz.',      fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+        { id: "background", title: 'Animação de Fundo',          description: 'Escolha um efeito especial para o fundo.',         fields: ["backgroundAnimation", "heartColor"] },
+        { id: "puzzle",     title: 'Quebra-Cabeça Interativo',   description: 'Um desafio antes de revelar a surpresa!',          fields: ["enablePuzzle", "puzzleImage"] },
+        { id: "memory",     title: 'Jogo da Memória',            description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
+        { id: "quiz",       title: 'Quiz do Casal',              description: 'Crie um quiz divertido sobre vocês.',              fields: ["enableQuiz", "quizQuestions"] },
+        { id: "plan",       title: 'Escolha seu Plano',          description: 'Selecione o plano ideal para sua página.',         fields: ["plan"] },
+        { id: "payment",    title: 'Finalizar',                  description: 'Pague para gerar o link e QR Code.',               fields: ["payment", "qrCodeDesign"] },
+    ], []);
 
-  const methods = useForm<PageData>({
-    resolver: zodResolver(pageSchema),
-    mode: 'onChange',
-    defaultValues: { 
-        plan: plan,
-        title: "Seu Título Aqui",
-        message: "Sua mensagem de amor...",
-        messageFontSize: "text-base",
-        backgroundAnimation: "none",
-        galleryStyle: "Coverflow",
-        galleryImages: [], 
-        timelineEvents: [],
-        enablePuzzle: true,
-        enableMemoryGame: true,
-        enableQuiz: true,
-        quizQuestions: [],
-        musicOption: 'none',
-        qrCodeDesign: "classic",
-    }
-  });
-  
-  const { watch, trigger, setValue, getValues } = methods;
-  const formData = watch();
-  const intentId = watch('intentId');
+    const methods = useForm<PageData>({
+        resolver: zodResolver(pageSchema),
+        mode: 'onChange',
+        defaultValues: {
+            plan: plan,
+            title: "Seu Título Aqui",
+            message: "Sua mensagem de amor...",
+            messageFontSize: "text-base",
+            backgroundAnimation: "none",
+            galleryStyle: "Coverflow",
+            galleryImages: [],
+            timelineEvents: [],
+            // FIX #6: false como default — puzzle/memory/quiz desativados por padrão
+            // Assim o usuário passa pelo step sem ser bloqueado por validação
+            enablePuzzle: false,
+            enableMemoryGame: false,
+            enableQuiz: false,
+            quizQuestions: [],
+            musicOption: 'none',
+            qrCodeDesign: "classic",
+        }
+    });
 
-  const handleAutosave = useCallback(async () => {
-    if (!user || isUserLoading) return;
-    
-    const data = getValues(); 
-    const dataToSave = { ...data, userId: user.uid };
+    const { watch, trigger, setValue, getValues } = methods;
+    const formData = watch();
+    const intentId = watch('intentId');
 
-    try {
-        const result = await createOrUpdatePaymentIntent(dataToSave);
+    const handleAutosave = useCallback(async () => {
+        if (!user || isUserLoading) return;
+        const data = getValues();
+        const dataToSave = { ...data, userId: user.uid };
+        try {
+            const result = await createOrUpdatePaymentIntent(dataToSave);
+            if (result.success) {
+                localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
+                if (result.intentId && !dataToSave.intentId) {
+                    setValue('intentId', result.intentId, { shouldDirty: false });
+                }
+            } else {
+                console.error("Autosave failed:", result);
+                toast({
+                    variant: 'destructive',
+                    title: "Erro ao Salvar Rascunho",
+                    description: (
+                        <div>
+                            <p>{result.error}</p>
+                            <div className="mt-2 p-2 bg-black/30 rounded-md">
+                                <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                    {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+                    ),
+                    duration: 20000,
+                });
+                const errorString = (result.error || '').toLowerCase();
+                if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
+                    setValue('intentId', undefined, { shouldDirty: false });
+                }
+            }
+        } catch (e) {
+            console.error("Error during autosave:", e);
+        }
+    }, [user, isUserLoading, getValues, setValue, toast]);
 
-        if (result.success) {
-            const objectToStore = {
-                ...dataToSave,
-                intentId: result.intentId, 
-            };
-            
-            localStorage.setItem('amore-pages-autosave', JSON.stringify(objectToStore));
-            
-            if (result.intentId && !dataToSave.intentId) {
-                setValue('intentId', result.intentId, { shouldDirty: false });
+    const restoreFromLocalStorage = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const savedDataJSON = localStorage.getItem('amore-pages-autosave');
+        if (!savedDataJSON) return;
+        try {
+            const parsed = JSON.parse(savedDataJSON);
+            parsed.plan = plan;
+            if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
+            if (parsed.timelineEvents) {
+                parsed.timelineEvents.forEach((ev: any) => { if (ev.date) ev.date = new Date(ev.date); });
+            }
+            if (parsed.puzzleImage && typeof parsed.puzzleImage?.url !== 'string') delete parsed.puzzleImage;
+            if (parsed.audioRecording && typeof parsed.audioRecording?.url !== 'string') delete parsed.audioRecording;
+            if (parsed.backgroundVideo && typeof parsed.backgroundVideo?.url !== 'string') delete parsed.backgroundVideo;
+            methods.reset(parsed);
+        } catch (e) {
+            console.error("Falha ao carregar rascunho.", e);
+            localStorage.removeItem('amore-pages-autosave');
+            methods.reset();
+            toast({ variant: "destructive", title: 'Erro ao carregar rascunho', description: 'Não foi possível carregar seu progresso salvo. Começando um novo.' });
+        }
+    }, [methods, plan, toast]);
+
+    useEffect(() => {
+        setIsClient(true);
+        if (searchParams.get('new') === 'true') {
+            localStorage.removeItem('amore-pages-autosave');
+            methods.reset();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('new');
+            window.history.replaceState({}, '', url.toString());
+        } else {
+            restoreFromLocalStorage();
+        }
+    }, [searchParams, methods, restoreFromLocalStorage]);
+
+    useEffect(() => {
+        const subscription = watch(() => {
+            if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+            autosaveTimeoutRef.current = setTimeout(() => { handleAutosave(); }, 1500);
+        });
+        return () => {
+            subscription.unsubscribe();
+            if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+        };
+    }, [watch, handleAutosave]);
+
+    const handleNext = async () => {
+        const currentStepId = steps[currentStep].id;
+
+        if (currentStepId === 'puzzle') {
+            const currentData = getValues();
+            if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+                toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
+                return;
             }
         } else {
-            console.error("Autosave failed:", result);
-            toast({
-                variant: 'destructive',
-                title: "Erro ao Salvar Rascunho",
-                description: (
-                    <div>
-                        <p>{result.error}</p>
-                        <div className="mt-2 p-2 bg-black/30 rounded-md">
-                            <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
-                                {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
-                            </pre>
-                        </div>
-                    </div>
-                ),
-                duration: 20000,
-            });
-            const errorString = (result.error || '').toLowerCase();
-            if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
-                setValue('intentId', undefined, { shouldDirty: false });
+            const fieldsToValidate = steps[currentStep].fields || [];
+            const ok = await trigger(fieldsToValidate as any);
+            if (!ok) {
+                console.error("Erros de validação:", methods.formState.errors);
+                toast({ variant: "destructive", title: 'Campos obrigatórios', description: 'Por favor, verifique se preencheu tudo corretamente antes de prosseguir.' });
+                return;
             }
         }
-    } catch (e) {
-        console.error("Error during autosave:", e);
-    }
-  }, [user, isUserLoading, getValues, setValue, toast]);
-  
-  const restoreFromLocalStorage = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const savedDataJSON = localStorage.getItem('amore-pages-autosave');
-    if (!savedDataJSON) return;
 
-    try {
-        const parsed = JSON.parse(savedDataJSON);
-        parsed.plan = plan;
-        if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
-        if (parsed.timelineEvents) {
-            parsed.timelineEvents.forEach((ev: any) => { if(ev.date) ev.date = new Date(ev.date) });
+        const nextStepIndex = currentStep + 1;
+        if (steps[nextStepIndex]?.id === 'payment' && user) {
+            toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
+            await handleAutosave();
         }
-        
-        const cleanAndReset = (p: any) => {
-            if (p.puzzleImage && typeof p.puzzleImage?.url !== 'string') delete p.puzzleImage;
-            if (p.audioRecording && typeof p.audioRecording?.url !== 'string') delete p.audioRecording;
-            if (p.backgroundVideo && typeof p.backgroundVideo?.url !== 'string') delete p.backgroundVideo;
-            methods.reset(p);
-        }
-        cleanAndReset(parsed);
-
-    } catch(e) {
-        console.error("Falha ao carregar rascunho. O rascunho pode estar corrompido.", e);
-        localStorage.removeItem('amore-pages-autosave');
-        methods.reset();
-        toast({
-            variant: "destructive",
-            title: 'Erro ao carregar rascunho',
-            description: 'Não foi possível carregar seu progresso salvo. Começando um novo.'
-        });
-    }
-  }, [methods, plan, toast]);
-  
-  useEffect(() => {
-    setIsClient(true);
-    if (searchParams.get('new') === 'true') {
-      localStorage.removeItem('amore-pages-autosave');
-      methods.reset();
-      
-      const url = new URL(window.location.href);
-      url.searchParams.delete('new');
-      window.history.replaceState({}, '', url.toString());
-    } else {
-      restoreFromLocalStorage();
-    }
-  }, [searchParams, methods, restoreFromLocalStorage]);
-
-
-  useEffect(() => {
-    const subscription = watch(() => {
-        if (autosaveTimeoutRef.current) {
-            clearTimeout(autosaveTimeoutRef.current);
-        }
-        autosaveTimeoutRef.current = setTimeout(() => {
-            handleAutosave();
-        }, 1500);
-    });
-    
-    return () => {
-        subscription.unsubscribe();
-        if (autosaveTimeoutRef.current) {
-            clearTimeout(autosaveTimeoutRef.current);
-        }
+        setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
     };
-  }, [watch, handleAutosave]);
 
+    const handleBack = () => setCurrentStep(Math.max(0, currentStep - 1));
 
-  const handleNext = async () => {
-    const currentStepId = steps[currentStep].id;
-    
-    if (currentStepId === 'puzzle') {
-        const currentData = getValues();
-        if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
-            toast({
-                variant: "destructive",
-                title: 'Imagem Necessária',
-                description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.'
-            });
-            return;
-        }
-    } else {
-        const fieldsToValidate = steps[currentStep].fields || [];
-        const ok = await trigger(fieldsToValidate as any);
-        if (!ok) {
-            console.error("Erros de validação:", methods.formState.errors);
-            toast({ variant: "destructive", title: 'Campos obrigatórios', description: 'Por favor, verifique se preencheu tudo corretamente antes de prosseguir.' });
-            return;
-        }
-    }
-
-    const nextStepIndex = currentStep + 1;
-    
-    if (steps[nextStepIndex]?.id === 'payment' && user) {
-        toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
-        await handleAutosave();
-    }
-    
-    setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
-  };
-  
-  const handleBack = () => {
-      const prevStepIndex = currentStep - 1;
-      setCurrentStep(Math.max(0, prevStepIndex));
-  };
-  
-  const timelineEventsForDisplay = useMemo(() => {
-    if (!formData.timelineEvents) return [];
-    return formData.timelineEvents
-        .filter(event => event.image?.url)
-        .map(event => ({
-            id: event.id || Math.random().toString(),
-            imageUrl: event.image!.url,
-            alt: event.description || 'Memória',
-            title: event.description || '',
-            date: event.date ? new Date(event.date) : undefined,
-        }));
+    const timelineEventsForDisplay = useMemo(() => {
+        if (!formData.timelineEvents) return [];
+        return formData.timelineEvents
+            .filter(event => event.image?.url)
+            .map(event => ({
+                id: event.id || Math.random().toString(),
+                imageUrl: event.image!.url,
+                alt: event.description || 'Memória',
+                title: event.description || '',
+                date: event.date ? new Date(event.date) : undefined,
+            }));
     }, [isClient, formData.timelineEvents]);
 
-  if (showTimelinePreview) {
-      return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimelinePreview(false)} />;
-  }
-
-  const currentStepInfo = steps[currentStep];
-  const currentStepId = currentStepInfo?.id;
-  let StepComponent;
-
-  if (pageId) {
-      StepComponent = <SuccessStep pageId={pageId} />;
-  } else if (currentStepId === 'payment') {
-      StepComponent = <PaymentStep setPageId={setPageId} />;
-  } else {
-    const Comp = stepComponents[currentStep];
-    if (Comp) {
-      const props: any = { isVisible: currentStepId === 'background' };
-      if (currentStepId === 'puzzle') {
-        props.handleAutosave = handleAutosave;
-      }
-      StepComponent = <Comp {...props} />;
-    } else {
-      StepComponent = <div>Passo não encontrado.</div>;
+    if (showTimelinePreview) {
+        return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimelinePreview(false)} />;
     }
-  }
-  
-  const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
 
-  return (
-    <FormProvider {...methods}>
-      <div className="md:grid md:grid-cols-2 md:h-screen md:overflow-hidden">
-        
-        <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
-            <PreviewContent 
-                isClient={isClient}
-                onShowTimeline={() => setShowTimelinePreview(true)}
-                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
-                showPuzzlePreview={showPuzzlePreview}
-                previewPuzzleRevealed={previewPuzzleRevealed}
-                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-            />
-        </div>
+    const currentStepInfo = steps[currentStep];
+    const currentStepId = currentStepInfo?.id;
+    let StepComponent;
 
-        <div className="flex-grow p-6 md:p-12 md:overflow-y-auto">
-          <div className="flex justify-between items-center">
-              <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep===0}><ArrowLeft /></Button>
-              <div className="flex-grow flex flex-col items-center gap-2 mx-4">
-                  <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
-                  <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
-              </div>
-              <Button type="button" onClick={handleNext} disabled={currentStep===steps.length-1}><ChevronRightIcon /></Button>
-          </div>
+    if (pageId) {
+        StepComponent = <SuccessStep pageId={pageId} />;
+    } else if (currentStepId === 'payment') {
+        StepComponent = <PaymentStep setPageId={setPageId} />;
+    } else {
+        const Comp = stepComponents[currentStep];
+        if (Comp) {
+            const props: any = { isVisible: currentStepId === 'background' };
+            if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
+            StepComponent = <Comp {...props} />;
+        } else {
+            StepComponent = <div>Passo não encontrado.</div>;
+        }
+    }
 
-          <div className="mt-8 space-y-2">
-              <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
-              <p className="text-muted-foreground">{steps[currentStep].description}</p>
-          </div>
-          
-          <div className="my-8">
-              {StepComponent}
-          </div>
+    const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
 
-          <div className="md:hidden mt-16 pb-16">
-            <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
-                <p>Ou veja como está ficando</p>
-                <ChevronDown className="w-5 h-5 animate-bounce-subtle"/>
+    return (
+        <FormProvider {...methods}>
+            <div className="md:grid md:grid-cols-2 md:h-screen md:overflow-hidden">
+                <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
+                    <PreviewContent
+                        isClient={isClient}
+                        onShowTimeline={() => setShowTimelinePreview(true)}
+                        hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                        showPuzzlePreview={showPuzzlePreview}
+                        previewPuzzleRevealed={previewPuzzleRevealed}
+                        setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                    />
+                </div>
+                <div className="flex-grow p-6 md:p-12 md:overflow-y-auto">
+                    <div className="flex justify-between items-center">
+                        <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep === 0}><ArrowLeft /></Button>
+                        <div className="flex-grow flex flex-col items-center gap-2 mx-4">
+                            <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
+                            <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
+                        </div>
+                        <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}><ChevronRightIcon /></Button>
+                    </div>
+                    <div className="mt-8 space-y-2">
+                        <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
+                        <p className="text-muted-foreground">{steps[currentStep].description}</p>
+                    </div>
+                    <div className="my-8">
+                        {StepComponent}
+                    </div>
+                    <div className="md:hidden mt-16 pb-16">
+                        <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
+                            <p>Ou veja como está ficando</p>
+                            <ChevronDown className="w-5 h-5 animate-bounce-subtle" />
+                        </div>
+                        <div className="relative w-full">
+                            <PreviewContent
+                                isClient={isClient}
+                                onShowTimeline={() => setShowTimelinePreview(true)}
+                                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                                showPuzzlePreview={showPuzzlePreview}
+                                previewPuzzleRevealed={previewPuzzleRevealed}
+                                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className='relative w-full'>
-                <PreviewContent 
-                    isClient={isClient}
-                    onShowTimeline={() => setShowTimelinePreview(true)}
-                    hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
-                    showPuzzlePreview={showPuzzlePreview}
-                    previewPuzzleRevealed={previewPuzzleRevealed}
-                    setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
-                />
-            </div>
-          </div>
-        </div>
-      </div>
-    </FormProvider>
-  );
+        </FormProvider>
+    );
 }
 
 export default function CreatePageWizard() {
@@ -2454,19 +2169,21 @@ export default function CreatePageWizard() {
         <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-primary h-12 w-12" /></div>}>
             <WizardInternal />
         </Suspense>
-    )
+    );
 }
 
-
-const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number, limit: number, itemType: string }) => {
+// ─────────────────────────────────────────────
+// IMAGE LIMIT WARNING
+// ─────────────────────────────────────────────
+const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number; limit: number; itemType: string }) => {
     if (currentCount > limit) {
-         return (
+        return (
             <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Limite Excedido</AlertTitle>
                 <AlertDescription>{`Você excedeu o limite de ${limit} ${itemType}. Remova algumas para continuar.`}</AlertDescription>
             </Alert>
-         )
+        );
     }
     return (
         <Alert variant={currentCount === limit ? "destructive" : "default"}>
@@ -2474,8 +2191,6 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
             <AlertTitle>Contador de Imagens</AlertTitle>
             <AlertDescription>{`Você usou ${currentCount} de ${limit} ${itemType}.`}</AlertDescription>
         </Alert>
-    )
+    );
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
-    
