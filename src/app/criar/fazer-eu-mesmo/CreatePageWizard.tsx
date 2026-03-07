@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -1345,6 +1346,7 @@ const PlanStep = React.memo(() => {
         id: string;
         name: string;
         price: string;
+        originalPrice?: string;
         description: string;
         features: Array<{ text: string; included: boolean; icon?: any; highlight?: boolean }>;
     }> = [
@@ -1364,6 +1366,7 @@ const PlanStep = React.memo(() => {
             id: 'avancado',
             name: 'Plano Avançado',
             price: '24,90',
+            originalPrice: '39,90',
             description: 'A experiência completa, para sempre.',
             features: [
                 { text: 'Todos os recursos de personalização', included: true },
@@ -1391,9 +1394,21 @@ const PlanStep = React.memo(() => {
                         <div className="p-6 pt-12 flex-grow flex flex-col">
                             <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
                             <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
-                            <div className="flex items-baseline gap-1 my-4">
-                                <span className="text-foreground text-4xl font-black">R${planInfo.price}</span>
-                                <span className="text-muted-foreground text-sm">/pagamento único</span>
+                            <div className="my-4 text-center">
+                                {planInfo.originalPrice && (
+                                  <p className="text-zinc-500 text-lg line-through font-medium">De R${planInfo.originalPrice}</p>
+                                )}
+                                <div className="flex items-baseline gap-1 justify-center">
+                                    <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
+                                    <span className="text-muted-foreground text-sm">/pagamento único</span>
+                                </div>
+                                {planInfo.originalPrice && (
+                                     <div className="flex justify-center mt-2">
+                                        <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full">
+                                            💝 Especial Dia da Mulher
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <ul className="space-y-3 text-sm flex-grow">
                                 {planInfo.features.map((feature, i) => (

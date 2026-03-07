@@ -1,4 +1,3 @@
-
 "use client";
 import Link from 'next/link';
 import { Star, Hourglass, DatabaseZap, Gamepad2, Puzzle, ShieldCheck, Zap, Users, ArrowRight, Sparkles } from 'lucide-react';
@@ -99,7 +98,7 @@ function AdvancedCard() {
         <div className="mb-6 p-4 rounded-2xl" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div className="flex items-start gap-3 justify-center">
             <div className="text-center">
-              <p className="text-zinc-500 text-sm line-through font-medium">De R$49,90</p>
+              <p className="text-zinc-500 text-lg line-through font-medium">De R$39,90</p>
               <div className="flex items-baseline gap-1 justify-center">
                 <span className="text-zinc-400 text-lg font-bold">R$</span>
                 <span className="text-5xl font-black text-white leading-none">24</span>
@@ -109,8 +108,8 @@ function AdvancedCard() {
             </div>
           </div>
           <div className="flex justify-center mt-3">
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
-              💚 Você economiza R$25,00
+            <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full">
+              💝 Especial Dia da Mulher (Economize R$15)
             </span>
           </div>
         </div>
