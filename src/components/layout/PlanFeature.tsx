@@ -1,4 +1,6 @@
+"use client"
 
+import * as React from "react"
 import { CheckCircle, XCircle, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
