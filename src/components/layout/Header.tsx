@@ -81,48 +81,25 @@ export default function Header() {
 
     if (user && user.uid) {
       return (
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <button className="relative h-9 w-9 rounded-full ring-2 ring-purple-500/40 ring-offset-2 ring-offset-transparent hover:ring-purple-400 transition-all duration-200 focus:outline-none">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
-                <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
-                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-56 bg-zinc-900/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 rounded-2xl"
-            align="end"
-            forceMount
+        <div className="flex items-center gap-2">
+          <Link href="/minhas-paginas" title="Minhas Páginas">
+            <Avatar className="h-9 w-9 ring-2 ring-purple-500/40 ring-offset-2 ring-offset-background hover:ring-purple-400 transition-all cursor-pointer">
+              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
+              <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            size="sm"
+            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
-            <DropdownMenuLabel className="font-normal px-3 py-3">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-semibold text-white leading-none">
-                  Olá, {user.displayName || "Meu Perfil"} 👋
-                </p>
-                <p className="text-xs leading-none text-zinc-400 mt-1">{user.email}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem
-              onClick={() => router.push("/minhas-paginas")}
-              className="cursor-pointer text-zinc-200 hover:text-white focus:text-white focus:bg-white/10 rounded-xl mx-1 px-3 py-2.5"
-            >
-              <Heart className="mr-2 h-4 w-4 text-pink-400" />
-              <span>Minhas Páginas</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem
-              onClick={handleSignOut}
-              className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 rounded-xl mx-1 px-3 py-2.5 mb-1"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
+        </div>
       );
     }
 
@@ -306,3 +283,5 @@ export default function Header() {
     </motion.header>
   );
 }
+
+    

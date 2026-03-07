@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -360,7 +359,7 @@ const GalleryStep = React.memo(() => {
         control,
         name: "galleryImages",
     });
-    const { user, storage } = useFirebase();
+    const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     
@@ -369,6 +368,10 @@ const GalleryStep = React.memo(() => {
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
 
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
         if (!user) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
@@ -524,7 +527,7 @@ const TimelineStep = React.memo(() => {
         name: "timelineEvents",
     });
 
-    const { user, storage } = useFirebase();
+    const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -535,6 +538,10 @@ const TimelineStep = React.memo(() => {
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
 
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
         if (!user) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
@@ -769,7 +776,7 @@ TimelineStep.displayName = 'TimelineStep';
 
 const MusicStep = React.memo(() => {
     const { control, setValue, getValues } = useFormContext<PageData>();
-    const { user, storage } = useFirebase();
+    const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const musicOption = useWatch({ control, name: "musicOption" });
     const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
@@ -830,8 +837,12 @@ const MusicStep = React.memo(() => {
     }
 
   const uploadRecording = async (audioBlob: Blob) => {
+    if (isUserLoading) {
+        toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+        return;
+    }
     if (!storage || !user) {
-        toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação.' });
+        toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação. Faça login novamente.' });
         return;
     }
     setRecordingStatus('uploading');
@@ -1157,13 +1168,17 @@ BackgroundStep.displayName = 'BackgroundStep';
 
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
-    const { user, storage } = useFirebase();
+    const { user, storage, isUserLoading } = useFirebase();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
 
     const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
         if (event.target.files && event.target.files[0] && user && storage) {
             const file = event.target.files[0];
             setIsProcessing(true);
@@ -2316,6 +2331,8 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
     
 
+
+    
 
     
 
