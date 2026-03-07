@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
-import PageClientComponent from './PageClientComponent';
+import PageClientComponentV1 from './PageClientComponentV1'; // Import V1
+import PageClientComponent from './PageClientComponent'; // This is now V2
 import { LoadingState, ErrorState } from './PageStates';
 
 // =================================================================
@@ -66,10 +67,15 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
       )
   }
 
+  // Version-based rendering logic
+  const version = rawPageData.componentVersion || 'v1';
+
   // Success case
   return (
       <Suspense fallback={<LoadingState />}>
-        <PageClientComponent pageData={rawPageData} />
-      </Suspense>
-  );
-}
+        {version === 'v2' ? (
+          <PageClientComponent pageData={rawPageData} />
+        ) : (
+          <PageClientComponentV1 pageData={rawPageData} />
+        )}
+      </Susp

@@ -1,3 +1,7 @@
+// ESTE ARQUIVO AGORA É A VERSÃO 2 (V2)
+// As páginas antigas usarão PageClientComponentV1.tsx
+// Todas as suas novas alterações devem ser feitas aqui.
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -552,3 +556,5 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     </div>
   );
 }
+```
+
