@@ -556,5 +556,3 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     </div>
   );
 }
-```
-
