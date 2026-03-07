@@ -1286,7 +1286,7 @@ PuzzleStep.displayName = 'PuzzleStep';
 
 const MemoryGameStep = React.memo(() => {
     const { control, watch, setValue } = useFormContext<PageData>();
-    const { user, storage } = useFirebase();
+    const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const { fields, append, remove } = useFieldArray({
         control,
@@ -1299,7 +1299,16 @@ const MemoryGameStep = React.memo(() => {
     const isLimitReached = fields.length >= MAX_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || !user || !storage) return;
+        if (!event.target.files) return;
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+
         const availableSlots = MAX_IMAGES - fields.length;
         if (availableSlots <= 0) return;
 
@@ -1604,7 +1613,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
     const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
-    const { user } = useUser();
+    const { user } = useFirebase();
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState<{ message: string; details?: any } | null>(null);
@@ -2120,13 +2129,27 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
     );
 };
 
+const stepComponents = [
+    TitleStep,
+    MessageStep,
+    SpecialDateStep,
+    GalleryStep,
+    TimelineStep,
+    MusicStep,
+    BackgroundStep,
+    PuzzleStep,
+    MemoryGameStep,
+    QuizStep,
+    PlanStep,
+];
+
 function WizardInternal() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [showTimelinePreview, setShowTimelinePreview] = useState(false);
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading } = useFirebase();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [pageId, setPageId] = useState<string | null>(null);
@@ -2356,16 +2379,16 @@ function WizardInternal() {
   } else if (currentStepId === 'payment') {
       StepComponent = <PaymentStep setPageId={setPageId} />;
   } else {
-      const Comp = stepComponents[currentStep];
-      if (Comp) {
-          const props: any = { isVisible: currentStepId === 'background' };
-          if (currentStepId === 'puzzle') {
-              props.handleAutosave = handleAutosave;
-          }
-          StepComponent = <Comp {...props} />;
-      } else {
-          StepComponent = <div>Passo não encontrado.</div>;
+    const Comp = stepComponents[currentStep];
+    if (Comp) {
+      const props: any = { isVisible: currentStepId === 'background' };
+      if (currentStepId === 'puzzle') {
+        props.handleAutosave = handleAutosave;
       }
+      StepComponent = <Comp {...props} />;
+    } else {
+      StepComponent = <div>Passo não encontrado.</div>;
+    }
   }
   
   const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
