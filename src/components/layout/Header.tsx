@@ -81,25 +81,35 @@ export default function Header() {
 
     if (user && user.uid) {
       return (
-        <div className="flex items-center gap-2">
-          <Link href="/minhas-paginas" title="Minhas Páginas">
-            <Avatar className="h-9 w-9 ring-2 ring-purple-500/40 ring-offset-2 ring-offset-background hover:ring-purple-400 transition-all cursor-pointer">
-              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
-              <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-          <Button
-            onClick={handleSignOut}
-            variant="ghost"
-            size="sm"
-            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 focus:outline-none rounded-full focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+              <Avatar className="h-9 w-9 ring-2 ring-purple-500/40 ring-offset-2 ring-offset-background hover:ring-purple-400 transition-all cursor-pointer">
+                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
+                <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuLabel>
+              {user.displayName || user.email}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/minhas-paginas" className="cursor-pointer">
+                <Heart className="mr-2 h-4 w-4" />
+                <span>Minhas Páginas</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     }
 
