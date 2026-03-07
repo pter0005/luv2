@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
-import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState } from "react-hook-form";
+import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
@@ -17,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -372,12 +373,8 @@ const GalleryStep = React.memo(() => {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
         }
-        if (!user) {
+        if (!user || !storage) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
-            return;
-        }
-        if (!storage) {
-            toast({ variant: 'destructive', title: 'Serviço indisponível', description: 'Aguarde um momento e tente novamente.' });
             return;
         }
 
@@ -542,12 +539,8 @@ const TimelineStep = React.memo(() => {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
         }
-        if (!user) {
+        if (!user || !storage) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
-            return;
-        }
-        if (!storage) {
-            toast({ variant: 'destructive', title: 'Serviço indisponível', description: 'Aguarde um momento e tente novamente.' });
             return;
         }
 
@@ -1530,6 +1523,82 @@ const QuizStep = React.memo(() => {
 });
 QuizStep.displayName = 'QuizStep';
 
+const PlanStep = React.memo(() => {
+    const { control } = useFormContext<PageData>();
+    const { field } = useController({ name: 'plan', control });
+
+    const plans = [
+        {
+            id: 'basico',
+            name: 'Plano Econômico',
+            price: '14,90',
+            description: 'Uma surpresa impactante com prazo definido.',
+            features: [
+                { text: 'Todos os recursos de personalização', included: true },
+                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
+                { text: 'Página disponível por 25 horas', included: true, icon: Hourglass },
+                { text: 'Página permanente', included: false },
+            ]
+        },
+        {
+            id: 'avancado',
+            name: 'Plano Avançado',
+            price: '24,90',
+            description: 'A experiência completa, para sempre.',
+            features: [
+                { text: 'Todos os recursos de personalização', included: true },
+                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
+                { text: 'Página permanente + backup infinito', included: true, icon: DatabaseZap, highlight: true },
+                { text: 'Página disponível por 25 horas', included: false },
+            ]
+        }
+    ];
+
+    return (
+        <RadioGroup
+            onValueChange={field.onChange}
+            value={field.value}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+            {plans.map((planInfo) => {
+                const isSelected = field.value === planInfo.id;
+                return (
+                    <Label key={planInfo.id} htmlFor={`plan-${planInfo.id}`} className={cn(
+                        "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300",
+                        "bg-card/50 border-2",
+                        isSelected ? "border-primary shadow-2xl shadow-primary/20" : 'border-border hover:border-primary/40'
+                    )}>
+                        <RadioGroupItem value={planInfo.id} id={`plan-${planInfo.id}`} className="sr-only peer" />
+                        {planInfo.id === 'avancado' && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg z-10">MAIS POPULAR</div>
+                        )}
+                        <div className="p-6 pt-12 flex-grow flex flex-col">
+                            <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
+                            <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
+                            <div className="flex items-baseline gap-1 my-4">
+                                <span className="text-foreground text-4xl font-black">R${planInfo.price}</span>
+                                <span className="text-muted-foreground text-sm">/pagamento único</span>
+                            </div>
+                            <ul className="space-y-3 text-sm flex-grow">
+                                {planInfo.features.map((feature, i) => (
+                                    <li key={i} className="flex items-center gap-3">
+                                        {feature.included ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <XCircle className="w-5 h-5 text-muted-foreground/50 shrink-0" />}
+                                        <span className={cn('leading-tight', !feature.included && 'line-through text-muted-foreground/70', feature.highlight && 'text-primary font-bold')}>{feature.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                         <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
+                            {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
+                        </div>
+                    </Label>
+                );
+            })}
+        </RadioGroup>
+    );
+});
+PlanStep.displayName = "PlanStep";
+
 const stepComponents: React.ComponentType<any>[] = [
     TitleStep,
     MessageStep,
@@ -1541,6 +1610,7 @@ const stepComponents: React.ComponentType<any>[] = [
     PuzzleStep,
     MemoryGameStep,
     QuizStep,
+    PlanStep,
 ];
 
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
@@ -2002,6 +2072,7 @@ function WizardInternal() {
       { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"] },
       { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
       { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"] },
+      { id: "plan", title: 'Escolha seu Plano', description: 'Selecione o plano ideal para sua página.', fields: ["plan"] },
       { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
     ];
     return allSteps;
@@ -2209,15 +2280,17 @@ function WizardInternal() {
       StepComponent = <SuccessStep pageId={pageId} />;
   } else if (currentStepId === 'payment') {
       StepComponent = <PaymentStep setPageId={setPageId} />;
-  } else if (currentStepId === 'quiz') {
-      StepComponent = <QuizStep />;
   } else {
-    const Comp = stepComponents[currentStep];
-    const props: any = { isVisible: currentStepId === 'background' };
-    if (currentStepId === 'puzzle') {
-        props.handleAutosave = handleAutosave;
-    }
-    StepComponent = <Comp {...props} />;
+      const Comp = stepComponents[currentStep];
+      if (Comp) {
+          const props: any = { isVisible: currentStepId === 'background' };
+          if (currentStepId === 'puzzle') {
+              props.handleAutosave = handleAutosave;
+          }
+          StepComponent = <Comp {...props} />;
+      } else {
+          StepComponent = <div>Passo não encontrado.</div>;
+      }
   }
   
   const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
@@ -2306,34 +2379,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-    
-
-
-
-
-
-    
-
-
-    
-
-    
-
-    
