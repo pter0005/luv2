@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -14,7 +13,6 @@ import 'swiper/css/effect-cards';
 import 'swiper/css/effect-flip';
 import 'swiper/css/effect-cube';
 import dynamic from 'next/dynamic';
-import { setCookie, hasCookie } from 'cookies-next';
 
 import Countdown from '@/app/criar/fazer-eu-mesmo/Countdown';
 import FallingHearts from '@/components/effects/FallingHearts';
@@ -79,8 +77,6 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
-
-  const cookieName = `puzzle_solved_${pageData.id}`;
 
   const puzzleImageSrc = useMemo(() => {
     if (!pageData.puzzleImage) return null;
@@ -149,17 +145,14 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     setShowExplosion(true);
     setPuzzleRevealed(true);
     playerRef.current?.play();
-    setCookie(cookieName, 'true', { maxAge: 60 * 60 * 24 * 30, path: '/' }); 
-  }, [cookieName]);
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
-    if (hasCookie(cookieName)) {
-      setPuzzleRevealed(true);
-    } else if (!hasPuzzle) {
+    if (!hasPuzzle) {
       setPuzzleRevealed(true);
     }
-  }, [hasPuzzle, cookieName]);
+  }, [hasPuzzle]);
 
   useEffect(() => {
     if (isPuzzleComplete) {
