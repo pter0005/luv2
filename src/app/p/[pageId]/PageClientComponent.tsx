@@ -220,7 +220,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           alt="MyCupid Logo"
           width={600}
           height={171}
-          className="w-auto h-40 object-contain"
+          className="w-auto h-28 object-contain"
           priority
         />
       </header>
@@ -345,6 +345,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 <Mail size={24} />
             </a>
             </div>
+            <p className="text-xs text-muted-foreground/50 mt-8">
+              Criado com <a href="https://mycupid.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">MyCupid</a>
+            </p>
         </footer>
       </motion.main>
 
