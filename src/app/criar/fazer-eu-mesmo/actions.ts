@@ -223,6 +223,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 };
             } catch (error) {
                 console.error(`Failed to move file from ${oldPath} to ${newPath}:`, error);
+                // If move fails, return the original object which points to temp file.
+                // This is a potential issue if temp files are cleaned up, but better than failing the whole process.
                 return fileObject;
             }
         };
@@ -266,8 +268,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.paymentId = paymentId;
         finalData.status = 'paid';
 
-        if (finalData.plan === 'basico') {
-            finalData.expireAt = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+        const isAdminFinalization = paymentId.startsWith('admin_finalize_');
+
+        // Set an expiry date ONLY if the plan is 'basico' AND it's a regular user payment.
+        if (finalData.plan === 'basico' && !isAdminFinalization) {
+            finalData.expireAt = Timestamp.fromMillis(Date.now() + 12 * 60 * 60 * 1000); // 12 hours TTL
         }
 
         await db.collection('lovepages').doc(newPageId).set(finalData);

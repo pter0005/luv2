@@ -1,3 +1,4 @@
+
 "use client";
 import Link from 'next/link';
 import { Star, TestTube, Hourglass, DatabaseZap, Gamepad2, Puzzle } from 'lucide-react';
@@ -50,7 +51,7 @@ const PlansSection = () => {
                         <PlanFeature text='Linha do Tempo 3D (até 20 momentos)' />
                         <PlanFeature text='Quebra-cabeça Interativo' icon={Puzzle} />
                         <PlanFeature text='Jogo da Memória e Quiz do Casal' icon={Gamepad2} />
-                        <PlanFeature text='Página disponível por 24h' icon={Hourglass} />
+                        <PlanFeature text='Página disponível por 12h' icon={Hourglass} />
                     </ul>
                      <Button asChild size="lg" className="w-full mt-auto" variant="secondary">
                         <Link href="/login?redirect=/criar?plan=basico&new=true">Criar com Plano Econômico</Link>
