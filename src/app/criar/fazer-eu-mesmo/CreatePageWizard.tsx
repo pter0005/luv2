@@ -1962,7 +1962,7 @@ function WizardInternal() {
   const { user, isUserLoading } = useUser();
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const [pageId, setPageId] = useState<string | null>(pageId);
+  const [pageId, setPageId] = useState<string | null>(null);
   
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
