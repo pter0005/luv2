@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -13,7 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase/provider";
@@ -45,22 +44,22 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [lastY, setLastY] = useState(0);
+  const lastYRef = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentY = window.scrollY;
       setScrolled(currentY > 20);
-      if (currentY > lastY && currentY > 100) {
+      if (currentY > lastYRef.current && currentY > 100) {
         setHidden(true);
       } else {
         setHidden(false);
       }
-      setLastY(currentY);
+      lastYRef.current = currentY;
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastY]);
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -82,20 +81,48 @@ export default function Header() {
 
     if (user && user.uid) {
       return (
-        <div className="flex items-center gap-4">
-          <Link href="/minhas-paginas" className="flex items-center gap-2 focus:outline-none rounded-full focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-            <Avatar className="h-9 w-9 ring-2 ring-purple-500/40 ring-offset-2 ring-offset-background hover:ring-purple-400 transition-all cursor-pointer">
-              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
-              <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-          <Button onClick={handleSignOut} size="sm" variant="ghost" className="text-muted-foreground hover:text-red-400">
-            <LogOut size={16} />
-            <span className="ml-2 hidden sm:inline">Sair</span>
-          </Button>
-        </div>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <button className="relative h-9 w-9 rounded-full ring-2 ring-purple-500/40 ring-offset-2 ring-offset-transparent hover:ring-purple-400 transition-all duration-200 focus:outline-none">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "Usuário"} />
+                <AvatarFallback className="bg-purple-600 text-white text-sm font-semibold">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : <UserCircle size={16} />}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-56 bg-zinc-900/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 rounded-2xl"
+            align="end"
+            forceMount
+          >
+            <DropdownMenuLabel className="font-normal px-3 py-3">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-semibold text-white leading-none">
+                  Olá, {user.displayName || "Meu Perfil"} 👋
+                </p>
+                <p className="text-xs leading-none text-zinc-400 mt-1">{user.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem
+              onClick={() => router.push("/minhas-paginas")}
+              className="cursor-pointer text-zinc-200 hover:text-white focus:text-white focus:bg-white/10 rounded-xl mx-1 px-3 py-2.5"
+            >
+              <Heart className="mr-2 h-4 w-4 text-pink-400" />
+              <span>Minhas Páginas</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 rounded-xl mx-1 px-3 py-2.5 mb-1"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     }
 
@@ -136,19 +163,16 @@ export default function Header() {
             : "bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm"
         )}
       >
-        <div className="container flex items-center justify-between h-24 px-4 md:px-6">
+        <div className="container flex items-center justify-between h-36 px-4 md:px-6">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <motion.div whileHover={{ scale: 1.04 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={headerLogoUrl}
                 alt="MyCupid Logo"
-                width={400}
-                height={100}
-                className="w-auto h-16 md:h-20 object-contain"
-                data-ai-hint="logo"
-                priority
+                style={{ height: "120px", width: "auto", objectFit: "contain", display: "block" }}
               />
             </motion.div>
           </Link>
@@ -279,5 +303,3 @@ export default function Header() {
     </motion.header>
   );
 }
-
-    

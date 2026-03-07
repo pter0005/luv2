@@ -20,7 +20,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
@@ -66,6 +66,89 @@ const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) =>
 });
 GalleryImage.displayName = 'GalleryImage';
 
+// ─────────────────────────────────────────────────────────────
+// EXPIRY BANNER — mostra quando plano basico está quase expirando
+// ─────────────────────────────────────────────────────────────
+function ExpiryBanner({ expireAt }: { expireAt: any }) {
+    const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+    const [isExpired, setIsExpired] = useState(false);
+
+    useEffect(() => {
+        const getExpiryDate = () => {
+            if (!expireAt) return null;
+            if (typeof expireAt === 'object' && (expireAt.seconds || expireAt._seconds)) {
+                return new Date((expireAt.seconds || expireAt._seconds) * 1000);
+            }
+            const d = new Date(expireAt);
+            return isNaN(d.getTime()) ? null : d;
+        };
+
+        const expiryDate = getExpiryDate();
+        if (!expiryDate) return;
+
+        const tick = () => {
+            const diff = expiryDate.getTime() - Date.now();
+            if (diff <= 0) {
+                setIsExpired(true);
+                setTimeLeft(null);
+                return;
+            }
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft({ hours, minutes, seconds });
+        };
+
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [expireAt]);
+
+    // Não mostrar se não tiver expiração (plano avançado)
+    if (!expireAt) return null;
+    // Não mostrar se ainda falta mais de 5 horas
+    if (timeLeft && timeLeft.hours >= 5) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+                "fixed top-0 left-0 right-0 z-[200] px-4 py-3 text-center text-sm font-bold",
+                isExpired
+                    ? "bg-red-600 text-white"
+                    : "bg-amber-500 text-black"
+            )}
+        >
+            {isExpired ? (
+                <div className="flex items-center justify-center gap-2">
+                    <AlertTriangle size={16} />
+                    <span>Esta página expirou.</span>
+                    <a href="https://mycupid.com.br" className="underline ml-2">Criar nova página →</a>
+                </div>
+            ) : timeLeft ? (
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <Clock size={16} className="animate-pulse" />
+                    <span>
+                        Esta página expira em{' '}
+                        <span className="tabular-nums font-black">
+                            {timeLeft.hours > 0 && `${timeLeft.hours}h `}
+                            {String(timeLeft.minutes).padStart(2, '0')}m{' '}
+                            {String(timeLeft.seconds).padStart(2, '0')}s
+                        </span>
+                    </span>
+                    <a
+                        href="https://mycupid.com.br"
+                        className="ml-3 px-3 py-1 bg-black/20 hover:bg-black/30 rounded-full text-xs transition-all"
+                    >
+                        Tornar permanente →
+                    </a>
+                </div>
+            ) : null}
+        </motion.div>
+    );
+}
+
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGames, setShowGames] = useState(false);
@@ -83,7 +166,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     if (typeof pageData.puzzleImage === 'object' && pageData.puzzleImage.url) {
         return pageData.puzzleImage.url;
     }
-    if (typeof pageData.puzzleImage === 'string') { // Support for old format
+    if (typeof pageData.puzzleImage === 'string') {
         return pageData.puzzleImage;
     }
     return null;
@@ -93,24 +176,16 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     return !!(pageData.enablePuzzle && puzzleImageSrc);
   }, [pageData.enablePuzzle, puzzleImageSrc]);
 
-
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
 
   const hasQuiz = useMemo(() => !!(pageData.enableQuiz && pageData.quizQuestions?.length > 0), [pageData.enableQuiz, pageData.quizQuestions]);
 
-
   const timelineEventsForDisplay = useMemo(() => {
-    if (!Array.isArray(pageData.timelineEvents)) {
-      return [];
-    }
+    if (!Array.isArray(pageData.timelineEvents)) return [];
     return pageData.timelineEvents
-      .filter((event: any) =>
-        event &&
-        event.image &&
-        typeof event.image.url === 'string'
-      )
+      .filter((event: any) => event && event.image && typeof event.image.url === 'string')
       .map((event: any) => {
         let dateObj;
         if (event.date) {
@@ -121,14 +196,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 } else {
                     d = new Date(event.date);
                 }
-                if (!isNaN(d.getTime())) {
-                    dateObj = d;
-                }
+                if (!isNaN(d.getTime())) dateObj = d;
             } catch {
                 dateObj = undefined;
             }
         }
-
         return {
             id: event.id || Math.random().toString(),
             imageUrl: event.image!.url,
@@ -156,9 +228,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     if (isPuzzleComplete) {
-      const timer = setTimeout(() => {
-        handleReveal();
-      }, 700);
+      const timer = setTimeout(() => { handleReveal(); }, 700);
       return () => clearTimeout(timer);
     }
   }, [isPuzzleComplete, handleReveal]);
@@ -166,25 +236,18 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const targetDateIso = useMemo(() => {
     if (!pageData.specialDate) return null;
     const d = pageData.specialDate;
-
     try {
         let date: Date | null = null;
         if (d && typeof d === 'object') {
             const seconds = (d as any)._seconds || (d as any).seconds;
-            if (seconds) {
-                date = new Date(seconds * 1000);
-            }
+            if (seconds) date = new Date(seconds * 1000);
         } else if (d) {
             date = new Date(d);
         }
-
-        if (date && !isNaN(date.getTime())) {
-            return date.toISOString();
-        }
+        if (date && !isNaN(date.getTime())) return date.toISOString();
     } catch {
         return null;
     }
-
     return null;
   }, [pageData.specialDate]);
 
@@ -194,6 +257,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
+      
+      {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirar */}
+      <ExpiryBanner expireAt={pageData.expireAt} />
       
       <AnimatePresence>
         {showExplosion && (
@@ -446,9 +512,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   <div className="space-y-2">
                       <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
                           Um Enigma de{' '}
-                          <span className="gradient-text">
-                            Amor
-                          </span>
+                          <span className="gradient-text">Amor</span>
                       </h2>
                       <p className="text-white/70 text-sm max-w-xs mx-auto">
                           Resolva o quebra-cabeça para revelar uma surpresa especial.
