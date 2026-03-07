@@ -59,12 +59,26 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
         return { success: false, error: 'Usuário não logado.', details: 'User ID was not provided in the page data.' };
     }
     try {
-        const db = getAdminFirestore(); 
+        const db = getAdminFirestore();
         const dataToSave = { ...sanitizeForFirebase(restOfPageData), updatedAt: Timestamp.now(), expireAt: Timestamp.fromMillis(Date.now() + (24 * 60 * 60 * 1000)) };
+        
         if (intentId) {
-            await db.collection('payment_intents').doc(intentId).set(dataToSave, { merge: true });
+            const intentRef = db.collection('payment_intents').doc(intentId);
+            const docSnap = await intentRef.get();
+
+            // *** PROTECTION LOGIC ***
+            // If the intent document exists and its status is 'completed', we must not overwrite it.
+            // This prevents the autosave from reverting a finalized page back to a draft state
+            // with temporary file URLs, which would break the images.
+            if (docSnap.exists && docSnap.data()?.status === 'completed') {
+                return { success: true, intentId }; // Silently succeed without writing.
+            }
+
+            // If not completed, proceed with the update.
+            await intentRef.set(dataToSave, { merge: true });
             return { success: true, intentId };
         } else {
+            // If no intentId, create a new draft.
             const intentDoc = await db.collection('payment_intents').add({ ...dataToSave, status: 'pending', createdAt: Timestamp.now() });
             return { success: true, intentId: intentDoc.id };
         }
