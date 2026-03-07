@@ -360,8 +360,7 @@ const GalleryStep = React.memo(() => {
         control,
         name: "galleryImages",
     });
-    const { user } = useUser();
-    const { storage } = useFirebase();
+    const { user, storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     
@@ -525,8 +524,7 @@ const TimelineStep = React.memo(() => {
         name: "timelineEvents",
     });
 
-    const { user } = useUser();
-    const { storage } = useFirebase();
+    const { user, storage } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2318,5 +2316,7 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
     
 
+
+    
 
     
