@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -192,30 +193,6 @@ export default function QuizGame({ questions }: QuizGameProps) {
           transition={{ delay: 0.7 }} className="relative z-10 text-center space-y-1">
           <h2 className="text-2xl font-black text-white tracking-tight">{title}</h2>
           <p className="text-white/50 text-sm">{sub}</p>
-        </motion.div>
-
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.9 }} className="relative z-10 w-full space-y-2">
-          {questions.map((q, i) => {
-            const ok = selectedAnswers[i] === q.correctAnswerIndex;
-            return (
-              <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 + i * 0.08 }}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm"
-                style={{
-                  background: ok ? 'rgba(109,40,217,0.2)' : 'rgba(244,63,94,0.1)',
-                  border: `1px solid ${ok ? 'rgba(139,92,246,0.35)' : 'rgba(244,63,94,0.2)'}`,
-                }}>
-                {ok
-                  ? <CheckCircle2 className="w-4 h-4 text-violet-400 flex-shrink-0" />
-                  : <XCircle     className="w-4 h-4 text-rose-400   flex-shrink-0" />}
-                <span className="text-white/80 truncate flex-grow">{q.questionText}</span>
-                {ok
-                  ? <Heart className="w-3 h-3 text-violet-400 fill-violet-400 ml-auto flex-shrink-0" />
-                  : <span className="ml-auto text-white/35 flex-shrink-0 text-xs">{q.options[q.correctAnswerIndex]?.text}</span>}
-              </motion.div>
-            );
-          })}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4 }}
