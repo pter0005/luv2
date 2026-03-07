@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle, Gift } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -48,8 +48,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSearchParams, useRouter } from 'next/navigation'
 import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
-import { useUser, useFirebase } from "@/firebase";
+import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { collection, query, where } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import PreviewContent from "./PreviewContent";
@@ -1599,20 +1600,6 @@ const PlanStep = React.memo(() => {
 });
 PlanStep.displayName = "PlanStep";
 
-const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,
-    MessageStep,
-    SpecialDateStep,
-    GalleryStep,
-    TimelineStep,
-    MusicStep,
-    BackgroundStep,
-    PuzzleStep,
-    MemoryGameStep,
-    QuizStep,
-    PlanStep,
-];
-
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
     const plan = watch('plan') as 'basico' | 'avancado';
@@ -1627,6 +1614,33 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
+    // LOGIC FOR SPECIAL USER
+    const { firestore } = useFirebase();
+    const [specialUserCredits, setSpecialUserCredits] = useState(0);
+    const [isSpecialUser, setIsSpecialUser] = useState(false);
+
+    const specialUserEmail = 'zalmirparedes@gmail.com';
+    const totalCredits = 2;
+
+    const userPagesQuery = useMemoFirebase(() => {
+        if (!user || !firestore || user.email !== specialUserEmail) return null;
+        return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
+    }, [user, firestore]);
+
+    const { data: createdPages, isLoading: isLoadingPages } = useCollection(userPagesQuery);
+
+    useEffect(() => {
+        if (user?.email === specialUserEmail) {
+            setIsSpecialUser(true);
+            if (createdPages) {
+                const creditsUsed = createdPages.length;
+                setSpecialUserCredits(Math.max(0, totalCredits - creditsUsed));
+            }
+        } else {
+            setIsSpecialUser(false);
+        }
+    }, [user, createdPages]);
+    // END SPECIAL USER LOGIC
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1670,7 +1684,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
         }
-        toast({ title: 'Pagamento Aprovado!', description: 'Sua página foi criada com sucesso.' });
+        toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
     }, [setPageId, toast]);
@@ -1822,8 +1836,69 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
-    if (isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+    const handleCreditFinalize = async () => {
+        if (!user || !intentId || !isSpecialUser || specialUserCredits <= 0) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
+            return;
+        }
 
+        startTransition(async () => {
+            try {
+                // Ensure plan is 'avancado' before finalizing
+                const fullData = getValues();
+                fullData.plan = 'avancado';
+                const saveResult = await createOrUpdatePaymentIntent({ ...fullData, userId: user.uid });
+
+                if (!saveResult.success) {
+                    setError({ message: saveResult.error, details: saveResult.details });
+                    return;
+                }
+
+                const finalIntentId = saveResult.intentId;
+
+                const result = await adminFinalizePage(finalIntentId, user.uid);
+                if (!result.success) {
+                    setError({ message: result.error || "Falha ao finalizar com crédito.", details: result.details });
+                } else {
+                    handlePaymentSuccess(result.pageId);
+                }
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar com crédito.", details: e });
+            }
+        });
+    };
+
+    if (isLoadingPages || isBrazilDomain === null) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+
+    if (isSpecialUser && specialUserCredits > 0) {
+        return (
+            <div className="space-y-6 text-center">
+                <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl mb-6">
+                    <span className="block text-sm text-green-300 font-bold uppercase tracking-wider mb-2">Crédito de Cortesia</span>
+                    <p className="text-white text-lg">Você tem <span className="font-black text-2xl">{specialUserCredits}</span> crédito(s) para criar uma página <span className="font-bold">Avançada</span> gratuitamente.</p>
+                </div>
+                <Button
+                    onClick={handleCreditFinalize}
+                    disabled={isProcessing}
+                    size="lg"
+                    className="w-full h-auto py-4 text-lg font-bold bg-green-600 hover:bg-green-700"
+                >
+                    {isProcessing ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                        <Gift className="mr-2 h-5 w-5" />
+                    )}
+                    Usar 1 Crédito e Criar Página
+                </Button>
+                {error && <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error?.message}</AlertTitle>
+                    {typeof (error?.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
+                </Alert>}
+            </div>
+        );
+    }
+    
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -2379,3 +2454,5 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     )
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
+    
