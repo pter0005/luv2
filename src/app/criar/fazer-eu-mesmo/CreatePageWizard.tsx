@@ -739,7 +739,7 @@ const TimelineStep = React.memo(() => {
                             : "cursor-pointer"
                     )}
                 >
-                    <Input
+                    <input
                         id="timeline-images-upload"
                         type="file"
                         multiple
@@ -1993,7 +1993,7 @@ function WizardInternal() {
         title: "Seu Título Aqui",
         message: "Sua mensagem de amor...",
         messageFontSize: "text-base",
-        backgroundAnimation: "none",
+        backgroundAnimation: "falling-hearts",
         galleryStyle: "Coverflow",
         galleryImages: [], 
         timelineEvents: [],
