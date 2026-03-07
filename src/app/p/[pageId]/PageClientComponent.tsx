@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -219,7 +220,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           alt="MyCupid Logo"
           width={600}
           height={171}
-          className="w-auto h-36 object-contain"
+          className="w-auto h-40 object-contain"
           priority
         />
       </header>

@@ -1,3 +1,4 @@
+
 import './globals.css';
 import 'swiper/css';
 import { Poppins, Playfair_Display, Dancing_Script } from 'next/font/google';

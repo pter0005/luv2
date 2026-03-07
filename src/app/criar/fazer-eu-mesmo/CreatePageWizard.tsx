@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -134,9 +135,9 @@ const pageSchema = z.object({
   specialDate: z.date().optional(),
   countdownStyle: z.string().default("Padrão"),
   countdownColor: z.string().default("#FFFFFF"),
-  galleryImages: z.array(fileWithPreviewSchema).default([]),
+  galleryImages: z.array(fileWithPreviewSchema).max(MAX_GALLERY_IMAGES, `Você pode adicionar no máximo ${MAX_GALLERY_IMAGES} fotos.`).default([]),
   galleryStyle: z.string().default("Coverflow"),
-  timelineEvents: z.array(timelineEventSchema).default([]),
+  timelineEvents: z.array(timelineEventSchema).max(MAX_TIMELINE_IMAGES, `Você pode adicionar no máximo ${MAX_TIMELINE_IMAGES} momentos.`).default([]),
   musicOption: z.string().default("none"),
   youtubeUrl: z.string().optional().or(z.literal('')),
   audioRecording: fileWithPreviewSchema.optional(),
@@ -354,8 +355,7 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
 
 
 const GalleryStep = React.memo(() => {
-    const { control, formState: { errors }, watch } = useFormContext<PageData>();
-    const plan = watch('plan');
+    const { control, formState: { errors } } = useFormContext<PageData>();
     const { fields, append, remove } = useFieldArray({
         control,
         name: "galleryImages",
@@ -510,8 +510,7 @@ const GalleryStep = React.memo(() => {
 GalleryStep.displayName = 'GalleryStep';
 
 const TimelineStep = React.memo(() => {
-    const { control, formState: { errors }, watch } = useFormContext<PageData>();
-    const plan = watch('plan');
+    const { control, formState: { errors } } = useFormContext<PageData>();
     const { fields, remove, update, append } = useFieldArray({
         control,
         name: "timelineEvents",
@@ -992,7 +991,6 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
     const backgroundAnimation = watch("backgroundAnimation");
     const titleColor = watch("titleColor");
-    const plan = watch("plan");
     const [isClient, setIsClient] = useState(false);
 
     const animationOptions = [
@@ -1920,19 +1918,22 @@ function WizardInternal() {
 
   const plan = searchParams.get('plan') || 'avancado';
 
-  const steps = useMemo(() => [
-    { id: "title", title: 'Título da página', description: 'Escreva o título dedicatório. Ex: João & Maria.', fields: ["title", "titleColor"] },
-    { id: "message", title: 'Sua Mensagem de Amor', description: 'Escreva a mensagem principal.', fields: ["message", "messageFontSize", "messageFormatting"] },
-    { id: "specialDate", title: 'Data Especial', description: 'Informe a data que simboliza o início de tudo.', fields: ["specialDate", "countdownStyle", "countdownColor"] },
-    { id: "gallery", title: 'Galeria de Fotos', description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
-    { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"] },
-    { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"] },
-    { id: "background", title: 'Animação de Fundo', description: 'Escolha um efeito especial para o fundo.', fields: ["backgroundAnimation", "heartColor"] },
-    { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"] },
-    { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
-    { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"] },
-    { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
-  ], []);
+  const steps = useMemo(() => {
+    const allSteps = [
+      { id: "title", title: 'Título da página', description: 'Escreva o título dedicatório. Ex: João & Maria.', fields: ["title", "titleColor"] },
+      { id: "message", title: 'Sua Mensagem de Amor', description: 'Escreva a mensagem principal.', fields: ["message", "messageFontSize", "messageFormatting"] },
+      { id: "specialDate", title: 'Data Especial', description: 'Informe a data que simboliza o início de tudo.', fields: ["specialDate", "countdownStyle", "countdownColor"] },
+      { id: "gallery", title: 'Galeria de Fotos', description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
+      { id: "timeline", title: 'Linha do Tempo 3D', description: 'Momentos flutuantes para uma viagem nostálgica.', fields: ["timelineEvents"] },
+      { id: "music", title: 'Música Dedicada', description: 'Escolha uma trilha sonora ou grave sua voz.', fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+      { id: "background", title: 'Animação de Fundo', description: 'Escolha um efeito especial para o fundo.', fields: ["backgroundAnimation", "heartColor"] },
+      { id: "puzzle", title: 'Quebra-Cabeça Interativo', description: 'Um desafio antes de revelar a surpresa!', fields: ["enablePuzzle", "puzzleImage"] },
+      { id: "memory", title: 'Jogo da Memória', description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
+      { id: "quiz", title: 'Quiz do Casal', description: 'Crie um quiz divertido sobre vocês.', fields: ["enableQuiz", "quizQuestions"] },
+      { id: "payment", title: 'Finalizar', description: 'Pague para gerar o link e QR Code.', fields: ["payment", "qrCodeDesign"] },
+    ];
+    return allSteps;
+  }, []);
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
@@ -2251,5 +2252,6 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
     
+
 
 
