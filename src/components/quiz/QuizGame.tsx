@@ -102,7 +102,7 @@ const CORRECT_PHRASES = [
 ];
 
 function getResultMessage(score: number, total: number) {
-  const p = score / total;
+  const p = total > 0 ? score / total : 0;
   if (p === 1)  return { title: '💜 Sincronia Perfeita!',  sub: 'Vocês se conhecem de alma!' };
   if (p >= 0.8) return { title: '✨ Quase Perfeitos!',      sub: 'O amor de vocês é lindo assim.' };
   if (p >= 0.6) return { title: '💫 Sintonia no Ar!',       sub: 'Ainda têm muito para descobrir juntos.' };
@@ -230,7 +230,7 @@ export default function QuizGame({ questions }: QuizGameProps) {
     [score, questions.length]
   );
 
-  const progressPct = ((currentQ + (isAnswered ? 1 : 0)) / questions.length) * 100;
+  const progressPct = questions.length > 0 ? ((currentQ + (isAnswered ? 1 : 0)) / questions.length) * 100 : 0;
 
   const handleSelect = (idx: number) => {
     if (isAnswered) return;
