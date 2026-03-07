@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, ChevronLeft, ChevronRight, Puzzle, Clock, ArrowRight, Heart } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Puzzle, Clock, ArrowRight, Heart, Music, Gamepad2, HelpCircle } from 'lucide-react';
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -137,6 +137,30 @@ export default function FeaturesCarousel() {
           description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.',
           type: 'image',
           media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750174/cavddawsvdfsxvcfdsaAfASFsafSA_z4pdvd.png"
+        },
+        {
+            id: 4,
+            icon: Music,
+            title: 'Trilha Sonora',
+            description: 'Adicione a trilha sonora de vocês, com música do Youtube ou gravando sua voz.',
+            type: 'image',
+            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750379/czxczxc_yvzqsv.png',
+        },
+        {
+            id: 5,
+            icon: Gamepad2,
+            title: 'Jogo da Memória',
+            description: 'Um jogo super fofo com as fotos de vocês pra ela se divertir antes da surpresa final.',
+            type: 'image',
+            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750478/czxczxc_1_vgyfya.png',
+        },
+        {
+            id: 6,
+            icon: HelpCircle,
+            title: 'Quiz do Casal',
+            description: 'Será que vocês se conhecem mesmo? Teste os conhecimentos com um quiz divertido!',
+            type: 'image',
+            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750587/czxczxc_2_ejk2s7.png',
         },
     ], []);
 
