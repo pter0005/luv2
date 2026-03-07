@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // Rotas que precisam de login
-const protectedRoutes = ['/criar', '/minhas-paginas'];
+const protectedRoutes = ['/criar/fazer-eu-mesmo', '/minhas-paginas'];
 // Rotas de admin
 const adminRoutes = ['/admin'];
 // Rotas que usuário logado não deve acessar
