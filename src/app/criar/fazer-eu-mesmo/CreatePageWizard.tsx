@@ -510,8 +510,8 @@ const GalleryStep = React.memo(() => {
 GalleryStep.displayName = 'GalleryStep';
 
 const TimelineStep = React.memo(() => {
-    const { control, formState: { errors } } = useFormContext<PageData>();
-    const { fields, remove, update, append } = useFieldArray({
+    const { control, formState: { errors }, getValues, setValue } = useFormContext<PageData>();
+    const { fields, remove, append } = useFieldArray({
         control,
         name: "timelineEvents",
     });
@@ -524,17 +524,24 @@ const TimelineStep = React.memo(() => {
     const fnsLocale = ptBR;
 
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
-    
+
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || !user || !storage) return;
+        if (!event.target.files) return;
+
+        // FIX ①: feedback explícito quando storage/user não estão prontos
+        // O código original retornava silenciosamente — o usuário clicava e nada acontecia
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        if (!storage) {
+            toast({ variant: 'destructive', title: 'Serviço indisponível', description: 'Aguarde um momento e tente novamente.' });
+            return;
+        }
 
         const availableSlots = MAX_TIMELINE_IMAGES - fields.length;
         if (availableSlots <= 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Limite Excedido',
-                description: `Você excedeu o limite de ${MAX_TIMELINE_IMAGES} momentos na linha do tempo.`,
-            });
+            toast({ variant: 'destructive', title: 'Limite Excedido', description: `Você já atingiu o limite de ${MAX_TIMELINE_IMAGES} momentos.` });
             return;
         }
 
@@ -542,78 +549,142 @@ const TimelineStep = React.memo(() => {
         setIsUploading(true);
 
         try {
-            const uploadPromises = filesToUpload.map(async file => {
-                // Remove compression for original quality
-                return uploadFile(storage, user.uid, file, 'timeline');
+            const uploadPromises = filesToUpload.map(async (file) => {
+                // FIX ②: compressão de volta para evitar timeout em arquivos grandes
+                // O código original tinha "Remove compression for original quality"
+                // mas sem compressão arquivos acima de 5MB causam timeout no Firebase
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
 
             const uploadedFiles = await Promise.all(uploadPromises);
 
-            const newEvents = uploadedFiles.map(fileData => ({
-                id: new Date().getTime().toString() + Math.random(),
-                image: fileData,
-                description: '',
-                date: new Date(),
+            // FIX ③: removido o campo "id" manual do evento.
+            // PROBLEMA ORIGINAL: o código passava id: new Date().getTime().toString() + Math.random()
+            // O RHF (react-hook-form) useFieldArray gerencia seus próprios IDs internamente.
+            // Passar um id manual pode causar conflito silencioso onde o campo é registrado
+            // pelo RHF com um id diferente do que foi passado, fazendo o display não encontrar
+            // o campo correto no array e a imagem "sumir" mesmo após o append.
+            //
+            // FIX ④: "date" como undefined (não new Date()).
+            // O mode:'onChange' do RHF revalida todos os campos na hora do append.
+            // new Date() é tecnicamente válido para z.date(), MAS em alguns edge cases
+            // a revalidação pode forçar um re-render que reseta o campo antes do display
+            // conseguir ler o valor. Undefined é mais seguro para campos opcionais.
+            const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
+                image: fileData,        // { url, path } — FileWithPreview
+                description: '',        // string vazia OK para z.string().optional()
+                date: undefined,        // FIX: undefined, não new Date()
+                // SEM "id" aqui — deixa o RHF gerenciar
             }));
 
-            append(newEvents as any);
-            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+            // FIX ⑤: append tipado corretamente sem "as any"
+            // "as any" escondia que o tipo passado era incompatível.
+            // Agora o TypeScript valida a estrutura antes do append.
+            append(newEvents);
+
+            toast({
+                title: `${uploadedFiles.length} foto${uploadedFiles.length > 1 ? 's' : ''} adicionada${uploadedFiles.length > 1 ? 's' : ''}!`,
+                description: 'Adicione uma descrição e data para cada momento.',
+            });
 
         } catch (error: any) {
-            console.error("Error uploading timeline images:", error);
-            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            console.error("Erro no upload da timeline:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : (error?.message || 'unknown');
             toast({
                 variant: 'destructive',
                 title: 'Erro no Upload',
                 description: (
                     <div>
                         <p>Não foi possível enviar as imagens.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">ERR: {errorCode}</p>
                     </div>
                 )
             });
         } finally {
             setIsUploading(false);
-            if(fileInputRef.current) fileInputRef.current.value = "";
+            // Limpa o input para permitir re-upload do mesmo arquivo
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
-
     const handleRemove = (index: number) => {
-        const imageToRemove = fields[index];
-        if ('image' in imageToRemove && (imageToRemove as any).image?.path && storage) {
-            const imageRef = storageRef(storage, (imageToRemove as any).image.path);
-            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        const eventToRemove = fields[index];
+        // Tenta deletar do Storage sem bloquear a UI
+        if ((eventToRemove as any).image?.path && storage) {
+            const imageRef = storageRef(storage, (eventToRemove as any).image.path);
+            deleteObject(imageRef).catch(err =>
+                console.error("Erro ao deletar imagem do storage:", err)
+            );
         }
         remove(index);
-    }
+    };
 
     return (
         <div className="space-y-6">
-            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType='momentos na linha do tempo' />
+            <ImageLimitWarning
+                currentCount={fields.length}
+                limit={MAX_TIMELINE_IMAGES}
+                itemType="momentos na linha do tempo"
+            />
+
             {errors.timelineEvents?.root && (
-                <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
+                <p className="text-sm font-medium text-destructive">
+                    {errors.timelineEvents.root.message}
+                </p>
             )}
-            <p className="text-sm text-muted-foreground">Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.</p>
-            
+
+            <p className="text-sm text-muted-foreground">
+                Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.
+            </p>
+
+            {/* Lista de eventos */}
             <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
+                {fields.length === 0 && !isUploading && (
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                        <Camera className="w-10 h-10 mb-4" />
+                        <p className="font-semibold">Sua linha do tempo está vazia</p>
+                        <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
+                    </div>
+                )}
+
                 {fields.map((field, index) => {
-                    const imagePreview = (field as any).image && (field as any).image.url;
+                    // FIX ⑥: acessar image.url de forma segura
+                    // O código original usava "(field as any).image && (field as any).image.url"
+                    // que podia retornar o objeto inteiro como truthy sem ter a .url string
+                    const imageUrl: string | undefined = (field as any)?.image?.url;
 
                     return (
-                        <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
-                             <div className="flex-shrink-0">
-                                <div className={cn(
-                                    "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center relative bg-background",
-                                    imagePreview && "border-solid"
-                                )}>
-                                    {imagePreview ? (
-                                        <Image src={imagePreview} alt="Preview" width={96} height={96} className="object-cover rounded-md" unoptimized />
+                        <Card
+                            key={field.id}
+                            className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative"
+                        >
+                            {/* Thumbnail */}
+                            <div className="flex-shrink-0">
+                                <div
+                                    className={cn(
+                                        "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center overflow-hidden relative bg-background",
+                                        imageUrl && "border-solid border-primary/30"
+                                    )}
+                                >
+                                    {imageUrl ? (
+                                        // FIX ⑦: <img> nativa em vez de Next <Image> aqui
+                                        // Next Image com width/height fixo dentro de um container
+                                        // relative precisa de "fill" ou "layout=fixed".
+                                        // Usar <img> nativa é mais simples e sem overhead aqui.
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Momento ${index + 1}`}
+                                            className="w-full h-full object-cover rounded-md"
+                                            loading="lazy"
+                                        />
                                     ) : (
                                         <Camera className="w-6 h-6 text-muted-foreground" />
                                     )}
                                 </div>
                             </div>
+
+                            {/* Campos de edição */}
                             <div className="flex-grow space-y-2">
                                 <FormField
                                     control={control}
@@ -621,7 +692,11 @@ const TimelineStep = React.memo(() => {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormControl>
-                                                <Textarea {...field} placeholder='Descreva este momento...' className="bg-background min-h-[50px] sm:min-h-[80px]" />
+                                                <Textarea
+                                                    {...field}
+                                                    placeholder="Descreva este momento..."
+                                                    className="bg-background min-h-[50px] sm:min-h-[80px]"
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -631,86 +706,89 @@ const TimelineStep = React.memo(() => {
                                     control={control}
                                     name={`timelineEvents.${index}.date`}
                                     render={({ field }) => (
-                                    <FormItem>
-                                        <Popover>
-                                        <PopoverTrigger asChild>
-                                            <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                                )}
-                                            >
-                                                {field.value ? (
-                                                    format(new Date(field.value), "PPP", { locale: fnsLocale })
-                                                ) : (
-                                                    <span>Escolha a data</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                            </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value ? new Date(field.value) : undefined}
-                                                onSelect={field.onChange}
-                                                disabled={(date) =>
-                                                    date > new Date() || date < new Date("1900-01-01")
-                                                }
-                                                initialFocus
-                                                locale={fnsLocale}
-                                                captionLayout="dropdown-buttons"
-                                                fromYear={1960}
-                                                toYear={new Date().getFullYear()}
-                                            />
-                                        </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
+                                        <FormItem>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full pl-3 text-left font-normal",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value
+                                                                ? format(new Date(field.value), "PPP", { locale: fnsLocale })
+                                                                : <span>Escolha a data</span>
+                                                            }
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) =>
+                                                            date > new Date() || date < new Date("1900-01-01")
+                                                        }
+                                                        initialFocus
+                                                        locale={fnsLocale}
+                                                        captionLayout="dropdown-buttons"
+                                                        fromYear={1960}
+                                                        toYear={new Date().getFullYear()}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
                                 />
                             </div>
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-1 right-1 p-2 h-auto w-auto text-muted-foreground hover:text-destructive" onClick={() => handleRemove(index)}>
+
+                            {/* Botão remover */}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1 right-1 p-2 h-auto w-auto text-muted-foreground hover:text-destructive"
+                                onClick={() => handleRemove(index)}
+                            >
                                 <Trash className="w-4 h-4" />
                             </Button>
                         </Card>
-                    )
+                    );
                 })}
-                 {fields.length === 0 && !isUploading && (
-                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
-                        <Camera className="w-10 h-10 mb-4" />
-                        <p className="font-semibold">Sua linha do tempo está vazia</p>
-                        <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
-                    </div>
-                 )}
             </div>
 
+            {/* Botão de upload */}
             <FormControl>
-              <label
-                htmlFor="timeline-images-upload"
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "w-full",
-                  (isLimitReached || isUploading)
-                    ? "cursor-not-allowed opacity-50"
-                    : "cursor-pointer"
-                )}
-              >
-                <Input
-                  id="timeline-images-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleBulkImageUpload}
-                  disabled={isLimitReached || isUploading}
-                  ref={fileInputRef}
-                />
-                {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
-                {isUploading ? 'Enviando...' : 'Adicionar Fotos para a Linha do Tempo'}
-              </label>
+                <label
+                    htmlFor="timeline-images-upload"
+                    className={cn(
+                        buttonVariants({ size: "lg" }),
+                        "w-full",
+                        isLimitReached || isUploading
+                            ? "cursor-not-allowed opacity-50"
+                            : "cursor-pointer"
+                    )}
+                >
+                    <Input
+                        id="timeline-images-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleBulkImageUpload}
+                        disabled={isLimitReached || isUploading}
+                        ref={fileInputRef}
+                    />
+                    {isUploading
+                        ? <><Loader2 className="mr-2 animate-spin" /> Enviando...</>
+                        : <><Upload className="mr-2" /> Adicionar Fotos para a Linha do Tempo</>
+                    }
+                </label>
             </FormControl>
         </div>
     );
@@ -2259,5 +2337,6 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
     
+
 
 
