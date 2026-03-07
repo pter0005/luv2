@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -282,7 +281,9 @@ export default function PreviewContent({
                                 <div className="space-y-2">
                                     <h2 className="text-3xl font-bold text-white font-headline tracking-tighter">
                                         Um Enigma de{' '}
-                                        <span className="gradient-text">Amor</span>
+                                        <span className="gradient-text">
+                                            Amor
+                                        </span>
                                     </h2>
                                     <p className="text-white/70 text-sm max-w-xs mx-auto">
                                         Resolva o quebra-cabeça para revelar uma surpresa especial.
