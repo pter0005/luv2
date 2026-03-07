@@ -368,7 +368,16 @@ const GalleryStep = React.memo(() => {
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files || !user || !storage) return;
+        if (!event.target.files) return;
+
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        if (!storage) {
+            toast({ variant: 'destructive', title: 'Serviço indisponível', description: 'Aguarde um momento e tente novamente.' });
+            return;
+        }
 
         const availableSlots = MAX_GALLERY_IMAGES - fields.length;
         if (availableSlots <= 0) return;
@@ -1993,7 +2002,7 @@ function WizardInternal() {
         title: "Seu Título Aqui",
         message: "Sua mensagem de amor...",
         messageFontSize: "text-base",
-        backgroundAnimation: "falling-hearts",
+        backgroundAnimation: "none",
         galleryStyle: "Coverflow",
         galleryImages: [], 
         timelineEvents: [],
@@ -2305,6 +2314,9 @@ ImageLimitWarning.displayName = 'ImageLimitWarning';
 
 
 
+
+
+    
 
 
     
