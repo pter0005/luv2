@@ -78,4 +78,6 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
         ) : (
           <PageClientComponentV1 pageData={rawPageData} />
         )}
-      </Susp
+      </Suspense>
+  );
+}
