@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -332,6 +331,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.status = 'paid';
 
         const isAdminFinalization = paymentId.startsWith('admin_finalize_');
+
+        // Versão do componente — todas as páginas novas usam V2
+        // Páginas antigas sem esse campo continuam no V1 (PageClientComponentV1.tsx)
+        finalData.componentVersion = 'v2';
 
         // Expiry APENAS para plano basico + pagamento real (não admin, não Zalmir)
         if (finalData.plan === 'basico' && !isAdminFinalization) {
