@@ -1,5 +1,5 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
-import { removeAdminSession } from '../admin-auth-actions';
+import { removeAdminSession } from '../auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, ArrowLeft, TrendingUp, MousePointer, ShoppingCart, Percent } from 'lucide-react';

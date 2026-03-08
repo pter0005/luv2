@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createAdminSession } from '../admin-auth-actions';
+import { createAdminSession } from '../auth';
 import { useFormState } from 'react-dom';
 import { KeyRound } from 'lucide-react';
 
