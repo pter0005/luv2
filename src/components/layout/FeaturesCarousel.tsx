@@ -152,7 +152,7 @@ export default function FeaturesCarousel() {
             title: 'Jogo da Memória',
             description: 'Um jogo super fofo com as fotos de vocês pra ela se divertir antes da surpresa final.',
             type: 'image',
-            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750478/czxczxc_1_vgyfya.png',
+            media: 'https://i.imgur.com/6JGGVTs.png',
         },
         {
             id: 6,
