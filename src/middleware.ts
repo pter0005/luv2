@@ -39,10 +39,11 @@ export async function middleware(request: NextRequest) {
       await jwtVerify(adminSession, secret);
     } catch (error) {
       console.error("Admin session verification failed:", error);
-      // If token is invalid, redirect to login
+      // If token is invalid, redirect to login and clear the bad cookie.
       const loginUrl = new URL('/admin/login', request.url);
-      request.cookies.delete('session_admin');
-      return NextResponse.redirect(loginUrl);
+      const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete('session_admin'); // Correct way to delete a cookie
+      return response;
     }
   }
 

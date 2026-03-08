@@ -1,18 +1,11 @@
-
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, LogOut, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import AdminPagesClient from './AdminPagesClient';
 import { getAdminPagesData } from './actions';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { removeAdminSession } from '../admin-auth-actions';
 
-async function removeAdminSession() {
-  'use server';
-  cookies().delete('session_admin');
-  redirect('/admin/login');
-}
 
 export const dynamic = 'force-dynamic';
 
