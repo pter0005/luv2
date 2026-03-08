@@ -54,12 +54,15 @@ function CreatingPageContent() {
                 window.ttq.track('Purchase', {
                     value,
                     currency: 'BRL',
-                    content_id: plan,
-                    content_type: 'product',
-                    content_name: `MyCupid - Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
-                    quantity: 1,
+                    contents: [{
+                        content_id: plan,
+                        content_type: 'product',
+                        content_name: `MyCupid - Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
+                        quantity: 1,
+                        price: value,
+                    }],
                 });
-                console.log('[TikTok Pixel] Purchase disparado:', { value, currency: 'BRL', content_id: plan });
+                console.log('[TikTok Pixel] Purchase disparado:', { value, currency: 'BRL' });
             }
         }
     }, [finalizedPage]);
