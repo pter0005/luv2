@@ -128,7 +128,7 @@ export default function FeaturesCarousel() {
           title: 'Contador de Tempo',
           description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.',
           type: 'image',
-          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750174/cavddawsvdfsxvcfdsaAfASFsafSA_z4pdvd.png"
+          media: "https://i.imgur.com/tEMaoeI.png"
         },
         {
             id: 3,
@@ -144,7 +144,7 @@ export default function FeaturesCarousel() {
           title: 'Quebra-cabeça',
           description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.',
           type: 'image',
-          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png"
+          media: "https://i.imgur.com/wLrcydK.png"
         },
         {
             id: 5,
@@ -309,3 +309,4 @@ export default function FeaturesCarousel() {
         </motion.div>
     );
 }
+    
