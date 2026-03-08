@@ -101,7 +101,7 @@ const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isAct
                     <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-20"></div>
                 </div>
                 
-                <div className="absolute inset-0 pointer-events-none z-40 rounded-[3.5rem] md:rounded-[4rem] ring-1 ring-white/5">
+                <div className="absolute inset-0 pointer-events-none z-40 rounded-[3.5rem] md:rounded-[3.5rem] ring-1 ring-white/5">
                     <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-white/5 to-transparent skew-x-12 opacity-30 mix-blend-overlay"></div>
                 </div>
             </div>
@@ -124,14 +124,6 @@ export default function FeaturesCarousel() {
         },
         {
           id: 2,
-          icon: Puzzle,
-          title: 'Quebra-cabeça',
-          description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.',
-          type: 'image',
-          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png"
-        },
-        {
-          id: 3,
           icon: Clock,
           title: 'Contador de Tempo',
           description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.',
@@ -139,12 +131,20 @@ export default function FeaturesCarousel() {
           media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750174/cavddawsvdfsxvcfdsaAfASFsafSA_z4pdvd.png"
         },
         {
-            id: 4,
+            id: 3,
             icon: Music,
             title: 'Trilha Sonora',
             description: 'Adicione a trilha sonora de vocês, com música do Youtube ou gravando sua voz.',
             type: 'image',
-            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750379/czxczxc_yvzqsv.png',
+            media: 'https://imgur.com/S6pfmgd.png',
+        },
+        {
+          id: 4,
+          icon: Puzzle,
+          title: 'Quebra-cabeça',
+          description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.',
+          type: 'image',
+          media: "https://res.cloudinary.com/dncoxm1it/image/upload/v1770750246/BAZXCCZXCZCZXXZC_oydygf.png"
         },
         {
             id: 5,
@@ -160,7 +160,15 @@ export default function FeaturesCarousel() {
             title: 'Quiz do Casal',
             description: 'Será que vocês se conhecem mesmo? Teste os conhecimentos com um quiz divertido!',
             type: 'image',
-            media: 'https://res.cloudinary.com/dncoxm1it/image/upload/v1770750587/czxczxc_2_ejk2s7.png',
+            media: 'https://imgur.com/HIw2TMC.png',
+        },
+        {
+            id: 7,
+            icon: Gamepad2,
+            title: 'Jogos Interativos',
+            description: 'Divirtam-se juntos com jogos personalizados que testam a sintonia de vocês.',
+            type: 'image',
+            media: 'https://imgur.com/EI289he.png',
         },
     ], []);
 
