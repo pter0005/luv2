@@ -4,7 +4,7 @@ import { ShieldCheck, LogOut, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import AdminPagesClient from './AdminPagesClient';
 import { getAdminPagesData } from './actions';
-import { removeAdminSession } from '../admin-auth-actions';
+import { removeAdminSession } from '@/app/admin/admin-auth-actions';
 
 
 export const dynamic = 'force-dynamic';
