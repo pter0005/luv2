@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -8,13 +9,119 @@ import {
   Palette,
   MessageCircle,
   Star,
+  Zap,
+  Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import FloatingHeart from './FloatingHeart';
 
+// ─── URGENCY BADGE ────────────────────────────────────────────────────────────
+// Mostra badge especial nos 3 dias ao redor de datas comemorativas.
+// Fora dessas janelas, mostra o badge padrão de velocidade.
+function UrgencyBadge() {
+  const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines'>('default');
 
+  useEffect(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-indexed
+    const day = now.getDate();
+
+    // Dia das Mulheres: 6–9 de Março
+    if (month === 3 && day >= 6 && day <= 9) {
+      setBadge('womens-day');
+    }
+    // Dia dos Namorados BR: 10–13 de Junho
+    else if (month === 6 && day >= 10 && day <= 13) {
+      setBadge('valentines');
+    }
+  }, []);
+
+  if (badge === 'womens-day') {
+    return (
+      <motion.div
+        key="womens-day"
+        initial={{ opacity: 0, y: -8, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="inline-flex items-center gap-2 mb-5"
+      >
+        {/* Badge principal — data especial */}
+        <div className="relative flex items-center gap-2 bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/40 rounded-full py-2 px-4 shadow-[0_0_24px_rgba(244,63,94,0.25)]">
+          {/* Pulse dot */}
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+          </span>
+          <Gift className="w-3.5 h-3.5 text-rose-400" />
+          <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">
+            Dia das Mulheres
+          </span>
+          <span className="text-white/30 text-xs">•</span>
+          <span className="text-xs text-white/70 font-medium">entrega imediata</span>
+        </div>
+
+        {/* Badge de velocidade */}
+        <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full py-2 px-3">
+          <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+          <span className="text-xs text-white/60 font-medium">5 minutos</span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (badge === 'valentines') {
+    return (
+      <motion.div
+        key="valentines"
+        initial={{ opacity: 0, y: -8, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="inline-flex items-center gap-2 mb-5"
+      >
+        <div className="relative flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/40 rounded-full py-2 px-4 shadow-[0_0_24px_rgba(168,85,247,0.3)]">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
+          </span>
+          <span className="text-sm">💜</span>
+          <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">
+            Dia dos Namorados
+          </span>
+          <span className="text-white/30 text-xs">•</span>
+          <span className="text-xs text-white/70 font-medium">surpreenda hoje</span>
+        </div>
+        <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full py-2 px-3">
+          <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+          <span className="text-xs text-white/60 font-medium">5 minutos</span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Default — sem data especial
+  return (
+    <motion.div
+      key="default"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="inline-flex items-center gap-2 mb-5"
+    >
+      <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full py-2 px-4">
+        <Zap className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+        <span className="text-xs font-bold text-white/80 tracking-wide">
+          Pronto em menos de 5 minutos
+        </span>
+        <span className="text-white/20 text-xs">•</span>
+        <span className="text-xs text-white/50">compartilhe na hora</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── HERO ─────────────────────────────────────────────────────────────────────
 const HeroSection = () => {
   const heroRef = useRef(null);
 
@@ -49,7 +156,9 @@ const HeroSection = () => {
     <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
         <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-center relative z-10 h-full">
             <div className="flex flex-col items-center lg:items-start text-center lg:text-left pt-0 relative z-20 order-2 lg:order-1">
-                 <div className="hidden lg:inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-6 shadow-lg">
+
+                {/* ── SOCIAL PROOF PILL (desktop) ── */}
+                <div className="hidden lg:inline-flex items-center gap-3 bg-zinc-900/80 border border-white/10 rounded-full py-2 px-4 mb-4 shadow-lg">
                     <div className="flex -space-x-3">
                         {[1, 2, 3, 4].map((i) => (
                             <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0a0112] overflow-hidden bg-gray-800">
@@ -61,9 +170,13 @@ const HeroSection = () => {
                         <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Junte-se a</span>
                         <span className="text-sm font-bold text-white">+20.000 Casais</span>
                     </div>
-                 </div>
+                </div>
 
-                 <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
+                {/* ── URGENCY BADGE ── */}
+                <UrgencyBadge />
+
+                {/* ── TÍTULO ── */}
+                <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-6 min-h-[120px] lg:min-h-[auto]">
                     Declare seu amor <br />
                     <span className="relative inline-block mt-2">
                         <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
@@ -80,6 +193,7 @@ const HeroSection = () => {
                     Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
                 </p>
 
+                {/* ── CTAs ── */}
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <Link href="/login?redirect=/criar" className="w-full sm:w-auto">
                         <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
@@ -92,8 +206,28 @@ const HeroSection = () => {
                         </Button>
                     </Link>
                 </div>
+
+                {/* ── MINI TRUST STRIP ── */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  className="flex items-center gap-4 mt-6 flex-wrap justify-center lg:justify-start"
+                >
+                  {[
+                    { icon: '⚡', text: 'Criado na hora' },
+                    { icon: '🔗', text: 'Link pra compartilhar' },
+                    { icon: '💜', text: 'Sem precisar baixar app' },
+                  ].map(item => (
+                    <div key={item.text} className="flex items-center gap-1.5">
+                      <span className="text-sm">{item.icon}</span>
+                      <span className="text-xs text-white/40 font-medium">{item.text}</span>
+                    </div>
+                  ))}
+                </motion.div>
             </div>
             
+            {/* ── PHONES ── */}
             <div className="flex flex-col items-center w-full order-1 lg:order-2">
                 <div className="inline-flex lg:hidden items-center gap-2 bg-zinc-900/80 border border-white/10 rounded-full py-1.5 px-3 mb-2 shadow-lg">
                     <div className="flex -space-x-2">
@@ -118,15 +252,7 @@ const HeroSection = () => {
                             className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-right"
                         >
                             <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                                <video 
-                                    className="w-full h-full object-cover" 
-                                    autoPlay 
-                                    loop 
-                                    muted 
-                                    playsInline 
-                                    poster="https://i.imgur.com/FxHuXVb.png"
-                                    src="https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4" 
-                                />
+                                <video className="w-full h-full object-cover" autoPlay loop muted playsInline poster="https://i.imgur.com/FxHuXVb.png" src="https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4" />
                             </div>
                         </motion.div>
 
@@ -137,15 +263,7 @@ const HeroSection = () => {
                             className="absolute z-10 brightness-[0.5] hover:z-40 hover:brightness-100 hover:scale-105 transition-all duration-500 origin-bottom-left"
                         >
                             <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
-                                <video 
-                                    className="w-full h-full object-cover" 
-                                    autoPlay 
-                                    loop 
-                                    muted 
-                                    playsInline 
-                                    poster="https://i.imgur.com/t7ICxbN.png"
-                                    src="https://i.imgur.com/t7ICxbN.mp4" 
-                                />
+                                <video className="w-full h-full object-cover" autoPlay loop muted playsInline poster="https://i.imgur.com/t7ICxbN.png" src="https://i.imgur.com/t7ICxbN.mp4" />
                             </div>
                         </motion.div>
 
@@ -155,25 +273,14 @@ const HeroSection = () => {
                             transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
                             className="relative z-30"
                         >
-                            <motion.div
-                            animate={{ y: [0, 15, 0]}}
-                            transition={{ duration: 6, ease: "easeInOut", repeat: Infinity}}
-                            >
-                            <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
-                                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
-                                    <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
+                            <motion.div animate={{ y: [0, 15, 0]}} transition={{ duration: 6, ease: "easeInOut", repeat: Infinity}}>
+                                <div className="w-[280px] h-[580px] rounded-[3.5rem] border-[8px] border-[#1a1a1a] bg-black overflow-hidden shadow-[0_20px_70px_-20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
+                                    <div className="absolute top-5 left-1/2 -translate-x-1/2 w-[90px] h-[26px] bg-black rounded-full z-40 ring-1 ring-white/10 flex items-center justify-center">
+                                        <div className="w-16 h-full bg-zinc-900/50 rounded-full blur-[1px]"></div>
+                                    </div>
+                                    <video className="w-full h-full object-cover" autoPlay loop muted playsInline poster="https://i.imgur.com/GHtKVNZ.png" src="https://i.imgur.com/GHtKVNZ.mp4" />
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
                                 </div>
-                                <video 
-                                    className="w-full h-full object-cover" 
-                                    autoPlay 
-                                    loop 
-                                    muted 
-                                    playsInline 
-                                    poster="https://i.imgur.com/GHtKVNZ.png"
-                                    src="https://i.imgur.com/GHtKVNZ.mp4"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent opacity-40 pointer-events-none"></div>
-                            </div>
                             </motion.div>
                         </motion.div>
 
@@ -181,7 +288,6 @@ const HeroSection = () => {
                         <FloatingHeart className="top-[5%] right-[15%]" delay={1.2} />
                         <FloatingHeart className="bottom-[10%] left-[20%]" delay={2.4} />
                         <FloatingHeart className="bottom-[5%] right-[20%]" delay={3.6} />
-
 
                         <motion.div 
                             initial={{ opacity: 0, x: -30 }} 
@@ -217,7 +323,7 @@ const HeroSection = () => {
                 </div>
             </div>
         </div>
-      </section>
+    </section>
   );
 };
 
