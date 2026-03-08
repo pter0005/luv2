@@ -1,5 +1,5 @@
 [build]
-  command = "printf \"'use server';\\nimport { cookies } from 'next/headers';\\nimport { redirect } from 'next/navigation';\\nexport async function createAdminSession(p: { error: string }, d: FormData) { return { error: 'ok' }; }\\nexport async function removeAdminSession() { cookies().delete('session_admin'); redirect('/admin/login'); }\\n\" > src/app/admin/admin-auth-actions.ts && rm -rf .next && npm run build"
+  command = "rm -rf .next && npm run build"
   publish = ".next"
 
 [[plugins]]
