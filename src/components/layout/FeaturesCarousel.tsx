@@ -119,8 +119,8 @@ export default function FeaturesCarousel() {
           icon: Calendar,
           title: 'Linha do Tempo',
           description: 'Reviva sua jornada com uma linha do tempo animada e elegante.',
-          type: 'video', 
-          media: "https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4"
+          type: 'image',
+          media: "https://i.imgur.com/2HDcwcz.png"
         },
         {
           id: 2,
