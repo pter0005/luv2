@@ -1,5 +1,5 @@
 'use client';
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Suspense, useEffect, useState, useRef } from "react";
@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useCollection } from "@/firebase";
 import { collection, query, where } from 'firebase/firestore';
 import { useFirestore, useMemoFirebase } from '@/firebase';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 declare global {
   interface Window {
@@ -30,6 +31,7 @@ function CreatingPageContent() {
     const [isFinalized, setIsFinalized] = useState(false);
     const [pageId, setPageId] = useState<string | null>(null);
     const pixelFired = useRef(false); // evita disparar duas vezes por re-render
+    const [timedOut, setTimedOut] = useState(false);
 
     const lovepagesQuery = useMemoFirebase(() => {
         if (!firestore || !intentId) return null;
@@ -45,28 +47,55 @@ function CreatingPageContent() {
             setPageId(page.id);
 
             // ─── TIKTOK PIXEL: Purchase ───────────────────────────────────
-            // Evento padrão TikTok para conversão de compra.
-            // 'value' é obrigatório para ROAS e otimização de lance.
-            // 'content_id' é obrigatório para Video Shopping Ads (VSA).
             if (typeof window !== 'undefined' && window.ttq?.track) {
                 pixelFired.current = true;
-
                 const plan = page.plan || 'avancado';
                 const value = PLAN_PRICES[plan] ?? 24.90;
-
                 window.ttq.track('Purchase', {
                     value,
                     currency: 'BRL',
-                    content_id: plan,           // ex: "avancado" ou "basico"
+                    content_id: plan,
                     content_type: 'product',
                     content_name: `MyCupid - Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
                     quantity: 1,
                 });
-
                 console.log('[TikTok Pixel] Purchase disparado:', { value, currency: 'BRL', content_id: plan });
             }
         }
     }, [finalizedPage]);
+    
+    // Timeout effect
+    useEffect(() => {
+        if (!isFinalized) {
+            const timer = setTimeout(() => {
+                if (!isFinalized) { // Double check inside timeout
+                    setTimedOut(true);
+                }
+            }, 90000); // 1.5 minutes
+            return () => clearTimeout(timer);
+        }
+    }, [isFinalized]);
+
+    // Handle Firestore query error (e.g., missing index)
+    if (error) {
+        return (
+            <Alert variant="destructive" className="max-w-lg text-left">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Ocorreu um Erro</AlertTitle>
+                <AlertDescription>
+                    <p>Não foi possível verificar o status da sua página. Isso pode acontecer se o banco de dados precisar de um momento para indexar as informações.</p>
+                    <p className="mt-4">
+                        Por favor, acesse a seção <strong>"Minhas Páginas"</strong> para ver sua criação. Se ela não aparecer em alguns minutos, entre em contato com nosso suporte.
+                    </p>
+                    <Button asChild className="mt-6 w-full">
+                        <Link href="/minhas-paginas">
+                            Ir para Minhas Páginas
+                        </Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        );
+    }
     
     if (isFinalized && pageId) {
         return (
@@ -88,6 +117,26 @@ function CreatingPageContent() {
                 </Button>
             </div>
         );
+    }
+
+    if (timedOut) {
+        return (
+            <div className="flex flex-col items-center text-center gap-6 animate-in fade-in duration-500">
+                <Info className="w-24 h-24 text-amber-500"/>
+                <h1 className="text-4xl font-bold font-headline">Um momento...</h1>
+                <p className="text-muted-foreground max-w-md">
+                    O processamento está demorando um pouco mais que o esperado.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    Não se preocupe, seu pagamento foi recebido! Sua página está sendo criada e aparecerá em "Minhas Páginas" assim que estiver pronta.
+                </p>
+                <Button asChild size="lg" variant="secondary" className="mt-4">
+                    <Link href="/minhas-paginas">
+                        Verificar em Minhas Páginas
+                    </Link>
+                </Button>
+            </div>
+        )
     }
 
     return (
