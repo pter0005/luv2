@@ -136,7 +136,7 @@ export default function FeaturesCarousel() {
             title: 'Trilha Sonora',
             description: 'Adicione a trilha sonora de vocês, com música do Youtube ou gravando sua voz.',
             type: 'image',
-            media: 'https://imgur.com/S6pfmgd.png',
+            media: 'https://i.imgur.com/S6pfmgd.png',
         },
         {
           id: 4,
@@ -160,7 +160,7 @@ export default function FeaturesCarousel() {
             title: 'Quiz do Casal',
             description: 'Será que vocês se conhecem mesmo? Teste os conhecimentos com um quiz divertido!',
             type: 'image',
-            media: 'https://imgur.com/HIw2TMC.png',
+            media: 'https://i.imgur.com/HIw2TMC.png',
         },
         {
             id: 7,
@@ -168,7 +168,7 @@ export default function FeaturesCarousel() {
             title: 'Jogos Interativos',
             description: 'Divirtam-se juntos com jogos personalizados que testam a sintonia de vocês.',
             type: 'image',
-            media: 'https://imgur.com/EI289he.png',
+            media: 'https://i.imgur.com/EI289he.png',
         },
     ], []);
 
