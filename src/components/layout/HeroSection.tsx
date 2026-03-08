@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from 'next/image';
@@ -190,7 +189,7 @@ const HeroSection = () => {
                 </h1>
 
                 <p className="text-base lg:text-lg text-gray-400 max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed font-light">
-                    Transforme seus sentimentos em uma obra de arte digital. Uma experiência exclusiva, criada para celebrar momentos que merecem ser eternos.
+                    Crie uma página personalizada com fotos, músicas e mensagens. Ela abre direto no celular de quem você ama — sem baixar nada.
                 </p>
 
                 {/* ── CTAs ── */}
@@ -206,6 +205,11 @@ const HeroSection = () => {
                         </Button>
                     </Link>
                 </div>
+
+                {/* ── PREÇO ÂNCORA ── */}
+                <p className="text-xs text-white/30 mt-3 text-center lg:text-left">
+                  A partir de <span className="text-white/50 font-semibold">R$14,90</span> · pagamento único · sem mensalidade
+                </p>
 
                 {/* ── MINI TRUST STRIP ── */}
                 <motion.div
