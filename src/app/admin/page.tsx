@@ -1,5 +1,5 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
-import { removeAdminSession } from '@/app/admin/admin-auth-actions';
+import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
