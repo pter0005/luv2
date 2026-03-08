@@ -1,0 +1,2273 @@
+
+"use client";
+
+import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
+import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { AnimatePresence, motion } from "framer-motion";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle, Gift } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { format, type Locale } from "date-fns";
+import { ptBR, enUS, es } from "date-fns/locale";
+import Countdown from "./Countdown";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/effect-cards';
+import 'swiper/css/effect-flip';
+import 'swiper/css/effect-cube';
+import 'swiper/css/pagination';
+import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay } from 'swiper/modules';
+import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
+import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useSearchParams, useRouter } from 'next/navigation'
+import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
+import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
+import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { collection, query, where } from 'firebase/firestore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import PreviewContent from "./PreviewContent";
+import FallingHearts from "@/components/effects/FallingHearts";
+import StarrySky from "@/components/effects/StarrySky";
+import MysticVortex from "@/components/effects/MysticVortex";
+import FloatingDots from "@/components/effects/FloatingDots";
+import CustomAudioPlayer from "./CustomAudioPlayer";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import NebulaBackground from "@/components/effects/NebulaBackground";
+import { FirebaseError } from "firebase/app";
+import PayPalButton from "@/components/paypal/PaypalButton";
+import MysticFlowers from "@/components/effects/MysticFlowers";
+import QrCodeSelector from "./QrCodeSelector";
+import { Suspense } from "react";
+
+const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full aspect-square" />
+});
+
+const Timeline = dynamic(() => import('./Timeline'), { ssr: false });
+
+const cpfMask = (v: string) => {
+    v = v.replace(/\D/g, "");
+    if (v.length > 11) v = v.slice(0, 11);
+    return v
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+const MAX_GALLERY_IMAGES = 6;
+const MAX_TIMELINE_IMAGES = 20;
+
+const paymentSchema = z.object({
+  payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
+  payerLastName: z.string().min(1, "Sobrenome é obrigatório.").optional(),
+  payerEmail: z.string().email("E-mail inválido.").optional(),
+  payerCpf: z.string().optional(),
+});
+
+export const fileWithPreviewSchema = z.object({
+    url: z.string().url({ message: "URL de pré-visualização inválida." }),
+    path: z.string(),
+});
+export type FileWithPreview = z.infer<typeof fileWithPreviewSchema>;
+
+export const timelineEventSchema = z.object({
+    id: z.string().optional(),
+    image: fileWithPreviewSchema.optional(),
+    description: z.string().optional(),
+    date: z.date().optional(),
+});
+export type TimelineEvent = z.infer<typeof timelineEventSchema>;
+
+const quizOptionSchema = z.object({
+  text: z.string().min(1, "A opção não pode estar vazia."),
+});
+
+const quizQuestionSchema = z.object({
+  questionText: z.string().min(1, "A pergunta não pode estar vazia."),
+  options: z.array(quizOptionSchema).min(2, "Mínimo de 2 opções.").max(5, "Máximo de 5 opções."),
+  correctAnswerIndex: z.number({ required_error: "Selecione a resposta correta." }).nullable(),
+});
+
+const pageSchema = z.object({
+  plan: z.string().default('avancado'),
+  intentId: z.string().optional(),
+  userId: z.string().optional(),
+  title: z.string().default("Seu Título Aqui"),
+  titleColor: z.string().default("#FFFFFF"),
+  message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
+  messageFontSize: z.string().default("text-base"),
+  messageFormatting: z.array(z.string()).default([]),
+  specialDate: z.date().optional(),
+  countdownStyle: z.string().default("Padrão"),
+  countdownColor: z.string().default("#FFFFFF"),
+  galleryImages: z.array(fileWithPreviewSchema).max(MAX_GALLERY_IMAGES, `Você pode adicionar no máximo ${MAX_GALLERY_IMAGES} fotos.`).default([]),
+  galleryStyle: z.string().default("Coverflow"),
+  timelineEvents: z.array(timelineEventSchema).max(MAX_TIMELINE_IMAGES, `Você pode adicionar no máximo ${MAX_TIMELINE_IMAGES} momentos.`).default([]),
+  musicOption: z.string().default("none"),
+  youtubeUrl: z.string().optional().or(z.literal('')),
+  audioRecording: fileWithPreviewSchema.optional(),
+  songName: z.string().optional(),
+  artistName: z.string().optional(),
+  backgroundAnimation: z.string().default("none"),
+  heartColor: z.string().default("#D14D72"),
+  backgroundVideo: fileWithPreviewSchema.optional(),
+  enablePuzzle: z.boolean().default(false),
+  puzzleImage: fileWithPreviewSchema.optional(),
+  puzzleBackgroundAnimation: z.string().optional(),
+  enableMemoryGame: z.boolean().default(false),
+  memoryGameImages: z.array(fileWithPreviewSchema).default([]),
+  enableQuiz: z.boolean().default(false),
+  quizQuestions: z.array(quizQuestionSchema).max(5, "Máximo de 5 perguntas.").default([]),
+  qrCodeDesign: z.string().default("classic"),
+  utmSource: z.string().optional(),
+  payment: paymentSchema.optional(),
+});
+
+export type PageData = z.infer<typeof pageSchema>;
+
+// ─────────────────────────────────────────────
+// STEP COMPONENTS
+// ─────────────────────────────────────────────
+
+const TitleStep = React.memo(() => {
+    const { control } = useFormContext<PageData>();
+    return (
+        <div className="space-y-8">
+            <FormField control={control} name="title" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Título</FormLabel>
+                    <FormControl><Input placeholder="Ex: João & Maria" {...field} /></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+            <FormField control={control} name="titleColor" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Cor do título</FormLabel>
+                    <FormControl>
+                        <div className="relative flex items-center gap-4">
+                            <Input type="color" className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0" {...field} />
+                            <span className="text-sm">Escolha uma cor para o texto</span>
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        </div>
+    );
+});
+TitleStep.displayName = 'TitleStep';
+
+const MessageStep = React.memo(() => {
+  const form = useFormContext<PageData>();
+    return (
+        <div className="space-y-8">
+            <div className="space-y-2">
+                <FormLabel>Sua Mensagem</FormLabel>
+                <FormField control={form.control} name="messageFormatting" render={({ field }) => (
+                    <ToggleGroup type="multiple" variant="outline" className="justify-start" value={field.value} onValueChange={field.onChange}>
+                        <ToggleGroupItem value="bold"><Bold className="h-4 w-4" /></ToggleGroupItem>
+                        <ToggleGroupItem value="italic"><Italic className="h-4 w-4" /></ToggleGroupItem>
+                        <ToggleGroupItem value="strikethrough"><Strikethrough className="h-4 w-4" /></ToggleGroupItem>
+                    </ToggleGroup>
+                )} />
+                <FormField control={form.control} name="message" render={({ field }) => (
+                    <FormControl><Textarea placeholder="Sua declaração..." className="min-h-[288px]" {...field} /></FormControl>
+                )} />
+            </div>
+        </div>
+    );
+});
+MessageStep.displayName = 'MessageStep';
+
+const SpecialDateStep = React.memo(() => {
+  const { control, setValue, watch } = useFormContext<PageData>();
+  const countdownStyle = watch("countdownStyle");
+  const titleColor = watch("titleColor");
+  const fnsLocale = ptBR;
+
+  return (
+    <div className="space-y-12">
+      <div className="space-y-4">
+        <FormLabel>Início do relacionamento</FormLabel>
+        <FormField
+          control={control}
+          name="specialDate"
+          render={({ field }) => (
+            <FormItem className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={field.value}
+                onSelect={field.onChange}
+                disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                locale={fnsLocale}
+                className="rounded-md border"
+                captionLayout="dropdown-buttons"
+                fromYear={1960}
+                toYear={new Date().getFullYear()}
+              />
+            </FormItem>
+          )}
+        />
+        <FormDescription className="text-center">
+          Essa data será usada para o contador.
+        </FormDescription>
+      </div>
+
+      <div className="space-y-4">
+        <FormLabel>Modo de Exibição do Contador</FormLabel>
+        <FormField
+          control={control}
+          name="countdownStyle"
+          render={({ field }) => (
+            <RadioGroup
+              onValueChange={field.onChange}
+              value={field.value}
+              className="grid grid-cols-2 gap-4"
+            >
+              <FormItem>
+                <FormControl>
+                  <RadioGroupItem value="Padrão" id="countdown-style-default" className="peer sr-only" />
+                </FormControl>
+                <Label
+                  htmlFor="countdown-style-default"
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-md border-2 p-4 cursor-pointer",
+                    field.value === "Padrão" ? "border-primary" : "border-muted"
+                  )}
+                >
+                  Padrão
+                </Label>
+              </FormItem>
+              <FormItem>
+                <FormControl>
+                  <RadioGroupItem value="Simples" id="countdown-style-simple" className="sr-only" />
+                </FormControl>
+                <Label
+                  htmlFor="countdown-style-simple"
+                  className={cn(
+                    "flex h-full w-full items-center justify-center rounded-md border-2 p-4 cursor-pointer",
+                    field.value === "Simples" ? "border-primary" : "border-muted"
+                  )}
+                >
+                  Simples
+                </Label>
+              </FormItem>
+            </RadioGroup>
+          )}
+        />
+      </div>
+
+      <div className="space-y-4">
+        <FormLabel>Cor do Contador</FormLabel>
+        <FormField
+          control={control}
+          name="countdownColor"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="color"
+                    className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0"
+                    {...field}
+                  />
+                  <span>Clique no quadrado para escolher uma cor</span>
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <Button
+          type="button"
+          variant="link"
+          className="p-0 text-primary"
+          onClick={() => setValue("countdownColor", titleColor)}
+        >
+          <LinkIcon className="mr-2 h-4 w-4" />
+          Usar a cor do título
+        </Button>
+      </div>
+    </div>
+  );
+});
+SpecialDateStep.displayName = 'SpecialDateStep';
+
+// Helper: upload a file to Firebase Storage
+const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
+    if (!userId) throw new Error("Usuário não identificado para upload.");
+    const timestamp = Date.now();
+    const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
+    const fileName = `${timestamp}-${safeName}`;
+    const fullPath = `temp/${userId}/${folderName}/${fileName}`;
+    const fileRef = storageRef(storage, fullPath);
+    try {
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+        return { url: downloadURL, path: fullPath };
+    } catch (error: any) {
+        console.error("Erro detalhado no upload:", error);
+        throw error;
+    }
+};
+
+// ─────────────────────────────────────────────
+// GALLERY STEP
+// ─────────────────────────────────────────────
+const GalleryStep = React.memo(() => {
+    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { fields, append, remove } = useFieldArray({ control, name: "galleryImages" });
+    const { user, storage, isUserLoading } = useFirebase();
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
+    const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files) return;
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        const availableSlots = MAX_GALLERY_IMAGES - fields.length;
+        if (availableSlots <= 0) return;
+        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        try {
+            const uploadPromises = filesArray.map(async file => {
+                const compressedFile = await compressImage(file, 1280, 0.9);
+                return uploadFile(storage, user.uid, compressedFile, 'gallery');
+            });
+            const newImageObjects = await Promise.all(uploadPromises);
+            append(newImageObjects);
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+        } catch (error: any) {
+            console.error("Error uploading files:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível enviar as imagens.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
+        remove(index);
+    };
+
+    return (
+        <div className="space-y-8">
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_GALLERY_IMAGES} itemType='fotos na galeria' />
+            <div className="space-y-2">
+                <FormLabel>Suas Fotos para a galeria</FormLabel>
+                <FormControl>
+                    <label
+                        htmlFor="photo-upload"
+                        className={cn(
+                            "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                            (isLimitReached || isUploading) && "cursor-not-allowed opacity-50"
+                        )}
+                    >
+                        {isUploading ? (
+                            <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                        ) : (
+                            <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                        )}
+                        <p className="font-semibold">{isUploading ? 'Enviando...' : 'Clique para adicionar fotos'}</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF (Qualidade original)</p>
+                        <input
+                            id="photo-upload"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileChange}
+                            disabled={isLimitReached || isUploading}
+                        />
+                    </label>
+                </FormControl>
+                {fields && fields.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="relative group aspect-square">
+                                <Image
+                                    src={(field as any).url || 'https://via.placeholder.com/150'}
+                                    alt={`Pré-visualização da imagem ${index + 1}`}
+                                    fill
+                                    className="rounded-md object-cover"
+                                    unoptimized
+                                />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    className="absolute -top-2 -right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-2 z-10"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <div className="space-y-4 pt-6 border-t">
+                <FormLabel className="text-base font-semibold">Modo de Exibição da Galeria</FormLabel>
+                <FormField
+                    control={control}
+                    name="galleryStyle"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-2 gap-4"
+                                >
+                                    {["Coverflow", "Cards", "Flip", "Cube"].map((style) => (
+                                        <div key={style}>
+                                            <RadioGroupItem value={style} id={`style-${style}`} className="sr-only" />
+                                            <Label
+                                                htmlFor={`style-${style}`}
+                                                className={cn(
+                                                    "flex items-center justify-center rounded-md border-2 p-4 cursor-pointer hover:bg-accent transition-all",
+                                                    field.value === style ? "border-primary bg-primary/5" : "border-muted"
+                                                )}
+                                            >
+                                                {style}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        </div>
+    );
+});
+GalleryStep.displayName = 'GalleryStep';
+
+// ─────────────────────────────────────────────
+// TIMELINE STEP
+// ─────────────────────────────────────────────
+const TimelineStep = React.memo(() => {
+    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { fields, remove, append } = useFieldArray({ control, name: "timelineEvents" });
+    const { user, storage, isUserLoading } = useFirebase();
+    const [isUploading, setIsUploading] = useState(false);
+    const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const fnsLocale = ptBR;
+    const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
+
+    const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files) return;
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        const availableSlots = MAX_TIMELINE_IMAGES - fields.length;
+        if (availableSlots <= 0) {
+            toast({ variant: 'destructive', title: 'Limite Excedido', description: `Você já atingiu o limite de ${MAX_TIMELINE_IMAGES} momentos.` });
+            return;
+        }
+        const filesToUpload = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        try {
+            const uploadPromises = filesToUpload.map(async (file) => {
+                const compressedFile = await compressImage(file, 1280, 0.85);
+                return uploadFile(storage, user.uid, compressedFile, 'timeline');
+            });
+            const uploadedFiles = await Promise.all(uploadPromises);
+            // FIX: sem id manual — useFieldArray gerencia IDs sozinho
+            const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
+                image: fileData,
+                description: '',
+                date: undefined,
+            }));
+            append(newEvents);
+            toast({
+                title: `${uploadedFiles.length} foto${uploadedFiles.length > 1 ? 's' : ''} adicionada${uploadedFiles.length > 1 ? 's' : ''}!`,
+                description: 'Adicione uma descrição e data para cada momento.',
+            });
+        } catch (error: any) {
+            console.error("Erro no upload da timeline:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : (error?.message || 'unknown');
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível enviar as imagens.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">ERR: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleRemove = (index: number) => {
+        const eventToRemove = fields[index];
+        if ((eventToRemove as any).image?.path && storage) {
+            const imageRef = storageRef(storage, (eventToRemove as any).image.path);
+            deleteObject(imageRef).catch(err => console.error("Erro ao deletar imagem do storage:", err));
+        }
+        remove(index);
+    };
+
+    return (
+        <div className="space-y-6">
+            <ImageLimitWarning currentCount={fields.length} limit={MAX_TIMELINE_IMAGES} itemType="momentos na linha do tempo" />
+            {errors.timelineEvents?.root && (
+                <p className="text-sm font-medium text-destructive">{errors.timelineEvents.root.message}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+                Adicione momentos importantes. Eles aparecerão na sua linha do tempo 3D.
+            </p>
+            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-2">
+                {fields.length === 0 && !isUploading && (
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
+                        <Camera className="w-10 h-10 mb-4" />
+                        <p className="font-semibold">Sua linha do tempo está vazia</p>
+                        <p className="text-sm">Use o botão abaixo para adicionar seus momentos.</p>
+                    </div>
+                )}
+                {fields.map((field, index) => {
+                    const imageUrl: string | undefined = (field as any)?.image?.url;
+                    return (
+                        <Card key={field.id} className="p-4 bg-card/80 flex flex-col sm:flex-row gap-4 items-start relative">
+                            <div className="flex-shrink-0">
+                                <div className={cn(
+                                    "w-24 h-24 rounded-md border-2 border-dashed flex items-center justify-center overflow-hidden relative bg-background",
+                                    imageUrl && "border-solid border-primary/30"
+                                )}>
+                                    {imageUrl ? (
+                                        <img src={imageUrl} alt={`Momento ${index + 1}`} className="w-full h-full object-cover rounded-md" loading="lazy" />
+                                    ) : (
+                                        <Camera className="w-6 h-6 text-muted-foreground" />
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex-grow space-y-2">
+                                <FormField
+                                    control={control}
+                                    name={`timelineEvents.${index}.description`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Textarea {...field} placeholder="Descreva este momento..." className="bg-background min-h-[50px] sm:min-h-[80px]" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={control}
+                                    name={`timelineEvents.${index}.date`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                                                        >
+                                                            {field.value
+                                                                ? format(new Date(field.value), "PPP", { locale: fnsLocale })
+                                                                : <span>Escolha a data</span>
+                                                            }
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value ? new Date(field.value) : undefined}
+                                                        onSelect={field.onChange}
+                                                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                                        initialFocus
+                                                        locale={fnsLocale}
+                                                        captionLayout="dropdown-buttons"
+                                                        fromYear={1960}
+                                                        toYear={new Date().getFullYear()}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1 right-1 p-2 h-auto w-auto text-muted-foreground hover:text-destructive"
+                                onClick={() => handleRemove(index)}
+                            >
+                                <Trash className="w-4 h-4" />
+                            </Button>
+                        </Card>
+                    );
+                })}
+            </div>
+            <FormControl>
+                <label
+                    htmlFor="timeline-images-upload"
+                    className={cn(
+                        buttonVariants({ size: "lg" }),
+                        "w-full",
+                        isLimitReached || isUploading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                    )}
+                >
+                    <input
+                        id="timeline-images-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleBulkImageUpload}
+                        disabled={isLimitReached || isUploading}
+                        ref={fileInputRef}
+                    />
+                    {isUploading
+                        ? <><Loader2 className="mr-2 animate-spin" /> Enviando...</>
+                        : <><Upload className="mr-2" /> Adicionar Fotos para a Linha do Tempo</>
+                    }
+                </label>
+            </FormControl>
+        </div>
+    );
+});
+TimelineStep.displayName = 'TimelineStep';
+
+// ─────────────────────────────────────────────
+// MUSIC STEP
+// ─────────────────────────────────────────────
+const MusicStep = React.memo(() => {
+    const { control, setValue, getValues } = useFormContext<PageData>();
+    const { user, storage, isUserLoading } = useFirebase();
+    const { toast } = useToast();
+    const musicOption = useWatch({ control, name: "musicOption" });
+    const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
+    const [isSearching, startSearchTransition] = useTransition();
+    const [showManualLinkInput, setShowManualLinkInput] = useState(false);
+    const manualLinkInputRef = useRef<HTMLInputElement>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'recorded' | 'uploading'>('idle');
+    const audioRecording = useWatch({ control, name: "audioRecording" });
+
+    const handleSearchMusic = () => {
+        const sName = getValues("songName");
+        const aName = getValues("artistName");
+        if (!sName) {
+            toast({ variant: "destructive", title: 'O nome da música é obrigatório' });
+            return;
+        }
+        startSearchTransition(async () => {
+            try {
+                const result = await findYoutubeVideo({ songName: sName, artistName: aName || '' });
+                if (result.url) {
+                    setValue("youtubeUrl", result.url, { shouldDirty: true });
+                    toast({ title: 'Música conectada!', description: 'Sua música foi encontrada no YouTube.' });
+                }
+            } catch (e: any) {
+                toast({ variant: "destructive", title: 'Erro na Busca', description: e.message || 'Não foi possível encontrar um vídeo.' });
+            }
+        });
+    };
+
+    const handleSetManualLink = () => {
+        const manualUrl = manualLinkInputRef.current?.value;
+        if (manualUrl && manualUrl.startsWith("http")) {
+            setValue("youtubeUrl", manualUrl, { shouldDirty: true, shouldValidate: true });
+            toast({ title: 'Link adicionado!', description: 'A música do link foi adicionada.' });
+        } else {
+            toast({ variant: "destructive", title: 'Link inválido', description: 'Por favor, insira um link válido do YouTube.' });
+        }
+    };
+
+    const uploadRecording = async (audioBlob: Blob) => {
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!storage || !user) {
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação. Faça login novamente.' });
+            return;
+        }
+        setRecordingStatus('uploading');
+        try {
+            const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
+            setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
+            setRecordingStatus('recorded');
+            toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi salva com segurança.' });
+        } catch (error: any) {
+            console.error("Error uploading audio:", error);
+            setRecordingStatus('recorded');
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível salvar sua gravação.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+            setValue("audioRecording", undefined, { shouldDirty: true });
+            mediaRecorderRef.current.ondataavailable = (event) => { audioChunksRef.current.push(event.data); };
+            mediaRecorderRef.current.onstop = () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
+                uploadRecording(audioBlob);
+                audioChunksRef.current = [];
+            };
+            mediaRecorderRef.current.start();
+            setRecordingStatus("recording");
+        } catch (err: any) {
+            console.error("Error accessing microphone:", err);
+            toast({
+                variant: "destructive",
+                title: 'Erro no Microfone',
+                description: (
+                    <div>
+                        <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {err.name || 'unknown'}</p>
+                    </div>
+                )
+            });
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && recordingStatus === "recording") {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="musicOption"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Escolha a trilha sonora</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setValue("youtubeUrl", "");
+                                    setShowManualLinkInput(false);
+                                }}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-2"
+                            >
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="none" id="music-none" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-none" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Nenhum Som</Label>
+                                </FormItem>
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="record" id="music-record" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-record" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Gravar Mensagem de Voz <Mic className="h-5 w-5" /></Label>
+                                </FormItem>
+                                <FormItem>
+                                    <FormControl><RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" /></FormControl>
+                                    <Label htmlFor="music-youtube" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Usar Música do YouTube <Youtube className="h-5 w-5" /></Label>
+                                </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {musicOption === 'youtube' && (
+                <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField control={control} name="songName" render={({ field }) => (
+                            <FormItem><FormLabel>Nome da Música</FormLabel><FormControl><Input placeholder="Ex: Perfect" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={control} name="artistName" render={({ field }) => (
+                            <FormItem><FormLabel>Nome do Artista</FormLabel><FormControl><Input placeholder="Ex: Ed Sheeran" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                    </div>
+                    <Button type="button" onClick={handleSearchMusic} disabled={isSearching} className="w-full">
+                        {isSearching ? <Loader2 className="animate-spin" /> : <Search className="mr-2" />}
+                        Buscar com IA
+                    </Button>
+                    {youtubeUrl && !isSearching && (
+                        <div className="mt-4 pt-4 border-t border-border/50">
+                            <p className="text-sm text-center text-muted-foreground mb-2">A música não está correta?</p>
+                            <Button type="button" variant="secondary" className="w-full" onClick={() => setShowManualLinkInput(!showManualLinkInput)}>
+                                Usar um link direto do YouTube
+                            </Button>
+                        </div>
+                    )}
+                    {showManualLinkInput && (
+                        <div className="mt-4 space-y-2">
+                            <FormLabel htmlFor="manual-link">Usar um link direto do YouTube</FormLabel>
+                            <div className="flex gap-2">
+                                <Input id="manual-link" ref={manualLinkInputRef} placeholder="Cole o link aqui..." />
+                                <Button type="button" onClick={handleSetManualLink}>OK</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+            {musicOption === 'record' && (
+                <div className="space-y-4 rounded-lg border bg-card/80 p-4">
+                    <h4 className="font-semibold">Gravador de Voz</h4>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        {recordingStatus === "idle" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>}
+                        {recordingStatus === "recording" && <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>}
+                        {recordingStatus === "recorded" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>}
+                        {recordingStatus === 'uploading' && <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</Button>}
+                        {audioRecording?.url && <audio src={audioRecording.url} controls className="w-full" />}
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
+                        {recordingStatus === 'recording' && 'Gravando...'}
+                        {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+});
+MusicStep.displayName = 'MusicStep';
+
+// ─────────────────────────────────────────────
+// BACKGROUND STEP
+// ─────────────────────────────────────────────
+const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
+    const { control, setValue, watch } = useFormContext<PageData>();
+    const backgroundAnimation = watch("backgroundAnimation");
+    const titleColor = watch("titleColor");
+    const [isClient, setIsClient] = useState(false);
+
+    const animationOptions = [
+        { id: "none", name: 'Nenhuma' },
+        { id: "falling-hearts", name: 'Chuva de Corações', isFavorite: true },
+        { id: "starry-sky", name: 'Céu Estrelado', isFavorite: true },
+        { id: "nebula", name: 'Nebulosa Galáctica' },
+        { id: 'mystic-flowers', name: 'Flores Nascendo', isFavorite: true },
+        { id: "floating-dots", name: 'Pontos Coloridos' },
+        { id: "clouds", name: 'Nuvens' },
+    ];
+
+    useEffect(() => { setIsClient(true); }, []);
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="backgroundAnimation"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Escolha a Animação</FormLabel>
+                        <FormControl>
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="grid grid-cols-2 gap-4">
+                                {animationOptions.map((option) => (
+                                    <FormItem key={option.id}>
+                                        <FormControl>
+                                            <RadioGroupItem value={option.id} id={`anim-${option.id}`} className="peer sr-only" />
+                                        </FormControl>
+                                        <Label
+                                            htmlFor={`anim-${option.id}`}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center rounded-md border-2 bg-popover p-4 h-24 text-sm relative overflow-hidden group/item cursor-pointer hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary",
+                                                field.value === option.id ? "border-primary" : "border-muted"
+                                            )}
+                                        >
+                                            {isClient && isVisible && (
+                                                <div className="absolute inset-0 w-full h-full opacity-30 group-hover/item:opacity-40 -z-10">
+                                                    {option.id === "falling-hearts" && <div className="w-full h-full relative overflow-hidden"><FallingHearts count={50} color={watch("heartColor")} /></div>}
+                                                    {option.id === "starry-sky" && <div className="w-full h-full relative overflow-hidden"><StarrySky /></div>}
+                                                    {option.id === "nebula" && <div className="w-full h-full relative overflow-hidden"><NebulaBackground /></div>}
+                                                    {option.id === "floating-dots" && <div className="w-full h-full relative overflow-hidden"><FloatingDots /></div>}
+                                                    {option.id === 'mystic-flowers' && <div className="w-full h-full relative overflow-hidden"><MysticFlowers /></div>}
+                                                    {option.id === "clouds" && <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover"><source src="https://i.imgur.com/mKlEZYZ.mp4" type="video/mp4" /></video>}
+                                                </div>
+                                            )}
+                                            {option.isFavorite && <Heart className="absolute top-2 left-2 w-4 h-4 text-pink-400 fill-pink-400" />}
+                                            <span className="relative z-10">{option.name}</span>
+                                        </Label>
+                                    </FormItem>
+                                ))}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {backgroundAnimation === 'falling-hearts' && (
+                <FormField
+                    control={control}
+                    name="heartColor"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Cor dos Corações</FormLabel>
+                            <FormControl>
+                                <div className="relative flex items-center gap-4">
+                                    <Input type="color" className="h-10 w-14 cursor-pointer appearance-none border-0 bg-transparent p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-md [&::-webkit-color-swatch]:border-0" {...field} />
+                                    <span className="text-sm">Clique no quadrado para escolher uma cor</span>
+                                </div>
+                            </FormControl>
+                            <Button type="button" variant="link" className="p-0 h-auto" onClick={() => setValue("heartColor", titleColor, { shouldDirty: true })}>
+                                <Pipette className="mr-2 h-4 w-4" />
+                                Usar a cor do título
+                            </Button>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+        </div>
+    );
+});
+BackgroundStep.displayName = 'BackgroundStep';
+
+// ─────────────────────────────────────────────
+// PUZZLE STEP — FIX #5: toast quando !user || !storage
+// ─────────────────────────────────────────────
+const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
+    const { control, setValue, watch } = useFormContext<PageData>();
+    const { user, storage, isUserLoading } = useFirebase();
+    const enablePuzzle = watch("enablePuzzle");
+    const puzzleImage = watch("puzzleImage");
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    const handlePuzzleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        // FIX #5: error toast quando user/storage null após loading
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            setIsProcessing(true);
+            try {
+                const compressedBlob = await compressImage(file, 1280, 0.9);
+                const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
+                setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
+                await handleAutosave?.();
+                toast({ title: 'Imagem enviada!', description: 'Sua foto foi adicionada.' });
+            } catch (error: any) {
+                console.error("Error processing puzzle image:", error);
+                const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+                toast({
+                    variant: 'destructive',
+                    title: 'Erro no Upload',
+                    description: (
+                        <div>
+                            <p>Não foi possível enviar a imagem.</p>
+                            <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                        </div>
+                    )
+                });
+            } finally {
+                setIsProcessing(false);
+            }
+        }
+    };
+
+    const removePuzzleImage = async () => {
+        if (puzzleImage?.path && storage) {
+            const imageRef = storageRef(storage, puzzleImage.path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete puzzle image from storage:", err));
+        }
+        setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
+        await handleAutosave?.();
+        toast({ title: 'Imagem removida' });
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enablePuzzle"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Quebra-Cabeça</FormLabel>
+                            <FormDescription>Exigir que o quebra-cabeça seja resolvido para ver a página.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+            {enablePuzzle && (
+                <div className="space-y-4">
+                    <FormLabel>Imagem do Quebra-Cabeça</FormLabel>
+                    {!puzzleImage?.url ? (
+                        <FormControl>
+                            <label
+                                htmlFor="puzzle-photo-upload"
+                                className={cn(
+                                    "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                    isProcessing && "cursor-not-allowed opacity-50"
+                                )}
+                            >
+                                {isProcessing ? (
+                                    <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" />
+                                ) : (
+                                    <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
+                                )}
+                                <p className="font-semibold">{isProcessing ? 'Processando...' : 'Clique para adicionar uma foto'}</p>
+                                <p className="text-xs text-muted-foreground">A imagem será transformada em quebra-cabeça.</p>
+                                <input id="puzzle-photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePuzzleImageChange} disabled={isProcessing} />
+                            </label>
+                        </FormControl>
+                    ) : (
+                        <div className="w-full flex flex-col items-center gap-6">
+                            <div className="w-full max-w-[300px] mx-auto">
+                                <RealPuzzle imageSrc={puzzleImage.url} />
+                            </div>
+                            <Button type="button" variant="destructive" onClick={removePuzzleImage} size="sm">
+                                <X className="mr-2 h-4 w-4" />Remover Imagem
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+PuzzleStep.displayName = 'PuzzleStep';
+
+// ─────────────────────────────────────────────
+// MEMORY GAME STEP — FIX #4: isUserLoading adicionado
+// ─────────────────────────────────────────────
+const MemoryGameStep = React.memo(() => {
+    const { control, watch } = useFormContext<PageData>();
+    // FIX #4: isUserLoading incluído para evitar falha silenciosa
+    const { user, storage, isUserLoading } = useFirebase();
+    const { toast } = useToast();
+    const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
+    const [isUploading, setIsUploading] = useState(false);
+    const enableMemoryGame = watch("enableMemoryGame");
+    const MAX_IMAGES = 8;
+    const isLimitReached = fields.length >= MAX_IMAGES;
+
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files) return;
+        // FIX #4: guard isUserLoading antes de tentar upload
+        if (isUserLoading) {
+            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!user || !storage) {
+            toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
+            return;
+        }
+        const availableSlots = MAX_IMAGES - fields.length;
+        if (availableSlots <= 0) return;
+        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+        setIsUploading(true);
+        try {
+            const uploadPromises = filesArray.map(async file => {
+                const compressedFile = await compressImage(file, 400, 0.8);
+                return uploadFile(storage, user.uid, compressedFile, 'memory-game');
+            });
+            const newImageObjects = await Promise.all(uploadPromises);
+            append(newImageObjects);
+            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+        } catch (error: any) {
+            console.error("Error uploading memory game files:", error);
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível enviar as imagens.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const imageToRemove = fields[index];
+        if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
+            const imageRef = storageRef(storage, (imageToRemove as any).path);
+            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+        }
+        remove(index);
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enableMemoryGame"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Jogo da Memória</FormLabel>
+                            <FormDescription>Crie um jogo de memória divertido com suas fotos.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+            {enableMemoryGame && (
+                <div className="space-y-4">
+                    <FormLabel>Imagens para o Jogo da Memória</FormLabel>
+                    <ImageLimitWarning currentCount={fields.length} limit={MAX_IMAGES} itemType='fotos para o jogo' />
+                    <FormControl>
+                        <label
+                            htmlFor="memory-game-upload"
+                            className={cn(
+                                "border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors block",
+                                (isLimitReached || isUploading) && "cursor-not-allowed opacity-50"
+                            )}
+                        >
+                            {isUploading ? <Loader2 className="mx-auto h-10 w-10 text-muted-foreground mb-2 animate-spin" /> : <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-2" />}
+                            <p className="font-semibold">{isUploading ? 'Enviando...' : 'Adicionar fotos para o jogo'}</p>
+                            <p className="text-xs text-muted-foreground">Adicione de 2 a 8 fotos para o jogo.</p>
+                            <input id="memory-game-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLimitReached || isUploading} />
+                        </label>
+                    </FormControl>
+                    {fields.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2 sm:gap-4 mt-4">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="relative group aspect-square">
+                                    <Image src={(field as any).url || 'https://via.placeholder.com/150'} alt={`Preview ${index + 1}`} fill className="rounded-md object-cover" unoptimized />
+                                    <Button type="button" variant="destructive" className="absolute -top-2 -right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity p-2 z-10" onClick={() => removeImage(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+MemoryGameStep.displayName = 'MemoryGameStep';
+
+// ─────────────────────────────────────────────
+// QUIZ STEP
+// ─────────────────────────────────────────────
+const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: number, removeQuestion: (index: number) => void, MAX_OPTIONS: number }) => {
+    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { fields, append, remove } = useFieldArray({ control, name: `quizQuestions.${qIndex}.options` });
+    const questionErrors = errors.quizQuestions?.[qIndex];
+
+    return (
+        <Card className="p-4 bg-card/80 relative">
+            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeQuestion(qIndex)}>
+                <Trash className="w-4 h-4" />
+            </Button>
+            <div className="space-y-4">
+                <FormField
+                    control={control}
+                    name={`quizQuestions.${qIndex}.questionText`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Pergunta {qIndex + 1}</FormLabel>
+                            <FormControl><Input placeholder='Qual é a nossa música?' {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="space-y-2">
+                    <FormLabel>Opções de Resposta</FormLabel>
+                    <FormDescription>Marque a opção correta. Mínimo de 2, máximo de 5.</FormDescription>
+                    <FormField
+                        control={control}
+                        name={`quizQuestions.${qIndex}.correctAnswerIndex`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormControl>
+                                    <RadioGroup onValueChange={(v) => field.onChange(parseInt(v))} value={field.value?.toString()}>
+                                        {fields.map((option, oIndex) => (
+                                            <div key={option.id} className="flex items-center gap-2">
+                                                <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}-o${oIndex}`} />
+                                                <div className="flex-grow">
+                                                    <FormField
+                                                        control={control}
+                                                        name={`quizQuestions.${qIndex}.options.${oIndex}.text`}
+                                                        render={({ field }) => <Input placeholder={`Opção ${oIndex + 1}`} {...field} />}
+                                                    />
+                                                </div>
+                                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(oIndex)} disabled={fields.length <= 2}>
+                                                    <X className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </FormControl>
+                                {(questionErrors as any)?.correctAnswerIndex && <FormMessage>{(questionErrors as any).correctAnswerIndex.message}</FormMessage>}
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                {fields.length < MAX_OPTIONS && (
+                    <Button type="button" variant="secondary" size="sm" onClick={() => append({ text: '' })}>
+                        <Plus className="mr-2 h-4 w-4" /> Adicionar Opção
+                    </Button>
+                )}
+            </div>
+        </Card>
+    );
+};
+
+const QuizStep = React.memo(() => {
+    const { control, watch } = useFormContext<PageData>();
+    const enableQuiz = watch("enableQuiz");
+    const { fields, append, remove } = useFieldArray({ control, name: "quizQuestions" });
+    const MAX_QUESTIONS = 5;
+
+    const addQuestion = () => {
+        if (fields.length < MAX_QUESTIONS) {
+            append({ questionText: '', options: [{ text: '' }, { text: '' }], correctAnswerIndex: null });
+        }
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enableQuiz"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Quiz do Casal</FormLabel>
+                            <FormDescription>Adicionar um quiz divertido sobre vocês dois.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+            {enableQuiz && (
+                <div className="space-y-6">
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Dica de Mestre</AlertTitle>
+                        <AlertDescription>Crie perguntas que só vocês dois saberiam a resposta para tornar o jogo mais íntimo e divertido!</AlertDescription>
+                    </Alert>
+                    {fields.map((question, qIndex) => (
+                        <QuizQuestionForm key={question.id} qIndex={qIndex} removeQuestion={remove} MAX_OPTIONS={5} />
+                    ))}
+                    {fields.length < MAX_QUESTIONS && (
+                        <Button type="button" variant="outline" onClick={addQuestion} className="w-full">
+                            <Plus className="mr-2" /> Adicionar Pergunta ({fields.length}/{MAX_QUESTIONS})
+                        </Button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+QuizStep.displayName = 'QuizStep';
+
+// ─────────────────────────────────────────────
+// PLAN STEP
+// ─────────────────────────────────────────────
+const PlanStep = React.memo(() => {
+    const { control } = useFormContext<PageData>();
+    const { field } = useController({ name: 'plan', control });
+
+    const plans: Array<{
+        id: string;
+        name: string;
+        price: string;
+        originalPrice?: string;
+        description: string;
+        features: Array<{ text: string; included: boolean; icon?: any; highlight?: boolean }>;
+    }> = [
+        {
+            id: 'basico',
+            name: 'Plano Econômico',
+            price: '14,90',
+            description: 'Uma surpresa impactante com prazo definido.',
+            features: [
+                { text: 'Todos os recursos de personalização', included: true },
+                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
+                { text: 'Página disponível por 25 horas', included: true, icon: Hourglass },
+                { text: 'Página permanente', included: false },
+            ]
+        },
+        {
+            id: 'avancado',
+            name: 'Plano Avançado',
+            price: '24,90',
+            originalPrice: '39,90',
+            description: 'A experiência completa, para sempre.',
+            features: [
+                { text: 'Todos os recursos de personalização', included: true },
+                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
+                { text: 'Página permanente + backup infinito', included: true, icon: DatabaseZap, highlight: true },
+                { text: 'Página disponível por 25 horas', included: false },
+            ]
+        }
+    ];
+
+    return (
+        <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {plans.map((planInfo) => {
+                const isSelected = field.value === planInfo.id;
+                return (
+                    <Label key={planInfo.id} htmlFor={`plan-${planInfo.id}`} className={cn(
+                        "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300",
+                        "bg-card/50 border-2",
+                        isSelected ? "border-primary shadow-2xl shadow-primary/20" : 'border-border hover:border-primary/40'
+                    )}>
+                        <RadioGroupItem value={planInfo.id} id={`plan-${planInfo.id}`} className="sr-only peer" />
+                        {planInfo.id === 'avancado' && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg z-10">MAIS POPULAR</div>
+                        )}
+                        <div className="p-6 pt-12 flex-grow flex flex-col">
+                            <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
+                            <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
+                            <div className="my-4 text-center">
+                                {planInfo.originalPrice && (
+                                  <p className="text-zinc-500 text-lg line-through font-medium">De R${planInfo.originalPrice}</p>
+                                )}
+                                <div className="flex items-baseline gap-1 justify-center">
+                                    <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
+                                    <span className="text-muted-foreground text-sm">/pagamento único</span>
+                                </div>
+                                {planInfo.originalPrice && (
+                                     <div className="flex justify-center mt-2">
+                                        <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full">
+                                            💝 Especial Dia da Mulher
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <ul className="space-y-3 text-sm flex-grow">
+                                {planInfo.features.map((feature, i) => (
+                                    <li key={i} className="flex items-center gap-3">
+                                        {feature.included ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <XCircle className="w-5 h-5 text-muted-foreground/50 shrink-0" />}
+                                        <span className={cn('leading-tight', !feature.included && 'line-through text-muted-foreground/70', feature.highlight && 'text-primary font-bold')}>{feature.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
+                            {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
+                        </div>
+                    </Label>
+                );
+            })}
+        </RadioGroup>
+    );
+});
+PlanStep.displayName = "PlanStep";
+
+// ─────────────────────────────────────────────
+// FIX #1: stepComponents array — ERA ESTE QUE FALTAVA, CAUSA DO CRASH TOTAL
+// Deve mapear exatamente os índices dos steps definidos em WizardInternal
+// índice 0→TitleStep, 1→MessageStep, ..., 10→PlanStep
+// índice 11 (payment) é tratado separadamente no WizardInternal
+// ─────────────────────────────────────────────
+const stepComponents: React.ComponentType<any>[] = [
+    TitleStep,       // 0 - title
+    MessageStep,     // 1 - message
+    SpecialDateStep, // 2 - specialDate
+    GalleryStep,     // 3 - gallery
+    TimelineStep,    // 4 - timeline
+    MusicStep,       // 5 - music
+    BackgroundStep,  // 6 - background
+    PuzzleStep,      // 7 - puzzle
+    MemoryGameStep,  // 8 - memory
+    QuizStep,        // 9 - quiz
+    PlanStep,        // 10 - plan
+];
+
+// ─────────────────────────────────────────────
+// PAYMENT STEP
+// ─────────────────────────────────────────────
+const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
+    const { getValues, watch, setValue, control } = useFormContext<PageData>();
+    const plan = watch('plan') as 'basico' | 'avancado';
+    const intentId = watch('intentId');
+    const { user } = useUser();
+    const [isProcessing, startTransition] = useTransition();
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [error, setError] = useState<{ message: string; details?: any } | null>(null);
+    const { toast } = useToast();
+    const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string; paymentId: string } | null>(null);
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
+    const router = useRouter();
+
+    // ── URGENCY TIMER — 15 minutos ────────────────────────────────
+    const [timeLeft, setTimeLeft] = useState(15 * 60); // segundos
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+    const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+    const timerSecs = String(timeLeft % 60).padStart(2, '0');
+    const timerExpired = timeLeft === 0;
+    // ── FIM TIMER ─────────────────────────────────────────────────
+
+    // ── SPECIAL USER (ZALMIR) CREDIT SYSTEM ──────────────────────
+    const { firestore } = useFirebase();
+    const [specialUserCredits, setSpecialUserCredits] = useState(0);
+    const [isSpecialUser, setIsSpecialUser] = useState(false);
+
+    const SPECIAL_USER_EMAIL = 'zalmirparedes@gmail.com';
+    const TOTAL_CREDITS = 2;
+
+    // Query só roda se for o usuário especial
+    const userPagesQuery = useMemoFirebase(() => {
+        if (!user || !firestore || user.email !== SPECIAL_USER_EMAIL) return null;
+        return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
+    }, [user, firestore]);
+
+    const { data: createdPages, isLoading: isLoadingPagesRaw } = useCollection(userPagesQuery);
+
+    // FIX #2: isLoading só bloqueia se for o usuário especial
+    // Usuários normais não precisam aguardar essa query (que é null para eles)
+    const isLoadingPages = isSpecialUser ? isLoadingPagesRaw : false;
+
+    useEffect(() => {
+        if (user?.email === SPECIAL_USER_EMAIL) {
+            setIsSpecialUser(true);
+            if (createdPages !== undefined && createdPages !== null) {
+                const creditsUsed = createdPages.length;
+                setSpecialUserCredits(Math.max(0, TOTAL_CREDITS - creditsUsed));
+            }
+        } else {
+            setIsSpecialUser(false);
+            setSpecialUserCredits(0);
+        }
+    }, [user, createdPages]);
+    // ── FIM SPECIAL USER ─────────────────────────────────────────
+
+    useEffect(() => {
+        if (user && !intentId) {
+            const forceSave = async () => {
+                const data = getValues();
+                const result = await createOrUpdatePaymentIntent({ ...data, userId: user.uid });
+                if (result.success) {
+                    setValue('intentId', result.intentId, { shouldDirty: false });
+                } else {
+                    console.error("Failed to force create intent:", result.error, result.details);
+                    setError({ message: result.error, details: result.details });
+                }
+            };
+            forceSave();
+        }
+    }, [user, intentId, getValues, setValue]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const hostname = window.location.hostname;
+            const isProdBr = hostname.endsWith('mycupid.com.br');
+            const isProdIntl = hostname.endsWith('mycupid.net');
+            setIsBrazilDomain(isProdBr || !isProdIntl);
+        }
+    }, []);
+
+    const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
+    const basePriceBRL = plan === 'basico' ? 14.90 : 24.90;
+    const totalBRL = basePriceBRL;
+    const totalUSD = basePriceUSD;
+
+    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+    const isAdmin = user?.email && adminEmails.includes(user.email);
+
+    const handlePaymentSuccess = useCallback((pageId: string) => {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+        toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
+        setPageId(pageId);
+        localStorage.removeItem('amore-pages-autosave');
+    }, [setPageId, toast]);
+
+    const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
+        pollingIntervalRef.current = setInterval(async () => {
+            const result = await verifyPaymentWithMercadoPago(paymentId, currentIntentId);
+            if (result.status === 'approved') {
+                clearInterval(pollingIntervalRef.current!);
+                handlePaymentSuccess(result.pageId);
+            } else if (result.status === 'error') {
+                clearInterval(pollingIntervalRef.current!);
+                setError({ message: result.error, details: result.details });
+            }
+        }, 3000);
+    }, [handlePaymentSuccess]);
+
+    useEffect(() => {
+        if (pixData?.paymentId && intentId) startPolling(pixData.paymentId, intentId);
+        return () => { if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current); };
+    }, [pixData, intentId, startPolling]);
+
+    const handleOneClickPix = () => {
+        setError(null);
+        setPixData(null);
+        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        if (user.email) setValue('payment.payerEmail', user.email, { shouldDirty: true });
+        startTransition(async () => {
+            try {
+                const fullData = { ...getValues(), userId: user.uid };
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+                if (!saveResult.success) {
+                    const { error, details } = saveResult;
+                    setError({ message: error, details });
+                    if (error?.includes("NOT_FOUND")) setValue('intentId', undefined, { shouldDirty: false });
+                    return;
+                }
+                setValue('intentId', saveResult.intentId);
+                const paymentResult = await processPixPayment(saveResult.intentId, totalBRL);
+                if (paymentResult.error) {
+                    setError({ message: paymentResult.error, details: paymentResult.details || {} });
+                } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
+                    setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
+                }
+            } catch (err: any) {
+                setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
+            }
+        });
+    };
+
+    const handleStripePayment = () => {
+        setError(null);
+        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        startTransition(async () => {
+            try {
+                const fullData = { ...getValues(), userId: user.uid };
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+                if (!saveResult.success) {
+                    setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
+                    return;
+                }
+                setValue('intentId', saveResult.intentId);
+                const planValue = getValues('plan') as 'basico' | 'avancado';
+                const domain = window.location.origin;
+                const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
+                if (!sessionResult.success) {
+                    setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
+                } else {
+                    window.location.href = sessionResult.url;
+                }
+            } catch (err: any) {
+                setError({ message: "Error connecting to the payment service.", details: err });
+            }
+        });
+    };
+
+    const handleAdminFinalize = async () => {
+        if (!user || !intentId) { toast({ variant: 'destructive', title: 'Erro Admin', description: 'Usuário ou Rascunho não encontrado.' }); return; }
+        startTransition(async () => {
+            try {
+                const result = await adminFinalizePage(intentId, user.uid);
+                if (!result.success) {
+                    setError({ message: result.error || "Falha ao finalizar como admin.", details: result.details });
+                } else {
+                    handlePaymentSuccess(result.pageId);
+                }
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar como admin.", details: e });
+            }
+        });
+    };
+
+    const handleManualVerification = async () => {
+        if (!pixData?.paymentId || !intentId) return;
+        setIsVerifying(true);
+        try {
+            const result = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
+            if (result.status === 'approved') {
+                handlePaymentSuccess(result.pageId);
+            } else {
+                toast({ variant: 'default', title: 'Pagamento ainda não confirmado', description: 'Por favor, tente novamente em alguns instantes.' });
+            }
+        } catch (e: any) {
+            toast({ variant: 'destructive', title: 'Erro na Verificação', description: 'Não foi possível verificar o pagamento.' });
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    // FIX #3: removido !intentId do guard — race condition eliminada
+    // A função já cria o intent internamente se necessário
+    const handleCreditFinalize = async () => {
+        if (!user || !isSpecialUser || specialUserCredits <= 0) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
+            return;
+        }
+        startTransition(async () => {
+            try {
+                const fullData = getValues();
+                // FIX #7: força plan='avancado' tanto no objeto quanto no form
+                fullData.plan = 'avancado';
+                setValue('plan', 'avancado', { shouldDirty: true });
+
+                const saveResult = await createOrUpdatePaymentIntent({ ...fullData, userId: user.uid });
+                if (!saveResult.success) {
+                    setError({ message: saveResult.error, details: saveResult.details });
+                    return;
+                }
+                const finalIntentId = saveResult.intentId;
+                const result = await adminFinalizePage(finalIntentId, user.uid);
+                if (!result.success) {
+                    setError({ message: result.error || "Falha ao finalizar com crédito.", details: result.details });
+                } else {
+                    handlePaymentSuccess(result.pageId);
+                }
+            } catch (e: any) {
+                setError({ message: "Erro de servidor ao finalizar com crédito.", details: e });
+            }
+        });
+    };
+
+    // Mostra spinner só enquanto necessário:
+    // - usuário especial: aguarda query de páginas + isBrazilDomain
+    // - usuário normal: aguarda só isBrazilDomain
+    if (isLoadingPages || isBrazilDomain === null) {
+        return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
+    }
+
+    // ── TELA EXCLUSIVA DO ZALMIR (créditos disponíveis) ───────────
+    if (isSpecialUser && specialUserCredits > 0) {
+        return (
+            <div className="space-y-6 text-center">
+                <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl">
+                    <span className="block text-xs text-green-400 font-bold uppercase tracking-widest mb-3">✦ Acesso Especial ✦</span>
+                    <span className="block text-sm text-green-300 font-bold uppercase tracking-wider mb-2">Crédito de Cortesia</span>
+                    <p className="text-white text-lg">
+                        Você tem <span className="font-black text-3xl text-green-400">{specialUserCredits}</span> crédito{specialUserCredits > 1 ? 's' : ''} disponível{specialUserCredits > 1 ? 'is' : ''}
+                    </p>
+                    <p className="text-white/70 text-sm mt-1">
+                        Cada crédito cria 1 página no <span className="font-bold text-white">Plano Avançado</span> — gratuitamente.
+                    </p>
+                </div>
+
+                <div className="space-y-2 text-left p-4 rounded-xl bg-card/50 border border-border/50">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">O que está incluído:</p>
+                    {[
+                        'Todos os recursos de personalização',
+                        'Quebra-cabeça, Jogo da Memória e Quiz',
+                        'Página permanente + backup infinito',
+                        'Acesso imediato ao link e QR Code',
+                    ].map((item) => (
+                        <div key={item} className="flex items-center gap-2 text-sm text-white/80">
+                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                            <span>{item}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <Button
+                    onClick={handleCreditFinalize}
+                    disabled={isProcessing}
+                    size="lg"
+                    className="w-full h-auto py-4 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/30"
+                >
+                    {isProcessing ? (
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Criando sua página...</>
+                    ) : (
+                        <><Gift className="mr-2 h-5 w-5" /> Usar 1 Crédito e Criar Página</>
+                    )}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                    Após usar este crédito, restarão <span className="font-bold">{Math.max(0, specialUserCredits - 1)}</span> crédito{specialUserCredits - 1 !== 1 ? 's' : ''}.
+                </p>
+
+                {error && (
+                    <Alert variant="destructive" className="mt-4 text-left">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error?.message}</AlertTitle>
+                        {typeof (error?.details) === 'object' && (error.details as any)?.log && (
+                            <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>
+                        )}
+                    </Alert>
+                )}
+            </div>
+        );
+    }
+
+    // ── TELA INTERNACIONAL (Stripe + PayPal) ─────────────────────
+    if (!isBrazilDomain) {
+        return (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {/* URGENCY TIMER */}
+                <div className={cn(
+                    "flex items-center justify-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold",
+                    timerExpired
+                        ? "bg-red-500/10 border-red-500/30 text-red-400"
+                        : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                )}>
+                    <Clock size={16} className={timerExpired ? "text-red-400" : "text-amber-400 animate-pulse"} />
+                    {timerExpired
+                        ? "⚠️ Seu rascunho pode expirar — finalize agora!"
+                        : <>Oferta reservada por <span className="font-black text-lg tabular-nums">{timerMins}:{timerSecs}</span></>
+                    }
+                </div>
+                <div className="text-center space-y-2">
+                    <h3 className="text-2xl font-black tracking-tight text-white">Quase lá!</h3>
+                    <p className="text-sm text-zinc-400">Sua página foi montada. Finalize para receber o link.</p>
+                </div>
+                <div className="relative overflow-hidden p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+                    <div className="absolute top-0 right-0 p-2">
+                        <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-1 rounded-full uppercase">
+                            {plan === 'avancado' ? 'Advanced Plan' : 'Economic Plan'}
+                        </span>
+                    </div>
+                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Total a Pagar</p>
+                    <h2 className="text-5xl font-black text-white mb-1">${totalUSD.toFixed(2)}</h2>
+                    <p className="text-[10px] text-zinc-500 flex items-center justify-center gap-1 uppercase">
+                        <Clock size={12} /> Pagamento único • Acesso imediato
+                    </p>
+                </div>
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
+                        <div className="flex gap-1 opacity-50 grayscale hover:grayscale-0 transition-all">
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={24} height={16} />
+                            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
+                        </div>
+                    </div>
+                    <Button onClick={handleStripePayment} disabled={isProcessing} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
+                        {isProcessing ? (
+                            <Loader2 className="animate-spin" />
+                        ) : (
+                            <div className="flex items-center justify-center gap-2">
+                                <CreditCard size={20} />
+                                <span>Pagar com Cartão</span>
+                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        )}
+                    </Button>
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 uppercase tracking-widest">
+                        <Lock size={10} className="text-green-500" />
+                        <span>Pagamento seguro através da Stripe.</span>
+                    </div>
+                </div>
+                <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                    <span className="flex-shrink mx-4 text-[10px] font-bold text-zinc-600 uppercase">Or pay with</span>
+                    <div className="flex-grow border-t border-zinc-800"></div>
+                </div>
+                <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
+                    {intentId ? (
+                        <div className="w-full animate-in zoom-in-95 duration-500">
+                            <PayPalButton intentId={intentId} plan={plan} amount={totalUSD.toFixed(2)} />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-3 py-6">
+                            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Synchronizing with PayPal...</p>
+                        </div>
+                    )}
+                </div>
+                {error && (
+                    <Alert variant="destructive" className="mt-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>{error.message ?? 'Erro desconhecido'}</AlertTitle>
+                        {typeof (error.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
+                    </Alert>
+                )}
+            </div>
+        );
+    }
+
+    // ── TELA BRASIL (PIX / Mercado Pago) ─────────────────────────
+    return (
+        <div className="space-y-6 text-center">
+            {/* URGENCY TIMER */}
+            <div className={cn(
+                "flex items-center justify-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold",
+                timerExpired
+                    ? "bg-red-500/10 border-red-500/30 text-red-400"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+            )}>
+                <Clock size={16} className={timerExpired ? "text-red-400" : "text-amber-400 animate-pulse"} />
+                {timerExpired
+                    ? "⚠️ Seu rascunho pode expirar — finalize agora!"
+                    : <>Oferta reservada por <span className="font-black text-lg tabular-nums">{timerMins}:{timerSecs}</span></>
+                }
+            </div>
+            <div className="mb-8">
+                <h3 className="text-2xl font-bold font-headline mb-2">Quase lá!</h3>
+                <p className="text-muted-foreground">Sua página foi montada. Finalize para receber o link.</p>
+            </div>
+            <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
+                <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
+                <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
+                <p className="text-xs text-white/50">Pagamento único</p>
+            </div>
+            {!pixData ? (
+                <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
+                    {isProcessing ? (
+                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /><span>Gerando QR Code do Mercado Pago...</span></>
+                    ) : (
+                        <span>Pagar com PIX via Mercado Pago</span>
+                    )}
+                </Button>
+            ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
+                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código "Copia e Cola".</p>
+                    <div className="p-4 bg-white rounded-lg border">
+                        {pixData.qrCodeBase64 ? (
+                            <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={256} height={256} unoptimized />
+                        ) : (
+                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                <Loader2 className="animate-spin mb-2" />
+                                <p className="text-xs">Gerando QR Code...</p>
+                            </div>
+                        )}
+                    </div>
+                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
+                        <Copy className="mr-2 h-4 w-4" />Copiar Código PIX
+                    </Button>
+                    <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
+                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                        {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Verificar Pagamento
+                    </Button>
+                </div>
+            )}
+            {isAdmin && intentId && (
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
+                    <Button type="button" size="lg" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" disabled={isProcessing} onClick={handleAdminFinalize}>
+                        {isProcessing ? <Loader2 className="animate-spin" /> : 'Finalizar como Admin (TESTE)'}
+                    </Button>
+                </div>
+            )}
+            {error && (
+                <Alert variant="destructive" className="mt-4">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>{error.message}</AlertTitle>
+                    {typeof (error.details) === 'object' && (error.details as any)?.log && <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>}
+                </Alert>
+            )}
+            <div className="flex items-center justify-center gap-2 mt-6 pt-6 border-t border-border/20 text-sm text-muted-foreground">
+                <Lock className="w-4 h-4" />
+                <span>Pagamento 100% seguro via Mercado Pago</span>
+                <Image src="https://i.imgur.com/QeYjEEv.png" alt="Logo do Mercado Pago" width={90} height={20} className="opacity-90" />
+            </div>
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────
+// SUCCESS STEP
+// ─────────────────────────────────────────────
+const SuccessStep = ({ pageId }: { pageId: string }) => {
+    const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(pageUrl).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Oi amor, fiz uma surpresa especial pra você 💝\n${pageUrl}`)}`;
+
+    return (
+        <div className="flex flex-col items-center text-center gap-6">
+            <CheckCircle className="w-16 h-16 text-green-500" />
+            <h2 className="text-2xl font-bold font-headline">Página Criada com Sucesso!</h2>
+            <p className="text-muted-foreground">Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.</p>
+            <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
+                <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0" />
+                <Button onClick={handleCopy}>
+                    {copied ? <CheckCircle className="mr-2" /> : <Copy className="mr-2" />}
+                    {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+            </div>
+
+            {/* WHATSAPP SHARE */}
+            <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full max-w-md flex items-center justify-center gap-3 py-4 px-6 rounded-xl font-bold text-white text-lg bg-[#25D366] hover:bg-[#1ebe57] transition-all active:scale-95 shadow-lg shadow-green-900/30"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Enviar pelo WhatsApp
+            </a>
+
+            <div className="p-4 bg-white rounded-lg border mt-4">
+                <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`} alt="QR Code da Página" width={200} height={200} />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Você também pode salvar ou imprimir o QR Code acima.</p>
+            <Button asChild className="mt-4">
+                <a href={pageUrl} target="_blank" rel="noopener noreferrer">
+                    <View className="mr-2" />Ver Página
+                </a>
+            </Button>
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────
+// WIZARD INTERNAL
+// ─────────────────────────────────────────────
+function WizardInternal() {
+    const [currentStep, setCurrentStep] = useState(0);
+    const [isClient, setIsClient] = useState(false);
+    const [showTimelinePreview, setShowTimelinePreview] = useState(false);
+    const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const { user, isUserLoading } = useUser();
+    const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [pageId, setPageId] = useState<string | null>(null);
+    const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
+
+    const plan = searchParams.get('plan') || 'avancado';
+
+    const steps = useMemo(() => [
+        { id: "title",      title: 'Título da página',           description: 'Escreva o título dedicatório. Ex: João & Maria.',  fields: ["title", "titleColor"] },
+        { id: "message",    title: 'Sua Mensagem de Amor',       description: 'Escreva a mensagem principal.',                    fields: ["message", "messageFontSize", "messageFormatting"] },
+        { id: "specialDate",title: 'Data Especial',              description: 'Informe a data que simboliza o início de tudo.',   fields: ["specialDate", "countdownStyle", "countdownColor"] },
+        { id: "gallery",    title: 'Galeria de Fotos',           description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
+        { id: "timeline",   title: 'Linha do Tempo 3D',          description: 'Momentos flutuantes para uma viagem nostálgica.',  fields: ["timelineEvents"] },
+        { id: "music",      title: 'Música Dedicada',            description: 'Escolha uma trilha sonora ou grave sua voz.',      fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+        { id: "background", title: 'Animação de Fundo',          description: 'Escolha um efeito especial para o fundo.',         fields: ["backgroundAnimation", "heartColor"] },
+        { id: "puzzle",     title: 'Quebra-Cabeça Interativo',   description: 'Um desafio antes de revelar a surpresa!',          fields: ["enablePuzzle", "puzzleImage"] },
+        { id: "memory",     title: 'Jogo da Memória',            description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
+        { id: "quiz",       title: 'Quiz do Casal',              description: 'Crie um quiz divertido sobre vocês.',              fields: ["enableQuiz", "quizQuestions"] },
+        { id: "plan",       title: 'Escolha seu Plano',          description: 'Selecione o plano ideal para sua página.',         fields: ["plan"] },
+        { id: "payment",    title: 'Finalizar',                  description: 'Pague para gerar o link e QR Code.',               fields: ["payment", "qrCodeDesign"] },
+    ], []);
+
+    const methods = useForm<PageData>({
+        resolver: zodResolver(pageSchema),
+        mode: 'onChange',
+        defaultValues: {
+            plan: plan,
+            title: "Seu Título Aqui",
+            message: "Sua mensagem de amor...",
+            messageFontSize: "text-base",
+            backgroundAnimation: "none",
+            galleryStyle: "Coverflow",
+            galleryImages: [],
+            timelineEvents: [],
+            // FIX #6: false como default — puzzle/memory/quiz desativados por padrão
+            // Assim o usuário passa pelo step sem ser bloqueado por validação
+            enablePuzzle: false,
+            enableMemoryGame: false,
+            enableQuiz: false,
+            quizQuestions: [],
+            musicOption: 'none',
+            qrCodeDesign: "classic",
+        }
+    });
+
+    const { watch, trigger, setValue, getValues } = methods;
+    const formData = watch();
+    const intentId = watch('intentId');
+
+    const handleAutosave = useCallback(async () => {
+        if (!user || isUserLoading) return;
+        const data = getValues();
+        const utmSource = sessionStorage.getItem('last_utm_source');
+        const dataToSave = { ...data, userId: user.uid, utmSource: utmSource || undefined };
+        try {
+            const result = await createOrUpdatePaymentIntent(dataToSave);
+            if (result.success) {
+                localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
+                if (result.intentId && !dataToSave.intentId) {
+                    setValue('intentId', result.intentId, { shouldDirty: false });
+                }
+            } else {
+                console.error("Autosave failed:", result);
+                toast({
+                    variant: 'destructive',
+                    title: "Erro ao Salvar Rascunho",
+                    description: (
+                        <div>
+                            <p>{result.error}</p>
+                            <div className="mt-2 p-2 bg-black/30 rounded-md">
+                                <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                    {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+                    ),
+                    duration: 20000,
+                });
+                const errorString = (result.error || '').toLowerCase();
+                if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
+                    setValue('intentId', undefined, { shouldDirty: false });
+                }
+            }
+        } catch (e) {
+            console.error("Error during autosave:", e);
+        }
+    }, [user, isUserLoading, getValues, setValue, toast]);
+
+    const restoreFromLocalStorage = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const savedDataJSON = localStorage.getItem('amore-pages-autosave');
+        if (!savedDataJSON) return;
+        try {
+            const parsed = JSON.parse(savedDataJSON);
+            parsed.plan = plan;
+            if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
+            if (parsed.timelineEvents) {
+                parsed.timelineEvents.forEach((ev: any) => { if (ev.date) ev.date = new Date(ev.date); });
+            }
+            if (parsed.puzzleImage && typeof parsed.puzzleImage?.url !== 'string') delete parsed.puzzleImage;
+            if (parsed.audioRecording && typeof parsed.audioRecording?.url !== 'string') delete parsed.audioRecording;
+            if (parsed.backgroundVideo && typeof parsed.backgroundVideo?.url !== 'string') delete parsed.backgroundVideo;
+            methods.reset(parsed);
+        } catch (e) {
+            console.error("Falha ao carregar rascunho.", e);
+            localStorage.removeItem('amore-pages-autosave');
+            methods.reset();
+            toast({ variant: "destructive", title: 'Erro ao carregar rascunho', description: 'Não foi possível carregar seu progresso salvo. Começando um novo.' });
+        }
+    }, [methods, plan, toast]);
+
+    useEffect(() => {
+        setIsClient(true);
+        if (searchParams.get('new') === 'true') {
+            localStorage.removeItem('amore-pages-autosave');
+            methods.reset();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('new');
+            window.history.replaceState({}, '', url.toString());
+        } else {
+            restoreFromLocalStorage();
+        }
+    }, [searchParams, methods, restoreFromLocalStorage]);
+
+    useEffect(() => {
+        const subscription = watch(() => {
+            if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+            autosaveTimeoutRef.current = setTimeout(() => { handleAutosave(); }, 1500);
+        });
+        return () => {
+            subscription.unsubscribe();
+            if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+        };
+    }, [watch, handleAutosave]);
+
+    const handleNext = async () => {
+        const currentStepId = steps[currentStep].id;
+
+        if (currentStepId === 'puzzle') {
+            const currentData = getValues();
+            if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+                toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
+                return;
+            }
+        } else {
+            const fieldsToValidate = steps[currentStep].fields || [];
+            const ok = await trigger(fieldsToValidate as any);
+            if (!ok) {
+                console.error("Erros de validação:", methods.formState.errors);
+                toast({ variant: "destructive", title: 'Campos obrigatórios', description: 'Por favor, verifique se preencheu tudo corretamente antes de prosseguir.' });
+                return;
+            }
+        }
+
+        const nextStepIndex = currentStep + 1;
+        if (steps[nextStepIndex]?.id === 'payment' && user) {
+            toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
+            await handleAutosave();
+        }
+        setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
+    };
+
+    const handleBack = () => setCurrentStep(Math.max(0, currentStep - 1));
+
+    const timelineEventsForDisplay = useMemo(() => {
+        if (!formData.timelineEvents) return [];
+        return formData.timelineEvents
+            .filter(event => event.image?.url)
+            .map(event => ({
+                id: event.id || Math.random().toString(),
+                imageUrl: event.image!.url,
+                alt: event.description || 'Memória',
+                title: event.description || '',
+                date: event.date ? new Date(event.date) : undefined,
+            }));
+    }, [isClient, formData.timelineEvents]);
+
+    if (showTimelinePreview) {
+        return <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimelinePreview(false)} />;
+    }
+
+    const currentStepInfo = steps[currentStep];
+    const currentStepId = currentStepInfo?.id;
+    let StepComponent;
+
+    if (pageId) {
+        StepComponent = <SuccessStep pageId={pageId} />;
+    } else if (currentStepId === 'payment') {
+        StepComponent = <PaymentStep setPageId={setPageId} />;
+    } else {
+        const Comp = stepComponents[currentStep];
+        if (Comp) {
+            const props: any = { isVisible: currentStepId === 'background' };
+            if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
+            StepComponent = <Comp {...props} />;
+        } else {
+            StepComponent = <div>Passo não encontrado.</div>;
+        }
+    }
+
+    const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+
+    return (
+        <FormProvider {...methods}>
+            <div className="md:grid md:grid-cols-2 md:h-screen md:overflow-hidden">
+                <div className="hidden md:flex relative h-screen w-full sticky top-0 items-center justify-center p-4">
+                    <PreviewContent
+                        isClient={isClient}
+                        onShowTimeline={() => setShowTimelinePreview(true)}
+                        hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                        showPuzzlePreview={showPuzzlePreview}
+                        previewPuzzleRevealed={previewPuzzleRevealed}
+                        setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                    />
+                </div>
+                <div className="flex-grow p-6 md:p-12 md:overflow-y-auto">
+                    <div className="flex justify-between items-center">
+                        <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep === 0}><ArrowLeft /></Button>
+                        <div className="flex-grow flex flex-col items-center gap-2 mx-4">
+                            <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
+                            <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
+                        </div>
+                        <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}><ChevronRightIcon /></Button>
+                    </div>
+                    <div className="mt-8 space-y-2">
+                        <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
+                        <p className="text-muted-foreground">{steps[currentStep].description}</p>
+                    </div>
+                    <div className="my-8">
+                        {StepComponent}
+                    </div>
+                    <div className="md:hidden mt-16 pb-16">
+                        <div className="flex flex-col items-center text-center gap-2 text-muted-foreground mb-4">
+                            <p>Ou veja como está ficando</p>
+                            <ChevronDown className="w-5 h-5 animate-bounce-subtle" />
+                        </div>
+                        <div className="relative w-full">
+                            <PreviewContent
+                                isClient={isClient}
+                                onShowTimeline={() => setShowTimelinePreview(true)}
+                                hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
+                                showPuzzlePreview={showPuzzlePreview}
+                                previewPuzzleRevealed={previewPuzzleRevealed}
+                                setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </FormProvider>
+    );
+}
+
+export default function CreatePageWizard() {
+    return (
+        <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-primary h-12 w-12" /></div>}>
+            <WizardInternal />
+        </Suspense>
+    );
+}
+
+// ─────────────────────────────────────────────
+// IMAGE LIMIT WARNING
+// ─────────────────────────────────────────────
+const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { currentCount: number; limit: number; itemType: string }) => {
+    if (currentCount > limit) {
+        return (
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Limite Excedido</AlertTitle>
+                <AlertDescription>{`Você excedeu o limite de ${limit} ${itemType}. Remova algumas para continuar.`}</AlertDescription>
+            </Alert>
+        );
+    }
+    return (
+        <Alert variant={currentCount === limit ? "destructive" : "default"}>
+            <Camera className="h-4 w-4" />
+            <AlertTitle>Contador de Imagens</AlertTitle>
+            <AlertDescription>{`Você usou ${currentCount} de ${limit} ${itemType}.`}</AlertDescription>
+        </Alert>
+    );
+});
+ImageLimitWarning.displayName = 'ImageLimitWarning';
