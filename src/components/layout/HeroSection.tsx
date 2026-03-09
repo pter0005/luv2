@@ -133,7 +133,7 @@ const HeroSection = () => {
                 <div className="w-[240px] h-[500px] rounded-[2.5rem] border-[6px] border-[#121212] bg-black overflow-hidden shadow-2xl">
                   <video className="w-full h-full object-cover" autoPlay loop muted playsInline
                     poster="https://i.imgur.com/FxHuXVb.png"
-                    src="https://res.cloudinary.com/dncoxm1it/video/upload/v1770329588/bvcxasdd_ew3u0l.mp4" />
+                    src="https://i.imgur.com/FxHuXVb.mp4" />
                 </div>
               </motion.div>
 
