@@ -2,36 +2,29 @@
 
 import { useEffect } from 'react';
 import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp, push, remove } from 'firebase/database';
-import { useFirebase } from '@/firebase';
+import { getApp } from 'firebase/app';
 
 export function usePresence() {
-  const { firebaseApp: app } = useFirebase(); // ou useFirebase se tiver o app exposto
-
   useEffect(() => {
-    if (!app) return;
+    let db: any;
+    try {
+      db = getDatabase(getApp());
+    } catch (e) {
+      return; // Realtime DB não configurado ainda
+    }
 
-    const db = getDatabase(app);
     const connectedRef = ref(db, '.info/connected');
-
-    // Cria uma entrada única por sessão na coleção /presence
     const presenceRef = push(ref(db, 'presence'));
 
     const unsub = onValue(connectedRef, (snap) => {
-      if (snap.val() === false) return;
-
-      // Quando desconectar, remove automaticamente
+      if (!snap.val()) return;
       onDisconnect(presenceRef).remove();
-
-      // Registra presença
-      set(presenceRef, {
-        connectedAt: serverTimestamp(),
-        userAgent: navigator.userAgent.slice(0, 80),
-      });
+      set(presenceRef, { connectedAt: serverTimestamp() });
     });
 
     return () => {
       unsub();
-      remove(presenceRef); // limpa ao desmontar (ex: navegação SPA)
+      remove(presenceRef);
     };
-  }, [app]);
+  }, []);
 }
