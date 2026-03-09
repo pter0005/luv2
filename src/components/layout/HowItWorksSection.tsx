@@ -16,7 +16,6 @@ const HowItWorksSection = () => {
         <div className="container max-w-6xl relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">Crie um presente inesquecível em <span className="text-primary">4 passos simples</span></h2>
-              <p className="text-base text-muted-foreground mt-4">Nossa plataforma torna fácil criar uma experiência digital e personalizada que vai emocionar quem você ama.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {simpleSteps.map((step, i) => (
