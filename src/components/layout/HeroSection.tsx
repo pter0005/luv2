@@ -2,15 +2,38 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift } from 'lucide-react';
+import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from "framer-motion";
 import FloatingHeart from './FloatingHeart';
 
+function DiscountPill() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    if (month === 3 && day >= 6 && day <= 9) setShow(true);
+  }, []);
+  if (!show) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, delay: 0.2 }}
+      className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/40 rounded-full py-2 px-4 mb-3 shadow-[0_0_24px_rgba(244,63,94,0.2)]"
+    >
+      <Tag className="w-3.5 h-3.5 text-rose-400" />
+      <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">50% OFF hoje</span>
+      <span className="text-white/20">·</span>
+      <span className="text-xs text-white/60 font-mono font-bold bg-white/10 px-2 py-0.5 rounded-full">MULHER50</span>
+    </motion.div>
+  );
+}
+
 function UrgencyBadge() {
   const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines'>('default');
-
   useEffect(() => {
     const now = new Date();
     const month = now.getMonth() + 1;
@@ -35,7 +58,6 @@ function UrgencyBadge() {
       </motion.div>
     );
   }
-
   if (badge === 'valentines') {
     return (
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
@@ -52,7 +74,6 @@ function UrgencyBadge() {
       </motion.div>
     );
   }
-
   return (
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
       className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6">
@@ -89,9 +110,10 @@ const HeroSection = () => {
     <section ref={heroRef} className="relative w-full overflow-hidden flex items-center justify-center min-h-[100dvh] py-12 lg:py-0">
       <div className="container flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-center relative z-10 h-full">
 
-        {/* ── COPY ── */}
-        <div className="flex flex-col items-center lg:items-start text-center lg:text-left relative z-20 order-2 lg:order-1">
+        {/* ── COPY — mobile: primeiro ── */}
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left relative z-20 order-1 lg:order-1 pt-36 lg:pt-0">
 
+          <DiscountPill />
           <UrgencyBadge />
 
           <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-8 min-h-[120px] lg:min-h-[auto]">
@@ -123,12 +145,11 @@ const HeroSection = () => {
           <p className="text-xs text-white/30 mt-4 text-center lg:text-left">
             A partir de <span className="text-white/50 font-semibold">R$14,90</span> · pagamento único · sem mensalidade
           </p>
-
         </div>
 
-        {/* ── PHONES ── */}
-        <div className="flex flex-col items-center w-full order-1 lg:order-2">
-          <div className="relative h-[500px] sm:h-[600px] lg:h-[500px] w-full flex items-center justify-center perspective-[1200px] mt-[-2rem] sm:mt-0">
+        {/* ── PHONES — mobile: segundo (abaixo do texto) ── */}
+        <div className="flex flex-col items-center w-full order-2 lg:order-2">
+          <div className="relative h-[500px] sm:h-[600px] lg:h-[500px] w-full flex items-center justify-center perspective-[1200px]">
             <div className="relative w-full max-w-[500px] h-[600px] flex items-center justify-center scale-[0.8] md:scale-100 transition-transform duration-300 transform-gpu will-change-transform">
 
               <motion.div initial={{ opacity: 0, x: 0 }} whileInView={{ opacity: 1, x: -90, y: 30, rotate: -15 }}
