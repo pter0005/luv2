@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 declare global {
   interface Window {
     ttq?: { track: (eventName: string, eventData?: any) => void; page: () => void; };
-    fbq?: (...args: any[]) => void;
+    fbq: (...args: any[]) => void;
   }
 }
 
