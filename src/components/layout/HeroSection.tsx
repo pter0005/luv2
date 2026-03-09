@@ -8,30 +8,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from "framer-motion";
 import FloatingHeart from './FloatingHeart';
 
-function DiscountPill() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    if (month === 3 && day >= 6 && day <= 9) setShow(true);
-  }, []);
-  if (!show) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
-      className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/40 rounded-full py-2 px-4 mb-3 shadow-[0_0_24px_rgba(244,63,94,0.2)]"
-    >
-      <Tag className="w-3.5 h-3.5 text-rose-400" />
-      <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">50% OFF hoje</span>
-      <span className="text-white/20">·</span>
-      <span className="text-xs text-white/60 font-mono font-bold bg-white/10 px-2 py-0.5 rounded-full">MULHER50</span>
-    </motion.div>
-  );
-}
-
 function UrgencyBadge() {
   const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines'>('default');
   useEffect(() => {
@@ -113,7 +89,6 @@ const HeroSection = () => {
         {/* ── COPY — mobile: primeiro ── */}
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left relative z-20 order-1 lg:order-1 pt-36 lg:pt-0">
 
-          <DiscountPill />
           <UrgencyBadge />
 
           <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-8 min-h-[120px] lg:min-h-[auto]">

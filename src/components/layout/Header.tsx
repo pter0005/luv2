@@ -48,20 +48,22 @@ function DiscountBanner() {
         animate={{ height: "auto", opacity: 1 }}
         exit={{ height: 0, opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="relative w-full bg-gradient-to-r from-rose-600 via-pink-600 to-rose-600 overflow-hidden"
+        className="relative w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 overflow-hidden"
       >
         {/* shimmer */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
-        <div className="relative flex items-center justify-center gap-2 py-2.5 px-4 text-center">
-          <span className="text-lg">🌸</span>
-          <p className="text-sm font-bold text-white">
-            Dia das Mulheres — <span className="underline underline-offset-2">50% OFF</span> hoje!
+        <div className="relative flex items-center justify-center gap-3 py-2.5 px-4 text-center">
+          <span className="text-base">🌸</span>
+          <p className="text-sm font-semibold text-white/90">
+            <span className="font-black text-white">Dia das Mulheres</span>
+            <span className="mx-2 text-purple-300/50">—</span>
+            <span className="text-pink-300 font-bold">preços com 50% de desconto</span>
+            <span className="hidden sm:inline text-white/40 mx-2">·</span>
+            <span className="hidden sm:inline text-white/60 text-xs">só hoje</span>
           </p>
-          <span className="hidden sm:inline text-white/70 text-sm">·</span>
-          <p className="hidden sm:inline text-sm text-white/90">Use o cupom <span className="font-black bg-white/20 px-2 py-0.5 rounded-full text-white">MULHER50</span></p>
           <button
             onClick={() => setVisible(false)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
           >
             <X size={14} />
           </button>
