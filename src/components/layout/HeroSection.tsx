@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift, Tag } from 'lucide-react';
+import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from "framer-motion";
