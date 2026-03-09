@@ -11,10 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 declare global {
   interface Window {
-    ttq?: {
-      track: (eventName: string, eventData?: any) => void;
-      page: () => void;
-    };
+    ttq?: { track: (eventName: string, eventData?: any) => void; page: () => void; };
+    fbq?: (...args: any[]) => void;
   }
 }
 
@@ -46,7 +44,7 @@ function CreatingPageContent() {
             setIsFinalized(true);
             setPageId(page.id);
 
-            // ─── TIKTOK PIXEL: Purchase ───────────────────────────────────
+            // ─── TIKTOK PIXEL ───────────────────────────────────────
             if (typeof window !== 'undefined' && window.ttq?.track) {
                 pixelFired.current = true;
                 const plan = page.plan || 'avancado';
@@ -62,7 +60,18 @@ function CreatingPageContent() {
                         price: value,
                     }],
                 });
-                console.log('[TikTok Pixel] Purchase disparado:', { value, currency: 'BRL' });
+            }
+
+            // ─── META PIXEL ─────────────────────────────────────────
+            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                const plan = page.plan || 'avancado';
+                const value = PLAN_PRICES[plan] ?? 24.90;
+                window.fbq('track', 'Purchase', {
+                    value,
+                    currency: 'BRL',
+                    content_ids: [plan],
+                    content_type: 'product',
+                });
             }
         }
     }, [finalizedPage]);
