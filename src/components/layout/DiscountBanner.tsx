@@ -1,4 +1,5 @@
-"use client";
+
+'use client';
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -8,15 +9,10 @@ export default function DiscountBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Mostra só no Dia das Mulheres (6–9 de março)
-    const now = new Date();
-    const m = now.getMonth() + 1;
-    const d = now.getDate();
-    const isDiasMulheres = m === 3 && d >= 6 && d <= 9;
+    // Para desativar: mude BANNER_ACTIVE para false
+    const BANNER_ACTIVE = true;
+    if (!BANNER_ACTIVE) return;
 
-    if (!isDiasMulheres) return;
-
-    // Respeita se o usuário fechou
     const dismissed = sessionStorage.getItem('discount-banner-dismissed');
     if (!dismissed) setVisible(true);
   }, []);
