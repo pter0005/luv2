@@ -7,6 +7,7 @@ import DiscountBanner from '@/components/layout/DiscountBanner';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import CookieConsent from '@/components/layout/CookieConsent';
+import { PresenceTracker } from '@/components/layout/PresenceTracker';
 
 const MemoizedBackground = React.memo(() => (
     <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -29,6 +30,7 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="relative w-full min-h-screen">
+      <PresenceTracker />
       <MemoizedBackground />
       
       <div className="relative z-10 flex flex-col min-h-screen">
