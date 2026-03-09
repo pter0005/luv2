@@ -32,9 +32,11 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
       <MemoizedBackground />
       
       <div className="relative z-10 flex flex-col min-h-screen">
-        {showAppHeader && <DiscountBanner />}
-        {showAppHeader && <Header />}
-        <main className={cn("flex-grow", showAppHeader && "pt-36")}>{children}</main>
+        <div className="sticky top-0 z-50">
+            {showAppHeader && <DiscountBanner />}
+            {showAppHeader && <Header />}
+        </div>
+        <main className={cn("flex-grow")}>{children}</main>
         <Footer />
       </div>
       <CookieConsent />

@@ -28,51 +28,6 @@ const navLinks = [
   { href: "/como-funciona", label: "Como Funciona" },
 ];
 
-function DiscountBanner() {
-  const [visible, setVisible] = useState(true);
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    if (month === 3 && day >= 6 && day <= 9) setShow(true);
-  }, []);
-
-  if (!show || !visible) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ height: 0, opacity: 0 }}
-        animate={{ height: "auto", opacity: 1 }}
-        exit={{ height: 0, opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        className="relative w-full bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 overflow-hidden"
-      >
-        {/* shimmer */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
-        <div className="relative flex items-center justify-center gap-3 py-2.5 px-4 text-center">
-          <span className="text-base">🌸</span>
-          <p className="text-sm font-semibold text-white/90">
-            <span className="font-black text-white">Dia das Mulheres</span>
-            <span className="mx-2 text-purple-300/50">—</span>
-            <span className="text-pink-300 font-bold">preços com 50% de desconto</span>
-            <span className="hidden sm:inline text-white/40 mx-2">·</span>
-            <span className="hidden sm:inline text-white/60 text-xs">só hoje</span>
-          </p>
-          <button
-            onClick={() => setVisible(false)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
 export default function Header() {
   const [isSheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
@@ -145,13 +100,12 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50">
-      <DiscountBanner />
-      <div className={cn("w-full transition-all duration-500", scrolled ? "bg-black/60 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_1px_40px_rgba(0,0,0,0.6)]" : "bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm")}>
-        <div className="container flex items-center justify-between h-36 px-4 md:px-6">
+    <header className="sticky top-0 left-0 w-full z-40">
+      <div className={cn("w-full transition-all duration-500", scrolled ? "bg-black/60 backdrop-blur-xl border-b border-white/[0.06] shadow-[0_1px_40px_rgba(0,0,0,0.6)]" : "bg-gradient-to-b from-black/40 to-transparent")}>
+        <div className="container flex items-center justify-between h-24 px-4 md:px-6">
           <Link href="/" className="flex items-center shrink-0">
             <motion.div whileHover={{ scale: 1.04 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-              <img src={headerLogoUrl} alt="MyCupid Logo" style={{ height: "120px", width: "auto", objectFit: "contain", display: "block" }} />
+              <img src={headerLogoUrl} alt="MyCupid Logo" style={{ height: "100px", width: "auto", objectFit: "contain", display: "block" }} />
             </motion.div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
