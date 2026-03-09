@@ -110,8 +110,6 @@ function ExpiryBanner({ expireAt }: { expireAt: any }) {
 
     // Não mostrar se não tiver expiração (plano avançado)
     if (!expireAt) return null;
-    // Não mostrar se ainda falta mais de 5 horas
-    if (timeLeft && timeLeft.hours >= 5) return null;
 
     return (
         <motion.div
@@ -164,6 +162,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
+
+  const isDemoPage = pageData.id === 'WgZtB23Y4OgatZPdrShO';
 
   const puzzleImageSrc = useMemo(() => {
     if (!pageData.puzzleImage) return null;
@@ -263,7 +263,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
       {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirar */}
-      <ExpiryBanner expireAt={pageData.expireAt} />
+      {!isDemoPage && <ExpiryBanner expireAt={pageData.expireAt} />}
       
       <AnimatePresence>
         {showExplosion && (

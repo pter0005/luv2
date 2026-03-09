@@ -69,14 +69,15 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
 
   // Version-based rendering logic
   const version = rawPageData.componentVersion || 'v1';
+  const pageDataWithId = { ...rawPageData, id: pageId };
 
   // Success case
   return (
       <Suspense fallback={<LoadingState />}>
         {version === 'v2' ? (
-          <PageClientComponent pageData={rawPageData} />
+          <PageClientComponent pageData={pageDataWithId} />
         ) : (
-          <PageClientComponentV1 pageData={rawPageData} />
+          <PageClientComponentV1 pageData={pageDataWithId} />
         )}
       </Suspense>
   );
