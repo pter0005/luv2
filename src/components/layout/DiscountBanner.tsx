@@ -1,58 +1,74 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DiscountBanner() {
-  const [timeLeft, setTimeLeft] = useState('');
-  const [showBanner, setShowBanner] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const getExpiryTime = () => {
-      let expiry = localStorage.getItem('discountExpiry');
-      if (!expiry) {
-        const newExpiry = new Date().getTime() + 2 * 60 * 60 * 1000; // 2 hours from now
-        expiry = newExpiry.toString();
-        localStorage.setItem('discountExpiry', expiry);
-      }
-      return parseInt(expiry, 10);
-    };
+    // Mostra só no Dia das Mulheres (6–9 de março)
+    const now = new Date();
+    const m = now.getMonth() + 1;
+    const d = now.getDate();
+    const isDiasMulheres = m === 3 && d >= 6 && d <= 9;
 
-    const expiryTime = getExpiryTime();
+    if (!isDiasMulheres) return;
 
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = expiryTime - now;
-
-      if (distance > 0) {
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        
-        setTimeLeft(
-          `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-        );
-        setShowBanner(true);
-      } else {
-        setTimeLeft('00:00:00');
-        setShowBanner(false); // Hide banner when time is up
-        clearInterval(timer);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
+    // Respeita se o usuário fechou
+    const dismissed = sessionStorage.getItem('discount-banner-dismissed');
+    if (!dismissed) setVisible(true);
   }, []);
 
-  if (!showBanner) {
-    return null;
-  }
+  const dismiss = () => {
+    sessionStorage.setItem('discount-banner-dismissed', '1');
+    setVisible(false);
+  };
 
   return (
-    <div className="bg-gradient-to-r from-red-600 via-purple-700 to-red-600 text-white text-center py-2.5 text-sm font-bold shadow-lg flex items-center justify-center gap-2">
-      <Clock className="w-4 h-4" />
-      <p>
-        Oferta de Lançamento: 50% OFF nas próximas <span className="font-mono tracking-wider">{timeLeft}</span>!
-      </p>
-    </div>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="relative w-full overflow-hidden"
+          style={{
+            background: 'linear-gradient(90deg, #3b0764 0%, #6b21a8 40%, #7c3aed 60%, #4c1d95 100%)',
+          }}
+        >
+          {/* shimmer */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 50%, transparent 100%)',
+              animation: 'shimmer 3s infinite',
+              backgroundSize: '200% 100%',
+            }}
+          />
+          <style>{`@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }`}</style>
+
+          <div className="relative flex items-center justify-center gap-2 py-2.5 px-10 text-center">
+            <span className="text-base leading-none">🌸</span>
+            <p className="text-sm text-white leading-none">
+              <span className="font-black">Dia das Mulheres</span>
+              <span className="mx-2 opacity-40">—</span>
+              <span className="text-pink-200 font-semibold">preços com 50% de desconto</span>
+              <span className="hidden sm:inline opacity-40 mx-2">·</span>
+              <span className="hidden sm:inline text-white/50 text-xs">só hoje</span>
+            </p>
+            <button
+              onClick={dismiss}
+              aria-label="Fechar"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/90 transition-colors p-1"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
