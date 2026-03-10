@@ -1557,7 +1557,25 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
-    }, [setPageId, toast]);
+        // ── TIKTOK PIXEL: dispara CompletePayment na confirmação da compra ──
+        try {
+            const ttq = (window as any).ttq;
+            if (ttq) {
+                const planVal = getValues('plan');
+                const priceBRL = planVal === 'avancado' ? 24.90 : 14.90;
+                ttq.track('CompletePayment', {
+                    value: priceBRL,
+                    currency: 'BRL',
+                    content_id: pageId,
+                    content_type: 'product',
+                    content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Econômico',
+                });
+            }
+        } catch (e) {
+            console.warn('[TikTok Pixel] Falha ao disparar CompletePayment:', e);
+        }
+        // ─────────────────────────────────────────────────────────────────
+    }, [setPageId, toast, getValues]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
@@ -2204,6 +2222,21 @@ function WizardInternal() {
         if (steps[nextStepIndex]?.id === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
+            // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
+            try {
+                const ttq = (window as any).ttq;
+                if (ttq) {
+                    const planVal = getValues('plan');
+                    ttq.track('InitiateCheckout', {
+                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        currency: 'BRL',
+                        content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Econômico',
+                    });
+                }
+            } catch (e) {
+                console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
+            }
+            // ─────────────────────────────────────────────────────────────
         }
         setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
     };
@@ -2331,3 +2364,4 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     );
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
