@@ -275,7 +275,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
 
         // Se já foi finalizado, retorna o ID da página existente.
         if (data.status === 'completed' && data.lovePageId) {
-            return { success: true, pageId: data.lovePageId, alreadyExists: true };
+            return { success: true as const, pageId: data.lovePageId as string };
         }
 
         // Se ainda não foi finalizado, continua o processo.
@@ -350,16 +350,15 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         
         transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
         
-        return { success: true, pageId: newPageId, alreadyExists: false };
+        return { success: true as const, pageId: newPageId };
     });
 
-    // Se a transação foi bem-sucedida, invalida os paths
     if (transactionResult.success) {
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
+        return { success: true, pageId: transactionResult.pageId };
     }
-
-    return transactionResult;
+    return { success: false, error: 'Transação falhou.' };
 }
 
 export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: string): Promise<PaymentVerificationResult> {
