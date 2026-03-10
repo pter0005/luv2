@@ -41,12 +41,12 @@ function CreatingPageContent() {
     useEffect(() => {
         if (finalizedPage && finalizedPage.length > 0 && !pixelFired.current) {
             const page = finalizedPage[0];
+            pixelFired.current = true; // seta ANTES de qualquer pixel pra evitar disparos duplicados
             setIsFinalized(true);
             setPageId(page.id);
 
             // ─── TIKTOK PIXEL ───────────────────────────────────────
             if (typeof window !== 'undefined' && window.ttq?.track) {
-                pixelFired.current = true;
                 const plan = page.plan || 'avancado';
                 const value = PLAN_PRICES[plan] ?? 24.90;
                 window.ttq.track('Purchase', {
