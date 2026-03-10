@@ -351,11 +351,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.status = 'paid';
         finalData.componentVersion = 'v2';
         
-        // Regra de expiração blindada para admin
-        if (isCreatorAdmin) {
+        // Regra de expiração blindada para admin e plano avançado
+        if (finalData.plan === 'avancado' || isCreatorAdmin) {
             finalData.plan = 'avancado'; // Garante que seja plano avançado
             delete finalData.expireAt;   // Remove qualquer campo de expiração
         } else if (finalData.plan === 'basico') {
+            // Define a expiração apenas para o plano básico
             finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
         }
 

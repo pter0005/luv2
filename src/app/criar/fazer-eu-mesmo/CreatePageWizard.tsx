@@ -1432,25 +1432,27 @@ const PlanStep = React.memo(() => {
 });
 PlanStep.displayName = "PlanStep";
 
-// ─────────────────────────────────────────────
-// FIX #1: stepComponents array — ERA ESTE QUE FALTAVA, CAUSA DO CRASH TOTAL
-// Deve mapear exatamente os índices dos steps definidos em WizardInternal
-// índice 0→TitleStep, 1→MessageStep, ..., 10→PlanStep
-// índice 11 (payment) é tratado separadamente no WizardInternal
-// ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,       // 0 - title
-    MessageStep,     // 1 - message
-    SpecialDateStep, // 2 - specialDate
-    GalleryStep,     // 3 - gallery
-    TimelineStep,    // 4 - timeline
-    MusicStep,       // 5 - music
-    BackgroundStep,  // 6 - background
-    PuzzleStep,      // 7 - puzzle
-    MemoryGameStep,  // 8 - memory
-    QuizStep,        // 9 - quiz
-    PlanStep,        // 10 - plan
+    TitleStep,
+    MessageStep,
+    SpecialDateStep,
+    GalleryStep,
+    TimelineStep,
+    MusicStep,
+    BackgroundStep,
+    PuzzleStep,
+    MemoryGameStep,
+    QuizStep,
+    PlanStep,
 ];
+
+// ─────────────────────────────────────────────
+// SPECIAL USER CREDIT SYSTEM
+// ─────────────────────────────────────────────
+const SPECIAL_USERS: Record<string, { credits: number; note: string }> = {
+    'zalmirparedes@gmail.com': { credits: 2, note: 'Zalmir' },
+    'jv5089528@gmail.com': { credits: 1, note: 'User with typo' },
+};
 
 // ─────────────────────────────────────────────
 // PAYMENT STEP
@@ -1482,38 +1484,37 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const timerExpired = timeLeft === 0;
     // ── FIM TIMER ─────────────────────────────────────────────────
 
-    // ── SPECIAL USER (ZALMIR) CREDIT SYSTEM ──────────────────────
+    // ── SPECIAL USER CREDIT SYSTEM ──────────────────────
     const { firestore } = useFirebase();
     const [specialUserCredits, setSpecialUserCredits] = useState(0);
     const [isSpecialUser, setIsSpecialUser] = useState(false);
 
-    const SPECIAL_USER_EMAIL = 'zalmirparedes@gmail.com';
-    const TOTAL_CREDITS = 2;
+    const currentUserEmail = user?.email?.toLowerCase();
+    const specialUserInfo = currentUserEmail ? SPECIAL_USERS[currentUserEmail] : undefined;
 
     // Query só roda se for o usuário especial
     const userPagesQuery = useMemoFirebase(() => {
-        if (!user || !firestore || user.email !== SPECIAL_USER_EMAIL) return null;
+        if (!user || !firestore || !specialUserInfo) return null;
         return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
-    }, [user, firestore]);
+    }, [user, firestore, specialUserInfo]);
 
     const { data: createdPages, isLoading: isLoadingPagesRaw } = useCollection(userPagesQuery);
 
-    // FIX #2: isLoading só bloqueia se for o usuário especial
-    // Usuários normais não precisam aguardar essa query (que é null para eles)
+    // isLoading só bloqueia se for o usuário especial
     const isLoadingPages = isSpecialUser ? isLoadingPagesRaw : false;
 
     useEffect(() => {
-        if (user?.email === SPECIAL_USER_EMAIL) {
+        if (user?.email && specialUserInfo && specialUserInfo.credits > 0) {
             setIsSpecialUser(true);
             if (createdPages !== undefined && createdPages !== null) {
                 const creditsUsed = createdPages.length;
-                setSpecialUserCredits(Math.max(0, TOTAL_CREDITS - creditsUsed));
+                setSpecialUserCredits(Math.max(0, specialUserInfo.credits - creditsUsed));
             }
         } else {
             setIsSpecialUser(false);
             setSpecialUserCredits(0);
         }
-    }, [user, createdPages]);
+    }, [user, createdPages, specialUserInfo]);
     // ── FIM SPECIAL USER ─────────────────────────────────────────
 
     useEffect(() => {
@@ -1662,8 +1663,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
-    // FIX #3: removido !intentId do guard — race condition eliminada
-    // A função já cria o intent internamente se necessário
     const handleCreditFinalize = async () => {
         if (!user || !isSpecialUser || specialUserCredits <= 0) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
@@ -1672,7 +1671,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         startTransition(async () => {
             try {
                 const fullData = getValues();
-                // FIX #7: força plan='avancado' tanto no objeto quanto no form
                 fullData.plan = 'avancado';
                 setValue('plan', 'avancado', { shouldDirty: true });
 
@@ -1701,7 +1699,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 
-    // ── TELA EXCLUSIVA DO ZALMIR (créditos disponíveis) ───────────
+    // ── TELA EXCLUSIVA DO USUÁRIO COM CRÉDITO ───────────
     if (isSpecialUser && specialUserCredits > 0) {
         return (
             <div className="space-y-6 text-center">
