@@ -66,6 +66,7 @@ import PayPalButton from "@/components/paypal/PaypalButton";
 import MysticFlowers from "@/components/effects/MysticFlowers";
 import QrCodeSelector from "./QrCodeSelector";
 import { Suspense } from "react";
+import { WIZARD_SEGMENTS, DEFAULT_WIZARD_CONFIG, type WizardSegmentKey } from '@/lib/wizard-segment-config';
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -158,14 +159,14 @@ export type PageData = z.infer<typeof pageSchema>;
 // STEP COMPONENTS
 // ─────────────────────────────────────────────
 
-const TitleStep = React.memo(() => {
+const TitleStep = React.memo(({ titlePlaceholder = 'Ex: João & Maria' }: { titlePlaceholder?: string }) => {
     const { control } = useFormContext<PageData>();
     return (
         <div className="space-y-8">
             <FormField control={control} name="title" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Título</FormLabel>
-                    <FormControl><Input placeholder="Ex: João & Maria" {...field} /></FormControl>
+                    <FormControl><Input placeholder={titlePlaceholder} {...field} /></FormControl>
                     <FormMessage />
                 </FormItem>
             )} />
@@ -186,7 +187,7 @@ const TitleStep = React.memo(() => {
 });
 TitleStep.displayName = 'TitleStep';
 
-const MessageStep = React.memo(() => {
+const MessageStep = React.memo(({ messagePlaceholder = 'Sua declaração...' }: { messagePlaceholder?: string }) => {
   const form = useFormContext<PageData>();
     return (
         <div className="space-y-8">
@@ -200,7 +201,7 @@ const MessageStep = React.memo(() => {
                     </ToggleGroup>
                 )} />
                 <FormField control={form.control} name="message" render={({ field }) => (
-                    <FormControl><Textarea placeholder="Sua declaração..." className="min-h-[288px]" {...field} /></FormControl>
+                    <FormControl><Textarea placeholder={messagePlaceholder} className="min-h-[288px]" {...field} /></FormControl>
                 )} />
             </div>
         </div>
@@ -1869,6 +1870,47 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
                 <p className="text-xs text-white/50">Pagamento único</p>
             </div>
+            {!pixData && plan === 'basico' && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35 }}
+                    className="relative overflow-hidden rounded-2xl p-4 mb-4"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(109,40,217,0.18) 0%, rgba(15,10,30,0.85) 100%)',
+                        border: '1px solid rgba(139,92,246,0.45)',
+                        boxShadow: '0 0 28px rgba(109,40,217,0.18)',
+                    }}
+                >
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px"
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.6), transparent)' }} />
+                    <div className="flex items-start gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <Sparkles className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-black text-white leading-tight">
+                                Por mais R$10, sua página dura <span className="text-purple-300">para sempre</span>
+                            </p>
+                            <p className="text-xs text-white/45 mt-1 leading-relaxed">
+                                No plano Econômico a página expira em 25h. No Avançado fica online pra sempre — sem expirar, sem perder.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setValue('plan', 'avancado', { shouldDirty: true })}
+                        className="w-full py-2.5 rounded-xl text-sm font-black text-white transition-all active:scale-95"
+                        style={{
+                            background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
+                            boxShadow: '0 0 18px rgba(147,51,234,0.4)',
+                        }}
+                    >
+                        Sim, quero a página permanente — R$24,90 →
+                    </button>
+                    <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
+                </motion.div>
+            )}
             {!pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
                     {isProcessing ? (
@@ -1927,7 +1969,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 // ─────────────────────────────────────────────
 // SUCCESS STEP
 // ─────────────────────────────────────────────
-const SuccessStep = ({ pageId }: { pageId: string }) => {
+const SuccessStep = ({
+    pageId,
+    title = 'Página Criada com Sucesso!',
+    subtitle = 'Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.',
+    whatsappMessage = 'Oi amor, fiz uma surpresa especial pra você 💝',
+}: {
+    pageId: string;
+    title?: string;
+    subtitle?: string;
+    whatsappMessage?: string;
+}) => {
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
 
@@ -1938,13 +1990,13 @@ const SuccessStep = ({ pageId }: { pageId: string }) => {
         });
     };
 
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Oi amor, fiz uma surpresa especial pra você 💝\n${pageUrl}`)}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${whatsappMessage}\n${pageUrl}`)}`;
 
     return (
         <div className="flex flex-col items-center text-center gap-6">
             <CheckCircle className="w-16 h-16 text-green-500" />
-            <h2 className="text-2xl font-bold font-headline">Página Criada com Sucesso!</h2>
-            <p className="text-muted-foreground">Sua obra de arte está pronta. Compartilhe o link abaixo com seu amor.</p>
+            <h2 className="text-2xl font-bold font-headline">{title}</h2>
+            <p className="text-muted-foreground">{subtitle}</p>
             <div className="flex items-center space-x-2 w-full max-w-md p-2 rounded-lg border bg-muted">
                 <Input type="text" value={pageUrl} readOnly className="bg-transparent border-0 ring-0 focus-visible:ring-0" />
                 <Button onClick={handleCopy}>
@@ -1994,21 +2046,24 @@ function WizardInternal() {
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
     const plan = searchParams.get('plan') || 'avancado';
+    const segmentKey = searchParams.get('segment') as WizardSegmentKey | null;
+    const segCfg = (segmentKey && WIZARD_SEGMENTS[segmentKey]) ? WIZARD_SEGMENTS[segmentKey] : DEFAULT_WIZARD_CONFIG;
 
     const steps = useMemo(() => [
-        { id: "title",      title: 'Título da página',           description: 'Escreva o título dedicatório. Ex: João & Maria.',  fields: ["title", "titleColor"] },
-        { id: "message",    title: 'Sua Mensagem de Amor',       description: 'Escreva a mensagem principal.',                    fields: ["message", "messageFontSize", "messageFormatting"] },
-        { id: "specialDate",title: 'Data Especial',              description: 'Informe a data que simboliza o início de tudo.',   fields: ["specialDate", "countdownStyle", "countdownColor"] },
-        { id: "gallery",    title: 'Galeria de Fotos',           description: 'Adicione as fotos que marcaram a história de vocês.', fields: ["galleryImages", "galleryStyle"] },
-        { id: "timeline",   title: 'Linha do Tempo 3D',          description: 'Momentos flutuantes para uma viagem nostálgica.',  fields: ["timelineEvents"] },
-        { id: "music",      title: 'Música Dedicada',            description: 'Escolha uma trilha sonora ou grave sua voz.',      fields: ["musicOption", "youtubeUrl", "audioRecording"] },
-        { id: "background", title: 'Animação de Fundo',          description: 'Escolha um efeito especial para o fundo.',         fields: ["backgroundAnimation", "heartColor"] },
-        { id: "puzzle",     title: 'Quebra-Cabeça Interativo',   description: 'Um desafio antes de revelar a surpresa!',          fields: ["enablePuzzle", "puzzleImage"] },
-        { id: "memory",     title: 'Jogo da Memória',            description: 'Crie um jogo de memória divertido com suas fotos.', fields: ["enableMemoryGame", "memoryGameImages"] },
-        { id: "quiz",       title: 'Quiz do Casal',              description: 'Crie um quiz divertido sobre vocês.',              fields: ["enableQuiz", "quizQuestions"] },
-        { id: "plan",       title: 'Escolha seu Plano',          description: 'Selecione o plano ideal para sua página.',         fields: ["plan"] },
-        { id: "payment",    title: 'Finalizar',                  description: 'Pague para gerar o link e QR Code.',               fields: ["payment", "qrCodeDesign"] },
-    ], []);
+        { id: "title",      title: segCfg.titleStepTitle,       description: segCfg.titleStepDescription,    fields: ["title", "titleColor"] },
+        { id: "message",    title: segCfg.messageStepTitle,     description: segCfg.messageStepDescription,  fields: ["message", "messageFontSize", "messageFormatting"] },
+        { id: "specialDate",title: segCfg.dateStepTitle,        description: segCfg.dateStepDescription,     fields: ["specialDate", "countdownStyle", "countdownColor"] },
+        { id: "gallery",    title: 'Galeria de Fotos',          description: segCfg.galleryStepDescription,  fields: ["galleryImages", "galleryStyle"] },
+        { id: "timeline",   title: 'Linha do Tempo 3D',         description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
+        { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+        { id: "background", title: 'Animação de Fundo',         description: 'Escolha um efeito especial para o fundo.',        fields: ["backgroundAnimation", "heartColor"] },
+        { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
+        { id: "memory",     title: 'Jogo da Memória',           description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
+        { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
+        { id: "plan",       title: 'Escolha seu Plano',         description: 'Selecione o plano ideal para sua página.',        fields: ["plan"] },
+        { id: "payment",    title: 'Finalizar',                 description: 'Pague para gerar o link e QR Code.',              fields: ["payment", "qrCodeDesign"] },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ], [segmentKey]);
 
     const methods = useForm<PageData>({
         resolver: zodResolver(pageSchema),
@@ -2174,7 +2229,7 @@ function WizardInternal() {
     let StepComponent;
 
     if (pageId) {
-        StepComponent = <SuccessStep pageId={pageId} />;
+        StepComponent = <SuccessStep pageId={pageId} title={segCfg.successTitle} subtitle={segCfg.successSubtitle} whatsappMessage={segCfg.whatsappMessage} />;
     } else if (currentStepId === 'payment') {
         StepComponent = <PaymentStep setPageId={setPageId} />;
     } else {
@@ -2182,6 +2237,8 @@ function WizardInternal() {
         if (Comp) {
             const props: any = { isVisible: currentStepId === 'background' };
             if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
+            if (currentStepId === 'title') props.titlePlaceholder = segCfg.titlePlaceholder;
+            if (currentStepId === 'message') props.messagePlaceholder = segCfg.messagePlaceholder;
             StepComponent = <Comp {...props} />;
         } else {
             StepComponent = <div>Passo não encontrado.</div>;
