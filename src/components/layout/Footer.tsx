@@ -126,7 +126,7 @@ export default function Footer() {
                 </p>
             </div>
             <p>
-              G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA | CNPJ: 64.966.299/0001-16
+              MYCUPID | CNPJ: 64.966.299/0001-16
             </p>
         </div>
       </div>

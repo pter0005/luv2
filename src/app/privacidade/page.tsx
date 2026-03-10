@@ -62,7 +62,7 @@ export default function PrivacidadePage() {
         <div className="space-y-12">
             <PolicySection title="Introdução" icon={Shield}>
                 <p>
-                    O <strong>MyCupid</strong> (doravante "Plataforma"), operado por G.B. SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO LTDA, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 64.966.299/0001-16, está comprometido com a proteção da sua privacidade. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                    O <strong>MyCupid</strong> (doravante "Plataforma"), operado por MYCUPID, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 64.966.299/0001-16, está comprometido com a proteção da sua privacidade. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações pessoais, em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
                 </p>
             </PolicySection>
 
