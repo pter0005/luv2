@@ -2,7 +2,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 
@@ -75,6 +75,9 @@ export default async function AdminDashboard() {
             <Button asChild variant="outline" size="sm">
               <Link href="/admin/analytics"><TrendingUp className="h-4 w-4 mr-2" />Analytics</Link>
             </Button>
+            <Button asChild variant="outline" size="sm" className="border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10">
+              <Link href="/admin/area2"><BarChart2 className="h-4 w-4 mr-2" />Admin Area 2</Link>
+            </Button>
             <Button asChild variant="outline" size="sm" className={stats.pendingFileIssues > 0 ? "border-red-500/50 text-red-400" : ""}>
               <Link href="/admin/pages">
                 <FileWarning className="h-4 w-4 mr-2" />Arquivos
@@ -145,7 +148,7 @@ export default async function AdminDashboard() {
                 {sales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4"><div className="flex flex-col"><span className="font-medium">{sale.ownerEmail}</span><span className="text-xs text-muted-foreground">ID: {sale.id.slice(0, 8)}...</span></div></td>
-                    <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${sale.plan === 'avancado' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' : sale.plan === 'basico' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-gray-500/10 text-gray-500'}`}>{sale.plan}</span></td>
+                    <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${sale.plan === 'avancado' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-gray-500/10 text-gray-500'}`}>{sale.plan}</span></td>
                     <td className="px-6 py-4 font-mono">{sale.price > 0 ? <span className="text-green-500 font-bold">{formatCurrency(sale.price, sale.currency)}</span> : <span className="text-muted-foreground">{formatCurrency(0, 'BRL')}</span>}</td>
                     <td className="px-6 py-4 text-muted-foreground"><div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{formatDate(sale.createdAt)}</div></td>
                     <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
