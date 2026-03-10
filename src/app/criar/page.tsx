@@ -6,12 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Sparkles } from 'lucide-react';
 
 const OPTIONS = [
-  { key: 'namorada', emoji: '💜', label: 'Namorada',     sub: 'declare seu amor' },
-  { key: 'mae',      emoji: '🌸', label: 'Mãe',          sub: 'surpreenda ela' },
-  { key: 'esposa',   emoji: '💍', label: 'Esposa',       sub: 'eternize o amor' },
-  { key: 'namorado', emoji: '🖤', label: 'Namorado',     sub: 'declare seu amor' },
-  { key: 'amiga',    emoji: '🤍', label: 'Melhor amiga', sub: 'homenageie ela' },
-  { key: 'outro',    emoji: '✨', label: 'Outra pessoa',  sub: 'alguém especial' },
+  { key: 'namorade', emoji: '💜', label: 'Namorada/o',     sub: 'declare seu amor' },
+  { key: 'espouse',  emoji: '💍', label: 'Esposa/o',       sub: 'eternize o amor' },
+  { key: 'mae',      emoji: '🌸', label: 'Mãe',            sub: 'surpreenda ela' },
+  { key: 'pai',      emoji: '💙', label: 'Pai',            sub: 'surpreenda ele' },
+  { key: 'amige',    emoji: '🤍', label: 'Amigo/a',        sub: 'homenageie essa pessoa' },
+  { key: 'avo',      emoji: '🌻', label: 'Avó/Avô',        sub: 'um presente especial' },
+  { key: 'filho',    emoji: '💛', label: 'Filho/Filha',    sub: 'eternize esse amor' },
+  { key: 'outro',    emoji: '✨', label: 'Outra pessoa',   sub: 'alguém especial' },
 ];
 
 export default function CriarPage() {
@@ -60,7 +62,7 @@ export default function CriarPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full max-w-lg"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl"
       >
         {OPTIONS.map((opt, i) => {
           const isSelected = selected === opt.key;
