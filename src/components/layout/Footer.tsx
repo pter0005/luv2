@@ -31,7 +31,7 @@ export default function Footer() {
       const auth = getAuth();
       await signOut(auth);
       await removeSession();
-      router.push('/login');
+      router.push("/login");
       router.refresh();
     } catch (error) {
       console.error("Erro ao sair:", error);
@@ -76,7 +76,8 @@ export default function Footer() {
               <li><FooterLink href="/minhas-paginas">Minhas Criações</FooterLink></li>
               <li><FooterLink href="/login">Login / Cadastro</FooterLink></li>
               <li><FooterLink href="/#planos">Planos e Preços</FooterLink></li>
-              {isAdmin && <li><FooterLink href="/admin/login">Área Admin</FooterLink></li>}
+              {isAdmin && <li><FooterLink href="/admin">Área Admin</FooterLink></li>}
+              {isAdmin && <li><FooterLink href="/admin/area2">Área Admin 2</FooterLink></li>}
             </ul>
           </div>
 
