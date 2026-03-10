@@ -43,7 +43,7 @@ export interface WizardSegmentConfig {
   whatsappMessage: string;
 }
 
-export const WIZARD_SEGMENTS: Record<WizardSegmentKey, WizardSegmentConfig> = {
+const segmentsBase = {
   namorada: {
     titleStepTitle: 'Título da página',
     titleStepDescription: 'O nome que aparece no topo da surpresa. Ex: João & Maria, ou só o nome dela.',
@@ -150,6 +150,13 @@ export const WIZARD_SEGMENTS: Record<WizardSegmentKey, WizardSegmentConfig> = {
   },
 };
 
+export const WIZARD_SEGMENTS: Record<WizardSegmentKey, WizardSegmentConfig> = {
+  ...segmentsBase,
+  namorade: segmentsBase.namorada,
+  espouse: segmentsBase.esposa,
+};
+
+
 // Fallback genérico (sem segmento)
 export const DEFAULT_WIZARD_CONFIG: WizardSegmentConfig = {
   titleStepTitle: 'Título da página',
@@ -164,16 +171,10 @@ export const DEFAULT_WIZARD_CONFIG: WizardSegmentConfig = {
   timelineStepDescription: 'Momentos flutuantes para uma viagem nostálgica.',
   musicStepDescription: 'Escolha uma trilha sonora ou grave sua voz.',
   puzzleStepDescription: 'Um desafio antes de revelar a surpresa!',
-  memoryStepDescription: 'Crie um jogo da memória divertido com suas fotos.',
+  memoryStepDescription: 'Crie um jogo de memória divertido com suas fotos.',
   quizStepTitle: 'Quiz do Casal',
   quizStepDescription: 'Crie um quiz divertido sobre vocês.',
   successTitle: 'Página Criada com Sucesso!',
   successSubtitle: 'Sua obra de arte está pronta. Compartilhe o link com seu amor.',
   whatsappMessage: 'Oi amor, fiz uma surpresa especial pra você 💝',
 };
-
-// Aliases para os keys merged da tela de escolha
-// namorade → namorada (textos genéricos que funcionam pra namorada/o)
-// espouse → esposa (textos genéricos que funcionam pra esposa/o)
-WIZARD_SEGMENTS['namorade' as WizardSegmentKey] = WIZARD_SEGMENTS['namorada'];
-WIZARD_SEGMENTS['espouse' as WizardSegmentKey] = WIZARD_SEGMENTS['esposa'];
