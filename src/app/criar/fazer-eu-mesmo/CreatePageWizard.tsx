@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -17,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle, Gift } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Bold, Italic, Strikethrough, Upload, X, Mic, Youtube, Play, Pause, StopCircle, Search, Loader2, LinkIcon, Heart, Bot, Wand2, Puzzle, CalendarClock, Pipette, CalendarDays, QrCode, CheckCircle, Download, Plus, Trash, CalendarIcon, Info, AlertTriangle, Copy, Terminal, Clock, TestTube2, View, Camera, Eye, Lock, CreditCard, ChevronRight as ChevronRightIcon, Gamepad2, HelpCircle, Hourglass, DatabaseZap, XCircle, Gift, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
