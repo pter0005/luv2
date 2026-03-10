@@ -10,6 +10,7 @@ import Link from 'next/link';
 const SPECIAL_USERS: Record<string, number> = {
     'zalmirparedes@gmail.com': 2,
     'jv5089528@gmail.com': 1,
+    'aljkwdawlkjd@gmail.com': 5,
 };
 
 const STORAGE_KEY = 'mycupid_credit_popup_dismissed';
