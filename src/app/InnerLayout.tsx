@@ -8,6 +8,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import CookieConsent from '@/components/layout/CookieConsent';
 import { PresenceTracker } from '@/components/layout/PresenceTracker';
+import CreditPopup from '@/components/layout/CreditPopup';
 
 const MemoizedBackground = React.memo(() => (
     <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -42,6 +43,7 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
         <Footer />
       </div>
       <CookieConsent />
+      <CreditPopup />
     </div>
   );
 }
