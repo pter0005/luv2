@@ -437,4 +437,5 @@ export async function createStripeCheckoutSession(intentId: string, plan: 'basic
     const successUrl = `${domain}/criando-pagina?intentId=${intentId}`;
     const cancelUrl = `${domain}/pagamento/cancelado`;
     
-    return { success
+    return { success: false, error: 'Stripe integration is not fully configured on the backend.' };
+}
