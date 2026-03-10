@@ -3,8 +3,6 @@ import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
 import Link from 'next/link';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 
@@ -13,6 +11,17 @@ export const dynamic = 'force-dynamic';
 const formatCurrency = (value: number, currency: 'BRL' | 'USD') => {
   const locale = currency === 'BRL' ? 'pt-BR' : 'en-US';
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+};
+
+const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    }).format(date);
 };
 
 async function getAdminData() {
@@ -138,7 +147,7 @@ export default async function AdminDashboard() {
                     <td className="px-6 py-4"><div className="flex flex-col"><span className="font-medium">{sale.ownerEmail}</span><span className="text-xs text-muted-foreground">ID: {sale.id.slice(0, 8)}...</span></div></td>
                     <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${sale.plan === 'avancado' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' : sale.plan === 'basico' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-gray-500/10 text-gray-500'}`}>{sale.plan}</span></td>
                     <td className="px-6 py-4 font-mono">{sale.price > 0 ? <span className="text-green-500 font-bold">{formatCurrency(sale.price, sale.currency)}</span> : <span className="text-muted-foreground">{formatCurrency(0, 'BRL')}</span>}</td>
-                    <td className="px-6 py-4 text-muted-foreground"><div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{format(sale.createdAt, "MMM dd, yyyy, hh:mm a", { locale: enUS })}</div></td>
+                    <td className="px-6 py-4 text-muted-foreground"><div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{formatDate(sale.createdAt)}</div></td>
                     <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                       <Button asChild variant="outline" size="sm" className="h-8"><Link href={`/admin/edit/${sale.id}`}>Edit <Edit className="w-3 h-3 ml-2" /></Link></Button>
                       <Button asChild variant="outline" size="sm" className="h-8"><Link href={`/p/${sale.id}`} target="_blank">View <ExternalLink className="w-3 h-3 ml-2" /></Link></Button>

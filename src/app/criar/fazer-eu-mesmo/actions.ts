@@ -1,9 +1,9 @@
-
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
+import { revalidatePath } from 'next/cache';
 
 // --- TYPE DEFINITIONS for consistent returns ---
 type CreateIntentResult = 
@@ -259,36 +259,32 @@ async function moveFileWithRetry(
 // --- FINALIZAR PÁGINA ---
 export async function finalizeLovePage(intentId: string, paymentId: string): Promise<FinalizePageResult> {
     const db = getAdminFirestore();
-    const bucket = getAdminStorage();
-    const intentRef = db.collection('payment_intents').doc(intentId);
     
-    try {
-        // IDEMPOTENCY CHECK:
-        // Evita que webhook e polling criem a página duas vezes para o mesmo pagamento.
-        const existingPage = await db.collection('lovepages')
-            .where('paymentId', '==', paymentId)
-            .limit(1)
-            .get();
+    // --- IDEMPOTENCY FIX ---
+    const transactionResult = await db.runTransaction(async (transaction) => {
+        const intentRef = db.collection('payment_intents').doc(intentId);
+        const intentDoc = await transaction.get(intentRef);
 
-        if (!existingPage.empty) {
-            // Página já existe para esse pagamento — retorna o ID sem duplicar.
-            return { success: true, pageId: existingPage.docs[0].id };
+        if (!intentDoc.exists) {
+            throw new Error("Rascunho não encontrado.");
         }
-
-        const intentDoc = await intentRef.get();
         const data = intentDoc.data();
-        if (!data) return { success: false, error: "Rascunho não encontrado." };
-        
-        // PROTEÇÃO secundária: se o intent já foi processado.
-        if (data.status === 'completed' && data.lovePageId) {
-             return { success: true, pageId: data.lovePageId };
+        if (!data) {
+            throw new Error("Dados do rascunho inválidos.");
         }
 
+        // Se já foi finalizado, retorna o ID da página existente.
+        if (data.status === 'completed' && data.lovePageId) {
+            return { success: true, pageId: data.lovePageId, alreadyExists: true };
+        }
+
+        // Se ainda não foi finalizado, continua o processo.
+        const bucket = getAdminStorage();
         const newPageId = db.collection('lovepages').doc().id;
 
         const sanitizedData = sanitizeForFirebase(data);
 
-        // Move galeria com retry
+        // ... (resto da lógica de mover arquivos é a mesma)
         if (sanitizedData.galleryImages?.length) {
             sanitizedData.galleryImages = await Promise.all(
                 sanitizedData.galleryImages.map((img: any) =>
@@ -296,8 +292,6 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 )
             );
         }
-
-        // Move timeline com retry
         if (sanitizedData.timelineEvents?.length) {
             sanitizedData.timelineEvents = await Promise.all(
                 sanitizedData.timelineEvents.map(async (event: any) => {
@@ -312,23 +306,15 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 (e: any) => ({ ...e, date: ensureTimestamp(e.date) })
             );
         }
-
-        // Move puzzle com retry
         if (sanitizedData.puzzleImage) {
             sanitizedData.puzzleImage = await moveFileWithRetry(bucket, db, sanitizedData.puzzleImage, 'puzzle', newPageId);
         }
-
-        // Move áudio com retry
         if (sanitizedData.audioRecording) {
             sanitizedData.audioRecording = await moveFileWithRetry(bucket, db, sanitizedData.audioRecording, 'audio', newPageId);
         }
-
-        // Move vídeo de fundo com retry
         if (sanitizedData.backgroundVideo) {
             sanitizedData.backgroundVideo = await moveFileWithRetry(bucket, db, sanitizedData.backgroundVideo, 'video', newPageId);
         }
-
-        // Move jogo da memória com retry
         if (sanitizedData.memoryGameImages?.length) {
             sanitizedData.memoryGameImages = await Promise.all(
                 sanitizedData.memoryGameImages.map((img: any) =>
@@ -336,7 +322,6 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 )
             );
         }
-
         sanitizedData.specialDate = ensureTimestamp(sanitizedData.specialDate);
 
         const { payment, ...finalData } = sanitizedData;
@@ -344,35 +329,37 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.createdAt = Timestamp.now();
         finalData.paymentId = paymentId;
         finalData.status = 'paid';
-
-        const isAdminFinalization = paymentId.startsWith('admin_finalize_');
-
-        // Versão do componente — todas as páginas novas usam V2
-        // Páginas antigas sem esse campo continuam no V1 (PageClientComponentV1.tsx)
         finalData.componentVersion = 'v2';
-
-        // Expiry APENAS para plano basico + pagamento real (não admin, não Zalmir)
+        
+        const isAdminFinalization = paymentId.startsWith('admin_finalize_');
         if (finalData.plan === 'basico' && !isAdminFinalization) {
             finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
         }
 
-        await db.collection('lovepages').doc(newPageId).set(finalData);
+        const newPageRef = db.collection('lovepages').doc(newPageId);
+        transaction.set(newPageRef, finalData);
         
         if (data.userId) {
-            await db.collection('users').doc(data.userId).collection('love_pages').doc(newPageId).set({ 
+            const userSubcollectionRef = db.collection('users').doc(data.userId).collection('love_pages').doc(newPageId);
+            transaction.set(userSubcollectionRef, { 
                 title: finalData.title,
                 pageId: newPageId,
                 createdAt: Timestamp.now()
             });
         }
+        
+        transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
+        
+        return { success: true, pageId: newPageId, alreadyExists: false };
+    });
 
-        await intentRef.update({ status: 'completed', lovePageId: newPageId });
-        return { success: true, pageId: newPageId };
-
-    } catch (error: any) {
-        console.error("[FINALIZE_PAGE_ERROR]", error);
-        return { success: false, error: error.message, details: error };
+    // Se a transação foi bem-sucedida, invalida os paths
+    if (transactionResult.success) {
+        revalidatePath(`/p/${transactionResult.pageId}`);
+        revalidatePath('/minhas-paginas');
     }
+
+    return transactionResult;
 }
 
 export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: string): Promise<PaymentVerificationResult> {
