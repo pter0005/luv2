@@ -17,7 +17,7 @@ export default function Footer() {
   const logoUrl = PlaceHolderImages.find((p) => p.id === "footerLogo")?.imageUrl || '/logo-placeholder.png';
 
   const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com', 'pedrohenriqww9@gmail.com'];
-  const isAdmin = user && user.email && adminEmails.includes(user.email.toLowerCase());
+  const isAdmin = user && user.email && adminEmails.includes(user.email.toLowerCase().trim());
   
   useEffect(() => {
     // This check ensures we only show the dev sign out button in development

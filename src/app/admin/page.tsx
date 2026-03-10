@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
+import { cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -154,7 +155,7 @@ export default async function AdminDashboard() {
                     return (
                         <tr key={sale.id} className="hover:bg-muted/30 transition-colors">
                             <td className="px-6 py-4"><div className="flex flex-col"><span className="font-medium">{sale.ownerEmail}</span><span className="text-xs text-muted-foreground">ID: {sale.id.slice(0, 8)}...</span></div></td>
-                            <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${planClass}`}>{sale.plan}</span></td>
+                            <td className="px-6 py-4"><span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize", planClass)}>{sale.plan}</span></td>
                             <td className="px-6 py-4 font-mono">{sale.price > 0 ? <span className="text-green-500 font-bold">{formatCurrency(sale.price, sale.currency)}</span> : <span className="text-muted-foreground">{formatCurrency(0, 'BRL')}</span>}</td>
                             <td className="px-6 py-4 text-muted-foreground"><div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{formatDate(sale.createdAt)}</div></td>
                             <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
