@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -277,6 +278,25 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         if (data.status === 'completed' && data.lovePageId) {
             return { success: true as const, pageId: data.lovePageId as string };
         }
+        
+        // ---- ROBUST ADMIN CHECK ----
+        const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+        let isCreatorAdmin = false;
+        if (data.userId) {
+            const userRef = db.collection('users').doc(data.userId);
+            try {
+                const userDoc = await transaction.get(userRef);
+                if (userDoc.exists) {
+                    const userEmail = userDoc.data()?.email;
+                    if (userEmail && adminEmails.includes(userEmail)) {
+                        isCreatorAdmin = true;
+                    }
+                }
+            } catch (e) {
+                console.warn(`Could not verify admin status for user ${data.userId}`, e)
+            }
+        }
+        // ---- END ROBUST ADMIN CHECK ----
 
         // Se ainda não foi finalizado, continua o processo.
         const bucket = getAdminStorage();
@@ -331,8 +351,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.status = 'paid';
         finalData.componentVersion = 'v2';
         
-        const isAdminFinalization = paymentId.startsWith('admin_finalize_');
-        if (finalData.plan === 'basico' && !isAdminFinalization) {
+        // Regra de expiração blindada para admin
+        if (isCreatorAdmin) {
+            finalData.plan = 'avancado'; // Garante que seja plano avançado
+            delete finalData.expireAt;   // Remove qualquer campo de expiração
+        } else if (finalData.plan === 'basico') {
             finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
         }
 
