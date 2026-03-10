@@ -63,16 +63,21 @@ function CreatingPageContent() {
             }
 
             // ─── META PIXEL ─────────────────────────────────────────
-            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                const plan = page.plan || 'avancado';
-                const value = PLAN_PRICES[plan] ?? 24.90;
-                window.fbq('track', 'Purchase', {
-                    value,
-                    currency: 'BRL',
-                    content_ids: [plan],
-                    content_type: 'product',
-                });
-            }
+            const fireMeta = (retries = 5) => {
+                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                    const plan = page.plan || 'avancado';
+                    const value = PLAN_PRICES[plan] ?? 24.90;
+                    window.fbq('track', 'Purchase', {
+                        value,
+                        currency: 'BRL',
+                        content_ids: [plan],
+                        content_type: 'product',
+                    });
+                } else if (retries > 0) {
+                    setTimeout(() => fireMeta(retries - 1), 500);
+                }
+            };
+            fireMeta();
         }
     }, [finalizedPage]);
     
