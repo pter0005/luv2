@@ -148,7 +148,7 @@ export default async function AdminDashboard() {
                 {sales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4"><div className="flex flex-col"><span className="font-medium">{sale.ownerEmail}</span><span className="text-xs text-muted-foreground">ID: {sale.id.slice(0, 8)}...</span></div></td>
-                    <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${sale.plan === 'avancado' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-gray-500/10 text-gray-500'}`}>{sale.plan}</span></td>
+                    <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${sale.plan === 'avancado' ? 'bg-purple-500/10 text-purple-500 border border-purple-500/20' : sale.plan === 'basico' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-gray-500/10 text-gray-500'}`}>{sale.plan}</span></td>
                     <td className="px-6 py-4 font-mono">{sale.price > 0 ? <span className="text-green-500 font-bold">{formatCurrency(sale.price, sale.currency)}</span> : <span className="text-muted-foreground">{formatCurrency(0, 'BRL')}</span>}</td>
                     <td className="px-6 py-4 text-muted-foreground"><div className="flex items-center gap-2"><Calendar className="w-3 h-3" />{formatDate(sale.createdAt)}</div></td>
                     <td className="px-6 py-4 text-right flex items-center justify-end gap-2">

@@ -76,8 +76,6 @@ export default function Footer() {
               <li><FooterLink href="/minhas-paginas">Minhas Criações</FooterLink></li>
               <li><FooterLink href="/login">Login / Cadastro</FooterLink></li>
               <li><FooterLink href="/#planos">Planos e Preços</FooterLink></li>
-              {isAdmin && <li><FooterLink href="/admin">Área Admin</FooterLink></li>}
-              {isAdmin && <li><FooterLink href="/admin/area2">Área Admin 2</FooterLink></li>}
             </ul>
           </div>
 
@@ -88,6 +86,8 @@ export default function Footer() {
               <li><FooterLink href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0">Central de Ajuda</FooterLink></li>
               <li><FooterLink href="/termos">Termos de uso</FooterLink></li>
               <li><FooterLink href="/privacidade">Política de privacidade</FooterLink></li>
+               {isAdmin && <li><FooterLink href="/admin">Área Admin</FooterLink></li>}
+               {isAdmin && <li><FooterLink href="/admin/area2">Área Admin 2</FooterLink></li>}
                {isDevelopment && user && (
                 <li>
                   <button onClick={handleSignOut} className="hover:text-purple-400 transition-colors flex items-center gap-2 group text-left">
