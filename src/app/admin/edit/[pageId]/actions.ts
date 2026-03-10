@@ -4,6 +4,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { FieldValue } from 'firebase-admin/firestore';
 
 // Basic validation for the data
 interface UpdatablePageData {
@@ -44,4 +45,30 @@ export async function updateLovePage(pageId: string, data: UpdatablePageData) {
 
     // Redirect back to the admin dashboard after successful update
     redirect('/admin');
+}
+
+export async function makePagePermanent(pageId: string) {
+    if (!pageId) {
+        return { error: 'Page ID is missing.' };
+    }
+
+    try {
+        const db = getAdminFirestore();
+        const pageRef = db.collection('lovepages').doc(pageId);
+
+        await pageRef.update({
+            expireAt: FieldValue.delete(),
+            plan: 'avancado'
+        });
+
+        revalidatePath(`/admin/edit/${pageId}`);
+        revalidatePath(`/admin`);
+        revalidatePath(`/p/${pageId}`);
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('[ADMIN_PERMANENT_ERROR]', error);
+        return { error: `Failed to make page permanent: ${error.message}` };
+    }
 }
