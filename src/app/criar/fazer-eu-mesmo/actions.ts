@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -376,9 +375,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     });
 
     if (transactionResult.success) {
+        await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
-        await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
         return { success: true, pageId: transactionResult.pageId };
     }
     return { success: false, error: 'Transação falhou.' };
