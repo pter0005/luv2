@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -6,7 +5,7 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 
-// --- NEW SERVER-SIDE META PIXEL EVENT ---
+// --- SERVER-SIDE META PIXEL EVENT (VERSÃO TESTE) ---
 async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string) {
     const PIXEL_ID = process.env.META_PIXEL_ID;
     const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
@@ -123,7 +122,6 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
             const intentRef = db.collection('payment_intents').doc(intentId);
             const docSnap = await intentRef.get();
 
-            // PROTEÇÃO: página completed nunca é sobrescrita pelo autosave
             if (docSnap.exists && docSnap.data()?.status === 'completed') {
                 return { success: true, intentId };
             }
@@ -234,13 +232,6 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
     }
 }
 
-
-// ─────────────────────────────────────────────────────────────────
-// MOVE FILE COM RETRY — BLINDAGEM TOTAL
-// Tenta 3 vezes com 1s de espera entre tentativas.
-// Se todas falharem, registra o erro no Firestore para recuperação
-// manual e retorna o fileObject original (não quebra o processo).
-// ─────────────────────────────────────────────────────────────────
 async function moveFileWithRetry(
     bucket: any,
     db: any,
@@ -249,7 +240,6 @@ async function moveFileWithRetry(
     newPageId: string,
     maxRetries = 3
 ): Promise<any> {
-    // Arquivos que não são temp/ não precisam ser movidos
     if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) {
         return fileObject;
     }
@@ -263,31 +253,19 @@ async function moveFileWithRetry(
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            // Tenta mover
             await bucket.file(oldPath).move(newPath);
-            
-            // Torna público
             const newFileRef = bucket.file(newPath);
             await newFileRef.makePublic();
-
-            // Sucesso — retorna o novo objeto com URL permanente
-            return {
-                url: newFileRef.publicUrl(),
-                path: newPath,
-            };
+            return { url: newFileRef.publicUrl(), path: newPath };
         } catch (error: any) {
             lastError = error;
             console.error(`[moveFile] Tentativa ${attempt}/${maxRetries} falhou para ${oldPath}:`, error.message);
-            
-            // Espera 1 segundo antes de tentar de novo (exceto na última tentativa)
             if (attempt < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
     }
 
-    // Todas as tentativas falharam — registra no Firestore para recuperação manual
-    // Isso cria um log de "arquivos que precisam ser movidos" que você pode monitorar
     try {
         await db.collection('failed_file_moves').add({
             pageId: newPageId,
@@ -298,41 +276,29 @@ async function moveFileWithRetry(
             createdAt: Timestamp.now(),
             resolved: false,
         });
-        console.error(`[moveFile] FALHA DEFINITIVA registrada no Firestore para ${oldPath} → ${newPath}`);
     } catch (logError) {
-        // Se nem o log conseguiu, pelo menos loga no console
-        console.error(`[moveFile] FALHA CRÍTICA — não foi possível mover NEM registrar o erro:`, { oldPath, newPath, lastError });
+        console.error(`[moveFile] FALHA CRÍTICA:`, { oldPath, newPath, lastError });
     }
 
-    // Retorna o fileObject original — a página é criada, a imagem ainda
-    // aponta para temp/ mas NÃO some enquanto temp/ não for deletado
     return fileObject;
 }
-
 
 // --- FINALIZAR PÁGINA ---
 export async function finalizeLovePage(intentId: string, paymentId: string): Promise<FinalizePageResult> {
     const db = getAdminFirestore();
     
-    // --- IDEMPOTENCY FIX ---
     const transactionResult = await db.runTransaction(async (transaction) => {
         const intentRef = db.collection('payment_intents').doc(intentId);
         const intentDoc = await transaction.get(intentRef);
 
-        if (!intentDoc.exists) {
-            throw new Error("Rascunho não encontrado.");
-        }
+        if (!intentDoc.exists) throw new Error("Rascunho não encontrado.");
         const data = intentDoc.data();
-        if (!data) {
-            throw new Error("Dados do rascunho inválidos.");
-        }
+        if (!data) throw new Error("Dados do rascunho inválidos.");
 
-        // Se já foi finalizado, retorna o ID da página existente.
         if (data.status === 'completed' && data.lovePageId) {
             return { success: true as const, pageId: data.lovePageId as string, plan: data.plan as 'basico' | 'avancado' };
         }
         
-        // ---- ROBUST ADMIN CHECK ----
         const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
         let isCreatorAdmin = false;
         if (data.userId) {
@@ -341,36 +307,26 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 const userDoc = await transaction.get(userRef);
                 if (userDoc.exists) {
                     const userEmail = userDoc.data()?.email;
-                    if (userEmail && adminEmails.includes(userEmail)) {
-                        isCreatorAdmin = true;
-                    }
+                    if (userEmail && adminEmails.includes(userEmail)) isCreatorAdmin = true;
                 }
             } catch (e) {
-                console.warn(`Could not verify admin status for user ${data.userId}`, e)
+                console.warn(`Could not verify admin status for user ${data.userId}`, e);
             }
         }
-        // ---- END ROBUST ADMIN CHECK ----
 
-        // Se ainda não foi finalizado, continua o processo.
         const bucket = getAdminStorage();
         const newPageId = db.collection('lovepages').doc().id;
-
         const sanitizedData = sanitizeForFirebase(data);
 
-        // ... (resto da lógica de mover arquivos é a mesma)
         if (sanitizedData.galleryImages?.length) {
             sanitizedData.galleryImages = await Promise.all(
-                sanitizedData.galleryImages.map((img: any) =>
-                    moveFileWithRetry(bucket, db, img, 'gallery', newPageId)
-                )
+                sanitizedData.galleryImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'gallery', newPageId))
             );
         }
         if (sanitizedData.timelineEvents?.length) {
             sanitizedData.timelineEvents = await Promise.all(
                 sanitizedData.timelineEvents.map(async (event: any) => {
-                    if (event.image) {
-                        event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', newPageId);
-                    }
+                    if (event.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', newPageId);
                     return { ...event, date: ensureTimestamp(event.date) };
                 })
             );
@@ -379,20 +335,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
                 (e: any) => ({ ...e, date: ensureTimestamp(e.date) })
             );
         }
-        if (sanitizedData.puzzleImage) {
-            sanitizedData.puzzleImage = await moveFileWithRetry(bucket, db, sanitizedData.puzzleImage, 'puzzle', newPageId);
-        }
-        if (sanitizedData.audioRecording) {
-            sanitizedData.audioRecording = await moveFileWithRetry(bucket, db, sanitizedData.audioRecording, 'audio', newPageId);
-        }
-        if (sanitizedData.backgroundVideo) {
-            sanitizedData.backgroundVideo = await moveFileWithRetry(bucket, db, sanitizedData.backgroundVideo, 'video', newPageId);
-        }
+        if (sanitizedData.puzzleImage) sanitizedData.puzzleImage = await moveFileWithRetry(bucket, db, sanitizedData.puzzleImage, 'puzzle', newPageId);
+        if (sanitizedData.audioRecording) sanitizedData.audioRecording = await moveFileWithRetry(bucket, db, sanitizedData.audioRecording, 'audio', newPageId);
+        if (sanitizedData.backgroundVideo) sanitizedData.backgroundVideo = await moveFileWithRetry(bucket, db, sanitizedData.backgroundVideo, 'video', newPageId);
         if (sanitizedData.memoryGameImages?.length) {
             sanitizedData.memoryGameImages = await Promise.all(
-                sanitizedData.memoryGameImages.map((img: any) =>
-                    moveFileWithRetry(bucket, db, img, 'memory-game', newPageId)
-                )
+                sanitizedData.memoryGameImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', newPageId))
             );
         }
         sanitizedData.specialDate = ensureTimestamp(sanitizedData.specialDate);
@@ -404,14 +352,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         finalData.status = 'paid';
         finalData.componentVersion = 'v2';
         
-        // Regra de expiração blindada
         if (isCreatorAdmin) {
-            finalData.plan = 'avancado'; // Garante que seja plano avançado
-            delete finalData.expireAt;   // Remove qualquer campo de expiração
+            finalData.plan = 'avancado';
+            delete finalData.expireAt;
         } else if (finalData.plan === 'basico') {
             finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
         } else {
-            // avancado normal: nunca expira — remove campo herdado do rascunho
             delete finalData.expireAt;
         }
 
@@ -420,25 +366,17 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         
         if (data.userId) {
             const userSubcollectionRef = db.collection('users').doc(data.userId).collection('love_pages').doc(newPageId);
-            transaction.set(userSubcollectionRef, { 
-                title: finalData.title,
-                pageId: newPageId,
-                createdAt: Timestamp.now()
-            });
+            transaction.set(userSubcollectionRef, { title: finalData.title, pageId: newPageId, createdAt: Timestamp.now() });
         }
         
         transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
-        
         return { success: true as const, pageId: newPageId, plan: finalData.plan as 'basico' | 'avancado' };
     });
 
     if (transactionResult.success) {
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
-
-        // Fire server-side event and wait for it to complete
         await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
-        
         return { success: true, pageId: transactionResult.pageId };
     }
     return { success: false, error: 'Transação falhou.' };
@@ -455,9 +393,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
         if (paymentInfo.status === 'approved') {
             const result = await finalizeLovePage(intentId, paymentId);
-            if (!result.success) {
-                return { status: 'error', error: result.error || 'Falha ao finalizar a página após aprovação.' };
-            }
+            if (!result.success) return { status: 'error', error: result.error || 'Falha ao finalizar a página após aprovação.' };
             return { status: 'approved', pageId: result.pageId };
         }
         
@@ -467,11 +403,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
             'rejected', 'cancelled', 'refunded', 'charged_back'
         ];
 
-        if (knownOtherStatuses.includes(currentStatus as any)) {
-            return { status: currentStatus as any };
-        }
-
-        console.warn(`Unknown Mercado Pago status received: "${currentStatus}". Treating as pending.`);
+        if (knownOtherStatuses.includes(currentStatus as any)) return { status: currentStatus as any };
         return { status: 'pending' };
 
     } catch (error: any) {
@@ -491,9 +423,7 @@ export async function adminFinalizePage(intentId: string, userId: string): Promi
 export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string): Promise<StripeSessionResult> {
     const priceId = plan === 'avancado' ? 'price_avancado_stripe' : 'price_basico_stripe';
     console.log(`Creating Stripe session for intent ${intentId} with price ${priceId}`);
-
     const successUrl = `${domain}/criando-pagina?intentId=${intentId}`;
     const cancelUrl = `${domain}/pagamento/cancelado`;
-    
     return { success: false, error: 'Stripe integration is not fully configured on the backend.' };
 }
