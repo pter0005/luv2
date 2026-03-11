@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
@@ -66,13 +66,6 @@ import MysticFlowers from "@/components/effects/MysticFlowers";
 import QrCodeSelector from "./QrCodeSelector";
 import { Suspense } from "react";
 import { WIZARD_SEGMENTS, DEFAULT_WIZARD_CONFIG, type WizardSegmentKey } from '@/lib/wizard-segment-config';
-
-declare global {
-  interface Window {
-    ttq?: { track: (eventName: string, eventData?: any) => void; page: () => void; };
-    fbq: (...args: any[]) => void;
-  }
-}
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -536,6 +529,7 @@ const TimelineStep = React.memo(() => {
                 return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
             const uploadedFiles = await Promise.all(uploadPromises);
+            // FIX: sem id manual — useFieldArray gerencia IDs sozinho
             const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
                 image: fileData,
                 description: '',
@@ -1013,6 +1007,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
         }
+        // FIX #5: error toast quando user/storage null após loading
         if (!user || !storage) {
             toast({ variant: 'destructive', title: 'Sessão expirada', description: 'Faça login novamente para continuar.' });
             return;
@@ -1114,6 +1109,7 @@ PuzzleStep.displayName = 'PuzzleStep';
 // ─────────────────────────────────────────────
 const MemoryGameStep = React.memo(() => {
     const { control, watch } = useFormContext<PageData>();
+    // FIX #4: isUserLoading incluído para evitar falha silenciosa
     const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
@@ -1124,6 +1120,7 @@ const MemoryGameStep = React.memo(() => {
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files) return;
+        // FIX #4: guard isUserLoading antes de tentar upload
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -1434,18 +1431,24 @@ const PlanStep = React.memo(() => {
 });
 PlanStep.displayName = "PlanStep";
 
+// ─────────────────────────────────────────────
+// FIX #1: stepComponents array — ERA ESTE QUE FALTAVA, CAUSA DO CRASH TOTAL
+// Deve mapear exatamente os índices dos steps definidos em WizardInternal
+// índice 0→TitleStep, 1→MessageStep, ..., 10→PlanStep
+// índice 11 (payment) é tratado separadamente no WizardInternal
+// ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,
-    MessageStep,
-    SpecialDateStep,
-    GalleryStep,
-    TimelineStep,
-    MusicStep,
-    BackgroundStep,
-    PuzzleStep,
-    MemoryGameStep,
-    QuizStep,
-    PlanStep,
+    TitleStep,       // 0 - title
+    MessageStep,     // 1 - message
+    SpecialDateStep, // 2 - specialDate
+    GalleryStep,     // 3 - gallery
+    TimelineStep,    // 4 - timeline
+    MusicStep,       // 5 - music
+    BackgroundStep,  // 6 - background
+    PuzzleStep,      // 7 - puzzle
+    MemoryGameStep,  // 8 - memory
+    QuizStep,        // 9 - quiz
+    PlanStep,        // 10 - plan
 ];
 
 // ─────────────────────────────────────────────
@@ -1465,7 +1468,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
-    const [timeLeft, setTimeLeft] = useState(15 * 60);
+    // ── URGENCY TIMER — 15 minutos ────────────────────────────────
+    const [timeLeft, setTimeLeft] = useState(15 * 60); // segundos
     useEffect(() => {
         const interval = setInterval(() => {
             setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
@@ -1475,11 +1479,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const timerMins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
     const timerSecs = String(timeLeft % 60).padStart(2, '0');
     const timerExpired = timeLeft === 0;
+    // ── FIM TIMER ─────────────────────────────────────────────────
 
+    // ── SPECIAL USERS CREDIT SYSTEM ──────────────────────────────
     const { firestore } = useFirebase();
     const [specialUserCredits, setSpecialUserCredits] = useState(0);
     const [isSpecialUser, setIsSpecialUser] = useState(false);
 
+    // Tabela de usuários especiais: email → créditos totais (avancado grátis)
     const SPECIAL_USERS: Record<string, number> = {
         'zalmirparedes@gmail.com': 2,
         'jv5089528@gmail.com': 1,
@@ -1488,12 +1495,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const userTotalCredits = user?.email ? (SPECIAL_USERS[user.email] ?? 0) : 0;
 
+    // Query só roda se for um usuário especial
     const userPagesQuery = useMemoFirebase(() => {
         if (!user || !firestore || userTotalCredits === 0) return null;
         return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
     }, [user, firestore, userTotalCredits]);
 
     const { data: createdPages, isLoading: isLoadingPagesRaw } = useCollection(userPagesQuery);
+
+    // isLoading só bloqueia se for usuário especial
     const isLoadingPages = isSpecialUser ? isLoadingPagesRaw : false;
 
     useEffect(() => {
@@ -1508,6 +1518,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             setSpecialUserCredits(0);
         }
     }, [user, createdPages, userTotalCredits]);
+    // ── FIM SPECIAL USERS ────────────────────────────────────────
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1548,6 +1559,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
 
+        // ── TIKTOK PIXEL ──────────────────────────────────────────────
         try {
             const ttq = (window as any).ttq;
             if (ttq) {
@@ -1565,29 +1577,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             console.warn('[TikTok Pixel] Falha ao disparar CompletePayment:', e);
         }
 
-        const fireMeta = (retries = 15) => {
-            if (
-                typeof window !== 'undefined' &&
-                typeof window.fbq === 'function' &&
-                (window.fbq as any).loaded === true
-            ) {
-                const planVal = getValues('plan');
-                const value = planVal === 'avancado' ? 24.90 : 14.90;
-                window.fbq('track', 'Purchase', {
-                    value,
-                    currency: 'BRL',
-                    content_ids: [planVal],
-                    content_type: 'product',
-                });
-                console.log('[Meta Pixel] Purchase disparado:', { value, planVal });
-            } else if (retries > 0) {
-                setTimeout(() => fireMeta(retries - 1), 500);
-            } else {
-                console.warn('[Meta Pixel] fbq não inicializou — Purchase não disparado');
-            }
-        };
-        fireMeta();
-        
+        // NOTE: The Meta Pixel ('Purchase' event) is now fired server-side via the Conversions API
+        // in the `finalizeLovePage` action for better reliability.
+
     }, [setPageId, toast, getValues]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
@@ -1696,6 +1688,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
+    // FIX #3: removido !intentId do guard — race condition eliminada
+    // A função já cria o intent internamente se necessário
     const handleCreditFinalize = async () => {
         if (!user || !isSpecialUser || specialUserCredits <= 0) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
@@ -1704,6 +1698,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         startTransition(async () => {
             try {
                 const fullData = getValues();
+                // FIX #7: força plan='avancado' tanto no objeto quanto no form
                 fullData.plan = 'avancado';
                 setValue('plan', 'avancado', { shouldDirty: true });
 
@@ -1725,10 +1720,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         });
     };
 
+    // Mostra spinner só enquanto necessário:
+    // - usuário especial: aguarda query de páginas + isBrazilDomain
+    // - usuário normal: aguarda só isBrazilDomain
     if (isLoadingPages || isBrazilDomain === null) {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 
+    // ── TELA EXCLUSIVA DO ZALMIR (créditos disponíveis) ───────────
     if (isSpecialUser && specialUserCredits > 0) {
         return (
             <div className="space-y-6 text-center">
@@ -1787,9 +1786,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         );
     }
 
+    // ── TELA INTERNACIONAL (Stripe + PayPal) ─────────────────────
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {/* URGENCY TIMER */}
                 <div className={cn(
                     "flex items-center justify-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold",
                     timerExpired
@@ -1870,8 +1871,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         );
     }
 
+    // ── TELA BRASIL (PIX / Mercado Pago) ─────────────────────────
     return (
         <div className="space-y-6 text-center">
+            {/* URGENCY TIMER */}
             <div className={cn(
                 "flex items-center justify-center gap-3 px-4 py-3 rounded-xl border text-sm font-bold",
                 timerExpired
@@ -2100,6 +2103,8 @@ function WizardInternal() {
             galleryStyle: "Coverflow",
             galleryImages: [],
             timelineEvents: [],
+            // FIX #6: false como default — puzzle/memory/quiz desativados por padrão
+            // Assim o usuário passa pelo step sem ser bloqueado por validação
             enablePuzzle: false,
             enableMemoryGame: false,
             enableQuiz: false,
@@ -2222,6 +2227,7 @@ function WizardInternal() {
         if (steps[nextStepIndex]?.id === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
+            // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
             try {
                 const ttq = (window as any).ttq;
                 if (ttq) {
@@ -2235,6 +2241,7 @@ function WizardInternal() {
             } catch (e) {
                 console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
             }
+            // ─────────────────────────────────────────────────────────────
         }
         setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
     };

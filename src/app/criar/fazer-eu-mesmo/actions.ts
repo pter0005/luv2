@@ -5,6 +5,58 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 
+// --- NEW SERVER-SIDE META PIXEL EVENT ---
+async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string) {
+    const PIXEL_ID = process.env.META_PIXEL_ID;
+    const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+
+    if (!PIXEL_ID || !ACCESS_TOKEN) {
+        console.warn('[Meta CAPI] Pixel ID ou Access Token não configurado. Pulando evento server-side.');
+        return;
+    }
+
+    const value = plan === 'avancado' ? 24.90 : 14.90;
+    const eventTime = Math.floor(Date.now() / 1000);
+    const eventSourceUrl = `https://mycupid.com.br/p/${pageId}`;
+
+    const payload = {
+        data: [
+            {
+                event_name: 'Purchase',
+                event_time: eventTime,
+                event_source_url: eventSourceUrl,
+                custom_data: {
+                    value: value,
+                    currency: 'BRL',
+                    content_ids: [plan],
+                    content_type: 'product',
+                },
+            },
+        ],
+    };
+
+    try {
+        const response = await fetch(
+            `https://graph.facebook.com/v19.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            }
+        );
+
+        if (!response.ok) {
+            const responseData = await response.json();
+            console.error('[Meta CAPI] Erro ao enviar evento:', responseData);
+        } else {
+            console.log(`[Meta CAPI] Evento de Purchase enviado com sucesso para a página: ${pageId}`);
+        }
+    } catch (error) {
+        console.error('[Meta CAPI] Erro de rede ao enviar evento:', error);
+    }
+}
+
+
 // --- TYPE DEFINITIONS for consistent returns ---
 type CreateIntentResult = 
   | { success: true; intentId: string }
@@ -275,7 +327,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
 
         // Se já foi finalizado, retorna o ID da página existente.
         if (data.status === 'completed' && data.lovePageId) {
-            return { success: true as const, pageId: data.lovePageId as string };
+            return { success: true as const, pageId: data.lovePageId as string, plan: data.plan as 'basico' | 'avancado' };
         }
         
         // ---- ROBUST ADMIN CHECK ----
@@ -375,12 +427,16 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         
         transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
         
-        return { success: true as const, pageId: newPageId };
+        return { success: true as const, pageId: newPageId, plan: finalData.plan as 'basico' | 'avancado' };
     });
 
     if (transactionResult.success) {
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
+
+        // Fire server-side event without blocking the response
+        sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
+        
         return { success: true, pageId: transactionResult.pageId };
     }
     return { success: false, error: 'Transação falhou.' };
