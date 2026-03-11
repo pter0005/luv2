@@ -5,5 +5,8 @@
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
+[functions]
+  timeout = 26
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
