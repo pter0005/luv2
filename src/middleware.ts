@@ -48,8 +48,14 @@ export async function middleware(request: NextRequest) {
   }
 
 
-  // 3. Se já tem cookie e tenta acessar login -> Manda direto para as páginas do usuário
+  // 3. Se já tem cookie e tenta acessar login -> Redireciona, respeitando o ?redirect
   if (authRoutes.includes(pathname) && userSession) {
+    const redirectParam = request.nextUrl.searchParams.get('redirect');
+    // Se houver um parâmetro de redirecionamento, use-o
+    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.includes('..')) {
+        return NextResponse.redirect(new URL(redirectParam, request.url));
+    }
+    // Caso contrário, manda para a página padrão de usuário logado
     return NextResponse.redirect(new URL('/minhas-paginas', request.url));
   }
 
