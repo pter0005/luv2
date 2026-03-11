@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -26,6 +27,10 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
                 event_time: eventTime,
                 event_source_url: eventSourceUrl,
                 action_source: 'website',
+                user_data: {
+                    client_ip_address: '127.0.0.1',
+                    client_user_agent: 'Mozilla/5.0',
+                },
                 custom_data: {
                     value: value,
                     currency: 'BRL',
@@ -34,7 +39,7 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
                 },
             },
         ],
-     test_event_code: 'TEST32529',
+        test_event_code: 'TEST32529',
     };
 
     try {
