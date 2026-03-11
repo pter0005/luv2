@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -435,8 +436,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
 
-        // Fire server-side event without blocking the response
-        sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
+        // Fire server-side event and wait for it to complete
+        await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
         
         return { success: true, pageId: transactionResult.pageId };
     }
