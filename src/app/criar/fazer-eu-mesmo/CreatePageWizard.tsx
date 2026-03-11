@@ -998,7 +998,7 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
 BackgroundStep.displayName = 'BackgroundStep';
 
 // ─────────────────────────────────────────────
-// PUZZLE STEP
+// PUZZLE STEP — FIX #5: toast quando !user || !storage
 // ─────────────────────────────────────────────
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
     const { control, setValue, watch } = useFormContext<PageData>();
@@ -1110,7 +1110,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
 PuzzleStep.displayName = 'PuzzleStep';
 
 // ─────────────────────────────────────────────
-// MEMORY GAME STEP
+// MEMORY GAME STEP — FIX #4: isUserLoading adicionado
 // ─────────────────────────────────────────────
 const MemoryGameStep = React.memo(() => {
     const { control, watch } = useFormContext<PageData>();
@@ -1269,7 +1269,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                                                     />
                                                 </div>
                                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(oIndex)} disabled={fields.length <= 2}>
-                                                    <X className="h-4 w-4" />
+                                                    <X className="w-4 h-4" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -1435,17 +1435,17 @@ const PlanStep = React.memo(() => {
 PlanStep.displayName = "PlanStep";
 
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,       // 0
-    MessageStep,     // 1
-    SpecialDateStep, // 2
-    GalleryStep,     // 3
-    TimelineStep,    // 4
-    MusicStep,       // 5
-    BackgroundStep,  // 6
-    PuzzleStep,      // 7
-    MemoryGameStep,  // 8
-    QuizStep,        // 9
-    PlanStep,        // 10
+    TitleStep,
+    MessageStep,
+    SpecialDateStep,
+    GalleryStep,
+    TimelineStep,
+    MusicStep,
+    BackgroundStep,
+    PuzzleStep,
+    MemoryGameStep,
+    QuizStep,
+    PlanStep,
 ];
 
 // ─────────────────────────────────────────────
@@ -1465,7 +1465,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
-    // ── URGENCY TIMER — 15 minutos ────────────────────────────────
     const [timeLeft, setTimeLeft] = useState(15 * 60);
     useEffect(() => {
         const interval = setInterval(() => {
@@ -1477,7 +1476,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const timerSecs = String(timeLeft % 60).padStart(2, '0');
     const timerExpired = timeLeft === 0;
 
-    // ── SPECIAL USERS CREDIT SYSTEM ──────────────────────────────
     const { firestore } = useFirebase();
     const [specialUserCredits, setSpecialUserCredits] = useState(0);
     const [isSpecialUser, setIsSpecialUser] = useState(false);
@@ -1544,14 +1542,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
 
-    // ── handlePaymentSuccess — cobre todos os fluxos ──────────────
     const handlePaymentSuccess = useCallback((pageId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
 
-        // ── TIKTOK PIXEL ──────────────────────────────────────────
         try {
             const ttq = (window as any).ttq;
             if (ttq) {
@@ -1569,9 +1565,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             console.warn('[TikTok Pixel] Falha ao disparar CompletePayment:', e);
         }
 
-        // ── META PIXEL ────────────────────────────────────────────
         const fireMeta = (retries = 15) => {
-            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            if (
+                typeof window !== 'undefined' &&
+                typeof window.fbq === 'function' &&
+                (window.fbq as any).loaded === true
+            ) {
                 const planVal = getValues('plan');
                 const value = planVal === 'avancado' ? 24.90 : 14.90;
                 window.fbq('track', 'Purchase', {
@@ -1580,15 +1579,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     content_ids: [planVal],
                     content_type: 'product',
                 });
+                console.log('[Meta Pixel] Purchase disparado:', { value, planVal });
             } else if (retries > 0) {
                 setTimeout(() => fireMeta(retries - 1), 500);
             } else {
-                console.warn('[Meta Pixel] fbq não carregou — Purchase não disparado');
+                console.warn('[Meta Pixel] fbq não inicializou — Purchase não disparado');
             }
         };
         fireMeta();
-        // ─────────────────────────────────────────────────────────
-
+        
     }, [setPageId, toast, getValues]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
@@ -1730,7 +1729,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 
-    // ── TELA CRÉDITOS ─────────────────────────────────────────────
     if (isSpecialUser && specialUserCredits > 0) {
         return (
             <div className="space-y-6 text-center">
@@ -1744,6 +1742,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         Cada crédito cria 1 página no <span className="font-bold text-white">Plano Avançado</span> — gratuitamente.
                     </p>
                 </div>
+
                 <div className="space-y-2 text-left p-4 rounded-xl bg-card/50 border border-border/50">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">O que está incluído:</p>
                     {[
@@ -1758,6 +1757,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </div>
                     ))}
                 </div>
+
                 <Button
                     onClick={handleCreditFinalize}
                     disabled={isProcessing}
@@ -1773,6 +1773,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <p className="text-xs text-muted-foreground">
                     Após usar este crédito, restarão <span className="font-bold">{Math.max(0, specialUserCredits - 1)}</span> crédito{specialUserCredits - 1 !== 1 ? 's' : ''}.
                 </p>
+
                 {error && (
                     <Alert variant="destructive" className="mt-4 text-left">
                         <Terminal className="h-4 w-4" />
@@ -1786,7 +1787,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         );
     }
 
-    // ── TELA INTERNACIONAL (Stripe + PayPal) ─────────────────────
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1870,7 +1870,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         );
     }
 
-    // ── TELA BRASIL (PIX / Mercado Pago) ─────────────────────────
     return (
         <div className="space-y-6 text-center">
             <div className={cn(
@@ -2028,6 +2027,8 @@ const SuccessStep = ({
                     {copied ? 'Copiado!' : 'Copiar'}
                 </Button>
             </div>
+
+            {/* WHATSAPP SHARE */}
             <a
                 href={whatsappUrl}
                 target="_blank"
@@ -2039,6 +2040,7 @@ const SuccessStep = ({
                 </svg>
                 Enviar pelo WhatsApp
             </a>
+
             <div className="p-4 bg-white rounded-lg border mt-4">
                 <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`} alt="QR Code da Página" width={200} height={200} />
             </div>
@@ -2220,7 +2222,6 @@ function WizardInternal() {
         if (steps[nextStepIndex]?.id === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
-            // ── TIKTOK PIXEL: InitiateCheckout ────────────────────
             try {
                 const ttq = (window as any).ttq;
                 if (ttq) {
