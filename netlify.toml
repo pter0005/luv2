@@ -1,12 +1,11 @@
-[build]
-  command = "rm -rf .next && npm run build"
-  publish = ".next"
-
-[build.environment]
-  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
-
 [functions]
-  timeout = 26
+  node_bundler = "esbuild"
 
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[context.production.environment]
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
