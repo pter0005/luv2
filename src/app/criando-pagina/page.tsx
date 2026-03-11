@@ -33,7 +33,7 @@ function CreatingPageContent() {
 
     const lovepagesQuery = useMemoFirebase(() => {
         if (!firestore || !intentId) return null;
-        return query(collection(firestore, 'lovepages'), where('paymentId', '==', intentId));
+        return query(collection(firestore, 'lovepages'), where('intentId', '==', intentId));
     }, [firestore, intentId]);
 
     const { data: finalizedPage, isLoading, error } = useCollection(lovepagesQuery);
