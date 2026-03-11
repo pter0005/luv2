@@ -1583,7 +1583,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             if (
                 typeof window !== 'undefined' &&
                 typeof window.fbq === 'function' &&
-                (window.fbq as any).loaded === true  // ← garante que inicializou de verdade
+                (window.fbq as any).loaded === true
             ) {
                 const planVal = getValues('plan');
                 const value = planVal === 'avancado' ? 24.90 : 14.90;
@@ -2204,6 +2204,16 @@ function WizardInternal() {
     }, [methods, plan, toast]);
 
     useEffect(() => {
+        try {
+            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                window.fbq('track', 'ViewContent');
+            }
+        } catch (e) {
+            console.warn('[Meta Pixel] Falha ao disparar ViewContent:', e);
+        }
+    }, []);
+
+    useEffect(() => {
         setIsClient(true);
         if (searchParams.get('new') === 'true') {
             localStorage.removeItem('amore-pages-autosave');
@@ -2247,6 +2257,23 @@ function WizardInternal() {
         }
 
         const nextStepIndex = currentStep + 1;
+
+        if (steps[currentStep].id === 'quiz' && steps[nextStepIndex]?.id === 'plan') {
+            try {
+                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                    const planVal = getValues('plan');
+                    window.fbq('track', 'AddToCart', {
+                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        currency: 'BRL',
+                        content_ids: [planVal],
+                        content_type: 'product',
+                    });
+                }
+            } catch (e) {
+                console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
+            }
+        }
+
         if (steps[nextStepIndex]?.id === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
