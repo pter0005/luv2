@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
@@ -1576,6 +1577,32 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         } catch (e) {
             console.warn('[TikTok Pixel] Falha ao disparar CompletePayment:', e);
         }
+
+        // ── META PIXEL ────────────────────────────────────────────────
+        const fireMeta = (retries = 15) => {
+            if (
+                typeof window !== 'undefined' &&
+                typeof window.fbq === 'function' &&
+                (window.fbq as any).loaded === true  // ← garante que inicializou de verdade
+            ) {
+                const planVal = getValues('plan');
+                const value = planVal === 'avancado' ? 24.90 : 14.90;
+                window.fbq('track', 'Purchase', {
+                    value,
+                    currency: 'BRL',
+                    content_ids: [planVal],
+                    content_type: 'product',
+                });
+                console.log('[Meta Pixel] Purchase disparado:', { value, planVal });
+            } else if (retries > 0) {
+                setTimeout(() => fireMeta(retries - 1), 500);
+            } else {
+                console.warn('[Meta Pixel] fbq não inicializou — Purchase não disparado');
+            }
+        };
+        fireMeta();
+        // ─────────────────────────────────────────────────────────────
+
     }, [setPageId, toast, getValues]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
@@ -2236,6 +2263,20 @@ function WizardInternal() {
                 }
             } catch (e) {
                 console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
+            }
+            // ── META PIXEL: InitiateCheckout ─────────────────────────────
+            try {
+                if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+                    const planVal = getValues('plan');
+                    (window as any).fbq('track', 'InitiateCheckout', {
+                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        currency: 'BRL',
+                        content_ids: [planVal],
+                        content_type: 'product',
+                    });
+                }
+            } catch (e) {
+                console.warn('[Meta Pixel] Falha ao disparar InitiateCheckout:', e);
             }
             // ─────────────────────────────────────────────────────────────
         }
