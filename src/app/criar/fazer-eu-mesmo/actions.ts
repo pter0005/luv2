@@ -34,7 +34,7 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
                 },
             },
         ],
-        test_event_code: 'TEST64047',
+     test_event_code: 'TEST32529',
     };
 
     try {
