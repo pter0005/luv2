@@ -1266,7 +1266,7 @@ const QuizQuestionForm = ({ qIndex, removeQuestion, MAX_OPTIONS }: { qIndex: num
                                                     />
                                                 </div>
                                                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(oIndex)} disabled={fields.length <= 2}>
-                                                    <X className="w-4 h-4" />
+                                                    <X className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -1576,10 +1576,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         } catch (e) {
             console.warn('[TikTok Pixel] Falha ao disparar CompletePayment:', e);
         }
-
-        // NOTE: The Meta Pixel ('Purchase' event) is now fired server-side via the Conversions API
-        // in the `finalizeLovePage` action for better reliability.
-
     }, [setPageId, toast, getValues]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {

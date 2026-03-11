@@ -25,6 +25,7 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
                 event_name: 'Purchase',
                 event_time: eventTime,
                 event_source_url: eventSourceUrl,
+                action_source: 'website',
                 custom_data: {
                     value: value,
                     currency: 'BRL',
