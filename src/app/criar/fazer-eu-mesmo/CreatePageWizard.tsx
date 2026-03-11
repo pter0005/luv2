@@ -2258,7 +2258,10 @@ function WizardInternal() {
 
         const nextStepIndex = currentStep + 1;
 
-        if (steps[currentStep].id === 'quiz' && steps[nextStepIndex]?.id === 'plan') {
+        if (steps[nextStepIndex]?.id === 'payment' && user) {
+            toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
+            await handleAutosave();
+             // ── META PIXEL: AddToCart ─────────────────────────────
             try {
                 if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
                     const planVal = getValues('plan');
@@ -2272,11 +2275,6 @@ function WizardInternal() {
             } catch (e) {
                 console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
             }
-        }
-
-        if (steps[nextStepIndex]?.id === 'payment' && user) {
-            toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
-            await handleAutosave();
             // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
             try {
                 const ttq = (window as any).ttq;
