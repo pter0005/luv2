@@ -2031,6 +2031,21 @@ const SuccessStep = ({
 }) => {
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
+    const { getValues } = useFormContext<PageData>();
+
+    useEffect(() => {
+        const plan = getValues('plan') as string;
+        const price = plan === 'basico' ? 14.90 : 24.90;
+
+        // Meta Pixel
+        if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
+        }
+        // TikTok
+        if (typeof window !== 'undefined' && (window as any).ttq) {
+            (window as any).ttq.track('CompletePayment', { value: price, currency: 'BRL' });
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCopy = () => {
         navigator.clipboard.writeText(pageUrl).then(() => {
@@ -2261,21 +2276,7 @@ function WizardInternal() {
         if (steps[nextStepIndex]?.id === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
-             // ── META PIXEL: AddToCart ─────────────────────────────
-            try {
-                if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                    const planVal = getValues('plan');
-                    window.fbq('track', 'AddToCart', {
-                        value: planVal === 'avancado' ? 24.90 : 14.90,
-                        currency: 'BRL',
-                        content_ids: [planVal],
-                        content_type: 'product',
-                    });
-                }
-            } catch (e) {
-                console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
-            }
-            // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
+             // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
             try {
                 const ttq = (window as any).ttq;
                 if (ttq) {
@@ -2288,6 +2289,22 @@ function WizardInternal() {
                 }
             } catch (e) {
                 console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
+            }
+// ── META PIXEL: AddToCart ─────────────────────────────
+            if(currentStepId === 'plan'){
+                try {
+                    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+                        const planVal = getValues('plan');
+                        window.fbq('track', 'AddToCart', {
+                            value: planVal === 'avancado' ? 24.90 : 14.90,
+                            currency: 'BRL',
+                            content_ids: [planVal],
+                            content_type: 'product',
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
+                }
             }
             // ── META PIXEL: InitiateCheckout ─────────────────────────────
             try {
