@@ -5,41 +5,54 @@ import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config'
 import { MercadoPagoConfig, Payment } from 'mercadopago'; 
 import { Timestamp } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
+import { createHash } from 'crypto';
 
-// --- SERVER-SIDE META PIXEL EVENT (VERSÃO TESTE) ---
-async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string) {
+// --- SERVER-SIDE META PIXEL EVENT ---
+async function sendServerSidePurchaseEvent(
+    plan: 'basico' | 'avancado',
+    pageId: string,
+    userEmail?: string
+) {
     const PIXEL_ID = process.env.META_PIXEL_ID;
     const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 
     if (!PIXEL_ID || !ACCESS_TOKEN) {
-        console.warn('[Meta CAPI] Pixel ID ou Access Token não configurado. Pulando evento server-side.');
+        console.warn('[Meta CAPI] Env vars não configuradas. Pulando evento server-side.');
         return;
     }
 
+    const headersList = await headers();
+    const clientIp = headersList.get('x-forwarded-for')?.split(',')[0]?.trim()
+                  || headersList.get('x-real-ip')
+                  || '177.160.0.1';
+    const userAgent = headersList.get('user-agent') || 'Mozilla/5.0';
+
     const value = plan === 'avancado' ? 24.90 : 14.90;
-    const eventTime = Math.floor(Date.now() / 1000);
-    const eventSourceUrl = `https://mycupid.com.br/p/${pageId}`;
+
+    const userData: Record<string, any> = {
+        client_ip_address: clientIp,
+        client_user_agent: userAgent,
+    };
+    if (userEmail) {
+        userData.em = [createHash('sha256').update(userEmail.toLowerCase().trim()).digest('hex')];
+    }
 
     const payload = {
-        data: [
-            {
-                event_name: 'Purchase',
-                event_time: eventTime,
-                event_source_url: eventSourceUrl,
-                action_source: 'website',
-                user_data: {
-                    client_ip_address: '127.0.0.1',
-                    client_user_agent: 'Mozilla/5.0',
-                },
-                custom_data: {
-                    value: value,
-                    currency: 'BRL',
-                    content_ids: [plan],
-                    content_type: 'product',
-                },
+        data: [{
+            event_name: 'Purchase',
+            event_time: Math.floor(Date.now() / 1000),
+            event_source_url: `https://mycupid.com.br/criar/fazer-eu-mesmo`,
+            action_source: 'website',
+            user_data: userData,
+            custom_data: {
+                value,
+                currency: 'BRL',
+                content_ids: [plan],
+                content_type: 'product',
+                order_id: pageId,
             },
-        ],
-        test_event_code: 'TEST32529',
+        }],
     };
 
     try {
@@ -52,19 +65,19 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
             }
         );
 
+        const responseData = await response.json();
         if (!response.ok) {
-            const responseData = await response.json();
-            console.error('[Meta CAPI] Erro ao enviar evento:', responseData);
+            console.error('[Meta CAPI] Erro:', responseData);
         } else {
-            console.log(`[Meta CAPI] Evento de Purchase enviado com sucesso para a página: ${pageId}`);
+            console.log('[Meta CAPI] Purchase enviado com sucesso. PageId:', pageId);
         }
-    } catch (error) {
-        console.error('[Meta CAPI] Erro de rede ao enviar evento:', error);
+    } catch (err) {
+        console.error('[Meta CAPI] Exceção:', err);
     }
 }
 
 
-// --- TYPE DEFINITIONS for consistent returns ---
+// --- TYPE DEFINITIONS ---
 type CreateIntentResult = 
   | { success: true; intentId: string }
   | { success: false; error: string; details?: any };
@@ -302,7 +315,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         if (!data) throw new Error("Dados do rascunho inválidos.");
 
         if (data.status === 'completed' && data.lovePageId) {
-            return { success: true as const, pageId: data.lovePageId as string, plan: data.plan as 'basico' | 'avancado' };
+            return { success: true as const, pageId: data.lovePageId as string, plan: data.plan as 'basico' | 'avancado', userEmail: data.userEmail as string | undefined };
         }
         
         const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
@@ -376,11 +389,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         }
         
         transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
-        return { success: true as const, pageId: newPageId, plan: finalData.plan as 'basico' | 'avancado' };
+        return { success: true as const, pageId: newPageId, plan: finalData.plan as 'basico' | 'avancado', userEmail: data.userEmail as string | undefined };
     });
 
     if (transactionResult.success) {
-        await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId);
+        await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId, transactionResult.userEmail);
         revalidatePath(`/p/${transactionResult.pageId}`);
         revalidatePath('/minhas-paginas');
         return { success: true, pageId: transactionResult.pageId };
