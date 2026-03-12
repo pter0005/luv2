@@ -1580,11 +1580,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
         // ── META PIXEL ────────────────────────────────────────────────
         const fireMeta = (retries = 15) => {
-            if (
-                typeof window !== 'undefined' &&
-                typeof window.fbq === 'function' &&
-                (window.fbq as any).loaded === true
-            ) {
+            if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
                 const planVal = getValues('plan');
                 const value = planVal === 'avancado' ? 24.90 : 14.90;
                 window.fbq('track', 'Purchase', {
@@ -2036,7 +2032,7 @@ const SuccessStep = ({
     useEffect(() => {
         const plan = getValues('plan') as string;
         const price = plan === 'basico' ? 14.90 : 24.90;
-
+    
         // Meta Pixel
         if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
             (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
@@ -2272,8 +2268,26 @@ function WizardInternal() {
         }
 
         const nextStepIndex = currentStep + 1;
+        const nextStepId = steps[nextStepIndex]?.id;
 
-        if (steps[nextStepIndex]?.id === 'payment' && user) {
+        if (currentStepId === 'plan' && nextStepId === 'payment') {
+             // ── META PIXEL: AddToCart ─────────────────────────────
+            try {
+                if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+                    const planVal = getValues('plan');
+                    (window as any).fbq('track', 'AddToCart', {
+                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        currency: 'BRL',
+                        content_ids: [planVal],
+                        content_type: 'product',
+                    });
+                }
+            } catch (e) {
+                console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
+            }
+        }
+
+        if (nextStepId === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
              // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
@@ -2289,22 +2303,6 @@ function WizardInternal() {
                 }
             } catch (e) {
                 console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
-            }
-// ── META PIXEL: AddToCart ─────────────────────────────
-            if(currentStepId === 'plan'){
-                try {
-                    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                        const planVal = getValues('plan');
-                        window.fbq('track', 'AddToCart', {
-                            value: planVal === 'avancado' ? 24.90 : 14.90,
-                            currency: 'BRL',
-                            content_ids: [planVal],
-                            content_type: 'product',
-                        });
-                    }
-                } catch (e) {
-                    console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
-                }
             }
             // ── META PIXEL: InitiateCheckout ─────────────────────────────
             try {
