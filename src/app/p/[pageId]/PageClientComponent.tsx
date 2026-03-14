@@ -262,8 +262,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   return (
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
-      {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirar */}
-      {!isDemoPage && <ExpiryBanner expireAt={pageData.expireAt} />}
+      {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirando */}
+      {!isDemoPage && pageData.plan === 'basico' && <ExpiryBanner expireAt={pageData.expireAt} />}
       
       <AnimatePresence>
         {showExplosion && (
@@ -516,7 +516,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   <div className="space-y-2">
                       <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
                           Um Enigma de{' '}
-                          <span className="gradient-text">Amor</span>
+                          <span className="gradient-text">
+                              Amor
+                          </span>
                       </h2>
                       <p className="text-white/70 text-sm max-w-xs mx-auto">
                           Resolva o quebra-cabeça para revelar uma surpresa especial.
