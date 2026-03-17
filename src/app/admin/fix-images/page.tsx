@@ -70,7 +70,7 @@ export default function FixImagesPage() {
         while (url && !stopRef.current) {
             try {
                 addLog(`Buscando: ${url}`);
-                const res = await fetch(url);
+                const res: Response = await fetch(url);
                 const data = await res.json();
 
                 if (data.fatal) {
