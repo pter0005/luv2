@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -177,7 +176,11 @@ export default function FixImagesPage() {
                 borderRadius: 4,
                 width: (() => {
                   const parts = progress.split('/');
-                  const pct = (parseInt(parts[0]) / parseInt(parts[1])) * 100;
+                  if (parts.length < 2) return '0%';
+                  const num = parseInt(parts[0]);
+                  const den = parseInt(parts[1]);
+                  if (isNaN(num) || isNaN(den) || den === 0) return '0%';
+                  const pct = (num / den) * 100;
                   return `${pct}%`;
                 })(),
                 transition: 'width 0.3s',
