@@ -39,11 +39,16 @@ export async function GET() {
         if (data.puzzleImage) updated.puzzleImage = await fixUrl(data.puzzleImage);
         if (data.audioRecording) updated.audioRecording = await fixUrl(data.audioRecording);
         if (data.timelineEvents?.length) {
-            updated.timelineEvents = await Promise.all(
-                data.timelineEvents.map(async (e: any) => ({
-                    ...e,
-                    image: e.image ? await fixUrl(e.image) : e.image
-                }))
+            const fixedEvents = await Promise.all(
+                data.timelineEvents.map(async (e: any) => {
+                    if (!e.image) return e;
+                    const fixed = await fixUrl(e.image);
+                    return { ...e, image: fixed ?? null };
+                })
+            );
+            // Remove undefined de qualquer campo
+            updated.timelineEvents = fixedEvents.map((e: any) => 
+                JSON.parse(JSON.stringify(e, (_, v) => v === undefined ? null : v))
             );
         }
 
