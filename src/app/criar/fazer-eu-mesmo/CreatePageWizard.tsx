@@ -67,6 +67,7 @@ import MysticFlowers from "@/components/effects/MysticFlowers";
 import QrCodeSelector from "./QrCodeSelector";
 import { Suspense } from "react";
 import { WIZARD_SEGMENTS, DEFAULT_WIZARD_CONFIG, type WizardSegmentKey } from '@/lib/wizard-segment-config';
+import { downloadQrCard } from '@/lib/downloadQrCard';
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -2050,6 +2051,18 @@ const SuccessStep = ({
     const { user } = useUser();
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    const handleDownload = async () => {
+      setIsDownloading(true);
+      try {
+        await downloadQrCard(pageId, qrCodeDesign);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsDownloading(false);
+      }
+    };
 
     useEffect(() => {
         const plan = getValues('plan') as string;
@@ -2113,15 +2126,14 @@ const SuccessStep = ({
               <div className="w-full mt-6 p-4 rounded-2xl border border-purple-500/20 bg-card/50 text-center space-y-3">
                 <p className="font-bold text-purple-300">✨ Seu QR Code Personalizado está pronto!</p>
                 <p className="text-sm text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
-                
-                  <a
-                  href={`/api/qrcode-card?pageId=${pageId}&design=${qrCodeDesign}`}
-                  download={`mycupid-qrcode.png`}
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all"
                 >
-                  <Download className="w-4 h-4" />
-                  Baixar QR Code Personalizado
-                </a>
+                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {isDownloading ? 'Gerando...' : 'Baixar QR Code Personalizado'}
+                </button>
               </div>
             )}
         </div>
@@ -2483,4 +2495,3 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     );
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
-
