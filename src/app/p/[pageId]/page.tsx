@@ -1,3 +1,4 @@
+
 import { Suspense } from 'react';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import PageClientComponentV1 from './PageClientComponentV1'; // Import V1
@@ -68,35 +69,34 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
   }
 
   // Detecta página com imagens perdidas (todas em temp/ e sem arquivos)
-    const hasGallery = rawPageData.galleryImages?.length > 0;
-    const allImagesLost = hasGallery && rawPageData.galleryImages?.every(
-        (img: any) => img?.path?.startsWith('temp/') && 
-        !img?.url?.includes('storage.googleapis.com/amore-pages1')
+    const allImagesLost = rawPageData.galleryImages?.length > 0 && 
+    rawPageData.galleryImages?.every((img: any) => 
+        img?.path?.startsWith('temp/') || !img?.url
     );
 
-    if (allImagesLost && rawPageData.plan === 'avancado') {
+    if (allImagesLost) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
                 <div className="max-w-md space-y-6">
                     <div className="text-6xl">💜</div>
                     <h1 className="text-3xl font-bold text-white">Pedimos desculpas</h1>
                     <p className="text-white/70 text-lg leading-relaxed">
-                        Tivemos um problema técnico e as imagens desta página foram afetadas. 
-                        Sua página continua salva e você não perdeu seu acesso.
+                        Tivemos um problema técnico e as imagens desta página foram afetadas.
+                        Sua página e seu acesso continuam salvos.
                     </p>
                     <p className="text-white/70">
-                        Entre em contato e você receberá <strong className="text-purple-400">5 páginas grátis</strong> como compensação.
+                        Fale com a gente e vamos <strong className="text-purple-400">recriar sua página gratuitamente.</strong>
                     </p>
+                    
                     <a 
-                        href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1"
+                        href={`https://wa.me/5511943157277?text=Oi!%20Minha%20p%C3%A1gina%20do%20MyCupid%20teve%20um%20problema%20com%20as%20imagens.%20ID%3A%20${pageId}`}
                         target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-4 rounded-xl transition-all text-lg"
                     >
                         💬 Falar no WhatsApp
                     </a>
-                    <p className="text-white/40 text-xs">
-                        Código da página: {pageId}
-                    </p>
+                    <p className="text-white/40 text-xs">ID: {pageId}</p>
                 </div>
             </div>
         );

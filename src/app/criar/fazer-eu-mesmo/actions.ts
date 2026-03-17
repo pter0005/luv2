@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
@@ -389,6 +390,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         const { payment, ...finalData } = sanitizedData;
         finalData.id = newPageId;
         finalData.createdAt = Timestamp.now();
+        finalData.filesMovedAt = Timestamp.now();
         finalData.paymentId = paymentId;
         finalData.status = 'paid';
         finalData.componentVersion = 'v2';
