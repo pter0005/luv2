@@ -2,7 +2,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2 } from 'lucide-react';
+import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2, ImageOff } from 'lucide-react';
 import Link from 'next/link';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,9 @@ export default async function AdminDashboard() {
                 <FileWarning className="h-4 w-4 mr-2" />Arquivos
                 {stats.pendingFileIssues > 0 && <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{stats.pendingFileIssues > 9 ? '9+' : stats.pendingFileIssues}</span>}
               </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-red-500/40 text-red-400 hover:bg-red-500/10">
+              <Link href="/admin/fix-images"><ImageOff className="h-4 w-4 mr-2" />Recuperar Imagens</Link>
             </Button>
             <form action={removeAdminSession}>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-500"><LogOut className="h-4 w-4 mr-2" />Sign Out</Button>
