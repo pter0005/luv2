@@ -68,6 +68,35 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
       )
   }
 
+    const now = Date.now();
+    const expireAt = rawPageData.expireAt;
+    const isExpired = expireAt && (
+        typeof expireAt === 'object' && (expireAt.seconds || expireAt._seconds)
+            ? (expireAt.seconds || expireAt._seconds) * 1000 < now
+            : new Date(expireAt).getTime() < now
+    );
+
+    if (isExpired && rawPageData.plan === 'basico') {
+        return (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center">
+                <div className="max-w-md space-y-6">
+                    <div className="text-6xl">⏰</div>
+                    <h1 className="text-3xl font-bold text-white">Esta página expirou</h1>
+                    <p className="text-white/70 text-lg">
+                        O plano Econômico dura 25 horas. Para manter sua página para sempre, faça upgrade.
+                    </p>
+                    
+                    <a
+                        href="https://mycupid.com.br"
+                        className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-all text-lg"
+                    >
+                        💜 Criar nova página
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
   // Detecta página com imagens perdidas (todas em temp/ e sem arquivos)
     const allImagesLost = rawPageData.galleryImages?.length > 0 && 
     rawPageData.galleryImages?.every((img: any) => 
@@ -88,7 +117,7 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
                         Fale com a gente e vamos <strong className="text-purple-400">recriar sua página gratuitamente.</strong>
                     </p>
                     
-                    <a 
+                    <a
                         href={`https://wa.me/5511943157277?text=Oi!%20Minha%20p%C3%A1gina%20do%20MyCupid%20teve%20um%20problema%20com%20as%20imagens.%20ID%3A%20${pageId}`}
                         target="_blank"
                         rel="noopener noreferrer"

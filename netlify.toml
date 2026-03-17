@@ -1,6 +1,10 @@
+
 [functions]
   node_bundler = "esbuild"
 
 [build]
   command = "npm run build"
   publish = ".next"
+
+[functions."api/cron/cleanup-expired"]
+  schedule = "0 4 * * *"
