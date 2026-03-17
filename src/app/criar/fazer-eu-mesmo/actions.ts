@@ -271,22 +271,42 @@ async function moveFileWithRetry(
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            await bucket.file(oldPath).move(newPath);
-            const newFileRef = bucket.file(newPath);
-            const [publicUrl] = await newFileRef.getSignedUrl({
-                action: 'read',
-                expires: '01-01-2035',
-            });
+            const sourceFile = bucket.file(oldPath);
+            const targetFile = bucket.file(newPath);
+
+            // Check if already copied (idempotent for retries)
+            const [targetExists] = await targetFile.exists();
+            if (!targetExists) {
+                // Copy first, then delete — safer than move
+                await sourceFile.copy(targetFile);
+            }
+
+            // Make public — permanent URL, no expiration
+            await targetFile.makePublic();
+
+            // Build public URL using bucket name from the actual bucket instance
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${newPath}`;
+
+            // Only delete source after successful copy + makePublic
+            try {
+                const [sourceExists] = await sourceFile.exists();
+                if (sourceExists) await sourceFile.delete();
+            } catch (deleteErr) {
+                // Non-critical — source cleanup can fail, file is already copied
+                console.warn(`[moveFile] Source cleanup failed for ${oldPath}:`, deleteErr);
+            }
+
             return { url: publicUrl, path: newPath };
         } catch (error: any) {
             lastError = error;
-            console.error(`[moveFile] Tentativa ${attempt}/${maxRetries} falhou para ${oldPath}:`, error.message);
+            console.error(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error.message);
             if (attempt < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
         }
     }
 
+    // Log failed moves for later recovery
     try {
         await db.collection('failed_file_moves').add({
             pageId: newPageId,
@@ -298,7 +318,7 @@ async function moveFileWithRetry(
             resolved: false,
         });
     } catch (logError) {
-        console.error(`[moveFile] FALHA CRÍTICA:`, { oldPath, newPath, lastError });
+        console.error(`[moveFile] CRITICAL FAILURE:`, { oldPath, newPath, lastError });
     }
 
     return fileObject;
