@@ -1,4 +1,3 @@
-
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -96,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     const buffer = outCanvas.toBuffer('image/png');
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Blob([buffer]), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
