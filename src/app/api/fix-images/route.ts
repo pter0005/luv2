@@ -18,10 +18,12 @@ export async function GET() {
           if (!fileObj?.path || !fileObj?.url) return fileObj;
           if (fileObj.url.includes('storage.googleapis.com') && !fileObj.url.includes('token=')) return fileObj;
           try {
-              await bucket.file(fileObj.path).makePublic();
-              const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileObj.path}`;
+              const [url] = await bucket.file(fileObj.path).getSignedUrl({
+                  action: 'read',
+                  expires: '01-01-2035',
+              });
               hasChanges = true;
-              return { ...fileObj, url: publicUrl };
+              return { ...fileObj, url };
           } catch (e) {
               errors++;
               return fileObj;

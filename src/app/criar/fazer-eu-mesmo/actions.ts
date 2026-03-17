@@ -273,8 +273,10 @@ async function moveFileWithRetry(
         try {
             await bucket.file(oldPath).move(newPath);
             const newFileRef = bucket.file(newPath);
-            await newFileRef.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${newPath}`;
+            const [publicUrl] = await newFileRef.getSignedUrl({
+                action: 'read',
+                expires: '01-01-2035',
+            });
             return { url: publicUrl, path: newPath };
         } catch (error: any) {
             lastError = error;
