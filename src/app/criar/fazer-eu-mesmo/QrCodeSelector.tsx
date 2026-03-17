@@ -1,127 +1,182 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode.react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import { CheckCircle } from 'lucide-react';
 
 const QR_OPTIONS = [
   {
     id: 'classic',
     title: 'Clássico',
     price: 0,
-    bgImage: null,
+    preview: null, // só QR simples
     qrColor: '#000000',
+    qrX: 0, qrY: 0, qrSize: 0, // não usa
   },
   {
-    id: 'ticket',
-    title: 'Ticket Amor',
+    id: 'juntos',
+    title: 'Juntos para Sempre',
     price: 3.90,
-    bgImage: 'https://i.imgur.com/sYf8e4s.png', 
-    qrColor: '#991b1b',
-    previewPos: { top: '48%', left: '50%', width: '38%' }
-  }
+    preview: '/qr-templates/juntos-sempre.png',
+    qrColor: '#8B0000',
+    // coordenadas em % da imagem (1400x2000)
+    qrXPct: 0.286,  // 400/1400
+    qrYPct: 0.454,  // 908/2000
+    qrSizePct: 0.429, // 600/1400
+  },
 ];
 
-interface QrCodeSelectorProps {
+interface Props {
   value: string;
   onChange: (id: string) => void;
   onPriceChange: (price: number) => void;
 }
 
-export default function QrCodeSelector({ value, onChange, onPriceChange }: QrCodeSelectorProps) {
-  const [selected, setSelected] = useState(value || 'classic');
+// Mini preview: desenha a imagem de fundo + QR em cima via canvas
+function TemplatePreview({ template, pageUrl }: { template: typeof QR_OPTIONS[1], pageUrl?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const selectedOption = QR_OPTIONS.find(opt => opt.id === selected);
-    if (selectedOption) {
-      onChange(selectedOption.id);
-      onPriceChange(selectedOption.price);
-    }
-  }, [selected, onChange, onPriceChange]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const handleSelect = (option: typeof QR_OPTIONS[0]) => {
-    setSelected(option.id);
+    const W = canvas.width;
+    const H = canvas.height;
+
+    if (!template.preview) {
+      // Clássico: fundo branco + QR
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillRect(W * 0.15, H * 0.15, W * 0.7, H * 0.7);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = `${W * 0.08}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('QR Code', W / 2, H / 2);
+      return;
+    }
+
+    const bg = new Image();
+    bg.crossOrigin = 'anonymous';
+    bg.onload = () => {
+      ctx.drawImage(bg, 0, 0, W, H);
+
+      // Posição do QR no canvas proporcional
+      const qrX = W * (template as any).qrXPct;
+      const qrY = H * (template as any).qrYPct;
+      const qrSz = W * (template as any).qrSizePct;
+
+      // Fundo branco do QR
+      const pad = qrSz * 0.04;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(qrX - pad, qrY - pad, qrSz + pad * 2, qrSz + pad * 2, 4);
+      ctx.fill();
+
+      // Gera QR simples via módulos manualmente (sem lib no client) — ou usa img
+      // Usamos a API do qrserver pra preview leve
+      const qrImg = new Image();
+      qrImg.crossOrigin = 'anonymous';
+      const url = pageUrl || 'https://mycupid.com.br';
+      qrImg.onload = () => {
+        ctx.drawImage(qrImg, qrX, qrY, qrSz, qrSz);
+      };
+      // Usa cor vermelha no QR do preview
+      const color = template.qrColor.replace('#', '');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&color=${color}&bgcolor=ffffff&margin=2`;
+    };
+    bg.src = template.preview;
+  }, [template, pageUrl]);
+
+  return <canvas ref={canvasRef} width={160} height={229} style={{ display: 'block', width: '100%', height: '100%', borderRadius: 8 }} />;
+}
+
+export default function QrCodeSelector({ value, onChange, onPriceChange }: Props) {
+  const [selected, setSelected] = useState(value || 'classic');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleSelect = (opt: typeof QR_OPTIONS[0]) => {
+    setSelected(opt.id);
+    onChange(opt.id);
+    onPriceChange(opt.price);
   };
 
+  useEffect(() => {
+    const opt = QR_OPTIONS.find(o => o.id === selected);
+    if (opt) onPriceChange(opt.price);
+  }, []);
+
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="font-semibold text-foreground">✨ Código QR Personalizado</span>
+    <div className="w-full space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="font-semibold text-sm text-foreground">✨ QR Code Personalizado</span>
         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">Destaque</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {QR_OPTIONS.map((option) => {
-          const isSelected = selected === option.id;
+      {/* Carrossel horizontal */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {QR_OPTIONS.map((opt) => {
+          const isSelected = selected === opt.id;
           return (
-            <div 
-              key={option.id}
-              onClick={() => handleSelect(option)}
+            <div
+              key={opt.id}
+              onClick={() => handleSelect(opt)}
               className={cn(
-                "relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 border-2 flex flex-col bg-card/50",
-                isSelected 
-                  ? 'border-primary shadow-lg scale-[1.03]' 
-                  : 'border-border hover:border-primary/50'
+                'relative flex-shrink-0 snap-start cursor-pointer rounded-xl overflow-hidden border-2 transition-all duration-200',
+                'flex flex-col bg-card/50',
+                isSelected ? 'border-primary shadow-lg shadow-primary/20 scale-[1.03]' : 'border-border hover:border-primary/50'
               )}
+              style={{ width: 130 }}
             >
-              <div className="bg-muted/30 h-48 relative overflow-hidden flex items-center justify-center p-2">
-                {option.bgImage ? (
-                  <>
-                    <Image 
-                      src={option.bgImage} 
-                      alt={option.title} 
-                      fill
-                      className="w-full h-full object-cover"
-                      sizes="200px"
-                    />
-                    <div 
-                      className="absolute bg-white p-1 rounded-md shadow-md"
-                      style={{
-                        top: option.previewPos.top,
-                        left: option.previewPos.left,
-                        width: option.previewPos.width,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    >
-                      <QRCode 
-                        value="preview" 
-                        size={256} 
-                        style={{ width: '100%', height: 'auto' }}
-                        fgColor={option.qrColor}
-                        bgColor="#FFFFFF"
+              {/* Preview portrait */}
+              <div className="relative overflow-hidden bg-muted/20" style={{ width: 130, height: 186 }}>
+                {opt.preview ? (
+                  <TemplatePreview template={opt as any} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white">
+                    <div className="p-3 bg-white rounded-lg border border-gray-200">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=preview&margin=2`}
+                        alt="QR"
+                        width={90}
+                        height={90}
                       />
                     </div>
-                  </>
-                ) : (
-                  <div className="p-4 bg-white rounded-lg">
-                    <QRCode 
-                      value="preview" 
-                      size={112}
-                      fgColor="#000000"
-                    />
+                  </div>
+                )}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 bg-primary rounded-full p-0.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-white" />
                   </div>
                 )}
               </div>
 
-              <div className="p-3 bg-card/80 border-t border-border mt-auto">
-                <div 
-                  className={cn(
-                    "w-full py-2 rounded-lg font-bold text-sm transition-colors text-center",
-                    option.price === 0 
-                      ? 'bg-muted text-muted-foreground' 
-                      : isSelected 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-primary/20 text-primary'
-                  )}
-                >
-                  {option.price === 0 ? 'GRÁTIS' : `R$ ${option.price.toFixed(2).replace('.', ',')}`}
+              {/* Footer */}
+              <div className="px-2 py-2 bg-card/80 border-t border-border">
+                <p className="text-[10px] text-muted-foreground truncate mb-1">{opt.title}</p>
+                <div className={cn(
+                  'w-full py-1 rounded-lg font-bold text-xs text-center',
+                  opt.price === 0
+                    ? 'bg-muted text-muted-foreground'
+                    : isSelected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-primary/20 text-primary'
+                )}>
+                  {opt.price === 0 ? 'GRÁTIS' : `R$ ${opt.price.toFixed(2).replace('.', ',')}`}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+      <p className="text-[10px] text-muted-foreground text-center">Deslize para ver mais opções →</p>
     </div>
   );
 }

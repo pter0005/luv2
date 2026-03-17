@@ -1965,7 +1965,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
                 </motion.div>
             )}
-            {!pixData && (
+            {isAdmin && !pixData && (
               <div className="rounded-2xl border border-purple-500/20 bg-card/50 overflow-hidden">
                 <QrCodeSelector
                   value={qrCodeDesign}
@@ -2047,6 +2047,9 @@ const SuccessStep = ({
     const [copied, setCopied] = useState(false);
     const { getValues } = useFormContext<PageData>();
     const qrCodeDesign = getValues('qrCodeDesign');
+    const { user } = useUser();
+    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+    const isAdmin = user?.email && adminEmails.includes(user.email);
 
     useEffect(() => {
         const plan = getValues('plan') as string;
@@ -2106,7 +2109,7 @@ const SuccessStep = ({
                     <View className="mr-2" />Ver Página
                 </a>
             </Button>
-            {qrCodeDesign !== 'classic' && (
+            {isAdmin && qrCodeDesign !== 'classic' && (
               <div className="w-full mt-6 p-4 rounded-2xl border border-purple-500/20 bg-card/50 text-center space-y-3">
                 <p className="font-bold text-purple-300">✨ Seu QR Code Personalizado está pronto!</p>
                 <p className="text-sm text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
@@ -2480,3 +2483,4 @@ const ImageLimitWarning = React.memo(({ currentCount, limit, itemType }: { curre
     );
 });
 ImageLimitWarning.displayName = 'ImageLimitWarning';
+
