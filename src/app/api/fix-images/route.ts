@@ -1,11 +1,10 @@
-
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 
-const BUCKET_NAME = 'mycupid-app.appspot.com';
-const PUBLIC_BASE = `https://storage.googleapis.com/${BUCKET_NAME}`;
+// Bucket name será lido dinamicamente do getAdminStorage()
+let PUBLIC_BASE = '';
 
 function isPublicUrlCorrect(url: string, expectedPath: string): boolean {
   return url === `${PUBLIC_BASE}/${expectedPath}`;
@@ -28,13 +27,7 @@ export async function GET(request: Request) {
 
     const db = getAdminFirestore();
     const bucket = getAdminStorage();
-
-    // Verify bucket name matches expected
-    if (bucket.name !== BUCKET_NAME) {
-      return NextResponse.json({
-        fatal: `Bucket mismatch! Expected "${BUCKET_NAME}" but got "${bucket.name}"`,
-      }, { status: 500 });
-    }
+    PUBLIC_BASE = `https://storage.googleapis.com/${bucket.name}`;
 
     // Use Firestore orderBy + offset for pagination (fine for ~167 docs)
     const snapshot = await db
