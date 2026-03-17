@@ -32,7 +32,7 @@ export function getAdminApp() {
   try {
     return initializeApp({
       credential: cert({ projectId, clientEmail, privateKey }),
-      storageBucket: `${projectId}.appspot.com`,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (error: any) {
     console.error('Falha CRÍTICA ao inicializar Firebase Admin:', error.message);
