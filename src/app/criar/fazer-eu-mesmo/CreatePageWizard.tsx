@@ -1546,9 +1546,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     }, []);
 
+    const [qrCodePrice, setQrCodePrice] = useState(0);
+    const qrCodeDesign = watch('qrCodeDesign');
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
     const basePriceBRL = plan === 'basico' ? 14.90 : 24.90;
-    const totalBRL = basePriceBRL;
+    const totalBRL = basePriceBRL + qrCodePrice;
     const totalUSD = basePriceUSD;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
@@ -1912,7 +1914,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             </div>
             <div className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl mb-6">
                 <span className="block text-sm text-purple-300 font-bold uppercase tracking-wider mb-1">Total a Pagar</span>
-                <span className="block text-4xl font-black text-white">R$ {totalBRL.toFixed(2).replace('.', ',')}</span>
+                <span className="block text-4xl font-black text-white">
+                  R$ {totalBRL.toFixed(2).replace('.', ',')}
+                </span>
+                {qrCodePrice > 0 && (
+                  <p className="text-xs text-purple-300 mt-1">
+                    Inclui QR Code personalizado (+R$ {qrCodePrice.toFixed(2).replace('.', ',')})
+                  </p>
+                )}
                 <p className="text-xs text-white/50">Pagamento único</p>
             </div>
             {!pixData && plan === 'basico' && (
@@ -1955,6 +1964,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     </button>
                     <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
                 </motion.div>
+            )}
+            {!pixData && (
+              <div className="rounded-2xl border border-purple-500/20 bg-card/50 overflow-hidden">
+                <QrCodeSelector
+                  value={qrCodeDesign}
+                  onChange={(id) => setValue('qrCodeDesign', id, { shouldDirty: true })}
+                  onPriceChange={(price) => setQrCodePrice(price)}
+                />
+              </div>
             )}
             {!pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
@@ -2028,6 +2046,7 @@ const SuccessStep = ({
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
     const { getValues } = useFormContext<PageData>();
+    const qrCodeDesign = getValues('qrCodeDesign');
 
     useEffect(() => {
         const plan = getValues('plan') as string;
@@ -2087,6 +2106,21 @@ const SuccessStep = ({
                     <View className="mr-2" />Ver Página
                 </a>
             </Button>
+            {qrCodeDesign !== 'classic' && (
+              <div className="w-full mt-6 p-4 rounded-2xl border border-purple-500/20 bg-card/50 text-center space-y-3">
+                <p className="font-bold text-purple-300">✨ Seu QR Code Personalizado está pronto!</p>
+                <p className="text-sm text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
+                
+                  <a
+                  href={`/api/qrcode-card?pageId=${pageId}&design=${qrCodeDesign}`}
+                  download={`mycupid-qrcode.png`}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar QR Code Personalizado
+                </a>
+              </div>
+            )}
         </div>
     );
 };
