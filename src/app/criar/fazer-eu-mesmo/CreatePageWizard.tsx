@@ -1740,66 +1740,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 
-    // ── TELA EXCLUSIVA DO ZALMIR (créditos disponíveis) ───────────
-    if (isSpecialUser && specialUserCredits > 0) {
-        return (
-            <div className="space-y-6 text-center">
-                <div className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl">
-                    <span className="block text-xs text-green-400 font-bold uppercase tracking-widest mb-3">✦ Acesso Especial ✦</span>
-                    <span className="block text-sm text-green-300 font-bold uppercase tracking-wider mb-2">Crédito de Cortesia</span>
-                    <p className="text-white text-lg">
-                        Você tem <span className="font-black text-3xl text-green-400">{specialUserCredits}</span> crédito{specialUserCredits > 1 ? 's' : ''} disponível{specialUserCredits > 1 ? 'is' : ''}
-                    </p>
-                    <p className="text-white/70 text-sm mt-1">
-                        Cada crédito cria 1 página no <span className="font-bold text-white">Plano Avançado</span> — gratuitamente.
-                    </p>
-                </div>
-
-                <div className="space-y-2 text-left p-4 rounded-xl bg-card/50 border border-border/50">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">O que está incluído:</p>
-                    {[
-                        'Todos os recursos de personalização',
-                        'Quebra-cabeça, Jogo da Memória e Quiz',
-                        'Página permanente + backup infinito',
-                        'Acesso imediato ao link e QR Code',
-                    ].map((item) => (
-                        <div key={item} className="flex items-center gap-2 text-sm text-white/80">
-                            <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                            <span>{item}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <Button
-                    onClick={handleCreditFinalize}
-                    disabled={isProcessing}
-                    size="lg"
-                    className="w-full h-auto py-4 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/30"
-                >
-                    {isProcessing ? (
-                        <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Criando sua página...</>
-                    ) : (
-                        <><Gift className="mr-2 h-5 w-5" /> Usar 1 Crédito e Criar Página</>
-                    )}
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                    Após usar este crédito, restarão <span className="font-bold">{Math.max(0, specialUserCredits - 1)}</span> crédito{specialUserCredits - 1 !== 1 ? 's' : ''}.
-                </p>
-
-                {error && (
-                    <Alert variant="destructive" className="mt-4 text-left">
-                        <Terminal className="h-4 w-4" />
-                        <AlertTitle>{error?.message}</AlertTitle>
-                        {typeof (error?.details) === 'object' && (error.details as any)?.log && (
-                            <AlertDescription className="font-mono text-xs mt-2 whitespace-pre-wrap">{(error.details as any).log}</AlertDescription>
-                        )}
-                    </Alert>
-                )}
-            </div>
-        );
-    }
-
-    // ── TELA INTERNACIONAL (Stripe + PayPal) ─────────────────────
     if (!isBrazilDomain) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1900,6 +1840,32 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     : <>Oferta reservada por <span className="font-black text-lg tabular-nums">{timerMins}:{timerSecs}</span></>
                 }
             </div>
+            {isSpecialUser && specialUserCredits > 0 && !pixData && (
+              <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-green-400 shrink-0" />
+                  <p className="font-bold text-green-400">
+                    🎉 Você tem {specialUserCredits} página{specialUserCredits > 1 ? 's' : ''} gratuita{specialUserCredits > 1 ? 's' : ''} disponível{specialUserCredits > 1 ? 'is' : ''}!
+                  </p>
+                </div>
+                <p className="text-xs text-green-300/70">
+                  Você recebeu créditos de cortesia. Use para criar esta página gratuitamente no Plano Avançado.
+                </p>
+                <Button
+                  onClick={handleCreditFinalize}
+                  disabled={isProcessing}
+                  className="w-full bg-green-600 hover:bg-green-500 font-bold"
+                >
+                  {isProcessing
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Criando sua página...</>
+                    : <><Gift className="mr-2 h-4 w-4" />Usar crédito e criar gratuitamente</>
+                  }
+                </Button>
+                <p className="text-center text-[10px] text-white/30">
+                  Ou continue abaixo para pagar normalmente
+                </p>
+              </div>
+            )}
             <div className="mb-8">
                 <h3 className="text-2xl font-bold font-headline mb-2">Quase lá!</h3>
                 <p className="text-muted-foreground">Sua página foi montada. Finalize para receber o link.</p>
@@ -2113,7 +2079,7 @@ const SuccessStep = ({
                     <View className="mr-2" />Ver Página
                 </a>
             </Button>
-            {isAdmin && qrCodeDesign !== 'classic' && (
+            {!pixData && qrCodeDesign !== 'classic' && (
               <div className="w-full mt-6 p-4 rounded-2xl border border-purple-500/20 bg-card/50 text-center space-y-3">
                 <p className="font-bold text-purple-300">✨ Seu QR Code Personalizado está pronto!</p>
                 <p className="text-sm text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
@@ -2162,7 +2128,7 @@ function WizardInternal() {
         { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
         { id: "plan",       title: 'Escolha seu Plano',         description: 'Selecione o plano ideal para sua página.',        fields: ["plan"] },
         { id: "payment",    title: 'Finalizar',                 description: 'Pague para gerar o link e QR Code.',              fields: ["payment", "qrCodeDesign"] },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-line react-hooks/exhaustive-deps
     ], [segmentKey]);
 
     const methods = useForm<PageData>({
