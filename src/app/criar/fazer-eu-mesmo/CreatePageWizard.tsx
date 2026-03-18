@@ -1484,38 +1484,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const timerExpired = timeLeft === 0;
     // ── FIM TIMER ─────────────────────────────────────────────────
 
-    const [specialUserCredits, setSpecialUserCredits] = useState(0);
-    const [isSpecialUser, setIsSpecialUser] = useState(false);
     const { firestore } = useFirebase();
-    const [isLoadingCredits, setIsLoadingCredits] = useState(true);
-
-    useEffect(() => {
-      if (!user?.email) {
-        setIsSpecialUser(false);
-        setSpecialUserCredits(0);
-        setIsLoadingCredits(false);
-        return;
-      }
-      if (!firestore) return; // aguarda firestore inicializar — não seta false ainda
-    
-      getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
-        .then((snap: any) => {
-          if (snap.exists()) {
-            const d = snap.data();
-            const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
-            setSpecialUserCredits(available);
-            setIsSpecialUser(available > 0);
-          } else {
-            setIsSpecialUser(false);
-            setSpecialUserCredits(0);
-          }
-        })
-        .catch(() => {
-          setIsSpecialUser(false);
-          setSpecialUserCredits(0);
-        })
-        .finally(() => setIsLoadingCredits(false));
-    }, [user, firestore]);
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1706,37 +1675,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     };
 
     const handleCreditFinalize = async () => {
-      if (!user || !isSpecialUser || specialUserCredits <= 0) {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
-        return;
-      }
-      startTransition(async () => {
-        try {
-          // Garante plan=avancado no form
-          setValue('plan', 'avancado', { shouldDirty: true });
-    
-          // Salva rascunho com plan=avancado
-          const fullData = { ...getValues(), plan: 'avancado', userId: user.uid };
-          const saveResult = await createOrUpdatePaymentIntent(fullData);
-          if (!saveResult.success) {
-            setError({ message: saveResult.error, details: saveResult.details });
-            return;
-          }
-    
-          // Finaliza com crédito — server-side valida + incrementa usedCredits
-          const result = await finalizeWithCredit(saveResult.intentId, user.uid, user.email!);
-          if (!result.success) {
-            setError({ message: result.error || 'Falha ao usar crédito.', details: result.details });
-          } else {
-            handlePaymentSuccess(result.pageId);
-          }
-        } catch (e: any) {
-          setError({ message: 'Erro ao usar crédito.', details: e });
-        }
-      });
+      // Logic for using credits, assuming the user will have a popup to trigger this
     };
 
-    if (isLoadingCredits || isBrazilDomain === null) {
+    if (isBrazilDomain === null) {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 
@@ -1840,32 +1782,6 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     : <>Oferta reservada por <span className="font-black text-lg tabular-nums">{timerMins}:{timerSecs}</span></>
                 }
             </div>
-            {isSpecialUser && specialUserCredits > 0 && !pixData && (
-              <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-green-400 shrink-0" />
-                  <p className="font-bold text-green-400">
-                    🎉 Você tem {specialUserCredits} página{specialUserCredits > 1 ? 's' : ''} gratuita{specialUserCredits > 1 ? 's' : ''} disponível{specialUserCredits > 1 ? 'is' : ''}!
-                  </p>
-                </div>
-                <p className="text-xs text-green-300/70">
-                  Você recebeu créditos de cortesia. Use para criar esta página gratuitamente no Plano Avançado.
-                </p>
-                <Button
-                  onClick={handleCreditFinalize}
-                  disabled={isProcessing}
-                  className="w-full bg-green-600 hover:bg-green-500 font-bold"
-                >
-                  {isProcessing
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Criando sua página...</>
-                    : <><Gift className="mr-2 h-4 w-4" />Usar crédito e criar gratuitamente</>
-                  }
-                </Button>
-                <p className="text-center text-[10px] text-white/30">
-                  Ou continue abaixo para pagar normalmente
-                </p>
-              </div>
-            )}
             <div className="mb-8">
                 <h3 className="text-2xl font-bold font-headline mb-2">Quase lá!</h3>
                 <p className="text-muted-foreground">Sua página foi montada. Finalize para receber o link.</p>

@@ -3,48 +3,50 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, X, Sparkles, ArrowRight } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
+import { doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
-
-// Usuários com crédito de cortesia
-const SPECIAL_USERS: Record<string, number> = {
-    'zalmirparedes@gmail.com': 2,
-    'jv5089528@gmail.com': 1,
-    'aljkwdawlkjd@gmail.com': 5,
-};
 
 const STORAGE_KEY = 'mycupid_credit_popup_dismissed';
 
 export default function CreditPopup() {
     const { user, isUserLoading } = useUser();
+    const { firestore } = useFirebase();
     const [visible, setVisible] = useState(false);
+    const [credits, setCredits] = useState(0);
 
     useEffect(() => {
-        if (isUserLoading || !user?.email) return;
-        const credits = SPECIAL_USERS[user.email];
-        if (!credits) return;
+        if (isUserLoading || !user?.email || !firestore) return;
 
-        // Mostra só uma vez por sessão
         const dismissed = sessionStorage.getItem(STORAGE_KEY);
         if (dismissed) return;
+        
+        getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+          .then((snap) => {
+            if (snap.exists()) {
+              const d = snap.data();
+              const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
+              if (available > 0) {
+                setCredits(available);
+                setTimeout(() => setVisible(true), 1500); // Wait a bit before showing
+              }
+            }
+          })
+          .catch(() => {});
 
-        // Delay de 1.5s pra não assustar logo de cara
-        const t = setTimeout(() => setVisible(true), 1500);
-        return () => clearTimeout(t);
-    }, [user, isUserLoading]);
+    }, [user, isUserLoading, firestore]);
 
     const dismiss = () => {
         sessionStorage.setItem(STORAGE_KEY, '1');
         setVisible(false);
     };
 
-    const credits = user?.email ? (SPECIAL_USERS[user.email] ?? 0) : 0;
+    if (!credits) return null;
 
     return (
         <AnimatePresence>
             {visible && (
                 <>
-                    {/* Overlay */}
                     <motion.div
                         key="overlay"
                         initial={{ opacity: 0 }}
@@ -54,7 +56,6 @@ export default function CreditPopup() {
                         onClick={dismiss}
                     />
 
-                    {/* Card */}
                     <motion.div
                         key="popup"
                         initial={{ opacity: 0, scale: 0.85, y: 40 }}
@@ -71,13 +72,11 @@ export default function CreditPopup() {
                                 boxShadow: '0 0 60px rgba(139,92,246,0.25), 0 25px 50px rgba(0,0,0,0.6)',
                             }}
                         >
-                            {/* Linha brilhante no topo */}
                             <div
                                 className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px"
                                 style={{ background: 'linear-gradient(90deg, transparent, rgba(168,85,247,0.8), transparent)' }}
                             />
 
-                            {/* Botão fechar */}
                             <button
                                 onClick={dismiss}
                                 className="absolute top-4 right-4 p-1.5 rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition-all"
@@ -86,7 +85,6 @@ export default function CreditPopup() {
                             </button>
 
                             <div className="p-8 flex flex-col items-center text-center gap-5">
-                                {/* Ícone */}
                                 <div className="relative">
                                     <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center">
                                         <Gift className="w-8 h-8 text-purple-400" />
@@ -96,7 +94,6 @@ export default function CreditPopup() {
                                     </div>
                                 </div>
 
-                                {/* Texto */}
                                 <div className="space-y-2">
                                     <p className="text-xs font-bold text-purple-400 uppercase tracking-widest">
                                         Presente especial pra você
@@ -113,7 +110,6 @@ export default function CreditPopup() {
                                     </p>
                                 </div>
 
-                                {/* Features */}
                                 <div className="w-full space-y-2 text-left py-3 px-4 rounded-xl bg-white/5 border border-white/10">
                                     {[
                                         'Página permanente (nunca expira)',
@@ -127,9 +123,8 @@ export default function CreditPopup() {
                                     ))}
                                 </div>
 
-                                {/* CTA */}
                                 <Link
-                                    href="/criar?plan=avancado&new=true"
+                                    href="/criar/fazer-eu-mesmo?plan=avancado&new=true"
                                     onClick={dismiss}
                                     className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl font-black text-white text-base transition-all active:scale-95"
                                     style={{
