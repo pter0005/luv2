@@ -1490,20 +1490,21 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
 
     useEffect(() => {
-      if (!user?.email || !firestore) {
+      if (!user?.email) {
         setIsSpecialUser(false);
         setSpecialUserCredits(0);
         setIsLoadingCredits(false);
         return;
       }
-
+      if (!firestore) return; // aguarda firestore inicializar — não seta false ainda
+    
       getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
         .then((snap: any) => {
           if (snap.exists()) {
             const d = snap.data();
             const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
             setSpecialUserCredits(available);
-            setIsSpecialUser(true);
+            setIsSpecialUser(available > 0);
           } else {
             setIsSpecialUser(false);
             setSpecialUserCredits(0);
@@ -1956,7 +1957,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
                 </motion.div>
             )}
-            {isAdmin && !pixData && (
+            {!pixData && (
               <div className="rounded-2xl border border-purple-500/20 bg-card/50 overflow-hidden">
                 <QrCodeSelector
                   value={qrCodeDesign}
