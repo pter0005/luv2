@@ -8,3 +8,6 @@
 
 [functions."api/cron/cleanup-expired"]
   schedule = "0 4 * * *"
+
+[functions."api/cron/daily-report"]
+  schedule = "59 23 * * *"
