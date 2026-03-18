@@ -2079,7 +2079,7 @@ const SuccessStep = ({
                     <View className="mr-2" />Ver Página
                 </a>
             </Button>
-            {!pixData && qrCodeDesign !== 'classic' && (
+            {qrCodeDesign !== 'classic' && (
               <div className="w-full mt-6 p-4 rounded-2xl border border-purple-500/20 bg-card/50 text-center space-y-3">
                 <p className="font-bold text-purple-300">✨ Seu QR Code Personalizado está pronto!</p>
                 <p className="text-sm text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
