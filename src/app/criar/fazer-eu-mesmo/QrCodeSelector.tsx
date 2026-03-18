@@ -34,6 +34,17 @@ const QR_OPTIONS = [
     qrYPct: 0.282,
     qrSizePct: 0.400,
   },
+  {
+    id: 'surpresa',
+    title: 'Surpresa Pra Você',
+    price: 3.90,
+    preview: '/qr-templates/surpresa-pra-voce.png',
+    qrColor: '#fabedb',
+    qrXPct: 0.256,
+    qrYPct: 0.376,
+    qrSizePct: 0.485,
+    transparent: true,
+  },
 ];
 
 interface Props {
@@ -79,11 +90,14 @@ function TemplatePreview({ template, pageUrl }: { template: typeof QR_OPTIONS[1]
       const qrSz = W * (template as any).qrSizePct;
 
       // Fundo branco do QR
-      const pad = qrSz * 0.04;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.roundRect(qrX - pad, qrY - pad, qrSz + pad * 2, qrSz + pad * 2, 4);
-      ctx.fill();
+      if (!(template as any).transparent) {
+        const pad = qrSz * 0.04;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        // @ts-ignore
+        ctx.roundRect(qrX - pad, qrY - pad, qrSz + pad * 2, qrSz + pad * 2, 4);
+        ctx.fill();
+      }
 
       // Gera QR simples via módulos manualmente (sem lib no client) — ou usa img
       // Usamos a API do qrserver pra preview leve

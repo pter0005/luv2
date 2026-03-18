@@ -41,7 +41,7 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession } from "./actions";
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, finalizeWithCredit } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -1483,44 +1483,41 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const timerExpired = timeLeft === 0;
     // ── FIM TIMER ─────────────────────────────────────────────────
 
-    // ── SPECIAL USERS CREDIT SYSTEM ──────────────────────────────
-    const { firestore } = useFirebase();
     const [specialUserCredits, setSpecialUserCredits] = useState(0);
     const [isSpecialUser, setIsSpecialUser] = useState(false);
-
-    // Tabela de usuários especiais: email → créditos totais (avancado grátis)
-    const SPECIAL_USERS: Record<string, number> = {
-        'zalmirparedes@gmail.com': 2,
-        'jv5089528@gmail.com': 1,
-        'aljkwdawlkjd@gmail.com': 5,
-    };
-
-    const userTotalCredits = user?.email ? (SPECIAL_USERS[user.email] ?? 0) : 0;
-
-    // Query só roda se for um usuário especial
-    const userPagesQuery = useMemoFirebase(() => {
-        if (!user || !firestore || userTotalCredits === 0) return null;
-        return query(collection(firestore, 'lovepages'), where('userId', '==', user.uid));
-    }, [user, firestore, userTotalCredits]);
-
-    const { data: createdPages, isLoading: isLoadingPagesRaw } = useCollection(userPagesQuery);
-
-    // isLoading só bloqueia se for usuário especial
-    const isLoadingPages = isSpecialUser ? isLoadingPagesRaw : false;
+    const { firestore } = useFirebase();
+    const [isLoadingCredits, setIsLoadingCredits] = useState(true);
 
     useEffect(() => {
-        if (user?.email && SPECIAL_USERS[user.email]) {
+      if (!user?.email || !firestore) {
+        setIsSpecialUser(false);
+        setSpecialUserCredits(0);
+        setIsLoadingCredits(false);
+        return;
+      }
+
+      const { doc, getDoc } = require('firebase/firestore');
+
+      getDoc(doc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+        .then((snap: any) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            const total = d.totalCredits ?? 0;
+            const used = d.usedCredits ?? 0;
+            const available = Math.max(0, total - used);
+            setSpecialUserCredits(available);
             setIsSpecialUser(true);
-            if (createdPages !== undefined && createdPages !== null) {
-                const creditsUsed = createdPages.length;
-                setSpecialUserCredits(Math.max(0, userTotalCredits - creditsUsed));
-            }
-        } else {
+          } else {
             setIsSpecialUser(false);
             setSpecialUserCredits(0);
-        }
-    }, [user, createdPages, userTotalCredits]);
-    // ── FIM SPECIAL USERS ────────────────────────────────────────
+          }
+        })
+        .catch(() => {
+          setIsSpecialUser(false);
+          setSpecialUserCredits(0);
+        })
+        .finally(() => setIsLoadingCredits(false));
+    }, [user, firestore]);
 
     useEffect(() => {
         if (user && !intentId) {
@@ -1710,42 +1707,38 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
-    // FIX #3: removido !intentId do guard — race condition eliminada
-    // A função já cria o intent internamente se necessário
     const handleCreditFinalize = async () => {
-        if (!user || !isSpecialUser || specialUserCredits <= 0) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
+      if (!user || !isSpecialUser || specialUserCredits <= 0) {
+        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível usar o crédito.' });
+        return;
+      }
+      startTransition(async () => {
+        try {
+          // Garante plan=avancado no form
+          setValue('plan', 'avancado', { shouldDirty: true });
+    
+          // Salva rascunho com plan=avancado
+          const fullData = { ...getValues(), plan: 'avancado', userId: user.uid };
+          const saveResult = await createOrUpdatePaymentIntent(fullData);
+          if (!saveResult.success) {
+            setError({ message: saveResult.error, details: saveResult.details });
             return;
+          }
+    
+          // Finaliza com crédito — server-side valida + incrementa usedCredits
+          const result = await finalizeWithCredit(saveResult.intentId, user.uid, user.email!);
+          if (!result.success) {
+            setError({ message: result.error || 'Falha ao usar crédito.', details: result.details });
+          } else {
+            handlePaymentSuccess(result.pageId);
+          }
+        } catch (e: any) {
+          setError({ message: 'Erro ao usar crédito.', details: e });
         }
-        startTransition(async () => {
-            try {
-                const fullData = getValues();
-                // FIX #7: força plan='avancado' tanto no objeto quanto no form
-                fullData.plan = 'avancado';
-                setValue('plan', 'avancado', { shouldDirty: true });
-
-                const saveResult = await createOrUpdatePaymentIntent({ ...fullData, userId: user.uid });
-                if (!saveResult.success) {
-                    setError({ message: saveResult.error, details: saveResult.details });
-                    return;
-                }
-                const finalIntentId = saveResult.intentId;
-                const result = await adminFinalizePage(finalIntentId, user.uid);
-                if (!result.success) {
-                    setError({ message: result.error || "Falha ao finalizar com crédito.", details: result.details });
-                } else {
-                    handlePaymentSuccess(result.pageId);
-                }
-            } catch (e: any) {
-                setError({ message: "Erro de servidor ao finalizar com crédito.", details: e });
-            }
-        });
+      });
     };
 
-    // Mostra spinner só enquanto necessário:
-    // - usuário especial: aguarda query de páginas + isBrazilDomain
-    // - usuário normal: aguarda só isBrazilDomain
-    if (isLoadingPages || isBrazilDomain === null) {
+    if (isLoadingCredits || isBrazilDomain === null) {
         return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     }
 

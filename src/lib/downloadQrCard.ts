@@ -8,6 +8,7 @@ interface TemplateConfig {
   qrY: number;
   qrSize: number;
   pad: number;
+  transparent?: boolean;
 }
 
 const TEMPLATES: Record<string, TemplateConfig> = {
@@ -26,6 +27,15 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     qrY: 322,
     qrSize: 320,
     pad: 10,
+  },
+  'surpresa': {
+    bgUrl: '/qr-templates/surpresa-pra-voce.png',
+    qrColor: '#fabedb',
+    qrX: 205,
+    qrY: 430,
+    qrSize: 388,
+    pad: 0,
+    transparent: true,
   },
 };
 
@@ -73,17 +83,19 @@ export async function downloadQrCard(
 
   // 5. Desenha card branco com padding
   const { qrX, qrY, qrSize, pad } = cfg;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  const r = 8;
-  const cx = qrX - pad, cy = qrY - pad, cw = qrSize + pad * 2, ch = qrSize + pad * 2;
-  ctx.moveTo(cx + r, cy);
-  ctx.lineTo(cx + cw - r, cy); ctx.arcTo(cx + cw, cy, cx + cw, cy + r, r);
-  ctx.lineTo(cx + cw, cy + ch - r); ctx.arcTo(cx + cw, cy + ch, cx + cw - r, cy + ch, r);
-  ctx.lineTo(cx + r, cy + ch); ctx.arcTo(cx, cy + ch, cx, cy + ch - r, r);
-  ctx.lineTo(cx, cy + r); ctx.arcTo(cx, cy, cx + r, cy, r);
-  ctx.closePath();
-  ctx.fill();
+  if (!cfg.transparent) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    const r = 8;
+    const cx = qrX - pad, cy = qrY - pad, cw = qrSize + pad * 2, ch = qrSize + pad * 2;
+    ctx.moveTo(cx + r, cy);
+    ctx.lineTo(cx + cw - r, cy); ctx.arcTo(cx + cw, cy, cx + cw, cy + r, r);
+    ctx.lineTo(cx + cw, cy + ch - r); ctx.arcTo(cx + cw, cy + ch, cx + cw - r, cy + ch, r);
+    ctx.lineTo(cx + r, cy + ch); ctx.arcTo(cx, cy + ch, cx, cy + ch - r, r);
+    ctx.lineTo(cx, cy + r); ctx.arcTo(cx, cy, cx + r, cy, r);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   // 6. Desenha QR
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
