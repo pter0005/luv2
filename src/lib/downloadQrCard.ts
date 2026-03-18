@@ -19,6 +19,14 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     qrSize: 343,
     pad: 12,
   },
+  'gato': {
+    bgUrl: '/qr-templates/gato-te-amo.png',
+    qrColor: '#CC2200',
+    qrX: 240,
+    qrY: 322,
+    qrSize: 320,
+    pad: 10,
+  },
 };
 
 export async function downloadQrCard(

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -24,6 +23,16 @@ const QR_OPTIONS = [
     qrXPct: 0.286,  // 400/1400
     qrYPct: 0.454,  // 908/2000
     qrSizePct: 0.429, // 600/1400
+  },
+  {
+    id: 'gato',
+    title: 'Te Amo Gatinho',
+    price: 3.90,
+    preview: '/qr-templates/gato-te-amo.png',
+    qrColor: '#CC2200',
+    qrXPct: 0.300,
+    qrYPct: 0.282,
+    qrSizePct: 0.400,
   },
 ];
 
