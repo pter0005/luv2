@@ -8,7 +8,6 @@ import InnerLayout from './InnerLayout';
 import TikTokPixel from '@/components/analytics/TikTokPixel';
 import FacebookPixel from '@/components/analytics/FacebookPixel';
 import { Suspense } from 'react';
-import UTMTracker from '@/components/UTMTracker';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -92,9 +91,6 @@ export default function RootLayout({
         </FirebaseClientProvider>
         <TikTokPixel />
         <FacebookPixel />
-        <Suspense fallback={null}>
-          <UTMTracker />
-        </Suspense>
       </body>
     </html>
   );

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import CookieConsent from '@/components/layout/CookieConsent';
 import { PresenceTracker } from '@/components/layout/PresenceTracker';
 import CreditPopup from '@/components/layout/CreditPopup';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 
 const MemoizedBackground = React.memo(() => (
     <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -24,6 +25,7 @@ MemoizedBackground.displayName = 'MemoizedBackground';
 
 export default function InnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  useVisitorTracking();
   const isLovePage = pathname.startsWith('/p/');
   const isAdminPage = pathname.startsWith('/admin');
 
