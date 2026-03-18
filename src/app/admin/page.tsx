@@ -2,7 +2,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2, ImageOff } from 'lucide-react';
+import { Users, FileText, DollarSign, LogOut, Calendar, ExternalLink, ShieldCheck, Edit, FileWarning, AlertTriangle, CheckCircle, TrendingUp, BarChart2, ImageOff, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 import { cn } from '@/lib/utils';
@@ -75,6 +75,9 @@ export default async function AdminDashboard() {
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href="/admin/analytics"><TrendingUp className="h-4 w-4 mr-2" />Analytics</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-green-500/40 text-green-400 hover:bg-green-500/10">
+              <Link href="/admin/creditos"><Gift className="h-4 w-4 mr-2" />Créditos</Link>
             </Button>
             <Button asChild variant="outline" size="sm" className="border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10">
               <Link href="/admin/area2"><BarChart2 className="h-4 w-4 mr-2" />Admin Area 2</Link>
