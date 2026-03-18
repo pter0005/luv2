@@ -51,7 +51,7 @@ import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import PreviewContent from "./PreviewContent";
@@ -1497,15 +1497,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return;
       }
 
-      const { doc, getDoc } = require('firebase/firestore');
-
-      getDoc(doc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+      getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
         .then((snap: any) => {
           if (snap.exists()) {
             const d = snap.data();
-            const total = d.totalCredits ?? 0;
-            const used = d.usedCredits ?? 0;
-            const available = Math.max(0, total - used);
+            const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
             setSpecialUserCredits(available);
             setIsSpecialUser(true);
           } else {
