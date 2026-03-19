@@ -1,33 +1,44 @@
 export const dynamic = 'force-dynamic';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 
-async function deleteCollection(db: any, ref: any) {
-  const snap = await ref.limit(500).get();
+// Apaga todos os docs de uma coleção em batches de 500
+async function nukeCollection(db: any, collectionRef: any): Promise<void> {
+  const snap = await collectionRef.limit(500).get();
   if (snap.empty) return;
   const batch = db.batch();
   snap.docs.forEach((doc: any) => batch.delete(doc.ref));
   await batch.commit();
-  if (snap.size === 500) await deleteCollection(db, ref);
+  if (snap.size === 500) await nukeCollection(db, collectionRef);
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const db = getAdminFirestore();
-    // Deleta docs da coleção analytics (day_* e outros)
-    await deleteCollection(db, db.collection('analytics'));
-    // Deleta subcoleções daily por data
-    const today = new Date();
+
+    // 1. analytics (docs day_* + report_* etc)
+    await nukeCollection(db, db.collection('analytics'));
+
+    // 2. analytics/daily/{date} subcoleções (últimos 90 dias)
     for (let i = 0; i < 90; i++) {
-      const d = new Date(today);
+      const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      await deleteCollection(db, db.collection('analytics').doc('daily').collection(dateStr));
+      const ds = d.toISOString().slice(0, 10);
+      await nukeCollection(db, db.collection('analytics').doc('daily').collection(ds));
     }
-    // Deleta utm_visits
-    await deleteCollection(db, db.collection('utm_visits'));
+
+    // 3. utm_visits
+    await nukeCollection(db, db.collection('utm_visits'));
+
+    // 4. lovepages (onde ficam as vendas)
+    await nukeCollection(db, db.collection('lovepages'));
+
+    // 5. payment_intents (rascunhos)
+    await nukeCollection(db, db.collection('payment_intents'));
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    console.error('[Reset] Erro:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
