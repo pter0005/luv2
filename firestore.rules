@@ -35,5 +35,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if false; // Assumes only backend/admin can write
     }
+
+    // User credits: only the owner can read their own document (doc ID = email lowercase).
+    // Writes are done exclusively via Admin SDK on the backend.
+    match /user_credits/{email} {
+      allow read: if request.auth != null && request.auth.token.email.lower() == email;
+      allow write: if false;
+    }
   }
 }
