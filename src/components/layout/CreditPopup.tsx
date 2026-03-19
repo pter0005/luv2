@@ -42,7 +42,7 @@ export default function CreditPopup() {
           .catch((err) => {
             console.error('[CreditPopup] erro:', err);
           });
-    }, [user?.email, isUserLoading, firestore]);
+    }, [user?.email, isUserLoading, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const dismiss = () => {
         sessionStorage.setItem(STORAGE_KEY, '1');

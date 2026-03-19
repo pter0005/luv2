@@ -1534,7 +1534,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 }
             })
             .catch((err) => console.error('[PaymentStep] erro ao buscar créditos:', err));
-    }, [user?.email, firestore]);
+    }, [user?.email, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
     // ── FIM CRÉDITOS ───────────────────────────────────────────────
 
     const handlePaymentSuccess = useCallback((pageId: string) => {
