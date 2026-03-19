@@ -16,11 +16,13 @@ export default function CreditPopup() {
     const [credits, setCredits] = useState(0);
 
     useEffect(() => {
-        if (isUserLoading || !user?.email || !firestore) return;
+        if (isUserLoading) return;
+        if (!user?.email) return;
+        if (!firestore) return;
 
         const dismissed = sessionStorage.getItem(STORAGE_KEY);
         if (dismissed) return;
-        
+
         getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
           .then((snap) => {
             if (snap.exists()) {
@@ -28,13 +30,14 @@ export default function CreditPopup() {
               const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
               if (available > 0) {
                 setCredits(available);
-                setTimeout(() => setVisible(true), 1500); // Wait a bit before showing
+                setVisible(true);
               }
             }
           })
-          .catch(() => {});
-
-    }, [user, isUserLoading, firestore]);
+          .catch((err) => {
+            console.error('[CreditPopup] erro:', err);
+          });
+    }, [user?.email, isUserLoading, firestore]);
 
     const dismiss = () => {
         sessionStorage.setItem(STORAGE_KEY, '1');
