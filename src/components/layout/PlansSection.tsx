@@ -6,6 +6,16 @@ import { PlanFeature } from '@/components/layout/PlanFeature';
 import { memo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function useOfferExpired() {
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    const stored = localStorage.getItem('mycupid_offer_deadline');
+    if (!stored) { setExpired(false); return; }
+    setExpired(Date.now() > parseInt(stored));
+  }, []);
+  return expired;
+}
+
 /* ─── Contador de compradores (social proof em tempo real falso mas verossímil) ─ */
 function BuyerCount() {
   const [count, setCount] = useState(134);
@@ -57,6 +67,9 @@ function UrgencyBadge() {
 
 /* ─── Card Recomendado ──────────────────────────────────────────────────────── */
 function AdvancedCard() {
+  const offerExpired = useOfferExpired();
+  const price = offerExpired ? '29' : '24';
+  const cents = ',90';
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -101,8 +114,8 @@ function AdvancedCard() {
               <p className="text-zinc-500 text-lg line-through font-medium">De R$39,90</p>
               <div className="flex items-baseline gap-1 justify-center">
                 <span className="text-zinc-400 text-lg font-bold">R$</span>
-                <span className="text-5xl font-black text-white leading-none">24</span>
-                <span className="text-2xl font-black text-white">,90</span>
+                <span className="text-5xl font-black text-white leading-none">{price}</span>
+                <span className="text-2xl font-black text-white">{cents}</span>
               </div>
               <p className="text-xs text-zinc-500 mt-1">Pagamento único • Sem mensalidade</p>
             </div>
@@ -168,6 +181,9 @@ function AdvancedCard() {
 
 /* ─── Card Econômico ────────────────────────────────────────────────────────── */
 function EconomicCard() {
+  const offerExpired = useOfferExpired();
+  const price = offerExpired ? '19' : '14';
+  const cents = ',90';
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -190,8 +206,8 @@ function EconomicCard() {
         <div className="mb-6 text-center">
           <div className="flex items-baseline gap-1 justify-center">
             <span className="text-zinc-500 text-base font-bold">R$</span>
-            <span className="text-4xl font-black text-zinc-300 leading-none">14</span>
-            <span className="text-xl font-black text-zinc-300">,90</span>
+            <span className="text-4xl font-black text-zinc-300 leading-none">{price}</span>
+            <span className="text-xl font-black text-zinc-300">{cents}</span>
           </div>
           <p className="text-xs text-zinc-600 mt-1">Pagamento único</p>
         </div>

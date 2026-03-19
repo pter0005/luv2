@@ -420,7 +420,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   });
 
   if (transactionResult.success) {
-    if (transactionResult.isGuest && transactionResult.guestEmail) {
+    if (transactionResult.guestEmail) {
       await createGuestAccount(transactionResult.guestEmail, transactionResult.userId, transactionResult.pageId);
     }
     await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId, transactionResult.userEmail);

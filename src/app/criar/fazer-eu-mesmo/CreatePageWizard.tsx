@@ -50,6 +50,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { signInAnonymously } from 'firebase/auth';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { collection, query, where, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -1346,6 +1347,12 @@ const PlanStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     const { field } = useController({ name: 'plan', control });
 
+    const [offerExpired, setOfferExpired] = useState(false);
+    useEffect(() => {
+        const stored = localStorage.getItem('mycupid_offer_deadline');
+        if (stored) setOfferExpired(Date.now() > parseInt(stored));
+    }, []);
+
     const plans: Array<{
         id: string;
         name: string;
@@ -1357,7 +1364,7 @@ const PlanStep = React.memo(() => {
         {
             id: 'basico',
             name: 'Plano Econômico',
-            price: '14,90',
+            price: offerExpired ? '19,90' : '14,90',
             description: 'Uma surpresa impactante com prazo definido.',
             features: [
                 { text: 'Todos os recursos de personalização', included: true },
@@ -1369,7 +1376,7 @@ const PlanStep = React.memo(() => {
         {
             id: 'avancado',
             name: 'Plano Avançado',
-            price: '24,90',
+            price: offerExpired ? '29,90' : '24,90',
             originalPrice: '39,90',
             description: 'A experiência completa, para sempre.',
             features: [
@@ -1471,6 +1478,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
+    // Guest email flow: anonymous Firebase users have no email.
+    // We collect their email here so we can create a real account after payment.
+    const isAnonymousUser = !!user && !user.email;
+    const [guestEmailInput, setGuestEmailInput] = useState('');
+    const [guestEmailError, setGuestEmailError] = useState('');
+    const [confirmedGuestEmail, setConfirmedGuestEmail] = useState('');
+    const [isSavingEmail, setIsSavingEmail] = useState(false);
+
     // ── URGENCY TIMER — 15 minutos ────────────────────────────────
     const [timeLeft, setTimeLeft] = useState(15 * 60); // segundos
     useEffect(() => {
@@ -1514,7 +1529,16 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [qrCodePrice, setQrCodePrice] = useState(0);
     const qrCodeDesign = watch('qrCodeDesign');
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
-    const basePriceBRL = plan === 'basico' ? 14.90 : 24.90;
+
+    const offerExpired = typeof window !== 'undefined' && (() => {
+        const stored = localStorage.getItem('mycupid_offer_deadline');
+        if (!stored) return false;
+        return Date.now() > parseInt(stored);
+    })();
+
+    const basePriceBRL = plan === 'basico'
+        ? (offerExpired ? 19.90 : 14.90)
+        : (offerExpired ? 29.90 : 24.90);
     const totalBRL = basePriceBRL + qrCodePrice;
     const totalUSD = basePriceUSD;
 
@@ -1603,14 +1627,49 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return () => { if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current); };
     }, [pixData, intentId, startPolling]);
 
+    // Saves the guest email into the payment intent so the backend can create a real account after payment.
+    const handleConfirmGuestEmail = async () => {
+        if (!user) return;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(guestEmailInput)) {
+            setGuestEmailError('Por favor, insira um e-mail válido.');
+            return;
+        }
+        setGuestEmailError('');
+        setIsSavingEmail(true);
+        try {
+            const data = getValues();
+            const result = await createOrUpdatePaymentIntent({
+                ...data,
+                userId: user.uid,
+                guestEmail: guestEmailInput,
+            });
+            if (result.success) {
+                setValue('intentId', result.intentId, { shouldDirty: false });
+                setConfirmedGuestEmail(guestEmailInput);
+            } else {
+                setGuestEmailError('Erro ao salvar. Tente novamente.');
+            }
+        } catch {
+            setGuestEmailError('Erro ao salvar. Tente novamente.');
+        } finally {
+            setIsSavingEmail(false);
+        }
+    };
+
     const handleOneClickPix = () => {
         setError(null);
         setPixData(null);
-        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
+        if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         if (user.email) setValue('payment.payerEmail', user.email, { shouldDirty: true });
         startTransition(async () => {
             try {
-                const fullData = { ...getValues(), userId: user.uid };
+                const fullData = {
+                    ...getValues(),
+                    userId: user.uid,
+                    ...(isAnonymousUser && confirmedGuestEmail ? { guestEmail: confirmedGuestEmail } : {}),
+                };
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
                 if (!saveResult.success) {
                     const { error, details } = saveResult;
@@ -1633,10 +1692,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const handleStripePayment = () => {
         setError(null);
-        if (!user) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
+        if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         startTransition(async () => {
             try {
-                const fullData = { ...getValues(), userId: user.uid };
+                const fullData = {
+                    ...getValues(),
+                    userId: user.uid,
+                    ...(isAnonymousUser && confirmedGuestEmail ? { guestEmail: confirmedGuestEmail } : {}),
+                };
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
                 if (!saveResult.success) {
                     setError({ message: saveResult.error || "Could not save draft before payment.", details: saveResult.details });
@@ -1793,6 +1857,42 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <p className="text-center text-[10px] text-white/25 mt-2">Or pay normally below</p>
                     </motion.div>
                 )}
+                {/* E-mail para usuários anônimos (sem conta) */}
+                {isAnonymousUser && !confirmedGuestEmail && (
+                    <div className="space-y-3 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                <Lock className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white leading-tight">Enter your email</p>
+                                <p className="text-xs text-white/50 mt-0.5">You'll receive the page link and can access it later.</p>
+                            </div>
+                        </div>
+                        <input
+                            type="email"
+                            placeholder="your@email.com"
+                            value={guestEmailInput}
+                            onChange={(e) => { setGuestEmailInput(e.target.value); setGuestEmailError(''); }}
+                            className="w-full px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-purple-500"
+                        />
+                        {guestEmailError && <p className="text-red-400 text-xs">{guestEmailError}</p>}
+                        <Button
+                            type="button"
+                            onClick={handleConfirmGuestEmail}
+                            disabled={isSavingEmail || !guestEmailInput}
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                        >
+                            {isSavingEmail ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Confirm email →'}
+                        </Button>
+                    </div>
+                )}
+                {isAnonymousUser && confirmedGuestEmail && (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        <span>Email confirmed: <strong>{confirmedGuestEmail}</strong></span>
+                    </div>
+                )}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
@@ -1801,7 +1901,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
-                    <Button onClick={handleStripePayment} disabled={isProcessing} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
+                    <Button onClick={handleStripePayment} disabled={isProcessing || (isAnonymousUser && !confirmedGuestEmail)} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
                         {isProcessing ? (
                             <Loader2 className="animate-spin" />
                         ) : (
@@ -1823,7 +1923,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <div className="flex-grow border-t border-zinc-800"></div>
                 </div>
                 <div className="min-h-[100px] flex flex-col items-center justify-center p-4 rounded-xl border border-zinc-800 bg-zinc-900/30">
-                    {intentId ? (
+                    {isAnonymousUser && !confirmedGuestEmail ? (
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center py-4">Confirm your email above to unlock PayPal</p>
+                    ) : intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
                             <PayPalButton intentId={intentId} plan={plan} amount={totalUSD.toFixed(2)} />
                         </div>
@@ -1913,7 +2015,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             boxShadow: '0 0 18px rgba(147,51,234,0.4)',
                         }}
                     >
-                        Sim, quero a página permanente — R$24,90 →
+                        Sim, quero a página permanente — R${offerExpired ? '29,90' : '24,90'} →
                     </button>
                     <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
                 </motion.div>
@@ -1968,7 +2070,43 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
                 </motion.div>
             )}
-            {!pixData ? (
+            {/* E-mail para usuários anônimos (sem conta) */}
+            {isAnonymousUser && !confirmedGuestEmail && (
+                <div className="space-y-3 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
+                    <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <Lock className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-white leading-tight">Informe seu e-mail</p>
+                            <p className="text-xs text-white/50 mt-0.5">Você receberá o link da página e poderá acessá-la depois.</p>
+                        </div>
+                    </div>
+                    <input
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={guestEmailInput}
+                        onChange={(e) => { setGuestEmailInput(e.target.value); setGuestEmailError(''); }}
+                        className="w-full px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-purple-500"
+                    />
+                    {guestEmailError && <p className="text-red-400 text-xs">{guestEmailError}</p>}
+                    <Button
+                        type="button"
+                        onClick={handleConfirmGuestEmail}
+                        disabled={isSavingEmail || !guestEmailInput}
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                        {isSavingEmail ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Confirmar e-mail →'}
+                    </Button>
+                </div>
+            )}
+            {isAnonymousUser && confirmedGuestEmail && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-400">
+                    <CheckCircle className="w-4 h-4 shrink-0" />
+                    <span>E-mail confirmado: <strong>{confirmedGuestEmail}</strong></span>
+                </div>
+            )}
+            {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
                     {isProcessing ? (
                         <><Loader2 className="mr-2 h-5 w-5 animate-spin" /><span>Gerando QR Code do Mercado Pago...</span></>
@@ -1976,7 +2114,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <span>Pagar com PIX via Mercado Pago</span>
                     )}
                 </Button>
-            ) : (
+            ) : (!isAnonymousUser || confirmedGuestEmail) && pixData ? (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
                     <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                     <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código "Copia e Cola".</p>
@@ -1999,7 +2137,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         Verificar Pagamento
                     </Button>
                 </div>
-            )}
+            ) : null}
             {isAdmin && intentId && (
                 <div className="mt-8 pt-6 border-t-2 border-dashed border-yellow-500">
                     <Button type="button" size="lg" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black" disabled={isProcessing} onClick={handleAdminFinalize}>
@@ -2143,9 +2281,20 @@ function WizardInternal() {
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const { user, isUserLoading } = useUser();
+    const { auth } = useFirebase();
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [pageId, setPageId] = useState<string | null>(null);
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
+
+    // Auto sign-in anonymously so guests can upload files and autosave without an account.
+    // A real account is only linked after payment (via createGuestAccount on the backend).
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+            signInAnonymously(auth).catch((err) => {
+                console.error('[AnonAuth] Falha ao fazer login anônimo:', err);
+            });
+        }
+    }, [isUserLoading, user, auth]);
 
     const plan = searchParams.get('plan') || 'avancado';
     const segmentKey = searchParams.get('segment') as WizardSegmentKey | null;
