@@ -14,10 +14,9 @@ async function deleteCollection(db: any, ref: any) {
 export async function POST(request: NextRequest) {
   try {
     const db = getAdminFirestore();
-    const analyticsSnap = await db.collection('analytics').get();
-    const batch = db.batch();
-    analyticsSnap.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    // Deleta docs da coleção analytics (day_* e outros)
+    await deleteCollection(db, db.collection('analytics'));
+    // Deleta subcoleções daily por data
     const today = new Date();
     for (let i = 0; i < 90; i++) {
       const d = new Date(today);
@@ -25,6 +24,8 @@ export async function POST(request: NextRequest) {
       const dateStr = d.toISOString().slice(0, 10);
       await deleteCollection(db, db.collection('analytics').doc('daily').collection(dateStr));
     }
+    // Deleta utm_visits
+    await deleteCollection(db, db.collection('utm_visits'));
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
