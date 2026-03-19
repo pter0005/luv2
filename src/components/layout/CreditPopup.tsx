@@ -16,18 +16,23 @@ export default function CreditPopup() {
     const [credits, setCredits] = useState(0);
 
     useEffect(() => {
-        if (isUserLoading) return;
-        if (!user?.email) return;
-        if (!firestore) return;
+        console.log('[CreditPopup] effect rodou', { isUserLoading, email: user?.email, hasFirestore: !!firestore });
+        if (isUserLoading) { console.log('[CreditPopup] aguardando auth...'); return; }
+        if (!user?.email) { console.log('[CreditPopup] sem email, saindo'); return; }
+        if (!firestore) { console.log('[CreditPopup] sem firestore, saindo'); return; }
 
         const dismissed = sessionStorage.getItem(STORAGE_KEY);
-        if (dismissed) return;
+        if (dismissed) { console.log('[CreditPopup] já foi dispensado via sessionStorage'); return; }
 
-        getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+        const email = user.email.toLowerCase().trim();
+        console.log('[CreditPopup] buscando créditos para', email);
+        getDoc(firestoreDoc(firestore, 'user_credits', email))
           .then((snap) => {
+            console.log('[CreditPopup] snap.exists:', snap.exists(), snap.exists() ? snap.data() : '—');
             if (snap.exists()) {
               const d = snap.data();
               const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
+              console.log('[CreditPopup] créditos disponíveis:', available);
               if (available > 0) {
                 setCredits(available);
                 setVisible(true);

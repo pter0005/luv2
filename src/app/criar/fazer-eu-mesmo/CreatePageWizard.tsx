@@ -1521,6 +1521,22 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
     const isAdmin = user?.email && adminEmails.includes(user.email);
 
+    // ── CRÉDITOS DO USUÁRIO ────────────────────────────────────────
+    const [userCredits, setUserCredits] = useState(0);
+    useEffect(() => {
+        if (!user?.email || !firestore) return;
+        getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+            .then((snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
+                    setUserCredits(available);
+                }
+            })
+            .catch((err) => console.error('[PaymentStep] erro ao buscar créditos:', err));
+    }, [user?.email, firestore]);
+    // ── FIM CRÉDITOS ───────────────────────────────────────────────
+
     const handlePaymentSuccess = useCallback((pageId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         toast({ title: 'Página Criada!', description: 'Sua surpresa foi publicada com sucesso.' });
@@ -1674,8 +1690,30 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
     };
 
-    const handleCreditFinalize = async () => {
-      // Logic for using credits, assuming the user will have a popup to trigger this
+    const handleCreditFinalize = () => {
+        setError(null);
+        if (!user || !user.email) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
+        if (!intentId) { setError({ message: 'Rascunho não encontrado. Tente recarregar a página.' }); return; }
+        startTransition(async () => {
+            try {
+                const fullData = { ...getValues(), userId: user.uid };
+                const saveResult = await createOrUpdatePaymentIntent(fullData);
+                if (!saveResult.success) {
+                    setError({ message: saveResult.error || 'Erro ao salvar rascunho.', details: saveResult.details });
+                    return;
+                }
+                setValue('intentId', saveResult.intentId);
+                const result = await finalizeWithCredit(saveResult.intentId, user.uid, user.email!);
+                if (!result.success) {
+                    setError({ message: result.error || 'Falha ao usar crédito.' });
+                } else {
+                    setUserCredits(prev => Math.max(0, prev - 1));
+                    handlePaymentSuccess(result.pageId!);
+                }
+            } catch (e: any) {
+                setError({ message: 'Erro ao finalizar com crédito.', details: e });
+            }
+        });
     };
 
     if (isBrazilDomain === null) {
@@ -1714,6 +1752,47 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <Clock size={12} /> Pagamento único • Acesso imediato
                     </p>
                 </div>
+                {userCredits > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-2xl p-4"
+                        style={{
+                            background: 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,10,30,0.85) 100%)',
+                            border: '1px solid rgba(34,197,94,0.45)',
+                            boxShadow: '0 0 24px rgba(34,197,94,0.12)',
+                        }}
+                    >
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-9 h-9 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                                <Gift className="w-4 h-4 text-green-400" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-white leading-tight">
+                                    You have {userCredits} free credit{userCredits > 1 ? 's' : ''}!
+                                </p>
+                                <p className="text-xs text-white/50">Create this page on Advanced Plan for free</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleCreditFinalize}
+                            disabled={isProcessing}
+                            className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
+                            style={{
+                                background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                                boxShadow: '0 0 18px rgba(22,163,74,0.4)',
+                            }}
+                        >
+                            {isProcessing ? (
+                                <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizing...</span>
+                            ) : (
+                                <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Use my free credit</span>
+                            )}
+                        </button>
+                        <p className="text-center text-[10px] text-white/25 mt-2">Or pay normally below</p>
+                    </motion.div>
+                )}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">Pay with Credit Card</span>
@@ -1847,6 +1926,47 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                   onPriceChange={(price) => setQrCodePrice(price)}
                 />
               </div>
+            )}
+            {userCredits > 0 && !pixData && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-4 mb-2"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(15,10,30,0.85) 100%)',
+                        border: '1px solid rgba(34,197,94,0.45)',
+                        boxShadow: '0 0 24px rgba(34,197,94,0.12)',
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                            <Gift className="w-4 h-4 text-green-400" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-black text-white leading-tight">
+                                Você tem {userCredits} crédito{userCredits > 1 ? 's' : ''} grátis!
+                            </p>
+                            <p className="text-xs text-white/50">Crie esta página no Plano Avançado sem pagar nada</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleCreditFinalize}
+                        disabled={isProcessing}
+                        className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
+                        style={{
+                            background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                            boxShadow: '0 0 18px rgba(22,163,74,0.4)',
+                        }}
+                    >
+                        {isProcessing ? (
+                            <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
+                        ) : (
+                            <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Usar meu crédito grátis</span>
+                        )}
+                    </button>
+                    <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
+                </motion.div>
             )}
             {!pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
