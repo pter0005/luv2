@@ -7,8 +7,6 @@ import { useUser, useFirebase } from '@/firebase';
 import { doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 
-const STORAGE_KEY = 'mycupid_credit_popup_dismissed';
-
 export default function CreditPopup() {
     const { user, isUserLoading } = useUser();
     const { firestore } = useFirebase();
@@ -20,9 +18,6 @@ export default function CreditPopup() {
         if (isUserLoading) { console.log('[CreditPopup] aguardando auth...'); return; }
         if (!user?.email) { console.log('[CreditPopup] sem email, saindo'); return; }
         if (!firestore) { console.log('[CreditPopup] sem firestore, saindo'); return; }
-
-        const dismissed = sessionStorage.getItem(STORAGE_KEY);
-        if (dismissed) { console.log('[CreditPopup] já foi dispensado via sessionStorage'); return; }
 
         const email = user.email.toLowerCase().trim();
         console.log('[CreditPopup] buscando créditos para', email);
@@ -45,7 +40,6 @@ export default function CreditPopup() {
     }, [user?.email, isUserLoading, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const dismiss = () => {
-        sessionStorage.setItem(STORAGE_KEY, '1');
         setVisible(false);
     };
 
