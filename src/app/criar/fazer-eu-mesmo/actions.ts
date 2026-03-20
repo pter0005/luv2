@@ -220,6 +220,7 @@ export async function processPixPayment(intentId: string, price: number) {
       await db.collection('payment_intents').doc(intentId).update({
         paymentId: paymentId.toString(),
         status: 'waiting_payment',
+        paidAmount: Number(price.toFixed(2)),
       });
       return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
     }
@@ -390,6 +391,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     finalData.paymentId = paymentId;
     finalData.status = 'paid';
     finalData.componentVersion = 'v2';
+    if (data.paidAmount) finalData.paidAmount = data.paidAmount;
 
     if (isCreatorAdmin) {
       finalData.plan = 'avancado';

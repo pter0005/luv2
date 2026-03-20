@@ -97,9 +97,10 @@ async function getAllData() {
 
       const isUSD = d.paymentId && isNaN(Number(d.paymentId));
       const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
-      const price = d.plan === 'avancado'
+      const basePrice = d.plan === 'avancado'
         ? (isUSD ? 19.90 : 24.90)
         : (isUSD ? 14.90 : 19.90);
+      const price = d.paidAmount ?? basePrice;
 
       // Páginas de presente não contam como venda / receita
       if (!isGift) {
