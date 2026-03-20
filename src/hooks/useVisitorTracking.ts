@@ -2,10 +2,13 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-export function useVisitorTracking() {
+const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+
+export function useVisitorTracking(userEmail?: string | null) {
   const pathname = usePathname();
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (userEmail && ADMIN_EMAILS.includes(userEmail)) return; // não conta admin
     let deviceId = localStorage.getItem('mycupid_device_id');
     if (!deviceId) {
       deviceId = `d_${crypto.randomUUID()}`;
@@ -20,5 +23,5 @@ export function useVisitorTracking() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, path: pathname }),
     }).catch(() => {});
-  }, [pathname]);
+  }, [pathname, userEmail]);
 }

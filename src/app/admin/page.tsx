@@ -14,7 +14,11 @@ const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
 function formatDate(ts: any): string {
   try {
     const d: Date = ts?.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
   } catch { return '—'; }
 }
 

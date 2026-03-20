@@ -4,8 +4,11 @@ import { useEffect } from 'react';
 import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp, push, remove } from 'firebase/database';
 import { getApp } from 'firebase/app';
 
-export function usePresence() {
+const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+
+export function usePresence(userEmail?: string | null) {
   useEffect(() => {
+    if (userEmail && ADMIN_EMAILS.includes(userEmail)) return; // não conta admin
     let db: any;
     try {
       db = getDatabase(getApp());
