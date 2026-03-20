@@ -1392,7 +1392,7 @@ const WordGameStep = React.memo(() => {
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-semibold text-muted-foreground">Palavra {wIndex + 1}</span>
                                 <Button type="button" variant="ghost" size="sm" onClick={() => remove(wIndex)} className="text-destructive hover:text-destructive">
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash className="w-4 h-4" />
                                 </Button>
                             </div>
                             <FormField
