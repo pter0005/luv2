@@ -1,3 +1,6 @@
 'use client';
 import { usePresence } from '@/hooks/usePresence';
-export function PresenceTracker() { usePresence(); return null; }
+export function PresenceTracker({ userEmail }: { userEmail?: string | null }) {
+  usePresence(userEmail);
+  return null;
+}

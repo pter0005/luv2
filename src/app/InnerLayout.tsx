@@ -10,6 +10,7 @@ import CookieConsent from '@/components/layout/CookieConsent';
 import { PresenceTracker } from '@/components/layout/PresenceTracker';
 import CreditPopup from '@/components/layout/CreditPopup';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+import { useUser } from '@/firebase';
 
 const MemoizedBackground = React.memo(() => (
     <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -25,7 +26,8 @@ MemoizedBackground.displayName = 'MemoizedBackground';
 
 export default function InnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  useVisitorTracking();
+  const { user } = useUser();
+  useVisitorTracking(user?.email);
   const isLovePage = pathname.startsWith('/p/');
   const isAdminPage = pathname.startsWith('/admin');
 
@@ -33,7 +35,7 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="relative w-full min-h-screen">
-      <PresenceTracker />
+      <PresenceTracker userEmail={user?.email} />
       <MemoizedBackground />
       
       <div className="relative z-10 flex flex-col min-h-screen">
