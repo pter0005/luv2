@@ -36,7 +36,7 @@ export async function createGiftToken(
 export async function getAllGiftTokens(): Promise<GiftToken[]> {
   const db = getAdminFirestore();
   const snap = await db.collection('gift_tokens').orderBy('createdAt', 'desc').limit(50).get();
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mycupid.com.br';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://mycupid.com.br').replace(/\/$/, '');
   return snap.docs.map(doc => {
     const d = doc.data();
     return {

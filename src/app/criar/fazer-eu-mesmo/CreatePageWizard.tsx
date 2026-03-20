@@ -1642,12 +1642,16 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [giftToken, setGiftToken] = useState<string | null>(null);
     const [giftCredits, setGiftCredits] = useState(0);
     useEffect(() => {
-        const stored = typeof window !== 'undefined' ? localStorage.getItem('mycupid_gift_token') : null;
-        if (!stored) return;
-        fetch(`/api/gift?token=${stored}`)
+        // Check URL param first (race condition fix: param may not be in localStorage yet)
+        const urlToken = new URLSearchParams(window.location.search).get('gift');
+        const stored = localStorage.getItem('mycupid_gift_token');
+        const token = urlToken || stored;
+        if (!token) return;
+        if (urlToken) localStorage.setItem('mycupid_gift_token', urlToken);
+        fetch(`/api/gift?token=${token}`)
             .then(r => r.json())
             .then(d => {
-                if (d.valid) { setGiftToken(stored); setGiftCredits(d.credits ?? 1); }
+                if (d.valid) { setGiftToken(token); setGiftCredits(d.credits ?? 1); }
                 else localStorage.removeItem('mycupid_gift_token');
             })
             .catch(() => {});
@@ -2540,6 +2544,8 @@ function WizardInternal() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isClient, setIsClient] = useState(false);
     const [showTimelinePreview, setShowTimelinePreview] = useState(false);
+    const [showGiftPopup, setShowGiftPopup] = useState(false);
+    const [giftPopupCredits, setGiftPopupCredits] = useState(1);
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const { user, isUserLoading } = useUser();
@@ -2557,6 +2563,19 @@ function WizardInternal() {
             });
         }
     }, [isUserLoading, user, auth]);
+
+    // Detect gift token on arrival and show welcome popup
+    useEffect(() => {
+        const urlToken = new URLSearchParams(window.location.search).get('gift');
+        const stored = localStorage.getItem('mycupid_gift_token');
+        const token = urlToken || stored;
+        if (!token) return;
+        if (urlToken) localStorage.setItem('mycupid_gift_token', urlToken);
+        fetch(`/api/gift?token=${token}`)
+            .then(r => r.json())
+            .then(d => { if (d.valid) { setGiftPopupCredits(d.credits ?? 1); setShowGiftPopup(true); } })
+            .catch(() => {});
+    }, []);
 
     const plan = searchParams.get('plan') || 'avancado';
     const segmentKey = searchParams.get('segment') as WizardSegmentKey | null;
@@ -2874,6 +2893,42 @@ function WizardInternal() {
                     </div>
                 </div>
             </div>
+
+            {/* POPUP — Presente grátis */}
+            {showGiftPopup && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.85, y: 24 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 260 }}
+                        className="relative max-w-sm w-full rounded-3xl p-8 text-center"
+                        style={{
+                            background: 'linear-gradient(145deg, #18101a 0%, #0f0a1e 100%)',
+                            border: '1.5px solid rgba(168,85,247,0.5)',
+                            boxShadow: '0 0 80px rgba(168,85,247,0.3), 0 24px 64px rgba(0,0,0,0.6)',
+                        }}
+                    >
+                        <div className="text-6xl mb-4 leading-none">🎁</div>
+                        <h2 className="text-2xl font-black text-white mb-2 leading-tight">
+                            Você ganhou {giftPopupCredits > 1 ? `${giftPopupCredits} páginas` : 'uma página'} grátis!
+                        </h2>
+                        <p className="text-white/50 text-sm mb-7 leading-relaxed">
+                            Alguém especial presenteou você.<br />
+                            Crie sua página agora — sem pagar nada.
+                        </p>
+                        <button
+                            onClick={() => setShowGiftPopup(false)}
+                            className="w-full py-4 rounded-2xl font-black text-white text-base transition-all active:scale-95"
+                            style={{
+                                background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
+                                boxShadow: '0 0 32px rgba(147,51,234,0.5)',
+                            }}
+                        >
+                            Criar minha página grátis →
+                        </button>
+                    </motion.div>
+                </div>
+            )}
         </FormProvider>
     );
 }

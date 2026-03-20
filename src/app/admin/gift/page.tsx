@@ -15,8 +15,13 @@ export default function AdminGiftPage() {
 
   const load = async () => {
     setIsLoading(true);
-    setTokens(await getAllGiftTokens());
-    setIsLoading(false);
+    try {
+      setTokens(await getAllGiftTokens());
+    } catch (e) {
+      console.error('Erro ao carregar tokens:', e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
