@@ -2280,8 +2280,98 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
                 </motion.div>
             )}
-            {/* E-mail para usuários anônimos (sem conta) — aparece antes do botão de presente */}
-            {isAnonymousUser && !confirmedGuestEmail && (
+            {/* PRESENTE — aparece sempre que há token válido, email embutido dentro */}
+            {giftCredits > 0 && !pixData && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-5 mb-2 space-y-4"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(15,10,30,0.88) 100%)',
+                        border: '1.5px solid rgba(168,85,247,0.5)',
+                        boxShadow: '0 0 32px rgba(168,85,247,0.15)',
+                    }}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                            <span className="text-xl leading-none">🎁</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-base font-black text-white leading-tight">
+                                Você ganhou {giftCredits} página{giftCredits > 1 ? 's' : ''} grátis!
+                            </p>
+                            <p className="text-xs text-purple-300/70">Presente especial — crie sem pagar nada</p>
+                        </div>
+                    </div>
+
+                    {/* Email embutido para usuários anônimos */}
+                    {isAnonymousUser && !confirmedGuestEmail && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-white/60">Informe seu e-mail para resgatar:</p>
+                            <input
+                                type="email"
+                                placeholder="seu@email.com"
+                                value={guestEmailInput}
+                                onChange={(e) => { setGuestEmailInput(e.target.value); setGuestEmailError(''); }}
+                                className="w-full px-4 py-2.5 rounded-xl bg-zinc-900 border border-purple-500/40 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-purple-500"
+                            />
+                            {guestEmailError && <p className="text-red-400 text-xs">{guestEmailError}</p>}
+                            <Button
+                                type="button"
+                                onClick={handleConfirmGuestEmail}
+                                disabled={isSavingEmail || !guestEmailInput}
+                                className="w-full bg-purple-600 hover:bg-purple-500"
+                            >
+                                {isSavingEmail ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Confirmar e-mail →'}
+                            </Button>
+                        </div>
+                    )}
+                    {isAnonymousUser && confirmedGuestEmail && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-xs text-green-400">
+                            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>E-mail: <strong>{confirmedGuestEmail}</strong></span>
+                        </div>
+                    )}
+
+                    {/* Botão de resgatar — aparece quando email ok ou usuário logado */}
+                    {(!isAnonymousUser || confirmedGuestEmail) && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!user || !giftToken) return;
+                                const email = user.email || confirmedGuestEmail;
+                                if (!email) { setError({ message: 'Confirme seu e-mail primeiro.' }); return; }
+                                startTransition(async () => {
+                                    try {
+                                        const data = getValues();
+                                        const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', guestEmail: email });
+                                        if (!saveResult.success) { setError({ message: saveResult.error }); return; }
+                                        localStorage.removeItem('mycupid_gift_token');
+                                        const finalResult = await finalizeWithGiftToken(saveResult.intentId!, user.uid, giftToken, email);
+                                        if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
+                                        else if (!finalResult.success) setError({ message: finalResult.error || 'Erro ao finalizar.' });
+                                    } catch (e: any) { setError({ message: e.message }); }
+                                });
+                            }}
+                            disabled={isProcessing}
+                            className="w-full py-3.5 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
+                            style={{
+                                background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                                boxShadow: '0 0 20px rgba(168,85,247,0.45)',
+                            }}
+                        >
+                            {isProcessing
+                                ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
+                                : <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Resgatar meu presente grátis</span>
+                            }
+                        </button>
+                    )}
+                    <p className="text-center text-[10px] text-white/25">Ou pague normalmente abaixo</p>
+                </motion.div>
+            )}
+
+            {/* E-mail para usuários anônimos SEM presente */}
+            {isAnonymousUser && !confirmedGuestEmail && giftCredits === 0 && (
                 <div className="space-y-3 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
                     <div className="flex items-start gap-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -2310,67 +2400,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     </Button>
                 </div>
             )}
-            {isAnonymousUser && confirmedGuestEmail && (
+            {isAnonymousUser && confirmedGuestEmail && giftCredits === 0 && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-400">
                     <CheckCircle className="w-4 h-4 shrink-0" />
                     <span>E-mail confirmado: <strong>{confirmedGuestEmail}</strong></span>
                 </div>
-            )}
-            {/* PRESENTE — só aparece quando gift token válido e email confirmado */}
-            {giftCredits > 0 && !pixData && (!isAnonymousUser || confirmedGuestEmail) && (
-                <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl p-4 mb-2"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(15,10,30,0.85) 100%)',
-                        border: '1px solid rgba(168,85,247,0.45)',
-                        boxShadow: '0 0 24px rgba(168,85,247,0.12)',
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                            <span className="text-lg leading-none">🎁</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-sm font-black text-white leading-tight">
-                                Você ganhou {giftCredits} página{giftCredits > 1 ? 's' : ''} grátis!
-                            </p>
-                            <p className="text-xs text-white/50">Presente especial — crie sem pagar nada</p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (!user || !giftToken) return;
-                            const email = user.email || confirmedGuestEmail;
-                            if (!email) { setError({ message: 'Confirme seu e-mail primeiro.' }); return; }
-                            startTransition(async () => {
-                                try {
-                                    const data = getValues();
-                                    const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', guestEmail: email });
-                                    if (!saveResult.success) { setError({ message: saveResult.error }); return; }
-                                    localStorage.removeItem('mycupid_gift_token');
-                                    const finalResult = await finalizeWithGiftToken(saveResult.intentId!, user.uid, giftToken, email);
-                                    if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
-                                    else if (!finalResult.success) setError({ message: finalResult.error || 'Erro ao finalizar.' });
-                                } catch (e: any) { setError({ message: e.message }); }
-                            });
-                        }}
-                        disabled={isProcessing}
-                        className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
-                        style={{
-                            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                            boxShadow: '0 0 18px rgba(168,85,247,0.4)',
-                        }}
-                    >
-                        {isProcessing
-                            ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
-                            : <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Resgatar meu presente grátis</span>
-                        }
-                    </button>
-                    <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
-                </motion.div>
             )}
             {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
