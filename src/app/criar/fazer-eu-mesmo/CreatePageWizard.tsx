@@ -2310,9 +2310,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                                     const useResult = await fetch('/api/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: giftToken }) }).then(r => r.json());
                                     if (!useResult.ok) { setError({ message: 'Link de presente inválido ou já utilizado.' }); return; }
                                     localStorage.removeItem('mycupid_gift_token');
-                                    const finalResult = await finalizePageWithCredit(saveResult.intentId!, user.uid);
+                                    const email = user.email || confirmedGuestEmail;
+                                    if (!email) { setError({ message: 'E-mail não encontrado.' }); return; }
+                                    const finalResult = await finalizeWithCredit(saveResult.intentId!, user.uid, email);
                                     if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
-                                    else setError({ message: finalResult.error || 'Erro ao finalizar.' });
+                                    else if (!finalResult.success) setError({ message: finalResult.error || 'Erro ao finalizar.' });
                                 } catch (e: any) { setError({ message: e.message }); }
                             });
                         }}
