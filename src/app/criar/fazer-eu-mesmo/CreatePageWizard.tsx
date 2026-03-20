@@ -2414,6 +2414,7 @@ function WizardInternal() {
         { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
         { id: "memory",     title: 'Jogo da Memória',           description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
         { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
+        { id: "word-game",  title: 'Adivinhe a Palavra 💘',     description: 'Crie palavras secretas para a pessoa amada descobrir letra por letra.',  fields: ["enableWordGame", "wordGameQuestions"] },
         { id: "plan",       title: 'Escolha seu Plano',         description: 'Selecione o plano ideal para sua página.',        fields: ["plan"] },
         { id: "payment",    title: 'Finalizar',                 description: 'Pague para gerar o link e QR Code.',              fields: ["payment", "qrCodeDesign"] },
     // eslint-disable-line react-hooks/exhaustive-deps
@@ -2431,12 +2432,12 @@ function WizardInternal() {
             galleryStyle: "Coverflow",
             galleryImages: [],
             timelineEvents: [],
-            // FIX #6: false como default — puzzle/memory/quiz desativados por padrão
-            // Assim o usuário passa pelo step sem ser bloqueado por validação
-            enablePuzzle: false,
-            enableMemoryGame: false,
-            enableQuiz: false,
+            enablePuzzle: false,       // exige upload de imagem — fica opt-in
+            enableMemoryGame: true,
+            enableQuiz: true,
             quizQuestions: [],
+            enableWordGame: true,
+            wordGameQuestions: [],
             musicOption: 'none',
             qrCodeDesign: "classic",
         }
