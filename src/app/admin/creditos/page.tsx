@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { getAllCredits, addCredits, setTotalCredits, removeUserCredits, type CreditEntry } from './actions';
-import { Gift, Trash2, Plus, RefreshCw, ChevronDown, ChevronUp, Pencil, X, Check } from 'lucide-react';
+import { getAllCredits, addCredits, setTotalCredits, removeUserCredits, getEmailByPageId, type CreditEntry } from './actions';
+import { Gift, Trash2, Plus, RefreshCw, ChevronDown, ChevronUp, Pencil, X, Check, Search } from 'lucide-react';
 
 export default function AdminCreditosPage() {
   const [credits, setCreditsState] = useState<CreditEntry[]>([]);
@@ -16,6 +16,9 @@ export default function AdminCreditosPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editingEmail, setEditingEmail] = useState<string | null>(null);
   const [editValue, setEditValue] = useState(0);
+  const [pageIdInput, setPageIdInput] = useState('');
+  const [pageIdFeedback, setPageIdFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -29,6 +32,20 @@ export default function AdminCreditosPage() {
   const showFeedback = (type: 'success' | 'error', msg: string) => {
     setFeedback({ type, msg });
     setTimeout(() => setFeedback(null), 4000);
+  };
+
+  const handleSearchPageId = async () => {
+    if (!pageIdInput.trim()) return;
+    setIsSearching(true);
+    setPageIdFeedback(null);
+    const result = await getEmailByPageId(pageIdInput.trim());
+    setIsSearching(false);
+    if (result.email) {
+      setEmail(result.email);
+      setPageIdFeedback({ type: 'success', msg: `✅ Email encontrado: ${result.email}` });
+    } else {
+      setPageIdFeedback({ type: 'error', msg: result.error ?? 'Não encontrado.' });
+    }
   };
 
   const handleAdd = () => {
@@ -112,6 +129,35 @@ export default function AdminCreditosPage() {
             <p className="text-xs text-zinc-500 mt-1">{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Buscar por ID da página */}
+      <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800 mb-4">
+        <h2 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Buscar por ID da Página</h2>
+        <p className="text-xs text-zinc-500 mb-3">Pessoa sem email? Cole o ID da página dela aqui para preencher o email automaticamente.</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={pageIdInput}
+            onChange={e => setPageIdInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSearchPageId()}
+            placeholder="Ex: CLOGMrAk66u79KpyJHRK"
+            className="flex-1 px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder-zinc-500"
+          />
+          <button
+            onClick={handleSearchPageId}
+            disabled={isSearching || !pageIdInput.trim()}
+            className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-bold flex items-center gap-2 transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            {isSearching ? '...' : 'Buscar'}
+          </button>
+        </div>
+        {pageIdFeedback && (
+          <div className={`mt-2 px-3 py-2 rounded-lg text-xs font-medium ${pageIdFeedback.type === 'success' ? 'bg-green-500/15 text-green-400 border border-green-500/20' : 'bg-red-500/15 text-red-400 border border-red-500/20'}`}>
+            {pageIdFeedback.msg}
+          </div>
+        )}
       </div>
 
       {/* Formulário */}

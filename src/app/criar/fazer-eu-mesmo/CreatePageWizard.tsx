@@ -1655,17 +1655,21 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     // ── CRÉDITOS DO USUÁRIO ────────────────────────────────────────
     const [userCredits, setUserCredits] = useState(0);
     useEffect(() => {
-        if (!user?.email || !firestore) return;
-        getDoc(firestoreDoc(firestore, 'user_credits', user.email.toLowerCase().trim()))
+        // Checa tanto o email de conta real quanto o guestEmail confirmado
+        const emailToCheck = user?.email || confirmedGuestEmail;
+        if (!emailToCheck || !firestore) return;
+        getDoc(firestoreDoc(firestore, 'user_credits', emailToCheck.toLowerCase().trim()))
             .then((snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
                     const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
                     setUserCredits(available);
+                } else {
+                    setUserCredits(0);
                 }
             })
             .catch((err) => console.error('[PaymentStep] erro ao buscar créditos:', err));
-    }, [user?.email, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [user?.email, confirmedGuestEmail, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
     // ── FIM CRÉDITOS ───────────────────────────────────────────────
 
     const handlePaymentSuccess = useCallback((pageId: string) => {

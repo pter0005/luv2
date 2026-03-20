@@ -121,6 +121,22 @@ export async function setTotalCredits(
   }
 }
 
+// ── Busca email pelo ID da página ────────────
+export async function getEmailByPageId(pageId: string): Promise<{ email: string | null; error?: string }> {
+  if (!pageId.trim()) return { email: null, error: 'ID inválido.' };
+  const db = getAdminFirestore();
+  try {
+    const snap = await db.collection('lovepages').doc(pageId.trim()).get();
+    if (!snap.exists) return { email: null, error: 'Página não encontrada.' };
+    const d = snap.data()!;
+    const email = d.guestEmail || d.ownerEmail || null;
+    if (!email) return { email: null, error: 'Nenhum email associado a esta página.' };
+    return { email };
+  } catch (err: any) {
+    return { email: null, error: err.message };
+  }
+}
+
 // ── Remove usuário dos créditos ──────────────
 export async function removeUserCredits(email: string): Promise<{ success: boolean; error?: string }> {
   const db = getAdminFirestore();
