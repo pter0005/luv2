@@ -105,7 +105,7 @@ const HeroSection = () => {
           </h1>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link href="/login?redirect=/criar" className="w-full sm:w-auto">
+            <Link href="/criar" className="w-full sm:w-auto">
               <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
                 Criar minha página <ChevronRight className="w-5 h-5 ml-2" />
               </Button>

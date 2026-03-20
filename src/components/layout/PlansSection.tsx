@@ -151,7 +151,7 @@ function AdvancedCard() {
 
         {/* CTA */}
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link href="/login?redirect=/criar?plan=avancado&new=true" className="block">
+          <Link href="/criar?plan=avancado&new=true" className="block">
             <button className="w-full py-4 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 relative overflow-hidden group"
               style={{
                 background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
@@ -226,7 +226,7 @@ function EconomicCard() {
           </p>
         </div>
 
-        <Link href="/login?redirect=/criar?plan=basico&new=true" className="block">
+        <Link href="/criar?plan=basico&new=true" className="block">
           <button className="w-full py-3.5 rounded-2xl font-bold text-sm text-zinc-300 transition-all hover:text-white hover:bg-white/10"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
             Começar com Plano Básico →
