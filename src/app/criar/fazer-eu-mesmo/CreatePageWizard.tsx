@@ -121,6 +121,12 @@ const quizQuestionSchema = z.object({
   correctAnswerIndex: z.number({ required_error: "Selecione a resposta correta." }).nullable(),
 });
 
+const wordGameQuestionSchema = z.object({
+  question: z.string().min(1, "A pergunta não pode estar vazia."),
+  answer:   z.string().min(1, "A resposta não pode estar vazia."),
+  hint:     z.string().min(1, "A dica não pode estar vazia."),
+});
+
 const pageSchema = z.object({
   plan: z.string().default('avancado'),
   intentId: z.string().optional(),
@@ -151,6 +157,8 @@ const pageSchema = z.object({
   memoryGameImages: z.array(fileWithPreviewSchema).default([]),
   enableQuiz: z.boolean().default(false),
   quizQuestions: z.array(quizQuestionSchema).max(5, "Máximo de 5 perguntas.").default([]),
+  enableWordGame: z.boolean().default(false),
+  wordGameQuestions: z.array(wordGameQuestionSchema).max(3, "Máximo de 3 palavras.").default([]),
   qrCodeDesign: z.string().default("classic"),
   utmSource: z.string().optional(),
   payment: paymentSchema.optional(),
@@ -1341,6 +1349,107 @@ const QuizStep = React.memo(() => {
 QuizStep.displayName = 'QuizStep';
 
 // ─────────────────────────────────────────────
+// WORD GAME STEP
+// ─────────────────────────────────────────────
+const WordGameStep = React.memo(() => {
+    const { control, watch } = useFormContext<PageData>();
+    const enableWordGame = watch("enableWordGame");
+    const { fields, append, remove } = useFieldArray({ control, name: "wordGameQuestions" });
+    const MAX_WORDS = 3;
+
+    const addWord = () => {
+        if (fields.length < MAX_WORDS) {
+            append({ question: '', answer: '', hint: '' });
+        }
+    };
+
+    return (
+        <div className="space-y-8">
+            <FormField
+                control={control}
+                name="enableWordGame"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">Ativar Adivinhe a Palavra 💘</FormLabel>
+                            <FormDescription>A pessoa amada tenta adivinhar suas respostas letra por letra.</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                )}
+            />
+            {enableWordGame && (
+                <div className="space-y-6">
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Como funciona</AlertTitle>
+                        <AlertDescription>
+                            Você escreve uma pergunta e a resposta secreta. A pessoa amada vai tentando adivinhar letra por letra — como um jogo de forca romântico! A dica aparece se ela pedir ajuda.
+                        </AlertDescription>
+                    </Alert>
+                    {fields.map((wordField, wIndex) => (
+                        <div key={wordField.id} className="space-y-3 p-4 rounded-lg border border-border/50 bg-muted/20">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-semibold text-muted-foreground">Palavra {wIndex + 1}</span>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => remove(wIndex)} className="text-destructive hover:text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                            <FormField
+                                control={control}
+                                name={`wordGameQuestions.${wIndex}.question`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Pergunta</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder='Ex: "O que mais amo em você?"' />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={control}
+                                name={`wordGameQuestions.${wIndex}.answer`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Resposta secreta</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder='Ex: "Seus olhos lindos"' />
+                                        </FormControl>
+                                        <FormDescription className="text-xs">Só letras e espaços. Evite respostas muito longas.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={control}
+                                name={`wordGameQuestions.${wIndex}.hint`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Dica 💡</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder='Ex: "Pensa no que você mais nota nele/ela"' />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    ))}
+                    {fields.length < MAX_WORDS && (
+                        <Button type="button" variant="outline" onClick={addWord} className="w-full">
+                            <Plus className="mr-2" /> Adicionar Palavra ({fields.length}/{MAX_WORDS})
+                        </Button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+WordGameStep.displayName = 'WordGameStep';
+
+// ─────────────────────────────────────────────
 // PLAN STEP
 // ─────────────────────────────────────────────
 const PlanStep = React.memo(() => {
@@ -1363,8 +1472,8 @@ const PlanStep = React.memo(() => {
     }> = [
         {
             id: 'basico',
-            name: 'Plano Econômico',
-            price: offerExpired ? '19,90' : '14,90',
+            name: 'Plano Básico',
+            price: '19,90',
             description: 'Uma surpresa impactante com prazo definido.',
             features: [
                 { text: 'Todos os recursos de personalização', included: true },
@@ -1413,13 +1522,6 @@ const PlanStep = React.memo(() => {
                                     <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
                                     <span className="text-muted-foreground text-sm">/pagamento único</span>
                                 </div>
-                                {planInfo.originalPrice && (
-                                     <div className="flex justify-center mt-2">
-                                        <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full">
-                                            💝 Especial Dia da Mulher
-                                        </span>
-                                    </div>
-                                )}
                             </div>
                             <ul className="space-y-3 text-sm flex-grow">
                                 {planInfo.features.map((feature, i) => (
@@ -1458,7 +1560,8 @@ const stepComponents: React.ComponentType<any>[] = [
     PuzzleStep,      // 7 - puzzle
     MemoryGameStep,  // 8 - memory
     QuizStep,        // 9 - quiz
-    PlanStep,        // 10 - plan
+    WordGameStep,    // 10 - word game
+    PlanStep,        // 11 - plan
 ];
 
 // ─────────────────────────────────────────────
@@ -1537,7 +1640,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     })();
 
     const basePriceBRL = plan === 'basico'
-        ? (offerExpired ? 19.90 : 14.90)
+        ? 19.90
         : (offerExpired ? 29.90 : 24.90);
     const totalBRL = basePriceBRL + qrCodePrice;
     const totalUSD = basePriceUSD;
@@ -1572,13 +1675,13 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             const ttq = (window as any).ttq;
             if (ttq) {
                 const planVal = getValues('plan');
-                const priceBRL = planVal === 'avancado' ? 24.90 : 14.90;
+                const priceBRL = planVal === 'avancado' ? 24.90 : 19.90;
                 ttq.track('CompletePayment', {
                     value: priceBRL,
                     currency: 'BRL',
                     content_id: pageId,
                     content_type: 'product',
-                    content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Econômico',
+                    content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
                 });
             }
         } catch (e) {
@@ -1589,7 +1692,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         const fireMeta = (retries = 15) => {
             if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
                 const planVal = getValues('plan');
-                const value = planVal === 'avancado' ? 24.90 : 14.90;
+                const value = planVal === 'avancado' ? 24.90 : 19.90;
                 window.fbq('track', 'Purchase', {
                     value,
                     currency: 'BRL',
@@ -1999,10 +2102,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </div>
                         <div className="text-left">
                             <p className="text-sm font-black text-white leading-tight">
-                                Por mais R$10, sua página dura <span className="text-purple-300">para sempre</span>
+                                Por apenas <span className="text-purple-300">R$5 a mais</span>, sua página dura para sempre 💜
                             </p>
                             <p className="text-xs text-white/45 mt-1 leading-relaxed">
-                                No plano Econômico a página expira em 25h. No Avançado fica online pra sempre — sem expirar, sem perder.
+                                Com o Plano Básico a sua página some em 25h — e a pessoa amada não vai poder rever esse momento. No Avançado fica online pra sempre, como uma lembrança eterna.
                             </p>
                         </div>
                     </div>
@@ -2015,9 +2118,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             boxShadow: '0 0 18px rgba(147,51,234,0.4)',
                         }}
                     >
-                        Sim, quero a página permanente — R${offerExpired ? '29,90' : '24,90'} →
+                        Quero que dure para sempre — R${offerExpired ? '29,90' : '24,90'} →
                     </button>
-                    <p className="text-center text-[10px] text-white/25 mt-2">Você pode continuar com o plano econômico se preferir</p>
+                    <p className="text-center text-[10px] text-white/25 mt-2">Continuar com o Plano Básico mesmo assim</p>
                 </motion.div>
             )}
             {!pixData && (
@@ -2197,7 +2300,7 @@ const SuccessStep = ({
 
     useEffect(() => {
         const plan = getValues('plan') as string;
-        const price = plan === 'basico' ? 14.90 : 24.90;
+        const price = plan === 'basico' ? 19.90 : 24.90;
     
         // Meta Pixel
         if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
@@ -2467,7 +2570,7 @@ function WizardInternal() {
                 if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
                     const planVal = getValues('plan');
                     (window as any).fbq('track', 'AddToCart', {
-                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        value: planVal === 'avancado' ? 24.90 : 19.90,
                         currency: 'BRL',
                         content_ids: [planVal],
                         content_type: 'product',
@@ -2487,9 +2590,9 @@ function WizardInternal() {
                 if (ttq) {
                     const planVal = getValues('plan');
                     ttq.track('InitiateCheckout', {
-                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        value: planVal === 'avancado' ? 24.90 : 19.90,
                         currency: 'BRL',
-                        content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Econômico',
+                        content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
                     });
                 }
             } catch (e) {
@@ -2500,7 +2603,7 @@ function WizardInternal() {
                 if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
                     const planVal = getValues('plan');
                     (window as any).fbq('track', 'InitiateCheckout', {
-                        value: planVal === 'avancado' ? 24.90 : 14.90,
+                        value: planVal === 'avancado' ? 24.90 : 19.90,
                         currency: 'BRL',
                         content_ids: [planVal],
                         content_type: 'product',

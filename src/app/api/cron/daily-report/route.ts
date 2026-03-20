@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .where('createdAt', '<=', Timestamp.fromDate(new Date(`${today}T23:59:59Z`)))
       .get();
     const sales = salesSnap.size;
-    const revenue = salesSnap.docs.reduce((acc, doc) => acc + (doc.data().plan === 'avancado' ? 24.90 : 14.90), 0);
+    const revenue = salesSnap.docs.reduce((acc, doc) => acc + (doc.data().plan === 'avancado' ? 24.90 : 19.90), 0);
     const conversionRate = uniqueVisitors > 0 ? ((sales / uniqueVisitors) * 100).toFixed(2) : '0.00';
     const report = { date: today, uniqueVisitors, sales, revenue: Number(revenue.toFixed(2)), conversionRate: `${conversionRate}%`, topPaths, generatedAt: Timestamp.now() };
     await db.collection('analytics').doc(`report_${today}`).set(report);

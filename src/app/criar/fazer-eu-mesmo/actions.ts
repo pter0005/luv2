@@ -19,7 +19,7 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
   const headersList = await headers();
   const clientIp = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || '177.160.0.1';
   const userAgent = headersList.get('user-agent') || 'Mozilla/5.0';
-  const value = plan === 'avancado' ? 24.90 : 14.90;
+  const value = plan === 'avancado' ? 24.90 : 19.90;
 
   const userData: Record<string, any> = { client_ip_address: clientIp, client_user_agent: userAgent };
   if (userEmail) {

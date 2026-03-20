@@ -118,7 +118,7 @@ const HeroSection = () => {
           </div>
 
           <p className="text-xs text-white/30 mt-4 text-center lg:text-left">
-            A partir de <span className="text-white/50 font-semibold">R$14,90</span> · pagamento único · sem mensalidade
+            A partir de <span className="text-white/50 font-semibold">R$19,90</span> · pagamento único · sem mensalidade
           </p>
         </div>
 

@@ -83,7 +83,7 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
                     <div className="text-6xl">⏰</div>
                     <h1 className="text-3xl font-bold text-white">Esta página expirou</h1>
                     <p className="text-white/70 text-lg">
-                        O plano Econômico dura 25 horas. Para manter sua página para sempre, faça upgrade.
+                        O plano Básico dura 25 horas. Para manter sua página para sempre, faça upgrade.
                     </p>
                     
                     <a

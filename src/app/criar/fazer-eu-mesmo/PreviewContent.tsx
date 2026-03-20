@@ -138,6 +138,8 @@ export default function PreviewContent({
 
     const hasQuiz = useMemo(() => !!(formData.enableQuiz && formData.quizQuestions?.length > 0), [formData.enableQuiz, formData.quizQuestions]);
 
+    const hasWordGame = useMemo(() => !!(formData.enableWordGame && formData.wordGameQuestions?.length > 0), [formData.enableWordGame, formData.wordGameQuestions]);
+
     return (
         <div className="relative w-full h-full flex items-center justify-center">
             <div className={cn(
@@ -235,7 +237,7 @@ export default function PreviewContent({
                                 </div>
                             )}
 
-                            {isClient && (hasMemoryGame || hasQuiz) && (
+                            {isClient && (hasMemoryGame || hasQuiz || hasWordGame) && (
                                 <div className="text-center w-full">
                                     <Button 
                                         type="button"

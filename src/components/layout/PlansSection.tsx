@@ -120,11 +120,6 @@ function AdvancedCard() {
               <p className="text-xs text-zinc-500 mt-1">Pagamento único • Sem mensalidade</p>
             </div>
           </div>
-          <div className="flex justify-center mt-3">
-            <span className="text-xs font-bold text-pink-400 bg-pink-500/10 border border-pink-500/20 px-3 py-1 rounded-full">
-              💝 Especial Dia da Mulher (Economize R$15)
-            </span>
-          </div>
         </div>
 
         {/* Social proof */}
@@ -179,10 +174,9 @@ function AdvancedCard() {
   );
 }
 
-/* ─── Card Econômico ────────────────────────────────────────────────────────── */
+/* ─── Card Básico ───────────────────────────────────────────────────────────── */
 function EconomicCard() {
-  const offerExpired = useOfferExpired();
-  const price = offerExpired ? '19' : '14';
+  const price = '19';
   const cents = ',90';
   return (
     <motion.div
@@ -198,7 +192,7 @@ function EconomicCard() {
     >
       <div className="p-8 flex flex-col flex-grow">
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-zinc-200 tracking-tight">Plano Econômico</h3>
+          <h3 className="text-xl font-bold text-zinc-200 tracking-tight">Plano Básico</h3>
           <p className="text-zinc-500 text-sm mt-1">Uma surpresa emocionante com prazo definido.</p>
         </div>
 
@@ -235,7 +229,7 @@ function EconomicCard() {
         <Link href="/login?redirect=/criar?plan=basico&new=true" className="block">
           <button className="w-full py-3.5 rounded-2xl font-bold text-sm text-zinc-300 transition-all hover:text-white hover:bg-white/10"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            Começar com Plano Econômico
+            Começar com Plano Básico →
           </button>
         </Link>
       </div>
@@ -302,7 +296,7 @@ const PlansSection = () => {
 
       {/* Cards — recomendado maior e elevado */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-6 max-w-4xl mx-auto items-start">
-        {/* Econômico — primeira coluna */}
+        {/* Básico — primeira coluna */}
         <EconomicCard />
         {/* Avançado — segunda coluna, mais largo */}
         <AdvancedCard />

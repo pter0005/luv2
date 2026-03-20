@@ -94,7 +94,7 @@ async function getAllData() {
       const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
       const price = d.plan === 'avancado'
         ? (isUSD ? 19.90 : 24.90)
-        : (isUSD ? 14.90 : 14.90);
+        : (isUSD ? 14.90 : 19.90);
 
       if (isUSD) totalSalesUSD += price;
       else totalSalesBRL += price;

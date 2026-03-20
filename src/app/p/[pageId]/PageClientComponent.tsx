@@ -42,6 +42,10 @@ const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), 
     loading: () => <Skeleton className="w-full aspect-square" />,
 });
 const QuizGame = dynamic(() => import('@/components/quiz/QuizGame'), { ssr: false, loading: () => <Skeleton className="w-full aspect-square" />, });
+const WordGame = dynamic(() => import('@/components/word-game/WordGame'), {
+    ssr: false,
+    loading: () => <Skeleton className="w-full aspect-square" />,
+});
 
 
 const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
@@ -185,6 +189,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
 
   const hasQuiz = useMemo(() => !!(pageData.enableQuiz && pageData.quizQuestions?.length > 0), [pageData.enableQuiz, pageData.quizQuestions]);
+
+  const hasWordGame = useMemo(() => !!(pageData.enableWordGame && pageData.wordGameQuestions?.length > 0), [pageData.enableWordGame, pageData.wordGameQuestions]);
 
   const timelineEventsForDisplay = useMemo(() => {
     if (!Array.isArray(pageData.timelineEvents)) return [];
@@ -364,7 +370,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
           
-          {(hasMemoryGame || hasQuiz) && (
+          {(hasMemoryGame || hasQuiz || hasWordGame) && (
               <div className="text-center w-full">
                   <Button 
                       type="button"
@@ -459,6 +465,16 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <p className="text-sm text-muted-foreground">Crie um quiz divertido sobre vocês.</p>
                         </div>
                     )}
+                    {hasWordGame && (
+                        <div
+                        onClick={() => setActiveGame('word')}
+                        className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
+                        >
+                        <span className="text-5xl">💘</span>
+                        <h3 className="text-xl font-bold text-white">Adivinhe a Palavra</h3>
+                        <p className="text-sm text-muted-foreground">Descubra as respostas secretas letra por letra.</p>
+                        </div>
+                    )}
                   </div>
                 </motion.div>
               ) : (
@@ -478,6 +494,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   </Button>
                   {activeGame === 'memory' && pageData.memoryGameImages && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
                   {activeGame === 'quiz' && pageData.quizQuestions && <QuizGame questions={pageData.quizQuestions} />}
+                  {activeGame === 'word' && pageData.wordGameQuestions && <WordGame questions={pageData.wordGameQuestions} />}
                 </motion.div>
               )}
             </AnimatePresence>
