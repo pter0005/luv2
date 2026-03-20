@@ -32,7 +32,7 @@ export type RecentSale = {
 };
 export type SaleRecord = {
   id: string; plan: string; price: number; currency: 'BRL' | 'USD';
-  createdAt: Date; ownerEmail: string;
+  createdAt: Date; ownerEmail: string; isGift?: boolean;
 };
 export type DashboardProps = {
   totalUsers: number;
@@ -433,11 +433,13 @@ export default function AdminDashboard({
                       </span>
                     </td>
                     <td className="px-6 py-3">
-                      {sale.price > 0
-                        ? <span className="text-xs font-black text-emerald-400 font-mono">
-                            {sale.currency === 'BRL' ? brl(sale.price) : usd(sale.price)}
-                          </span>
-                        : <span className="text-xs text-zinc-600">—</span>
+                      {sale.isGift
+                        ? <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)' }}>🎁 CRÉDITO</span>
+                        : sale.price > 0
+                          ? <span className="text-xs font-black text-emerald-400 font-mono">
+                              {sale.currency === 'BRL' ? brl(sale.price) : usd(sale.price)}
+                            </span>
+                          : <span className="text-xs text-zinc-600">—</span>
                       }
                     </td>
                     <td className="px-6 py-3">

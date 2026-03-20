@@ -529,6 +529,52 @@ export async function finalizeWithCredit(
 }
 
 // ─────────────────────────────────────────────
+// FINALIZAR COM LINK DE PRESENTE (gift token)
+// ─────────────────────────────────────────────
+export async function finalizeWithGiftToken(
+  intentId: string,
+  userId: string,
+  giftToken: string,
+  email: string,
+): Promise<FinalizePageResult> {
+  const db = getAdminFirestore();
+
+  // 1. Valida o token
+  const tokenRef = db.collection('gift_tokens').doc(giftToken);
+  const tokenSnap = await tokenRef.get();
+  if (!tokenSnap.exists) return { success: false, error: 'Link de presente inválido.' };
+  if (tokenSnap.data()?.used) return { success: false, error: 'Este presente já foi utilizado.' };
+
+  // 2. Atualiza o intent com plan=avancado, guestEmail e flag isGift
+  try {
+    await db.collection('payment_intents').doc(intentId).update({
+      plan: 'avancado',
+      guestEmail: email,
+      isGift: true,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (e) {
+    console.warn('[finalizeWithGiftToken] Falha ao atualizar intent:', e);
+  }
+
+  // 3. Finaliza a página
+  const result = await finalizeLovePage(intentId, `gift_${giftToken}`);
+  if (!result.success) return result;
+
+  // 4. Marca token como usado e page como gift
+  try {
+    await Promise.all([
+      tokenRef.update({ used: true, usedAt: Timestamp.now(), usedByEmail: email, pageId: result.pageId }),
+      db.collection('lovepages').doc(result.pageId).update({ isGift: true, giftToken }),
+    ]);
+  } catch (err) {
+    console.error('[Gift] Falha ao marcar token como usado:', err);
+  }
+
+  return { success: true, pageId: result.pageId };
+}
+
+// ─────────────────────────────────────────────
 // STRIPE (placeholder)
 // ─────────────────────────────────────────────
 export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string): Promise<StripeSessionResult> {

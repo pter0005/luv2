@@ -93,6 +93,7 @@ async function getAllData() {
       const d = doc.data();
       const owner = userMap.get(d.userId);
       const createdAtDate: Date = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+      const isGift = !!d.isGift;
 
       const isUSD = d.paymentId && isNaN(Number(d.paymentId));
       const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
@@ -100,23 +101,29 @@ async function getAllData() {
         ? (isUSD ? 19.90 : 24.90)
         : (isUSD ? 14.90 : 19.90);
 
-      if (isUSD) totalSalesUSD += price;
-      else totalSalesBRL += price;
+      // Páginas de presente não contam como venda / receita
+      if (!isGift) {
+        if (isUSD) totalSalesUSD += price;
+        else totalSalesBRL += price;
 
-      if (d.plan === 'avancado') avancadoCount++;
-      else if (d.plan === 'basico') basicoCount++;
+        if (d.plan === 'avancado') avancadoCount++;
+        else if (d.plan === 'basico') basicoCount++;
+      }
 
-      // Sales history table
+      // Sales history table (inclui gifts marcados, mas com isGift=true)
       if (salesHistory.length < 100) {
         salesHistory.push({
           id: doc.id,
           plan: d.plan || 'gratis',
-          price,
+          price: isGift ? 0 : price,
           currency,
           createdAt: createdAtDate,
           ownerEmail: owner?.email || 'User deleted',
+          isGift,
         });
       }
+
+      if (isGift) continue; // gifts não afetam charts/fontes de tráfego
 
       // Date-based analytics
       let date: string | null = null;

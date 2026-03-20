@@ -42,7 +42,7 @@ import { EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autop
 import { findYoutubeVideo } from "@/ai/flows/find-youtube-video";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
-import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, finalizeWithCredit } from "./actions";
+import { createOrUpdatePaymentIntent, processPixPayment, verifyPaymentWithMercadoPago, adminFinalizePage, createStripeCheckoutSession, finalizeWithCredit, finalizeWithGiftToken } from "./actions";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -2276,64 +2276,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
                 </motion.div>
             )}
-            {giftCredits > 0 && !pixData && (
-                <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl p-4 mb-2"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(15,10,30,0.85) 100%)',
-                        border: '1px solid rgba(168,85,247,0.45)',
-                        boxShadow: '0 0 24px rgba(168,85,247,0.12)',
-                    }}
-                >
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
-                            <span className="text-lg leading-none">🎁</span>
-                        </div>
-                        <div className="text-left">
-                            <p className="text-sm font-black text-white leading-tight">
-                                Você ganhou {giftCredits} página{giftCredits > 1 ? 's' : ''} grátis!
-                            </p>
-                            <p className="text-xs text-white/50">Presente especial — crie sem pagar nada</p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            if (!user || !giftToken) return;
-                            startTransition(async () => {
-                                try {
-                                    const data = getValues();
-                                    const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', freeGift: true });
-                                    if (!saveResult.success) { setError({ message: saveResult.error }); return; }
-                                    const useResult = await fetch('/api/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: giftToken }) }).then(r => r.json());
-                                    if (!useResult.ok) { setError({ message: 'Link de presente inválido ou já utilizado.' }); return; }
-                                    localStorage.removeItem('mycupid_gift_token');
-                                    const email = user.email || confirmedGuestEmail;
-                                    if (!email) { setError({ message: 'E-mail não encontrado.' }); return; }
-                                    const finalResult = await finalizeWithCredit(saveResult.intentId!, user.uid, email);
-                                    if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
-                                    else if (!finalResult.success) setError({ message: finalResult.error || 'Erro ao finalizar.' });
-                                } catch (e: any) { setError({ message: e.message }); }
-                            });
-                        }}
-                        disabled={isProcessing}
-                        className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
-                        style={{
-                            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                            boxShadow: '0 0 18px rgba(168,85,247,0.4)',
-                        }}
-                    >
-                        {isProcessing
-                            ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
-                            : <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Resgatar meu presente grátis</span>
-                        }
-                    </button>
-                    <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
-                </motion.div>
-            )}
-            {/* E-mail para usuários anônimos (sem conta) */}
+            {/* E-mail para usuários anônimos (sem conta) — aparece antes do botão de presente */}
             {isAnonymousUser && !confirmedGuestEmail && (
                 <div className="space-y-3 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
                     <div className="flex items-start gap-3">
@@ -2368,6 +2311,62 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <CheckCircle className="w-4 h-4 shrink-0" />
                     <span>E-mail confirmado: <strong>{confirmedGuestEmail}</strong></span>
                 </div>
+            )}
+            {/* PRESENTE — só aparece quando gift token válido e email confirmado */}
+            {giftCredits > 0 && !pixData && (!isAnonymousUser || confirmedGuestEmail) && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-4 mb-2"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(15,10,30,0.85) 100%)',
+                        border: '1px solid rgba(168,85,247,0.45)',
+                        boxShadow: '0 0 24px rgba(168,85,247,0.12)',
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                            <span className="text-lg leading-none">🎁</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-black text-white leading-tight">
+                                Você ganhou {giftCredits} página{giftCredits > 1 ? 's' : ''} grátis!
+                            </p>
+                            <p className="text-xs text-white/50">Presente especial — crie sem pagar nada</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!user || !giftToken) return;
+                            const email = user.email || confirmedGuestEmail;
+                            if (!email) { setError({ message: 'Confirme seu e-mail primeiro.' }); return; }
+                            startTransition(async () => {
+                                try {
+                                    const data = getValues();
+                                    const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', guestEmail: email });
+                                    if (!saveResult.success) { setError({ message: saveResult.error }); return; }
+                                    localStorage.removeItem('mycupid_gift_token');
+                                    const finalResult = await finalizeWithGiftToken(saveResult.intentId!, user.uid, giftToken, email);
+                                    if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
+                                    else if (!finalResult.success) setError({ message: finalResult.error || 'Erro ao finalizar.' });
+                                } catch (e: any) { setError({ message: e.message }); }
+                            });
+                        }}
+                        disabled={isProcessing}
+                        className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
+                        style={{
+                            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                            boxShadow: '0 0 18px rgba(168,85,247,0.4)',
+                        }}
+                    >
+                        {isProcessing
+                            ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
+                            : <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Resgatar meu presente grátis</span>
+                        }
+                    </button>
+                    <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
+                </motion.div>
             )}
             {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">

@@ -10,11 +10,23 @@ const INITIAL_SECONDS = 1 * 3600 + 47 * 60; // 1h 47min
 
 function getDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + INITIAL_SECONDS * 1000;
-  const stored = localStorage.getItem(TIMER_KEY);
-  if (stored) return parseInt(stored);
-  const deadline = Date.now() + INITIAL_SECONDS * 1000;
-  localStorage.setItem(TIMER_KEY, String(deadline));
-  return deadline;
+  try {
+    const stored = localStorage.getItem(TIMER_KEY);
+    if (stored) {
+      const deadline = parseInt(stored);
+      // Se o deadline guardado é inválido ou está muito no passado (mais de 1 dia), ignora
+      if (isNaN(deadline) || deadline < Date.now() - 86400000) {
+        localStorage.removeItem(TIMER_KEY);
+      } else {
+        return deadline;
+      }
+    }
+    const deadline = Date.now() + INITIAL_SECONDS * 1000;
+    localStorage.setItem(TIMER_KEY, String(deadline));
+    return deadline;
+  } catch {
+    return Date.now() + INITIAL_SECONDS * 1000;
+  }
 }
 
 function useBannerTimer() {
