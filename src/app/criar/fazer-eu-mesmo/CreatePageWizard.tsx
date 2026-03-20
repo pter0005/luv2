@@ -359,11 +359,18 @@ const GalleryStep = React.memo(() => {
     const { fields, append, remove } = useFieldArray({ control, name: "galleryImages" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
+    const uploadingRef = useRef(false); // guard contra onChange duplo no mobile
     const { toast } = useToast();
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files) return;
+        if (!event.target.files || event.target.files.length === 0) return;
+        // Previne disparo duplo do onChange (bug iOS/Android)
+        if (uploadingRef.current) return;
+        // Captura os arquivos e reseta o input imediatamente
+        const rawFiles = Array.from(event.target.files);
+        event.target.value = '';
+
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -374,16 +381,28 @@ const GalleryStep = React.memo(() => {
         }
         const availableSlots = MAX_GALLERY_IMAGES - fields.length;
         if (availableSlots <= 0) return;
-        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+
+        // Deduplica por nome+tamanho para evitar arquivos idênticos
+        const seen = new Set<string>();
+        const uniqueFiles = rawFiles.filter(f => {
+            const key = `${f.name}_${f.size}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, availableSlots);
+
+        if (uniqueFiles.length === 0) return;
+
+        uploadingRef.current = true;
         setIsUploading(true);
         try {
-            const uploadPromises = filesArray.map(async file => {
+            const uploadPromises = uniqueFiles.map(async file => {
                 const compressedFile = await compressImage(file, 1280, 0.9);
                 return uploadFile(storage, user.uid, compressedFile, 'gallery');
             });
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
-            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+            toast({ title: 'Imagens enviadas!', description: `${newImageObjects.length} foto${newImageObjects.length > 1 ? 's' : ''} adicionada${newImageObjects.length > 1 ? 's' : ''}.` });
         } catch (error: any) {
             console.error("Error uploading files:", error);
             const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
@@ -399,6 +418,7 @@ const GalleryStep = React.memo(() => {
             });
         } finally {
             setIsUploading(false);
+            uploadingRef.current = false;
         }
     };
 
@@ -513,13 +533,18 @@ const TimelineStep = React.memo(() => {
     const { fields, remove, append } = useFieldArray({ control, name: "timelineEvents" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
+    const uploadingRef = useRef(false);
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const fnsLocale = ptBR;
     const isLimitReached = fields.length >= MAX_TIMELINE_IMAGES;
 
     const handleBulkImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files) return;
+        if (!event.target.files || event.target.files.length === 0) return;
+        if (uploadingRef.current) return;
+        const rawFiles = Array.from(event.target.files);
+        event.target.value = '';
+
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -533,7 +558,15 @@ const TimelineStep = React.memo(() => {
             toast({ variant: 'destructive', title: 'Limite Excedido', description: `Você já atingiu o limite de ${MAX_TIMELINE_IMAGES} momentos.` });
             return;
         }
-        const filesToUpload = Array.from(event.target.files).slice(0, availableSlots);
+        const seen = new Set<string>();
+        const filesToUpload = rawFiles.filter(f => {
+            const key = `${f.name}_${f.size}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, availableSlots);
+        if (filesToUpload.length === 0) return;
+        uploadingRef.current = true;
         setIsUploading(true);
         try {
             const uploadPromises = filesToUpload.map(async (file) => {
@@ -567,7 +600,7 @@ const TimelineStep = React.memo(() => {
             });
         } finally {
             setIsUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = "";
+            uploadingRef.current = false;
         }
     };
 
@@ -1126,13 +1159,17 @@ const MemoryGameStep = React.memo(() => {
     const { toast } = useToast();
     const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
     const [isUploading, setIsUploading] = useState(false);
+    const uploadingRef = useRef(false);
     const enableMemoryGame = watch("enableMemoryGame");
     const MAX_IMAGES = 8;
     const isLimitReached = fields.length >= MAX_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.target.files) return;
-        // FIX #4: guard isUserLoading antes de tentar upload
+        if (!event.target.files || event.target.files.length === 0) return;
+        if (uploadingRef.current) return;
+        const rawFiles = Array.from(event.target.files);
+        event.target.value = '';
+
         if (isUserLoading) {
             toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
             return;
@@ -1143,16 +1180,27 @@ const MemoryGameStep = React.memo(() => {
         }
         const availableSlots = MAX_IMAGES - fields.length;
         if (availableSlots <= 0) return;
-        const filesArray = Array.from(event.target.files).slice(0, availableSlots);
+
+        const seen = new Set<string>();
+        const uniqueFiles = rawFiles.filter(f => {
+            const key = `${f.name}_${f.size}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, availableSlots);
+
+        if (uniqueFiles.length === 0) return;
+
+        uploadingRef.current = true;
         setIsUploading(true);
         try {
-            const uploadPromises = filesArray.map(async file => {
+            const uploadPromises = uniqueFiles.map(async file => {
                 const compressedFile = await compressImage(file, 400, 0.8);
                 return uploadFile(storage, user.uid, compressedFile, 'memory-game');
             });
             const newImageObjects = await Promise.all(uploadPromises);
             append(newImageObjects);
-            toast({ title: 'Imagens enviadas!', description: 'Suas fotos foram adicionadas.' });
+            toast({ title: 'Imagens enviadas!', description: `${newImageObjects.length} foto${newImageObjects.length > 1 ? 's' : ''} adicionada${newImageObjects.length > 1 ? 's' : ''}.` });
         } catch (error: any) {
             console.error("Error uploading memory game files:", error);
             const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
@@ -1168,6 +1216,7 @@ const MemoryGameStep = React.memo(() => {
             });
         } finally {
             setIsUploading(false);
+            uploadingRef.current = false;
         }
     };
 
@@ -1588,6 +1637,22 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [guestEmailError, setGuestEmailError] = useState('');
     const [confirmedGuestEmail, setConfirmedGuestEmail] = useState('');
     const [isSavingEmail, setIsSavingEmail] = useState(false);
+
+    // ── GIFT TOKEN (link de presente) ─────────────────────────────
+    const [giftToken, setGiftToken] = useState<string | null>(null);
+    const [giftCredits, setGiftCredits] = useState(0);
+    useEffect(() => {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('mycupid_gift_token') : null;
+        if (!stored) return;
+        fetch(`/api/gift?token=${stored}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.valid) { setGiftToken(stored); setGiftCredits(d.credits ?? 1); }
+                else localStorage.removeItem('mycupid_gift_token');
+            })
+            .catch(() => {});
+    }, []);
+    // ── FIM GIFT TOKEN ─────────────────────────────────────────────
 
     // ── URGENCY TIMER — 15 minutos ────────────────────────────────
     const [timeLeft, setTimeLeft] = useState(15 * 60); // segundos
@@ -2211,6 +2276,61 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
                 </motion.div>
             )}
+            {giftCredits > 0 && !pixData && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-4 mb-2"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(15,10,30,0.85) 100%)',
+                        border: '1px solid rgba(168,85,247,0.45)',
+                        boxShadow: '0 0 24px rgba(168,85,247,0.12)',
+                    }}
+                >
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                            <span className="text-lg leading-none">🎁</span>
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-black text-white leading-tight">
+                                Você ganhou {giftCredits} página{giftCredits > 1 ? 's' : ''} grátis!
+                            </p>
+                            <p className="text-xs text-white/50">Presente especial — crie sem pagar nada</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            if (!user || !giftToken) return;
+                            startTransition(async () => {
+                                try {
+                                    const data = getValues();
+                                    const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', freeGift: true });
+                                    if (!saveResult.success) { setError({ message: saveResult.error }); return; }
+                                    const useResult = await fetch('/api/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: giftToken }) }).then(r => r.json());
+                                    if (!useResult.ok) { setError({ message: 'Link de presente inválido ou já utilizado.' }); return; }
+                                    localStorage.removeItem('mycupid_gift_token');
+                                    const finalResult = await finalizePageWithCredit(saveResult.intentId!, user.uid);
+                                    if (finalResult.success && finalResult.pageId) handlePaymentSuccess(finalResult.pageId);
+                                    else setError({ message: finalResult.error || 'Erro ao finalizar.' });
+                                } catch (e: any) { setError({ message: e.message }); }
+                            });
+                        }}
+                        disabled={isProcessing}
+                        className="w-full py-3 rounded-xl text-sm font-black text-white transition-all active:scale-95 disabled:opacity-60"
+                        style={{
+                            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                            boxShadow: '0 0 18px rgba(168,85,247,0.4)',
+                        }}
+                    >
+                        {isProcessing
+                            ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Finalizando...</span>
+                            : <span className="flex items-center justify-center gap-2"><Gift className="w-4 h-4" /> Resgatar meu presente grátis</span>
+                        }
+                    </button>
+                    <p className="text-center text-[10px] text-white/25 mt-2">Ou pague normalmente abaixo</p>
+                </motion.div>
+            )}
             {/* E-mail para usuários anônimos (sem conta) */}
             {isAnonymousUser && !confirmedGuestEmail && (
                 <div className="space-y-3 p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
@@ -2559,6 +2679,14 @@ function WizardInternal() {
 
     useEffect(() => {
         setIsClient(true);
+        // Salva gift token no localStorage se veio na URL
+        const giftParam = searchParams.get('gift');
+        if (giftParam) {
+            localStorage.setItem('mycupid_gift_token', giftParam);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('gift');
+            window.history.replaceState({}, '', url.toString());
+        }
         if (searchParams.get('new') === 'true') {
             localStorage.removeItem('amore-pages-autosave');
             methods.reset();
