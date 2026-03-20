@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, RotateCcw, Trophy, ChevronRight, Sparkles } from 'lucide-react';
+import { Heart, RotateCcw, Trophy, ChevronRight, Sparkles, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -15,6 +15,7 @@ export interface WordGameQuestion {
 }
 interface WordGameProps {
   questions: WordGameQuestion[];
+  onExit?: () => void;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -120,7 +121,7 @@ function WinBurst() {
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
-export default function WordGame({ questions }: WordGameProps) {
+export default function WordGame({ questions, onExit }: WordGameProps) {
   const [currentQ,       setCurrentQ]       = useState(0);
   const [guessed,        setGuessed]        = useState<Set<string>>(new Set());
   const [showHint,       setShowHint]       = useState(false);
@@ -254,19 +255,33 @@ export default function WordGame({ questions }: WordGameProps) {
           <CupidArrow className="w-10 h-3 text-pink-400/50" />
         </motion.div>
 
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleReset}
-          className="relative z-10 flex items-center gap-2.5 px-7 py-3.5 rounded-2xl font-bold text-white text-sm"
-          style={{
-            background: 'linear-gradient(135deg, #e11d48 0%, #9333ea 60%, #7c3aed 100%)',
-            boxShadow: '0 4px 24px rgba(225,29,72,0.4), 0 4px 24px rgba(147,51,234,0.3)',
-          }}
+          className="relative z-10 flex gap-3"
         >
-          <RotateCcw className="w-4 h-4" />
-          Jogar Novamente
-        </motion.button>
+          {onExit && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onExit}
+              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl font-bold text-sm text-white/60 border border-white/10 hover:text-white/90 hover:border-white/20 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </motion.button>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleReset}
+            className="flex items-center gap-2.5 px-7 py-3.5 rounded-2xl font-bold text-white text-sm"
+            style={{
+              background: 'linear-gradient(135deg, #e11d48 0%, #9333ea 60%, #7c3aed 100%)',
+              boxShadow: '0 4px 24px rgba(225,29,72,0.4), 0 4px 24px rgba(147,51,234,0.3)',
+            }}
+          >
+            <RotateCcw className="w-4 h-4" />
+            Jogar Novamente
+          </motion.button>
+        </motion.div>
       </motion.div>
     );
   }

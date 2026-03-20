@@ -158,7 +158,7 @@ const pageSchema = z.object({
   enableQuiz: z.boolean().default(false),
   quizQuestions: z.array(quizQuestionSchema).max(5, "Máximo de 5 perguntas.").default([]),
   enableWordGame: z.boolean().default(false),
-  wordGameQuestions: z.array(wordGameQuestionSchema).max(3, "Máximo de 3 palavras.").default([]),
+  wordGameQuestions: z.array(wordGameQuestionSchema).max(4, "Máximo de 4 palavras.").default([]),
   qrCodeDesign: z.string().default("classic"),
   utmSource: z.string().optional(),
   payment: paymentSchema.optional(),
@@ -1355,7 +1355,7 @@ const WordGameStep = React.memo(() => {
     const { control, watch } = useFormContext<PageData>();
     const enableWordGame = watch("enableWordGame");
     const { fields, append, remove } = useFieldArray({ control, name: "wordGameQuestions" });
-    const MAX_WORDS = 3;
+    const MAX_WORDS = 4;
 
     const addWord = () => {
         if (fields.length < MAX_WORDS) {
@@ -1631,6 +1631,10 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const [qrCodePrice, setQrCodePrice] = useState(0);
     const qrCodeDesign = watch('qrCodeDesign');
+    const enableWordGame  = watch('enableWordGame');
+    const wordGameQuestions = watch('wordGameQuestions');
+    const hasWordGameContent = !!(enableWordGame && wordGameQuestions?.length > 0);
+    const WORD_GAME_PRICE = 2.00;
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
     const offerExpired = typeof window !== 'undefined' && (() => {
@@ -1642,7 +1646,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const basePriceBRL = plan === 'basico'
         ? 19.90
         : (offerExpired ? 29.90 : 24.90);
-    const totalBRL = basePriceBRL + qrCodePrice;
+    const totalBRL = basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0);
     const totalUSD = basePriceUSD;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
@@ -2080,6 +2084,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     Inclui QR Code personalizado (+R$ {qrCodePrice.toFixed(2).replace('.', ',')})
                   </p>
                 )}
+                {hasWordGameContent && (
+                  <p className="text-xs text-pink-300 mt-0.5">
+                    Inclui Jogo Adivinhe a Palavra (+R$2,00)
+                  </p>
+                )}
                 <p className="text-xs text-white/50">Pagamento único</p>
             </div>
             {!pixData && plan === 'basico' && (
@@ -2131,6 +2140,31 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                   onPriceChange={(price) => setQrCodePrice(price)}
                 />
               </div>
+            )}
+            {!pixData && hasWordGameContent && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl p-4"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(190,24,93,0.12) 0%, rgba(109,40,217,0.1) 100%)',
+                  border: '1px solid rgba(244,114,182,0.25)',
+                }}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(244,114,182,0.15)', border: '1px solid rgba(244,114,182,0.3)' }}>
+                      <span className="text-lg leading-none">💘</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Jogo Adivinhe a Palavra</p>
+                      <p className="text-xs text-white/45">{wordGameQuestions.length} palavra{wordGameQuestions.length > 1 ? 's' : ''} secreta{wordGameQuestions.length > 1 ? 's' : ''} incluída{wordGameQuestions.length > 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-black text-pink-300 shrink-0">+R$2,00</span>
+                </div>
+              </motion.div>
             )}
             {userCredits > 0 && !pixData && (
                 <motion.div

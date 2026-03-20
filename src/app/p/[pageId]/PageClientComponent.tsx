@@ -494,7 +494,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   </Button>
                   {activeGame === 'memory' && pageData.memoryGameImages && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
                   {activeGame === 'quiz' && pageData.quizQuestions && <QuizGame questions={pageData.quizQuestions} />}
-                  {activeGame === 'word' && pageData.wordGameQuestions && <WordGame questions={pageData.wordGameQuestions} />}
+                  {activeGame === 'word' && pageData.wordGameQuestions && <WordGame questions={pageData.wordGameQuestions} onExit={() => setActiveGame(null)} />}
                 </motion.div>
               )}
             </AnimatePresence>
