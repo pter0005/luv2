@@ -1667,6 +1667,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     // ── DESCONTO (link de cupom) ───────────────────────────────────
     const [discountCode, setDiscountCode] = useState<string | null>(null);
     const [discountAmount, setDiscountAmount] = useState(0);
+    const [showDiscountBanner, setShowDiscountBanner] = useState(false);
     useEffect(() => {
         const urlCode = new URLSearchParams(window.location.search).get('discount');
         const stored = localStorage.getItem('mycupid_discount_code');
@@ -1676,8 +1677,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         fetch(`/api/discount?code=${code}`)
             .then(r => r.json())
             .then(d => {
-                if (d.valid) { setDiscountCode(code); setDiscountAmount(d.discount ?? 10); }
-                else localStorage.removeItem('mycupid_discount_code');
+                if (d.valid) {
+                    setDiscountCode(code);
+                    setDiscountAmount(d.discount ?? 10);
+                    setShowDiscountBanner(true);
+                    setTimeout(() => setShowDiscountBanner(false), 5000);
+                } else {
+                    localStorage.removeItem('mycupid_discount_code');
+                }
             })
             .catch(() => {});
     }, []);
@@ -2619,6 +2626,8 @@ function WizardInternal() {
     const [showTimelinePreview, setShowTimelinePreview] = useState(false);
     const [showGiftPopup, setShowGiftPopup] = useState(false);
     const [giftPopupCredits, setGiftPopupCredits] = useState(1);
+    const [showDiscountBanner, setShowDiscountBanner] = useState(false);
+    const [discountBannerAmount, setDiscountBannerAmount] = useState(0);
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const { user, isUserLoading } = useUser();
@@ -2647,6 +2656,27 @@ function WizardInternal() {
         fetch(`/api/gift?token=${token}`)
             .then(r => r.json())
             .then(d => { if (d.valid) { setGiftPopupCredits(d.credits ?? 1); setShowGiftPopup(true); } })
+            .catch(() => {});
+    }, []);
+
+    // Detect discount code on arrival and show banner
+    useEffect(() => {
+        const urlCode = new URLSearchParams(window.location.search).get('discount');
+        const stored = localStorage.getItem('mycupid_discount_code');
+        const code = urlCode || stored;
+        if (!code) return;
+        if (urlCode) localStorage.setItem('mycupid_discount_code', urlCode);
+        fetch(`/api/discount?code=${code}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.valid) {
+                    setDiscountBannerAmount(d.discount ?? 10);
+                    setShowDiscountBanner(true);
+                    setTimeout(() => setShowDiscountBanner(false), 5000);
+                } else {
+                    localStorage.removeItem('mycupid_discount_code');
+                }
+            })
             .catch(() => {});
     }, []);
 
@@ -2968,6 +2998,26 @@ function WizardInternal() {
             </div>
 
             {/* POPUP — Presente grátis */}
+            {/* Banner de desconto */}
+            {showDiscountBanner && discountBannerAmount > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: -40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl"
+                    style={{
+                        background: 'linear-gradient(135deg, #166534, #15803d)',
+                        border: '1px solid rgba(74,222,128,0.4)',
+                        boxShadow: '0 0 32px rgba(34,197,94,0.35)',
+                    }}
+                >
+                    <span className="text-xl leading-none">🎉</span>
+                    <div>
+                        <p className="text-sm font-black text-white leading-tight">Cupom aplicado!</p>
+                        <p className="text-xs text-green-200">R${discountBannerAmount.toFixed(2).replace('.', ',')} de desconto garantido</p>
+                    </div>
+                    <button onClick={() => setShowDiscountBanner(false)} className="ml-2 text-green-300 hover:text-white text-lg leading-none">×</button>
+                </motion.div>
+            )}
             {showGiftPopup && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
                     <motion.div
