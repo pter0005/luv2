@@ -481,8 +481,8 @@ export default function AdminDashboard({
           <h2 className="text-sm font-bold text-red-300">Zona de Perigo — Reset Total</h2>
         </div>
         <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
-          Apaga <strong className="text-zinc-300">absolutamente tudo</strong>: visitas, UTM, visitantes únicos,
-          páginas criadas (lovepages) e rascunhos. Essa ação{' '}
+          Apaga os dados de analytics: visitas, UTM e visitantes únicos.
+          <strong className="text-zinc-300"> Páginas de clientes e rascunhos não são afetados.</strong> Essa ação{' '}
           <strong className="text-red-400">não pode ser desfeita</strong>.
         </p>
 

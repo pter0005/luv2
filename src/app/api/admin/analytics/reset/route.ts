@@ -30,11 +30,7 @@ export async function POST() {
     // 3. utm_visits
     await nukeCollection(db, db.collection('utm_visits'));
 
-    // 4. lovepages (onde ficam as vendas)
-    await nukeCollection(db, db.collection('lovepages'));
-
-    // 5. payment_intents (rascunhos)
-    await nukeCollection(db, db.collection('payment_intents'));
+    // lovepages e payment_intents NÃO são deletados — contêm dados reais de clientes
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
