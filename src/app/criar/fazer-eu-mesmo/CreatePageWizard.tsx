@@ -1664,6 +1664,25 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     }, []);
     // ── FIM GIFT TOKEN ─────────────────────────────────────────────
 
+    // ── DESCONTO (link de cupom) ───────────────────────────────────
+    const [discountCode, setDiscountCode] = useState<string | null>(null);
+    const [discountAmount, setDiscountAmount] = useState(0);
+    useEffect(() => {
+        const urlCode = new URLSearchParams(window.location.search).get('discount');
+        const stored = localStorage.getItem('mycupid_discount_code');
+        const code = urlCode || stored;
+        if (!code) return;
+        if (urlCode) localStorage.setItem('mycupid_discount_code', urlCode);
+        fetch(`/api/discount?code=${code}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.valid) { setDiscountCode(code); setDiscountAmount(d.discount ?? 10); }
+                else localStorage.removeItem('mycupid_discount_code');
+            })
+            .catch(() => {});
+    }, []);
+    // ── FIM DESCONTO ───────────────────────────────────────────────
+
     // ── URGENCY TIMER — 15 minutos ────────────────────────────────
     const [timeLeft, setTimeLeft] = useState(15 * 60); // segundos
     useEffect(() => {
@@ -1721,7 +1740,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const basePriceBRL = plan === 'basico'
         ? 19.90
         : (offerExpired ? 29.90 : 24.90);
-    const totalBRL = basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0);
+    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) - discountAmount);
     const totalUSD = basePriceUSD;
 
     const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
@@ -1869,6 +1888,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
                     setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
+                    // Marca desconto como usado
+                    if (discountCode) {
+                        const email = user.email || confirmedGuestEmail;
+                        if (email) {
+                            fetch('/api/discount', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: discountCode, email }) })
+                                .then(() => { localStorage.removeItem('mycupid_discount_code'); })
+                                .catch(() => {});
+                        }
+                    }
                 }
             } catch (err: any) {
                 setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
@@ -2166,6 +2194,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 {hasWordGameContent && (
                   <p className="text-xs text-pink-300 mt-0.5">
                     Inclui Jogo Adivinhe a Palavra (+R$2,00)
+                  </p>
+                )}
+                {discountAmount > 0 && (
+                  <p className="text-xs text-green-400 mt-0.5 font-bold">
+                    Desconto aplicado (-R${discountAmount.toFixed(2).replace('.', ',')}) 🎉
                   </p>
                 )}
                 <p className="text-xs text-white/50">Pagamento único</p>

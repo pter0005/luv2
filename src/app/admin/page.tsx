@@ -1,7 +1,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Gift, BarChart2, FileWarning, ImageOff, Link2 } from 'lucide-react';
+import { LogOut, ShieldCheck, Gift, BarChart2, FileWarning, ImageOff, Link2, Tag } from 'lucide-react';
 import Link from 'next/link';
 import AdminDashboard, {
   type DayData, type SourceRow, type RecentSale, type SaleRecord,
@@ -241,6 +241,12 @@ export default async function AdminPage() {
               className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
               <Link href="/admin/gift">
                 <Link2 className="h-3.5 w-3.5 text-purple-400" />Presentes
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm"
+              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              <Link href="/admin/discount">
+                <Tag className="h-3.5 w-3.5 text-green-400" />Descontos
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
