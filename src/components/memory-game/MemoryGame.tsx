@@ -158,7 +158,8 @@ function MemoryCard({
         }}>
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <Image src={card.imageUrl} alt={`memory-card-${card.imageId}`} fill
-              className="object-cover" sizes="(max-width: 480px) 30vw, 150px" unoptimized />
+              className="object-cover" sizes="(max-width: 480px) 30vw, 150px" unoptimized
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           </div>
           <AnimatePresence>
             {isMatched && (

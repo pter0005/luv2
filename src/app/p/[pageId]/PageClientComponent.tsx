@@ -49,26 +49,34 @@ const WordGame = dynamic(() => import('@/components/word-game/WordGame'), {
 
 
 const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
     return (
         <div className="relative w-full h-full bg-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex items-center justify-center">
-            {!isLoaded && (
+            {status === 'loading' && (
                 <div className="absolute inset-0 flex items-center justify-center z-0">
                    <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
                 </div>
             )}
-            <Image 
-                src={img.url} 
-                alt={`Imagem da galeria ${index + 1}`} 
-                fill 
-                className={cn(
-                    "object-cover transition-opacity duration-700 ease-in-out z-10", 
-                    isLoaded ? "opacity-100" : "opacity-0"
-                )}
-                sizes="(max-width: 768px) 90vw, 448px" 
-                priority={index === 0}
-                onLoadingComplete={() => setIsLoaded(true)}
-            />
+            {status === 'error' && (
+                <div className="absolute inset-0 flex items-center justify-center z-0 text-white/20 text-xs text-center px-4">
+                    <span>❤️</span>
+                </div>
+            )}
+            {img?.url && (
+                <Image
+                    src={img.url}
+                    alt={`Imagem da galeria ${index + 1}`}
+                    fill
+                    className={cn(
+                        "object-cover transition-opacity duration-700 ease-in-out z-10",
+                        status === 'loaded' ? "opacity-100" : "opacity-0"
+                    )}
+                    sizes="(max-width: 768px) 90vw, 448px"
+                    priority={index === 0}
+                    onLoadingComplete={() => setStatus('loaded')}
+                    onError={() => setStatus('error')}
+                />
+            )}
         </div>
     )
 });

@@ -360,13 +360,15 @@ const GalleryStep = React.memo(() => {
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
     const uploadingRef = useRef(false); // guard contra onChange duplo no mobile
+    const lastUploadFinishedRef = useRef(0); // cooldown contra onChange tardio pós-upload
     const { toast } = useToast();
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0) return;
-        // Previne disparo duplo do onChange (bug iOS/Android)
+        // Previne disparo duplo do onChange (bug iOS/Android) — inclui cooldown de 2s pós-upload
         if (uploadingRef.current) return;
+        if (Date.now() - lastUploadFinishedRef.current < 2000) return;
         // Captura os arquivos e reseta o input imediatamente
         const rawFiles = Array.from(event.target.files);
         event.target.value = '';
@@ -419,6 +421,7 @@ const GalleryStep = React.memo(() => {
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
+            lastUploadFinishedRef.current = Date.now(); // marca fim para o cooldown
         }
     };
 
@@ -1160,6 +1163,7 @@ const MemoryGameStep = React.memo(() => {
     const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
     const [isUploading, setIsUploading] = useState(false);
     const uploadingRef = useRef(false);
+    const lastUploadFinishedRef = useRef(0);
     const enableMemoryGame = watch("enableMemoryGame");
     const MAX_IMAGES = 8;
     const isLimitReached = fields.length >= MAX_IMAGES;
@@ -1167,6 +1171,7 @@ const MemoryGameStep = React.memo(() => {
     const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0) return;
         if (uploadingRef.current) return;
+        if (Date.now() - lastUploadFinishedRef.current < 2000) return;
         const rawFiles = Array.from(event.target.files);
         event.target.value = '';
 
@@ -1217,6 +1222,7 @@ const MemoryGameStep = React.memo(() => {
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
+            lastUploadFinishedRef.current = Date.now();
         }
     };
 

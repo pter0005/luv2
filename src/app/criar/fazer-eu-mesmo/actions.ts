@@ -262,7 +262,7 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
 // ─────────────────────────────────────────────
 // MOVER ARQUIVO NO STORAGE
 // ─────────────────────────────────────────────
-async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 3): Promise<any> {
+async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 4): Promise<any> {
   if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) return fileObject;
 
   const oldPath = fileObject.path;
@@ -277,29 +277,49 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       const sourceFile = bucket.file(oldPath);
       const targetFile = bucket.file(newPath);
 
+      // 1. Copy file (idempotent — skip if already copied)
       const [targetExists] = await targetFile.exists();
-      if (!targetExists) await sourceFile.copy(targetFile);
-
-      // Use Firebase Storage CDN URL with download token — works regardless of bucket ACL settings
-      const downloadToken = randomUUID();
-      await targetFile.setMetadata({ metadata: { firebaseStorageDownloadTokens: downloadToken } });
-      const encodedPath = encodeURIComponent(newPath);
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${downloadToken}`;
-
-      try {
+      if (!targetExists) {
         const [sourceExists] = await sourceFile.exists();
-        if (sourceExists) await sourceFile.delete();
+        if (!sourceExists) {
+          // Source already gone — check if target was moved in a previous attempt
+          console.warn(`[moveFile] Source not found: ${oldPath}`);
+          break; // skip retries, will fall through to error path
+        }
+        await sourceFile.copy(targetFile);
+      }
+
+      // 2. Get download token — Cloud Storage copy() preserves metadata including token
+      const [metadata] = await targetFile.getMetadata();
+      let token: string | undefined = metadata?.metadata?.firebaseStorageDownloadTokens;
+
+      // 3. If no token (e.g. bucket setting strips custom metadata), generate one
+      if (!token) {
+        token = randomUUID();
+        await targetFile.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+      }
+
+      // 4. Construct the public Firebase Storage URL
+      const encodedPath = encodeURIComponent(newPath);
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
+
+      // 5. Delete source ONLY after we have a confirmed working URL
+      try {
+        const [srcStillExists] = await sourceFile.exists();
+        if (srcStillExists) await sourceFile.delete();
       } catch (e) {
-        console.warn(`[moveFile] Source cleanup failed for ${oldPath}:`, e);
+        console.warn(`[moveFile] Source cleanup failed (non-critical) for ${oldPath}:`, e);
       }
 
       return { url: publicUrl, path: newPath };
     } catch (error: any) {
       lastError = error;
-      if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1000 * attempt));
+      console.warn(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error?.message);
+      if (attempt < maxRetries) await new Promise(r => setTimeout(r, 1500 * attempt));
     }
   }
 
+  // All retries failed — log and return original (temp URL) so page saves but can be recovered
   try {
     await db.collection('failed_file_moves').add({
       pageId: newPageId, oldPath, newPath, targetFolder,
@@ -307,10 +327,10 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       createdAt: Timestamp.now(), resolved: false,
     });
   } catch (e) {
-    console.error('[moveFile] CRITICAL FAILURE:', { oldPath, newPath, lastError });
+    console.error('[moveFile] CRITICAL: could not log failure:', { oldPath, newPath, lastError });
   }
 
-  return fileObject;
+  return fileObject; // returns temp URL — page saves, file recovery tool can fix later
 }
 
 // ─────────────────────────────────────────────
@@ -318,89 +338,89 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
 // ─────────────────────────────────────────────
 export async function finalizeLovePage(intentId: string, paymentId: string): Promise<FinalizePageResult> {
   const db = getAdminFirestore();
+  const intentRef = db.collection('payment_intents').doc(intentId);
 
-  const transactionResult = await db.runTransaction(async (transaction) => {
-    const intentRef = db.collection('payment_intents').doc(intentId);
-    const intentDoc = await transaction.get(intentRef);
+  // ── 1. Read intent OUTSIDE transaction (no timeout risk) ──────────────────
+  const intentDoc = await intentRef.get();
+  if (!intentDoc.exists) return { success: false, error: 'Rascunho não encontrado.' };
+  const data = intentDoc.data();
+  if (!data) return { success: false, error: 'Dados do rascunho inválidos.' };
 
-    if (!intentDoc.exists) throw new Error('Rascunho não encontrado.');
-    const data = intentDoc.data();
-    if (!data) throw new Error('Dados do rascunho inválidos.');
+  // ── 2. Idempotency: already finalized? ────────────────────────────────────
+  if (data.status === 'completed' && data.lovePageId) {
+    return { success: true, pageId: data.lovePageId as string };
+  }
 
-    if (data.status === 'completed' && data.lovePageId) {
-      return {
-        success: true as const,
-        pageId: data.lovePageId as string,
-        plan: data.plan as 'basico' | 'avancado',
-        userEmail: (data.guestEmail || data.userEmail) as string | undefined,
-        userId: data.userId as string,
-        isGuest: (data.userId as string)?.startsWith('guest_'),
-        guestEmail: data.guestEmail as string | undefined,
-      };
-    }
-
-    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
-    const isGuestUser = (data.userId as string)?.startsWith('guest_');
-    let isCreatorAdmin = false;
-
-    if (data.userId && !isGuestUser) {
-      try {
-        const userDoc = await transaction.get(db.collection('users').doc(data.userId));
-        if (userDoc.exists) {
-          const userEmail = userDoc.data()?.email;
-          if (userEmail && adminEmails.includes(userEmail)) isCreatorAdmin = true;
-        }
-      } catch (e) {
-        console.warn(`Could not verify admin status for user ${data.userId}`, e);
+  // ── 3. Admin check OUTSIDE transaction ────────────────────────────────────
+  const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+  const isGuestUser = (data.userId as string)?.startsWith('guest_');
+  let isCreatorAdmin = false;
+  if (data.userId && !isGuestUser) {
+    try {
+      const userDoc = await db.collection('users').doc(data.userId).get();
+      if (userDoc.exists) {
+        const userEmail = userDoc.data()?.email;
+        if (userEmail && adminEmails.includes(userEmail)) isCreatorAdmin = true;
       }
+    } catch (e) {
+      console.warn(`Could not verify admin status for user ${data.userId}`, e);
     }
+  }
 
-    const bucket = getAdminStorage();
-    const newPageId = db.collection('lovepages').doc().id;
-    const sanitizedData = sanitizeForFirebase(data);
+  // ── 4. Move ALL files OUTSIDE transaction (no 30s timeout, no retry side-effects) ──
+  const bucket = getAdminStorage();
+  const newPageId = db.collection('lovepages').doc().id;
+  const sanitizedData = sanitizeForFirebase(data);
 
-    if (sanitizedData.galleryImages?.length) {
-      sanitizedData.galleryImages = await Promise.all(
-        sanitizedData.galleryImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'gallery', newPageId))
-      );
-    }
-    if (sanitizedData.timelineEvents?.length) {
-      sanitizedData.timelineEvents = await Promise.all(
-        sanitizedData.timelineEvents.map(async (event: any) => {
-          if (event.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', newPageId);
-          return { ...event, date: ensureTimestamp(event.date) };
-        })
-      );
-    } else if (sanitizedData.timelineEvents) {
-      sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
-    }
-    if (sanitizedData.puzzleImage) sanitizedData.puzzleImage = await moveFileWithRetry(bucket, db, sanitizedData.puzzleImage, 'puzzle', newPageId);
-    if (sanitizedData.audioRecording) sanitizedData.audioRecording = await moveFileWithRetry(bucket, db, sanitizedData.audioRecording, 'audio', newPageId);
-    if (sanitizedData.backgroundVideo) sanitizedData.backgroundVideo = await moveFileWithRetry(bucket, db, sanitizedData.backgroundVideo, 'video', newPageId);
-    if (sanitizedData.memoryGameImages?.length) {
-      sanitizedData.memoryGameImages = await Promise.all(
-        sanitizedData.memoryGameImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', newPageId))
-      );
-    }
-    sanitizedData.specialDate = ensureTimestamp(sanitizedData.specialDate);
+  if (sanitizedData.galleryImages?.length) {
+    sanitizedData.galleryImages = await Promise.all(
+      sanitizedData.galleryImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'gallery', newPageId))
+    );
+  }
+  if (sanitizedData.timelineEvents?.length) {
+    sanitizedData.timelineEvents = await Promise.all(
+      sanitizedData.timelineEvents.map(async (event: any) => {
+        if (event.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', newPageId);
+        return { ...event, date: ensureTimestamp(event.date) };
+      })
+    );
+  } else if (sanitizedData.timelineEvents) {
+    sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((e: any) => ({ ...e, date: ensureTimestamp(e.date) }));
+  }
+  if (sanitizedData.puzzleImage) sanitizedData.puzzleImage = await moveFileWithRetry(bucket, db, sanitizedData.puzzleImage, 'puzzle', newPageId);
+  if (sanitizedData.audioRecording) sanitizedData.audioRecording = await moveFileWithRetry(bucket, db, sanitizedData.audioRecording, 'audio', newPageId);
+  if (sanitizedData.backgroundVideo) sanitizedData.backgroundVideo = await moveFileWithRetry(bucket, db, sanitizedData.backgroundVideo, 'video', newPageId);
+  if (sanitizedData.memoryGameImages?.length) {
+    sanitizedData.memoryGameImages = await Promise.all(
+      sanitizedData.memoryGameImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', newPageId))
+    );
+  }
+  sanitizedData.specialDate = ensureTimestamp(sanitizedData.specialDate);
 
-    const { payment, guestEmail: _ge, ...finalData } = sanitizedData;
-    finalData.id = newPageId;
-    finalData.createdAt = Timestamp.now();
-    finalData.filesMovedAt = Timestamp.now();
-    finalData.paymentId = paymentId;
-    finalData.status = 'paid';
-    finalData.componentVersion = 'v2';
-    if (data.paidAmount) finalData.paidAmount = data.paidAmount;
+  // ── 5. Build final page data ───────────────────────────────────────────────
+  const { payment, guestEmail: _ge, ...finalData } = sanitizedData;
+  finalData.id = newPageId;
+  finalData.createdAt = Timestamp.now();
+  finalData.filesMovedAt = Timestamp.now();
+  finalData.paymentId = paymentId;
+  finalData.status = 'paid';
+  finalData.componentVersion = 'v2';
+  if (data.paidAmount) finalData.paidAmount = data.paidAmount;
 
-    if (isCreatorAdmin) {
-      finalData.plan = 'avancado';
-      delete finalData.expireAt;
-    } else if (finalData.plan === 'basico') {
-      finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
-    } else {
-      delete finalData.expireAt;
-    }
+  if (isCreatorAdmin) {
+    finalData.plan = 'avancado';
+    delete finalData.expireAt;
+  } else if (finalData.plan === 'basico') {
+    finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
+  } else {
+    delete finalData.expireAt;
+  }
+
+  // ── 6. Firestore transaction — ONLY Firestore writes, no Storage calls ────
+  await db.runTransaction(async (transaction) => {
+    // Re-read inside transaction for consistency
+    const freshIntent = await transaction.get(intentRef);
+    if (freshIntent.data()?.status === 'completed') return; // race condition guard
 
     transaction.set(db.collection('lovepages').doc(newPageId), finalData);
 
@@ -412,29 +432,18 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     }
 
     transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
-
-    return {
-      success: true as const,
-      pageId: newPageId,
-      plan: finalData.plan as 'basico' | 'avancado',
-      userEmail: (data.guestEmail || data.userEmail) as string | undefined,
-      userId: data.userId as string,
-      isGuest: isGuestUser,
-      guestEmail: data.guestEmail as string | undefined,
-    };
   });
 
-  if (transactionResult.success) {
-    if (transactionResult.guestEmail) {
-      await createGuestAccount(transactionResult.guestEmail, transactionResult.userId, transactionResult.pageId);
-    }
-    await sendServerSidePurchaseEvent(transactionResult.plan, transactionResult.pageId, transactionResult.userEmail);
-    revalidatePath(`/p/${transactionResult.pageId}`);
-    revalidatePath('/minhas-paginas');
-    return { success: true, pageId: transactionResult.pageId };
+  // ── 7. Post-finalization side-effects ─────────────────────────────────────
+  const userEmail = (data.guestEmail || data.userEmail) as string | undefined;
+  if (data.guestEmail) {
+    await createGuestAccount(data.guestEmail, data.userId as string, newPageId);
   }
+  await sendServerSidePurchaseEvent(finalData.plan as 'basico' | 'avancado', newPageId, userEmail);
+  revalidatePath(`/p/${newPageId}`);
+  revalidatePath('/minhas-paginas');
 
-  return { success: false, error: 'Transação falhou.' };
+  return { success: true, pageId: newPageId };
 }
 
 // ─────────────────────────────────────────────
