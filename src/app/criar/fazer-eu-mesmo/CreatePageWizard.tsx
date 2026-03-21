@@ -2998,25 +2998,105 @@ function WizardInternal() {
             </div>
 
             {/* POPUP — Presente grátis */}
-            {/* Banner de desconto */}
+            {/* Popup de desconto */}
             {showDiscountBanner && discountBannerAmount > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: -40 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl"
-                    style={{
-                        background: 'linear-gradient(135deg, #166534, #15803d)',
-                        border: '1px solid rgba(74,222,128,0.4)',
-                        boxShadow: '0 0 32px rgba(34,197,94,0.35)',
-                    }}
-                >
-                    <span className="text-xl leading-none">🎉</span>
-                    <div>
-                        <p className="text-sm font-black text-white leading-tight">Cupom aplicado!</p>
-                        <p className="text-xs text-green-200">R${discountBannerAmount.toFixed(2).replace('.', ',')} de desconto garantido</p>
-                    </div>
-                    <button onClick={() => setShowDiscountBanner(false)} className="ml-2 text-green-300 hover:text-white text-lg leading-none">×</button>
-                </motion.div>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(8px)' }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.82, y: 32 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ type: 'spring', damping: 18, stiffness: 240 }}
+                        className="relative max-w-sm w-full rounded-3xl p-8 text-center overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(160deg, #052e16 0%, #0a1a0f 60%, #0d1117 100%)',
+                            border: '1.5px solid rgba(74,222,128,0.45)',
+                            boxShadow: '0 0 100px rgba(34,197,94,0.25), 0 32px 80px rgba(0,0,0,0.7)',
+                        }}
+                    >
+                        {/* Glow background */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[80px]" style={{ background: 'rgba(34,197,94,0.12)' }} />
+                        </div>
+
+                        {/* Badge topo */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15 }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-5"
+                            style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.35)', color: '#4ade80' }}
+                        >
+                            ✦ CUPOM EXCLUSIVO
+                        </motion.div>
+
+                        {/* Emoji */}
+                        <motion.div
+                            initial={{ scale: 0, rotate: -15 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ delay: 0.2, type: 'spring', damping: 12, stiffness: 220 }}
+                            className="text-7xl mb-5 leading-none select-none"
+                        >
+                            🎉
+                        </motion.div>
+
+                        {/* Título */}
+                        <motion.h2
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-3xl font-black text-white mb-2 leading-tight"
+                        >
+                            Você foi selecionado!
+                        </motion.h2>
+
+                        {/* Desconto em destaque */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="my-5 py-4 px-6 rounded-2xl"
+                            style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}
+                        >
+                            <p className="text-xs text-green-400 font-bold uppercase tracking-widest mb-1">Seu desconto especial</p>
+                            <p className="text-5xl font-black text-green-400 leading-none">
+                                R${discountBannerAmount.toFixed(2).replace('.', ',')}
+                            </p>
+                            <p className="text-xs text-green-300/60 mt-1">OFF na sua página personalizada</p>
+                        </motion.div>
+
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            className="text-white/45 text-sm mb-7 leading-relaxed"
+                        >
+                            Crie agora uma página única e inesquecível pra quem você ama. São poucas vagas com esse desconto!
+                        </motion.p>
+
+                        {/* Botão */}
+                        <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.55 }}
+                            onClick={() => setShowDiscountBanner(false)}
+                            className="w-full py-4 rounded-2xl font-black text-white text-base transition-all active:scale-95"
+                            style={{
+                                background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                                boxShadow: '0 0 40px rgba(22,163,74,0.5), 0 4px 20px rgba(0,0,0,0.3)',
+                            }}
+                        >
+                            Garantir meu desconto →
+                        </motion.button>
+
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.65 }}
+                            className="text-xs text-white/20 mt-4"
+                        >
+                            Desconto aplicado automaticamente no checkout
+                        </motion.p>
+                    </motion.div>
+                </div>
             )}
             {showGiftPopup && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
