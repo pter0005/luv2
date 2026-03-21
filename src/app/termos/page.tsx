@@ -64,7 +64,7 @@ export default function TermosPage() {
             <PolicySection title="5. Pagamentos e Planos" icon={CreditCard}>
                  <p>Os serviços são oferecidos mediante pagamento único, conforme descrito na página de planos. Os preços estão sujeitos a alterações.</p>
                 <p>O <strong>Plano Básico</strong> oferece disponibilidade da página por 12 horas. O <strong>Plano Avançado</strong> oferece disponibilidade permanente, sujeita à continuidade da plataforma MyCupid.</p>
-                <p>Não oferecemos reembolsos após a confirmação do pagamento e a geração da página, uma vez que se trata de um produto digital personalizado e de entrega imediata.</p>
+                <p>Não oferecemos reembolsos após a confirmação do pagamento e a geração da página, uma vez que se trata de um produto digital personalizado e de entrega imediata. Reembolsos só são realizados em casos de erro técnico comprovado da nossa parte. Solicitações por arrependimento após a entrega do produto não são elegíveis para estorno, independentemente do tempo decorrido desde a compra.</p>
             </PolicySection>
 
             <PolicySection title="6. Limitação de Responsabilidade" icon={Scale}>
