@@ -58,6 +58,8 @@ async function createGuestAccount(email: string, guestId: string, pageId: string
     const db = getAdminFirestore();
 
     let uid: string;
+    let isNewAccount = false;
+
     try {
       const existing = await auth.getUserByEmail(email);
       uid = existing.uid;
@@ -68,6 +70,7 @@ async function createGuestAccount(email: string, guestId: string, pageId: string
         displayName: 'Cliente MyCupid',
       });
       uid = newUser.uid;
+      isNewAccount = true;
     }
 
     await db.collection('users').doc(uid).set(
@@ -81,6 +84,21 @@ async function createGuestAccount(email: string, guestId: string, pageId: string
     );
 
     await db.collection('lovepages').doc(pageId).update({ userId: uid });
+
+    // Envia email de reset de senha pelo próprio Firebase (sem serviço externo)
+    if (isNewAccount) {
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+        await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestType: 'PASSWORD_RESET', email }),
+        });
+      } catch (emailErr) {
+        console.warn('[GuestAccount] Falha ao enviar email de senha:', emailErr);
+      }
+    }
+
     console.log(`[GuestAccount] Conta criada/vinculada: ${email} → ${uid}`);
     return uid;
   } catch (err) {

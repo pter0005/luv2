@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TIMER_KEY = 'mycupid_offer_deadline';
-const INITIAL_SECONDS = 1 * 3600 + 47 * 60; // 1h 47min
+const INITIAL_SECONDS = 24 * 3600; // 24 horas
 
 function getDeadline(): number {
   if (typeof window === 'undefined') return Date.now() + INITIAL_SECONDS * 1000;
@@ -14,8 +14,8 @@ function getDeadline(): number {
     const stored = localStorage.getItem(TIMER_KEY);
     if (stored) {
       const deadline = parseInt(stored);
-      // Se o deadline guardado é inválido ou está muito no passado (mais de 1 dia), ignora
-      if (isNaN(deadline) || deadline < Date.now() - 86400000) {
+      // Se o deadline guardado é inválido ou está muito no passado (mais de 2 dias), ignora
+      if (isNaN(deadline) || deadline < Date.now() - 2 * 86400000) {
         localStorage.removeItem(TIMER_KEY);
       } else {
         return deadline;
