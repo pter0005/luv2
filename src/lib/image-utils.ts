@@ -36,7 +36,7 @@ export const base64ToBlob = (base64: string): Blob => {
 
 
 // Helper to compress and resize an image file
-export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.75): Promise<Blob> => {
+export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.75): Promise<File> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -70,15 +70,16 @@ export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.7
                 canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
 
+                const mimeType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
                 canvas.toBlob(
                     (blob) => {
                         if (blob) {
-                            resolve(blob);
+                            resolve(new File([blob], file.name, { type: mimeType }));
                         } else {
                             reject(new Error('Canvas to Blob conversion failed.'));
                         }
                     },
-                    file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png',
+                    mimeType,
                     quality
                 );
             };
