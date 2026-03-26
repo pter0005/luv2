@@ -3,21 +3,55 @@
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'crypto';
 
-// ── HELPER: move um arquivo com retry (espelho do actions.ts) ─────
+// ── HELPER: gera URL Firebase Storage com token (sem makePublic) ──
+async function getTokenUrl(file: any, bucket: any): Promise<string> {
+    const [metadata] = await file.getMetadata();
+    let token: string = metadata?.metadata?.firebaseStorageDownloadTokens;
+    if (!token) {
+        token = randomUUID();
+        await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+    }
+    const encoded = encodeURIComponent(file.name);
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${token}`;
+}
+
+// ── HELPER: move arquivo de temp/ para lovepages/ com token URL ───
 async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<{ success: boolean; url?: string; error?: string }> {
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-            await bucket.file(oldPath).move(newPath);
-            const newFileRef = bucket.file(newPath);
-            await newFileRef.makePublic();
-            return { success: true, url: newFileRef.publicUrl() };
+            const sourceFile = bucket.file(oldPath);
+            const targetFile = bucket.file(newPath);
+            const [targetExists] = await targetFile.exists();
+            if (!targetExists) await sourceFile.copy(targetFile);
+            const url = await getTokenUrl(targetFile, bucket);
+            try { await sourceFile.delete(); } catch (_) {}
+            return { success: true, url };
         } catch (error: any) {
             if (attempt < 3) await new Promise(r => setTimeout(r, 1000));
             else return { success: false, error: error.message };
         }
     }
     return { success: false, error: 'unknown' };
+}
+
+// ── HELPER: corrige URL quebrada de arquivo já em lovepages/ ──────
+async function fixBrokenUrl(bucket: any, fileObj: any): Promise<any> {
+    if (!fileObj?.url || !fileObj?.path) return fileObj;
+    const isFirebaseUrl = fileObj.url.includes('firebasestorage.googleapis.com/v0/b/');
+    const hasToken = fileObj.url.includes('?alt=media&token=');
+    if (isFirebaseUrl && hasToken) return fileObj; // já está correto
+    // URL quebrada (storage.googleapis.com sem token ou sem alt=media)
+    try {
+        const file = bucket.file(fileObj.path);
+        const [exists] = await file.exists();
+        if (!exists) return fileObj;
+        const url = await getTokenUrl(file, bucket);
+        return { ...fileObj, url };
+    } catch {
+        return fileObj;
+    }
 }
 
 // ── REPROCESSAR UMA PÁGINA ESPECÍFICA ────────────────────────────
@@ -36,18 +70,23 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
         let failed = 0;
 
         const tryMove = async (fileObj: any, folder: string) => {
-            if (!fileObj?.path?.startsWith('temp/')) return fileObj;
-            const fileName = fileObj.path.split('/').pop();
-            if (!fileName) return fileObj;
-            const newPath = `lovepages/${pageId}/${folder}/${fileName}`;
-            const result = await moveFile(bucket, fileObj.path, newPath);
-            if (result.success) {
-                moved++;
-                return { url: result.url, path: newPath };
-            } else {
-                failed++;
-                return fileObj;
+            if (!fileObj?.path) return fileObj;
+            // Arquivo ainda em temp/ — mover para lovepages/
+            if (fileObj.path.startsWith('temp/')) {
+                const fileName = fileObj.path.split('/').pop();
+                if (!fileName) return fileObj;
+                const newPath = `lovepages/${pageId}/${folder}/${fileName}`;
+                const result = await moveFile(bucket, fileObj.path, newPath);
+                if (result.success) { moved++; return { url: result.url, path: newPath }; }
+                else { failed++; return fileObj; }
             }
+            // Arquivo já em lovepages/ mas com URL quebrada — só corrige a URL
+            if (fileObj.path.startsWith('lovepages/')) {
+                const fixed = await fixBrokenUrl(bucket, fileObj);
+                if (fixed.url !== fileObj.url) moved++;
+                return fixed;
+            }
+            return fileObj;
         };
 
         // Galeria
