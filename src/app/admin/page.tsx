@@ -22,15 +22,21 @@ function formatDate(ts: any): string {
   } catch { return '—'; }
 }
 
+// Retorna YYYY-MM-DD no timezone de São Paulo
+function toBRDate(date: Date): string {
+  return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    .split('/').reverse().join('-');
+}
+
 async function getAllData() {
   const db = getAdminFirestore();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toBRDate(new Date());
 
   // Last 30 days array
   const days: string[] = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(toBRDate(d));
   }
   const cutoff = days[0];
 
@@ -128,7 +134,7 @@ async function getAllData() {
 
       // Date-based analytics
       let date: string | null = null;
-      try { date = createdAtDate.toISOString().slice(0, 10); } catch (_) {}
+      try { date = toBRDate(createdAtDate); } catch (_) {}
 
       const src = (d.utmSource || 'direct') as string;
 
