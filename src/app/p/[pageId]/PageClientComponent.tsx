@@ -28,6 +28,7 @@ import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquar
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
+import UpgradeModal from './UpgradeModal';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -278,6 +279,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       
       {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirando */}
       {!isDemoPage && pageData.plan === 'basico' && <ExpiryBanner expireAt={pageData.expireAt} />}
+
+      {/* UPSELL — popup de upgrade para permanente */}
+      {!isDemoPage && pageData.plan === 'basico' && pageData.expireAt && (
+        <UpgradeModal pageId={pageData.id} expireAt={pageData.expireAt} />
+      )}
       
       <AnimatePresence>
         {showExplosion && (
