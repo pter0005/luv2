@@ -3060,6 +3060,7 @@ function WizardInternal() {
     }
 
     const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+    const showEasterPreview = currentStepId === 'puzzle' && formData.plan === 'pascoa';
 
     return (
         <FormProvider {...methods}>
@@ -3070,6 +3071,7 @@ function WizardInternal() {
                         onShowTimeline={() => setShowTimelinePreview(true)}
                         hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                         showPuzzlePreview={showPuzzlePreview}
+                        showEasterPreview={showEasterPreview}
                         previewPuzzleRevealed={previewPuzzleRevealed}
                         setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
                     />
@@ -3101,6 +3103,7 @@ function WizardInternal() {
                                 onShowTimeline={() => setShowTimelinePreview(true)}
                                 hasValidTimelineEvents={timelineEventsForDisplay.length > 0}
                                 showPuzzlePreview={showPuzzlePreview}
+                                showEasterPreview={showEasterPreview}
                                 previewPuzzleRevealed={previewPuzzleRevealed}
                                 setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
                             />

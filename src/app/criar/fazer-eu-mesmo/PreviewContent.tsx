@@ -27,6 +27,7 @@ const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), {
   ssr: false,
   loading: () => <Skeleton className="w-full aspect-square" />,
 });
+const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
@@ -42,6 +43,7 @@ type PreviewContentProps = {
     onShowTimeline: () => void;
     hasValidTimelineEvents: boolean;
     showPuzzlePreview: boolean;
+    showEasterPreview: boolean;
     previewPuzzleRevealed: boolean;
     setPreviewPuzzleRevealed: (revealed: boolean) => void;
 };
@@ -76,6 +78,7 @@ export default function PreviewContent({
     onShowTimeline,
     hasValidTimelineEvents,
     showPuzzlePreview,
+    showEasterPreview,
     previewPuzzleRevealed,
     setPreviewPuzzleRevealed,
 }: PreviewContentProps) {
@@ -105,6 +108,12 @@ export default function PreviewContent({
     }, [showPuzzlePreview]);
 
     useEffect(() => {
+        if (showEasterPreview) {
+            setPreviewPuzzleRevealed(false);
+        }
+    }, [showEasterPreview, setPreviewPuzzleRevealed]);
+
+    useEffect(() => {
         if (isPreviewPuzzleComplete) {
             const timer = setTimeout(() => {
                 handlePreviewReveal();
@@ -130,7 +139,7 @@ export default function PreviewContent({
     const puzzleImageSrc = typeof formData.puzzleImage === 'string' 
       ? formData.puzzleImage 
       : formData.puzzleImage?.url;
-    const shouldBeBlurred = showPuzzlePreview && !previewPuzzleRevealed;
+    const shouldBeBlurred = (showPuzzlePreview || showEasterPreview) && !previewPuzzleRevealed;
 
     const hasMemoryGame = useMemo(() => {
         return !!(formData.enableMemoryGame && formData.memoryGameImages?.length > 0);
@@ -318,6 +327,25 @@ export default function PreviewContent({
                                     )}
                                 </AnimatePresence>
                             </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {showEasterPreview && !previewPuzzleRevealed && (
+                        <motion.div
+                            key="preview-easter-screen"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.05, filter: "blur(20px)" }}
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden"
+                        >
+                            <EasterEggIntro onReveal={() => {
+                                setShowExplosion(true);
+                                setPreviewPuzzleRevealed(true);
+                                setTimeout(() => setShowExplosion(false), 2000);
+                            }} />
                         </motion.div>
                     )}
                 </AnimatePresence>
