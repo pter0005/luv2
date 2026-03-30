@@ -37,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
+const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
 const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), {
     ssr: false,
@@ -193,6 +194,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     return !!(pageData.enablePuzzle && puzzleImageSrc);
   }, [pageData.enablePuzzle, puzzleImageSrc]);
 
+  const hasEasterIntro = useMemo(() => {
+    return pageData.introType === 'easter';
+  }, [pageData.introType]);
+
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
@@ -240,10 +245,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle) {
+    if (!hasPuzzle && !hasEasterIntro) {
       setPuzzleRevealed(true);
     }
-  }, [hasPuzzle]);
+  }, [hasPuzzle, hasEasterIntro]);
 
   useEffect(() => {
     if (isPuzzleComplete) {
@@ -583,6 +588,20 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                 )}
               </AnimatePresence>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!puzzleRevealed && hasEasterIntro && (
+          <motion.div
+            key="easter-overlay-layer"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 z-[100]"
+          >
+            <EasterEggIntro onReveal={handleReveal} />
           </motion.div>
         )}
       </AnimatePresence>

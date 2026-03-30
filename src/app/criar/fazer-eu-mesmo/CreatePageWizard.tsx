@@ -159,6 +159,7 @@ const pageSchema = z.object({
   quizQuestions: z.array(quizQuestionSchema).max(5, "Máximo de 5 perguntas.").default([]),
   enableWordGame: z.boolean().default(false),
   wordGameQuestions: z.array(wordGameQuestionSchema).max(4, "Máximo de 4 palavras.").default([]),
+  introType: z.string().optional(),
   qrCodeDesign: z.string().default("classic"),
   utmSource: z.string().optional(),
   payment: paymentSchema.optional(),
@@ -1048,6 +1049,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
     const { user, storage, isUserLoading } = useFirebase();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
+    const plan = watch("plan");
     const [isProcessing, setIsProcessing] = useState(false);
     const { toast } = useToast();
 
@@ -1101,6 +1103,31 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
 
     return (
         <div className="space-y-8">
+            {plan === 'pascoa' && (
+                <div className="relative rounded-2xl overflow-hidden p-5"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)',
+                        border: '2px solid rgba(255,180,60,0.5)',
+                        boxShadow: '0 0 30px rgba(255,160,60,0.15)',
+                    }}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-end gap-1 shrink-0">
+                            <span className="text-3xl">🥚</span>
+                            <span className="text-2xl -mb-0.5">🐰</span>
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-bold" style={{ color: '#ffe8f0' }}>Intro de Páscoa</h3>
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42)', color: 'white' }}>INCLUÍDO</span>
+                            </div>
+                            <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,200,220,0.6)' }}>
+                                Animação especial: ovo 3D quebrando em 5 toques + coelho animado + confetes + revelação cinematográfica
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             <FormField
                 control={control}
                 name="enablePuzzle"
