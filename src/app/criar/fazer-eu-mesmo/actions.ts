@@ -428,6 +428,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   if (isCreatorAdmin) {
     finalData.plan = 'avancado';
     delete finalData.expireAt;
+  } else if (finalData.plan === 'pascoa') {
+    finalData.introType = 'easter';
+    finalData.plan = 'avancado';
+    delete finalData.expireAt;
   } else if (finalData.plan === 'basico') {
     finalData.expireAt = Timestamp.fromMillis(Date.now() + 25 * 60 * 60 * 1000);
   } else {

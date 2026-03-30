@@ -1511,6 +1511,9 @@ WordGameStep.displayName = 'WordGameStep';
 const PlanStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     const { field } = useController({ name: 'plan', control });
+    const { user } = useUser();
+    const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+    const isAdmin = user?.email && adminEmails.includes(user.email);
 
     const [offerExpired, setOfferExpired] = useState(false);
     useEffect(() => {
@@ -1554,47 +1557,128 @@ const PlanStep = React.memo(() => {
     ];
 
     return (
-        <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {plans.map((planInfo) => {
-                const isSelected = field.value === planInfo.id;
-                return (
-                    <Label key={planInfo.id} htmlFor={`plan-${planInfo.id}`} className={cn(
-                        "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300",
-                        "bg-card/50 border-2",
-                        isSelected ? "border-primary shadow-2xl shadow-primary/20" : 'border-border hover:border-primary/40'
-                    )}>
-                        <RadioGroupItem value={planInfo.id} id={`plan-${planInfo.id}`} className="sr-only peer" />
-                        {planInfo.id === 'avancado' && (
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg z-10">MAIS POPULAR</div>
-                        )}
-                        <div className="p-6 pt-12 flex-grow flex flex-col">
-                            <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
-                            <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
-                            <div className="my-4 text-center">
-                                {planInfo.originalPrice && (
-                                  <p className="text-zinc-500 text-lg line-through font-medium">De R${planInfo.originalPrice}</p>
-                                )}
-                                <div className="flex items-baseline gap-1 justify-center">
-                                    <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
-                                    <span className="text-muted-foreground text-sm">/pagamento único</span>
-                                </div>
+        <div className="space-y-6">
+            {/* ── EASTER PROMO CARD — admin only ─────────────────────── */}
+            {isAdmin && (
+                <Label
+                    htmlFor="plan-pascoa"
+                    className={cn(
+                        "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
+                        field.value === 'pascoa'
+                            ? "border-amber-400 shadow-2xl shadow-amber-400/25"
+                            : "border-amber-400/40 hover:border-amber-400/70"
+                    )}
+                    style={{
+                        background: 'linear-gradient(135deg, #2d1152 0%, #1a0a2e 50%, #2d1152 100%)',
+                    }}
+                    onClick={() => field.onChange('pascoa')}
+                >
+                    <input type="radio" name="plan" value="pascoa" id="plan-pascoa" className="sr-only" checked={field.value === 'pascoa'} onChange={() => field.onChange('pascoa')} />
+
+                    {/* Easter badge */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 text-xs font-bold rounded-b-lg z-10"
+                        style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42)', color: 'white' }}>
+                        🐣 ESPECIAL DE PÁSCOA
+                    </div>
+
+                    <div className="p-6 pt-12 flex flex-col items-center text-center">
+                        {/* Easter decorations */}
+                        <div className="flex items-center gap-3 mb-3">
+                            <span className="text-3xl">🥚</span>
+                            <span className="text-3xl">🐰</span>
+                            <span className="text-3xl">🥚</span>
+                        </div>
+
+                        <h3 className="text-xl font-bold mb-1" style={{ color: '#ffe8f0' }}>Surpresa de Páscoa</h3>
+                        <p className="text-sm mb-4" style={{ color: 'rgba(255,200,220,0.7)' }}>
+                            Introdução especial com ovo quebrando em 3D + página permanente
+                        </p>
+
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1 justify-center">
+                                <span className="text-4xl font-black" style={{ color: '#ffd700' }}>R$24,90</span>
+                                <span className="text-sm" style={{ color: 'rgba(255,200,220,0.5)' }}>/pagamento único</span>
                             </div>
-                            <ul className="space-y-3 text-sm flex-grow">
-                                {planInfo.features.map((feature, i) => (
-                                    <li key={i} className="flex items-center gap-3">
-                                        {feature.included ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <XCircle className="w-5 h-5 text-muted-foreground/50 shrink-0" />}
-                                        <span className={cn('leading-tight', !feature.included && 'line-through text-muted-foreground/70', feature.highlight && 'text-primary font-bold')}>{feature.text}</span>
-                                    </li>
-                                ))}
-                            </ul>
                         </div>
-                        <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
-                            {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
+
+                        <ul className="space-y-2 text-sm mt-3 text-left w-full max-w-xs">
+                            {[
+                                'Animação 3D do ovo de Páscoa quebrando',
+                                'Coelho animado + efeitos especiais',
+                                'Confetes e revelação cinematográfica',
+                                'Todos os recursos do Plano Avançado',
+                                'Página permanente + backup infinito',
+                            ].map((text, i) => (
+                                <li key={i} className="flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4 shrink-0" style={{ color: '#a8e063' }} />
+                                    <span style={{ color: 'rgba(255,220,240,0.85)' }}>{text}</span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {/* Sparkle decoration */}
+                        <div className="absolute top-4 right-4 opacity-40 text-yellow-300 animate-pulse">
+                            <Sparkles className="w-5 h-5" />
                         </div>
-                    </Label>
-                );
-            })}
-        </RadioGroup>
+                        <div className="absolute bottom-4 left-4 opacity-30 text-pink-300 animate-pulse" style={{ animationDelay: '0.5s' }}>
+                            <Sparkles className="w-4 h-4" />
+                        </div>
+                    </div>
+
+                    <div className={cn(
+                        "w-full p-3 text-center font-bold text-sm border-t mt-2",
+                        field.value === 'pascoa'
+                            ? "text-white border-amber-400/30"
+                            : "text-amber-200/60 border-white/10"
+                    )} style={{ background: field.value === 'pascoa' ? 'rgba(255,180,60,0.15)' : 'rgba(255,255,255,0.03)' }}>
+                        {field.value === 'pascoa' ? '✨ Template Selecionado' : 'Selecionar Template de Páscoa'}
+                    </div>
+                </Label>
+            )}
+
+            {/* ── REGULAR PLANS ──────────────────────────────────────── */}
+            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {plans.map((planInfo) => {
+                    const isSelected = field.value === planInfo.id;
+                    return (
+                        <Label key={planInfo.id} htmlFor={`plan-${planInfo.id}`} className={cn(
+                            "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300",
+                            "bg-card/50 border-2",
+                            isSelected ? "border-primary shadow-2xl shadow-primary/20" : 'border-border hover:border-primary/40'
+                        )}>
+                            <RadioGroupItem value={planInfo.id} id={`plan-${planInfo.id}`} className="sr-only peer" />
+                            {planInfo.id === 'avancado' && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg z-10">MAIS POPULAR</div>
+                            )}
+                            <div className="p-6 pt-12 flex-grow flex flex-col">
+                                <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
+                                <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
+                                <div className="my-4 text-center">
+                                    {planInfo.originalPrice && (
+                                      <p className="text-zinc-500 text-lg line-through font-medium">De R${planInfo.originalPrice}</p>
+                                    )}
+                                    <div className="flex items-baseline gap-1 justify-center">
+                                        <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
+                                        <span className="text-muted-foreground text-sm">/pagamento único</span>
+                                    </div>
+                                </div>
+                                <ul className="space-y-3 text-sm flex-grow">
+                                    {planInfo.features.map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-3">
+                                            {feature.included ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <XCircle className="w-5 h-5 text-muted-foreground/50 shrink-0" />}
+                                            <span className={cn('leading-tight', !feature.included && 'line-through text-muted-foreground/70', feature.highlight && 'text-primary font-bold')}>{feature.text}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
+                                {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
+                            </div>
+                        </Label>
+                    );
+                })}
+            </RadioGroup>
+        </div>
     );
 });
 PlanStep.displayName = "PlanStep";
@@ -1625,7 +1709,7 @@ const stepComponents: React.ComponentType<any>[] = [
 // ─────────────────────────────────────────────
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
-    const plan = watch('plan') as 'basico' | 'avancado';
+    const plan = watch('plan') as 'basico' | 'avancado' | 'pascoa';
     const intentId = watch('intentId');
     const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
@@ -2149,7 +2233,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center py-4">Confirm your email above to unlock PayPal</p>
                     ) : intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
-                            <PayPalButton intentId={intentId} plan={plan} amount={totalUSD.toFixed(2)} />
+                            <PayPalButton intentId={intentId} plan={plan === 'pascoa' ? 'avancado' : plan} amount={totalUSD.toFixed(2)} />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-3 py-6">
