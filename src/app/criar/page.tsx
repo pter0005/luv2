@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Sparkles } from 'lucide-react';
+import { useUser } from '@/firebase';
 
 const OPTIONS = [
   { key: 'namorade', emoji: '💜', label: 'Namorada/o',     sub: 'declare seu amor' },
@@ -16,14 +17,26 @@ const OPTIONS = [
   { key: 'outro',    emoji: '✨', label: 'Outra pessoa',   sub: 'alguém especial' },
 ];
 
+const ADMIN_EMAILS = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+
 export default function CriarPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
   const [selected, setSelected] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   const handleConfirm = () => {
     if (!selected) return;
     setConfirming(true);
+
+    if (selected === 'pascoa') {
+      setTimeout(() => {
+        router.push('/criar/fazer-eu-mesmo?plan=pascoa&new=true&segment=namorade');
+      }, 400);
+      return;
+    }
+
     const segment = selected === 'outro' ? '' : `&segment=${selected}`;
     setTimeout(() => {
       router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${segment}`);
@@ -110,6 +123,85 @@ export default function CriarPage() {
           );
         })}
       </motion.div>
+
+      {/* ── EASTER PROMO — admin only ─────────────────────────── */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="w-full max-w-2xl mt-5"
+        >
+          <motion.button
+            onClick={() => setSelected('pascoa')}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="relative w-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 outline-none"
+            style={{
+              background: selected === 'pascoa'
+                ? 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)'
+                : 'linear-gradient(135deg, rgba(45,17,82,0.6) 0%, rgba(26,10,46,0.6) 50%, rgba(45,17,82,0.6) 100%)',
+              border: selected === 'pascoa'
+                ? '2px solid rgba(255,180,60,0.7)'
+                : '1.5px solid rgba(255,180,60,0.25)',
+              boxShadow: selected === 'pascoa'
+                ? '0 0 30px rgba(255,160,60,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
+                : 'none',
+            }}
+          >
+            {/* Badge */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 px-5 py-1 text-[10px] font-bold rounded-b-lg z-10 tracking-wider"
+              style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42)', color: 'white' }}>
+              ESPECIAL DE PASCOA
+            </div>
+
+            {/* Check mark when selected */}
+            <AnimatePresence>
+              {selected === 'pascoa' && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
+                  style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42)' }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 8 8" fill="none">
+                    <path d="M1.5 4L3.2 5.8L6.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex items-center gap-5 p-5 pt-8">
+              {/* Egg + Bunny illustration */}
+              <div className="flex items-end gap-1 shrink-0">
+                <span className="text-4xl">🥚</span>
+                <span className="text-3xl -mb-0.5">🐰</span>
+              </div>
+
+              <div className="flex-1 text-left">
+                <h3 className="text-base font-bold leading-tight" style={{ color: '#ffe8f0' }}>
+                  Surpresa de Pascoa
+                </h3>
+                <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,200,220,0.6)' }}>
+                  Intro especial com ovo 3D quebrando + coelho animado + revelacao cinematografica
+                </p>
+              </div>
+
+              {/* Price */}
+              <div className="text-right shrink-0">
+                <span className="text-xl font-black" style={{ color: '#ffd700' }}>R$24,90</span>
+                <p className="text-[9px] mt-0.5" style={{ color: 'rgba(255,200,220,0.4)' }}>permanente</p>
+              </div>
+            </div>
+
+            {/* Sparkle decorations */}
+            <div className="absolute top-3 left-3 opacity-30 text-yellow-300 animate-pulse">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+          </motion.button>
+        </motion.div>
+      )}
 
       {/* CTA — aparece só depois de selecionar */}
       <AnimatePresence>
