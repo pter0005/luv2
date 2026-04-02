@@ -87,9 +87,11 @@ async function getAllData() {
   let todaySales = 0, todayRevenue = 0;
   let totalSalesBRL = 0, totalSalesUSD = 0;
   let avancadoCount = 0, basicoCount = 0;
+  let totalPagesCount = 0;  // todas as páginas criadas (exceto admin)
+  let totalSoldCount = 0;   // páginas vendidas (exceto gifts e admin)
 
   try {
-    const snap = await db.collection('lovepages').orderBy('createdAt', 'desc').limit(500).get();
+    const snap = await db.collection('lovepages').orderBy('createdAt', 'desc').get();
     const filtered = snap.docs.filter(doc => {
       const owner = userMap.get(doc.data().userId);
       return !owner || !ADMIN_EMAILS.includes(owner.email);
@@ -101,6 +103,8 @@ async function getAllData() {
       const createdAtDate: Date = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
       const isGift = !!d.isGift;
 
+      totalPagesCount++; // conta todas, inclusive gifts
+
       const isUSD = d.paymentId && isNaN(Number(d.paymentId));
       const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
       const basePrice = d.plan === 'avancado'
@@ -110,6 +114,7 @@ async function getAllData() {
 
       // Páginas de presente não contam como venda / receita
       if (!isGift) {
+        totalSoldCount++;
         if (isUSD) totalSalesUSD += price;
         else totalSalesBRL += price;
 
@@ -117,7 +122,7 @@ async function getAllData() {
         else if (d.plan === 'basico') basicoCount++;
       }
 
-      // Sales history table (inclui gifts marcados, mas com isGift=true)
+      // Sales history table — últimas 100 para exibição
       if (salesHistory.length < 100) {
         salesHistory.push({
           id: doc.id,
@@ -193,7 +198,6 @@ async function getAllData() {
     return { source, visits, sales, revenue, convRate };
   }).sort((a, b) => b.visits - a.visits);
 
-  const totalSalesCount = salesHistory.length;
   const totalRevenue = totalSalesBRL;
   const totalUtmVisits = Object.values(visitsBySource).reduce((s, v) => s + v, 0);
   const totalSalesFromSources = Object.values(salesBySource).reduce((s, v) => s + v, 0);
@@ -206,7 +210,7 @@ async function getAllData() {
     totalSalesBRL, totalSalesUSD,
     pendingFileIssues, salesHistory,
     todayVisitors, todaySales, todayRevenue,
-    totalVisitors, totalSalesCount, totalRevenue, overallConv,
+    totalVisitors, totalSalesCount: totalPagesCount, totalSoldCount, totalRevenue, overallConv,
     chartData, sourceRows, recentSales,
   };
 }

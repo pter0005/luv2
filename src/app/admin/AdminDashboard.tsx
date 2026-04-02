@@ -47,6 +47,7 @@ export type DashboardProps = {
   todayRevenue: number;
   totalVisitors: number;
   totalSalesCount: number;
+  totalSoldCount: number;
   totalRevenue: number;
   overallConv: string;
   chartData: DayData[];
@@ -166,7 +167,7 @@ export default function AdminDashboard({
   totalUsers, avancadoCount, basicoCount,
   totalSalesBRL, totalSalesUSD, pendingFileIssues, salesHistory,
   todayVisitors, todaySales, todayRevenue,
-  totalVisitors, totalSalesCount, totalRevenue, overallConv,
+  totalVisitors, totalSalesCount, totalSoldCount, totalRevenue, overallConv,
   chartData, sourceRows, recentSales,
 }: DashboardProps) {
   const [confirmStep, setConfirmStep] = useState(0);
@@ -224,7 +225,7 @@ export default function AdminDashboard({
         </div>
         <KpiCard label="Total de Usuários" value={totalUsers} icon={Users} accent="#60a5fa"
           sub="cadastrados na plataforma" />
-        <KpiCard label="Páginas Criadas" value={totalSalesCount}
+        <KpiCard label="Páginas Criadas" value={totalSalesCount.toLocaleString('pt-BR')}
           sub={`${avancadoCount} Avançado · ${basicoCount} Básico`}
           icon={FileText} accent="#c084fc" />
         <KpiCard label="Receita BRL" value={brl(totalSalesBRL)} icon={DollarSign} accent="#34d399"
@@ -234,7 +235,7 @@ export default function AdminDashboard({
         <KpiCard label="Visitantes Únicos" value={totalVisitors.toLocaleString('pt-BR')}
           today={todayVisitors.toLocaleString('pt-BR')}
           icon={Globe} accent="#818cf8" />
-        <KpiCard label="Páginas Vendidas" value={totalSalesCount.toLocaleString('pt-BR')}
+        <KpiCard label="Páginas Vendidas" value={totalSoldCount.toLocaleString('pt-BR')}
           today={todaySales.toLocaleString('pt-BR')}
           icon={ShoppingCart} accent="#a855f7" />
         <KpiCard label="Conversão (UTM)" value={`${overallConv}%`}
