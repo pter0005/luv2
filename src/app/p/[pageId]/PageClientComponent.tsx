@@ -38,6 +38,7 @@ const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { s
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
+const BunnyLoveIntro = dynamic(() => import('@/components/easter/BunnyLoveIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
 const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), {
     ssr: false,
@@ -49,6 +50,22 @@ const WordGame = dynamic(() => import('@/components/word-game/WordGame'), {
     loading: () => <Skeleton className="w-full aspect-square" />,
 });
 
+
+// Error boundary — if an intro overlay crashes, reveal the page instead of getting stuck
+class IntroErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError: () => void },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error) {
+    console.error('Intro overlay crashed:', error);
+    this.props.onError();
+  }
+  render() {
+    return this.state.hasError ? null : this.props.children;
+  }
+}
 
 const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
     const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -198,6 +215,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     return pageData.introType === 'easter';
   }, [pageData.introType]);
 
+  const hasLoveIntro = useMemo(() => {
+    return pageData.introType === 'love';
+  }, [pageData.introType]);
+
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
@@ -245,10 +266,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle && !hasEasterIntro) {
+    if (!hasPuzzle && !hasEasterIntro && !hasLoveIntro) {
       setPuzzleRevealed(true);
     }
-  }, [hasPuzzle, hasEasterIntro]);
+  }, [hasPuzzle, hasEasterIntro, hasLoveIntro]);
 
   useEffect(() => {
     if (isPuzzleComplete) {
@@ -592,19 +613,37 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {!puzzleRevealed && hasEasterIntro && (
-          <motion.div
-            key="easter-overlay-layer"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="fixed inset-0 z-[100]"
-          >
-            <EasterEggIntro onReveal={handleReveal} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <IntroErrorBoundary onError={handleReveal}>
+        <AnimatePresence>
+          {!puzzleRevealed && hasEasterIntro && (
+            <motion.div
+              key="easter-overlay-layer"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="fixed inset-0 z-[100]"
+            >
+              <EasterEggIntro onReveal={handleReveal} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </IntroErrorBoundary>
+
+      <IntroErrorBoundary onError={handleReveal}>
+        <AnimatePresence>
+          {!puzzleRevealed && hasLoveIntro && (
+            <motion.div
+              key="love-overlay-layer"
+              initial={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '-100%' }}
+              transition={{ duration: 0.9, ease: [0.4, 0, 0.2, 1] }}
+              className="fixed inset-0 z-[100]"
+            >
+              <BunnyLoveIntro onReveal={handleReveal} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </IntroErrorBoundary>
     </div>
   );
 }

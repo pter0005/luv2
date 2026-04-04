@@ -7,6 +7,7 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
+import { ADMIN_EMAILS } from '@/lib/admin-emails';
 
 // ─────────────────────────────────────────────
 // META CAPI
@@ -370,7 +371,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   }
 
   // ── 3. Admin check OUTSIDE transaction ────────────────────────────────────
-  const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com'];
+  const adminEmails = ADMIN_EMAILS;
   const isGuestUser = (data.userId as string)?.startsWith('guest_');
   let isCreatorAdmin = false;
   if (data.userId && !isGuestUser) {
@@ -429,7 +430,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     finalData.plan = 'avancado';
     delete finalData.expireAt;
   } else if (finalData.plan === 'pascoa') {
-    finalData.introType = 'easter';
+    finalData.introType = 'love';
     finalData.plan = 'avancado';
     delete finalData.expireAt;
   } else if (finalData.plan === 'basico') {

@@ -25,12 +25,13 @@ export async function GET(request: NextRequest) {
   const DESIGNS: Record<string, {
     bgPath: string;
     qrColor: string;
-    qrX: number;   // posição X na imagem original (1400px)
-    qrY: number;   // posição Y na imagem original (2000px)
-    qrSize: number; // tamanho do QR na imagem original
-    pad: number;    // padding do card branco
+    qrX: number;
+    qrY: number;
+    qrSize: number;
+    pad: number;
     outputW: number;
     outputH: number;
+    chocolateBorder?: boolean;
   }> = {
     juntos: {
       bgPath: path.join(process.cwd(), 'public', 'qr-templates', 'juntos-sempre.png'),
@@ -41,6 +42,17 @@ export async function GET(request: NextRequest) {
       pad: 24,
       outputW: 800,
       outputH: 1143,
+    },
+    'qrcode-chocolate': {
+      bgPath: path.join(process.cwd(), 'public', 'qr-templates', 'qrcode-chocolate.png'),
+      qrColor: '#3d1a00',
+      qrX: 285,
+      qrY: 505,
+      qrSize: 445,
+      pad: 15,
+      outputW: 800,
+      outputH: 1000,
+      chocolateBorder: true,
     },
   };
 
@@ -63,16 +75,46 @@ export async function GET(request: NextRequest) {
     const qrBuffer = await getQRBuffer(pageUrl, cfg.qrColor);
     const qrImg = await loadImage(qrBuffer);
 
-    // Card branco com padding
+    // Card com padding
     const cardW = cfg.qrSize + cfg.pad * 2;
     const cardH = cfg.qrSize + cfg.pad * 2;
     const cardX = cfg.qrX - cfg.pad;
     const cardY = cfg.qrY - cfg.pad;
+    const r = 16;
+
+    if (cfg.chocolateBorder) {
+      // camada externa: chocolate escuro
+      const b1 = 36;
+      ctx.fillStyle = '#3d1a00';
+      ctx.beginPath();
+      ctx.moveTo(cardX - b1 + r, cardY - b1);
+      ctx.lineTo(cardX + cardW + b1 - r, cardY - b1); ctx.arcTo(cardX + cardW + b1, cardY - b1, cardX + cardW + b1, cardY - b1 + r, r);
+      ctx.lineTo(cardX + cardW + b1, cardY + cardH + b1 - r); ctx.arcTo(cardX + cardW + b1, cardY + cardH + b1, cardX + cardW + b1 - r, cardY + cardH + b1, r);
+      ctx.lineTo(cardX - b1 + r, cardY + cardH + b1); ctx.arcTo(cardX - b1, cardY + cardH + b1, cardX - b1, cardY + cardH + b1 - r, r);
+      ctx.lineTo(cardX - b1, cardY - b1 + r); ctx.arcTo(cardX - b1, cardY - b1, cardX - b1 + r, cardY - b1, r);
+      ctx.closePath(); ctx.fill();
+
+      // camada interna: milk chocolate
+      const b2 = 18;
+      ctx.fillStyle = '#7b3f00';
+      ctx.beginPath();
+      ctx.moveTo(cardX - b2 + r, cardY - b2);
+      ctx.lineTo(cardX + cardW + b2 - r, cardY - b2); ctx.arcTo(cardX + cardW + b2, cardY - b2, cardX + cardW + b2, cardY - b2 + r, r);
+      ctx.lineTo(cardX + cardW + b2, cardY + cardH + b2 - r); ctx.arcTo(cardX + cardW + b2, cardY + cardH + b2, cardX + cardW + b2 - r, cardY + cardH + b2, r);
+      ctx.lineTo(cardX - b2 + r, cardY + cardH + b2); ctx.arcTo(cardX - b2, cardY + cardH + b2, cardX - b2, cardY + cardH + b2 - r, r);
+      ctx.lineTo(cardX - b2, cardY - b2 + r); ctx.arcTo(cardX - b2, cardY - b2, cardX - b2 + r, cardY - b2, r);
+      ctx.closePath(); ctx.fill();
+
+      // bolinhas decorativas nos cantos
+      ctx.fillStyle = '#5c2e00';
+      for (const [dx, dy] of [[cardX - b1 + 10, cardY - b1 + 10], [cardX + cardW + b1 - 10, cardY - b1 + 10], [cardX - b1 + 10, cardY + cardH + b1 - 10], [cardX + cardW + b1 - 10, cardY + cardH + b1 - 10]]) {
+        ctx.beginPath(); ctx.arc(dx, dy, 8, 0, Math.PI * 2); ctx.fill();
+      }
+    }
 
     // Fundo branco arredondado
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    const r = 16;
     ctx.moveTo(cardX + r, cardY);
     ctx.lineTo(cardX + cardW - r, cardY);
     ctx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + r, r);

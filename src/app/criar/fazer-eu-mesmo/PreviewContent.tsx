@@ -28,6 +28,7 @@ const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), {
   loading: () => <Skeleton className="w-full aspect-square" />,
 });
 const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
+const BunnyLoveIntro = dynamic(() => import('@/components/easter/BunnyLoveIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
@@ -334,14 +335,14 @@ export default function PreviewContent({
                 <AnimatePresence>
                     {showEasterPreview && !previewPuzzleRevealed && (
                         <motion.div
-                            key="preview-easter-screen"
+                            key="preview-bunny-screen"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.05, filter: "blur(20px)" }}
                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                             className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden"
                         >
-                            <EasterEggIntro onReveal={() => {
+                            <BunnyLoveIntro onReveal={() => {
                                 setShowExplosion(true);
                                 setPreviewPuzzleRevealed(true);
                                 setTimeout(() => setShowExplosion(false), 2000);

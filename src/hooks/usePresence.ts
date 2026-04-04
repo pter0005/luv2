@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { getDatabase, ref, onValue, set, onDisconnect, serverTimestamp, push, remove } from 'firebase/database';
 import { getApp } from 'firebase/app';
 
-const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+import { ADMIN_EMAILS } from '@/lib/admin-emails';
 
 export function usePresence(userEmail?: string | null) {
   useEffect(() => {

@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+import { ADMIN_EMAILS } from '@/lib/admin-emails';
 
 export function useVisitorTracking(userEmail?: string | null) {
   const pathname = usePathname();

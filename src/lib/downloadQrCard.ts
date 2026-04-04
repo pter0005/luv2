@@ -9,6 +9,7 @@ interface TemplateConfig {
   qrSize: number;
   pad: number;
   transparent?: boolean;
+  chocolateBorder?: boolean;
 }
 
 const TEMPLATES: Record<string, TemplateConfig> = {
@@ -36,6 +37,15 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     qrSize: 388,
     pad: 0,
     transparent: true,
+  },
+  'qrcode-chocolate': {
+    bgUrl: '/qr-templates/qrcode-chocolate.png',
+    qrColor: '#3d1a00',
+    qrX: 211,
+    qrY: 427,
+    qrSize: 330,
+    pad: 11,
+    chocolateBorder: true,
   },
 };
 
@@ -81,13 +91,46 @@ export async function downloadQrCard(
     img.src = qrDataUrl;
   });
 
-  // 5. Desenha card branco com padding
+  // 5. Desenha card com padding (+ borda de chocolate opcional)
   const { qrX, qrY, qrSize, pad } = cfg;
   if (!cfg.transparent) {
+    const r = 10;
+    const cx = qrX - pad, cy = qrY - pad, cw = qrSize + pad * 2, ch = qrSize + pad * 2;
+
+    if (cfg.chocolateBorder) {
+      // camada externa: chocolate escuro
+      const b1 = 18;
+      ctx.fillStyle = '#3d1a00';
+      ctx.beginPath();
+      ctx.moveTo(cx - b1 + r, cy - b1);
+      ctx.lineTo(cx - b1 + cw + b1 - r, cy - b1); ctx.arcTo(cx - b1 + cw + b1, cy - b1, cx - b1 + cw + b1, cy - b1 + r, r);
+      ctx.lineTo(cx - b1 + cw + b1, cy - b1 + ch + b1 - r); ctx.arcTo(cx - b1 + cw + b1, cy - b1 + ch + b1, cx - b1 + cw + b1 - r, cy - b1 + ch + b1, r);
+      ctx.lineTo(cx - b1 + r, cy - b1 + ch + b1); ctx.arcTo(cx - b1, cy - b1 + ch + b1, cx - b1, cy - b1 + ch + b1 - r, r);
+      ctx.lineTo(cx - b1, cy - b1 + r); ctx.arcTo(cx - b1, cy - b1, cx - b1 + r, cy - b1, r);
+      ctx.closePath(); ctx.fill();
+
+      // camada interna: chocolate mais claro (milk chocolate)
+      const b2 = 9;
+      ctx.fillStyle = '#7b3f00';
+      ctx.beginPath();
+      ctx.moveTo(cx - b2 + r, cy - b2);
+      ctx.lineTo(cx - b2 + cw + b2 - r, cy - b2); ctx.arcTo(cx - b2 + cw + b2, cy - b2, cx - b2 + cw + b2, cy - b2 + r, r);
+      ctx.lineTo(cx - b2 + cw + b2, cy - b2 + ch + b2 - r); ctx.arcTo(cx - b2 + cw + b2, cy - b2 + ch + b2, cx - b2 + cw + b2 - r, cy - b2 + ch + b2, r);
+      ctx.lineTo(cx - b2 + r, cy - b2 + ch + b2); ctx.arcTo(cx - b2, cy - b2 + ch + b2, cx - b2, cy - b2 + ch + b2 - r, r);
+      ctx.lineTo(cx - b2, cy - b2 + r); ctx.arcTo(cx - b2, cy - b2, cx - b2 + r, cy - b2, r);
+      ctx.closePath(); ctx.fill();
+
+      // bolinhas decorativas nos cantos (estilo chocolate)
+      ctx.fillStyle = '#5c2e00';
+      const dots = [[cx - b1 + 5, cy - b1 + 5], [cx + cw + b1 - 5, cy - b1 + 5], [cx - b1 + 5, cy + ch + b1 - 5], [cx + cw + b1 - 5, cy + ch + b1 - 5]];
+      for (const [dx, dy] of dots) {
+        ctx.beginPath(); ctx.arc(dx, dy, 4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // fundo branco do QR
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    const r = 8;
-    const cx = qrX - pad, cy = qrY - pad, cw = qrSize + pad * 2, ch = qrSize + pad * 2;
     ctx.moveTo(cx + r, cy);
     ctx.lineTo(cx + cw - r, cy); ctx.arcTo(cx + cw, cy, cx + cw, cy + r, r);
     ctx.lineTo(cx + cw, cy + ch - r); ctx.arcTo(cx + cw, cy + ch, cx + cw - r, cy + ch, r);

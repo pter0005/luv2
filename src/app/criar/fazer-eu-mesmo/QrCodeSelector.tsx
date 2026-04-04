@@ -45,6 +45,17 @@ const QR_OPTIONS = [
     qrSizePct: 0.485,
     transparent: true,
   },
+  {
+    id: 'qrcode-chocolate',
+    title: '🍫 Páscoa Especial',
+    price: 3.90,
+    preview: '/qr-templates/qrcode-chocolate.png',
+    qrColor: '#3d1a00',
+    qrXPct: 0.264,
+    qrYPct: 0.374,
+    qrSizePct: 0.412,
+    chocolateBorder: true,
+  },
 ];
 
 interface Props {
@@ -92,10 +103,25 @@ function TemplatePreview({ template, pageUrl }: { template: typeof QR_OPTIONS[1]
       // Fundo branco do QR
       if (!(template as any).transparent) {
         const pad = qrSz * 0.04;
+        const r = 4;
+        if ((template as any).chocolateBorder) {
+          // borda externa chocolate
+          const borderW = qrSz * 0.08;
+          ctx.fillStyle = '#5c2e00';
+          // @ts-ignore
+          ctx.roundRect(qrX - pad - borderW, qrY - pad - borderW, qrSz + (pad + borderW) * 2, qrSz + (pad + borderW) * 2, r + 3);
+          ctx.fill();
+          // segunda camada mais clara
+          ctx.fillStyle = '#8b4513';
+          // @ts-ignore
+          ctx.roundRect(qrX - pad - borderW * 0.5, qrY - pad - borderW * 0.5, qrSz + (pad + borderW * 0.5) * 2, qrSz + (pad + borderW * 0.5) * 2, r + 1);
+          ctx.fill();
+        }
+        // fundo branco do QR
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         // @ts-ignore
-        ctx.roundRect(qrX - pad, qrY - pad, qrSz + pad * 2, qrSz + pad * 2, 4);
+        ctx.roundRect(qrX - pad, qrY - pad, qrSz + pad * 2, qrSz + pad * 2, r);
         ctx.fill();
       }
 

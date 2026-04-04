@@ -9,7 +9,7 @@ import AdminDashboard, {
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['inesvalentim45@gmail.com', 'giibrossini@gmail.com'];
+import { ADMIN_EMAILS } from '@/lib/admin-emails';
 
 function formatDate(ts: any): string {
   try {

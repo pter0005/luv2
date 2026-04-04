@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { getAuth, signOut } from "firebase/auth";
 import { removeSession } from "@/app/auth-actions";
 import { useState, useEffect } from "react";
+import { ADMIN_EMAILS } from "@/lib/admin-emails";
 
 export default function Footer() {
   const { user } = useUser();
@@ -16,8 +17,7 @@ export default function Footer() {
   const [isDevelopment, setIsDevelopment] = useState(false);
   const logoUrl = PlaceHolderImages.find((p) => p.id === "footerLogo")?.imageUrl || '/logo-placeholder.png';
 
-  const adminEmails = ['giibrossini@gmail.com', 'inesvalentim45@gmail.com', 'pedrohenriqww9@gmail.com'];
-  const isAdmin = user && user.email && adminEmails.includes(user.email.toLowerCase().trim());
+  const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
   
   useEffect(() => {
     // This check ensures we only show the dev sign out button in development
