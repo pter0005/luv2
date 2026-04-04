@@ -385,30 +385,30 @@ interface Stage {
   ey: string; mo: string; an: string;
   sw: boolean; st: boolean; ag: boolean; te: boolean; sh: boolean; qu: boolean;
   tx: string; yT: string; nT: string;
-  yW: number; nW: number; nO: number;
+  yW: number;
 }
 
 const STAGES: Stage[] = [
   { ey:'normal', mo:'smile',  an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:false,
-    tx:'Voce me ama? ❤️',           yT:'SIM',           nT:'NAO.',   yW:45, nW:45, nO:1 },
+    tx:'Voce me ama? ❤️',           yT:'SIM',           nT:'NAO.',   yW:45 },
   { ey:'half',   mo:'pout',   an:'shake',  sw:false, st:false, ag:false, te:false, sh:false, qu:true,
-    tx:'espera... tem certeza? 🥺',  yT:'SIM',           nT:'NAO.',   yW:48, nW:42, nO:.95 },
+    tx:'espera... tem certeza? 🥺',  yT:'SIM',           nT:'NAO.',   yW:48 },
   { ey:'squint', mo:'wavy',   an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:true,
-    tx:'pensa direito...',           yT:'SIM',           nT:'nao',    yW:52, nW:38, nO:.85 },
+    tx:'pensa direito...',           yT:'SIM',           nT:'nao',    yW:52 },
   { ey:'side',   mo:'frown',  an:'shake',  sw:true,  st:false, ag:false, te:false, sh:true,  qu:false,
-    tx:'ta brincando ne...?',        yT:'SIM!',          nT:'nao..',  yW:58, nW:32, nO:.7 },
+    tx:'ta brincando ne...?',        yT:'SIM!',          nT:'nao..',  yW:56 },
   { ey:'half',   mo:'pout',   an:'sad',    sw:false, st:false, ag:false, te:false, sh:true,  qu:false,
-    tx:'nao ta certo isso...',       yT:'SIM!!',         nT:'nao..',  yW:62, nW:28, nO:.55 },
+    tx:'nao ta certo isso...',       yT:'SIM!!',         nT:'nao..',  yW:60 },
   { ey:'cry',    mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'voce nao me ama...?',        yT:'EU TE AMO',     nT:'n...',   yW:68, nW:22, nO:.4 },
+    tx:'voce nao me ama...?',        yT:'EU TE AMO',     nT:'n...',   yW:64 },
   { ey:'angry',  mo:'open',   an:'angry',  sw:false, st:true,  ag:true,  te:false, sh:true,  qu:false,
-    tx:'tenta de novo...',           yT:'SIMM!!!',       nT:'n.',     yW:74, nW:18, nO:.3 },
+    tx:'tenta de novo...',           yT:'SIMM!!!',       nT:'n.',     yW:68 },
   { ey:'cry',    mo:'pout',   an:'cry',    sw:true,  st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'fala serio...',              yT:'POR FAVOR SIM',  nT:'..',    yW:78, nW:14, nO:.2 },
+    tx:'fala serio...',              yT:'POR FAVOR SIM',  nT:'..',    yW:72 },
   { ey:'closed', mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'ta me zoando...',            yT:'SIM SIM SIM',   nT:'.',      yW:84, nW:10, nO:.15 },
+    tx:'ta me zoando...',            yT:'SIM SIM SIM',   nT:'.',      yW:78 },
   { ey:'cry',    mo:'wavy',   an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'ultima chance...',           yT:'DIGA SIM!!',    nT:'.',      yW:90, nW:6,  nO:.15 },
+    tx:'ultima chance...',           yT:'DIGA SIM!!',    nT:'.',      yW:85 },
 ];
 
 // ─── SIM skeptic stages ─────────────────────────────────────────────────────
@@ -593,47 +593,52 @@ export default function BunnyLoveIntro({ onReveal }: Props) {
                 {activeTx}
               </p>
 
-              {/* Buttons — YES and NO side by side */}
+              {/* Buttons — YES and NO side by side, NO swaps position and shrinks */}
               {!celebrating && !simFlow && (
                 <div style={{
-                  width: '100%', display: 'flex', flexDirection: 'row',
-                  justifyContent: 'center', gap: 12, marginTop: 8, padding: '0 12px',
+                  width: '100%', display: 'flex',
+                  flexDirection: stageIdx % 2 === 0 ? 'row' : 'row-reverse',
+                  justifyContent: 'center', gap: 10, marginTop: 8, padding: '0 12px',
                 }}>
                   {/* YES button — grows */}
                   <motion.button
                     onClick={handleYes}
-                    animate={{ flex: `0 0 ${stage.yW}%` }}
+                    animate={{
+                      width: `${stage.yW}%`,
+                      height: Math.min(56, 42 + stageIdx * 2),
+                      fontSize: 16 + Math.min(stageIdx * 2, 16),
+                    }}
                     transition={{ type: 'spring', stiffness: 200, damping: 18 }}
                     whileTap={{ scale: 0.93 }}
                     style={{
                       background: '#5ee8b5',
                       border: 'none', color: '#fff', fontWeight: 900,
                       borderRadius: 12, cursor: 'pointer', letterSpacing: 1,
-                      padding: '12px 8px',
-                      fontSize: 16 + Math.min(stageIdx * 2, 18),
                       WebkitTapHighlightColor: 'transparent',
+                      flexShrink: 0,
                     }}
                   >
                     {stage.yT}
                   </motion.button>
 
-                  {/* NO button — shrinks */}
+                  {/* NO button — shrinks but stays visible, swaps sides each click */}
                   <motion.button
                     onClick={handleNo}
+                    layout
                     animate={{
-                      flex: `0 0 ${stage.nW}%`,
-                      opacity: stage.nO,
+                      width: Math.max(36, 100 - stageIdx * 9),
+                      height: Math.max(32, 42 - stageIdx * 2),
+                      fontSize: Math.max(10, 16 - stageIdx),
                     }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-                    whileTap={{ scale: 0.88 }}
+                    transition={{ type: 'spring', stiffness: 250, damping: 20 }}
+                    whileTap={{ scale: 0.85 }}
                     style={{
                       background: '#f087a0',
                       border: 'none', color: '#fff', fontWeight: 900,
-                      borderRadius: 12, cursor: 'pointer', letterSpacing: 1,
-                      padding: '12px 8px',
-                      fontSize: Math.max(10, 16 - stageIdx * 1),
+                      borderRadius: 10, cursor: 'pointer', letterSpacing: 1,
                       WebkitTapHighlightColor: 'transparent',
                       overflow: 'hidden', whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
                     {stage.nT}

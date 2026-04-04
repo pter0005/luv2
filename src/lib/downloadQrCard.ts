@@ -3,13 +3,15 @@ import QRCode from 'qrcode';
 interface TemplateConfig {
   bgUrl: string;
   qrColor: string;
-  // posições em pixels no canvas de saída (800x1143)
+  // posições em pixels no canvas de saída
   qrX: number;
   qrY: number;
   qrSize: number;
   pad: number;
   transparent?: boolean;
   chocolateBorder?: boolean;
+  canvasW?: number;
+  canvasH?: number;
 }
 
 const TEMPLATES: Record<string, TemplateConfig> = {
@@ -47,6 +49,16 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     pad: 11,
     chocolateBorder: true,
   },
+  'qrcode-coelho': {
+    bgUrl: '/qr-templates/qrcode-coelho .png',
+    qrColor: '#000000',
+    qrX: 233,
+    qrY: 393,
+    qrSize: 333,
+    pad: 15,
+    canvasW: 800,
+    canvasH: 1000,
+  },
 };
 
 export async function downloadQrCard(
@@ -57,8 +69,8 @@ export async function downloadQrCard(
   const cfg = TEMPLATES[design];
   if (!cfg) throw new Error(`Template "${design}" não encontrado.`);
 
-  const W = 800;
-  const H = 1143;
+  const W = cfg.canvasW || 800;
+  const H = cfg.canvasH || 1143;
   const pageUrl = `https://mycupid.com.br/p/${pageId}`;
 
   // 1. Cria canvas

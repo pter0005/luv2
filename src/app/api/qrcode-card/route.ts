@@ -54,6 +54,16 @@ export async function GET(request: NextRequest) {
       outputH: 1000,
       chocolateBorder: true,
     },
+    'qrcode-coelho': {
+      bgPath: path.join(process.cwd(), 'public', 'qr-templates', 'qrcode-coelho .png'),
+      qrColor: '#000000',
+      qrX: 315,
+      qrY: 530,
+      qrSize: 450,
+      pad: 20,
+      outputW: 1080,
+      outputH: 1350,
+    },
   };
 
   const cfg = DESIGNS[design] || DESIGNS['juntos'];
