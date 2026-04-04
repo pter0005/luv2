@@ -12,12 +12,14 @@ import React, { useState, useCallback, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Bunny SVG Component ─────────────────────────────────────────────────────
-// A kawaii bunny with swappable eyes, mouth, and expression extras
+// Kawaii bunny with big head, tiny body, stubby arms, and expression marks
 function BunnySVG({
-  eyeHtml, mouthHtml, showSweat, showSteam, showAnger, showTears, idPrefix = '',
+  eyeHtml, mouthHtml, showSweat, showSteam, showAnger, showTears,
+  showShock, showQuestion, idPrefix = '',
 }: {
   eyeHtml: string; mouthHtml: string;
   showSweat: boolean; showSteam: boolean; showAnger: boolean; showTears: boolean;
+  showShock?: boolean; showQuestion?: boolean;
   idPrefix?: string;
 }) {
   const p = idPrefix;
@@ -25,7 +27,7 @@ function BunnySVG({
     p ? html.replace(/url\(#(headG|bodyG|cheekG|earPinkL|noseG|padG|tailG)\)/g, `url(#${p}$1)`) : html;
 
   return (
-    <svg viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+    <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
       <defs>
         <radialGradient id={`${p}headG`} cx="40%" cy="35%">
           <stop offset="0%" stopColor="#fff"/>
@@ -36,7 +38,7 @@ function BunnySVG({
           <stop offset="100%" stopColor="#f0e6ee"/>
         </radialGradient>
         <radialGradient id={`${p}cheekG`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(255,120,160,0.7)"/>
+          <stop offset="0%" stopColor="rgba(255,130,170,0.75)"/>
           <stop offset="100%" stopColor="rgba(255,160,185,0)"/>
         </radialGradient>
         <linearGradient id={`${p}earPinkL`} x1="0" y1="0" x2="0" y2="1">
@@ -59,84 +61,117 @@ function BunnySVG({
       </defs>
 
       {/* Shadow */}
-      <ellipse cx="100" cy="215" rx="35" ry="6" fill="rgba(0,0,0,0.08)"/>
-      {/* Tail */}
-      <circle cx="52" cy="160" r="12" fill={`url(#${p}tailG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
-      {/* Body */}
-      <ellipse cx="100" cy="165" rx="45" ry="33" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
-      <ellipse cx="100" cy="168" rx="22" ry="18" fill="rgba(255,240,248,0.3)"/>
-      {/* Paws */}
-      <g>
-        <ellipse cx="78" cy="198" rx="16" ry="10" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="2" transform="rotate(-6,78,198)"/>
-        <circle cx="74" cy="197" r="3" fill={`url(#${p}padG)`}/>
-        <circle cx="82" cy="197" r="3" fill={`url(#${p}padG)`}/>
-        <circle cx="78" cy="201" r="2.5" fill={`url(#${p}padG)`}/>
-      </g>
-      <g>
-        <ellipse cx="122" cy="198" rx="16" ry="10" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="2" transform="rotate(6,122,198)"/>
-        <circle cx="118" cy="197" r="3" fill={`url(#${p}padG)`}/>
-        <circle cx="126" cy="197" r="3" fill={`url(#${p}padG)`}/>
-        <circle cx="122" cy="201" r="2.5" fill={`url(#${p}padG)`}/>
-      </g>
+      <ellipse cx="100" cy="200" rx="30" ry="5" fill="rgba(0,0,0,0.06)"/>
+
+      {/* Tail — fluffy round */}
+      <circle cx="55" cy="162" r="10" fill={`url(#${p}tailG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
+
+      {/* Body — small and round (kawaii proportions: big head, tiny body) */}
+      <ellipse cx="100" cy="162" rx="38" ry="28" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="2"/>
+      {/* Belly highlight */}
+      <ellipse cx="100" cy="165" rx="18" ry="14" fill="rgba(255,245,250,0.5)"/>
+
+      {/* Stubby feet */}
+      <ellipse cx="80" cy="188" rx="13" ry="8" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(-4,80,188)"/>
+      <ellipse cx="120" cy="188" rx="13" ry="8" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(4,120,188)"/>
+      {/* Toe pads */}
+      <circle cx="76" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
+      <circle cx="84" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
+      <circle cx="116" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
+      <circle cx="124" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
+
+      {/* Left arm — stubby, sticking out */}
+      <ellipse cx="60" cy="152" rx="11" ry="7" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(-25,60,152)"/>
+      {/* Right arm — stubby, sticking out */}
+      <ellipse cx="140" cy="152" rx="11" ry="7" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(25,140,152)"/>
 
       {/* Left ear */}
-      <g style={{ transformOrigin: '72px 82px', animation: 'earWiggle 3s ease-in-out infinite' }}>
-        <path d="M72 82 C60 78,54 40,64 15 C68 6,78 5,82 15 C90 38,88 78,72 82Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M74 72 C66 70,62 45,67 26 C70 19,76 19,79 26 C83 43,82 70,74 72Z" fill={`url(#${p}earPinkL)`}/>
+      <g style={{ transformOrigin: '75px 75px', animation: 'earWiggle 3s ease-in-out infinite' }}>
+        <path d="M75 75 C63 71,57 38,66 14 C69 6,79 5,82 14 C89 36,88 71,75 75Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
+        <path d="M77 66 C69 64,65 42,69 25 C72 18,78 18,80 25 C84 40,83 64,77 66Z" fill={`url(#${p}earPinkL)`}/>
       </g>
       {/* Right ear */}
-      <g style={{ transformOrigin: '128px 82px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
-        <path d="M128 82 C140 78,146 40,136 15 C132 6,122 5,118 15 C110 38,112 78,128 82Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M126 72 C134 70,138 45,133 26 C130 19,124 19,121 26 C117 43,118 70,126 72Z" fill={`url(#${p}earPinkL)`}/>
+      <g style={{ transformOrigin: '125px 75px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
+        <path d="M125 75 C137 71,143 38,134 14 C131 6,121 5,118 14 C111 36,112 71,125 75Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
+        <path d="M123 66 C131 64,135 42,131 25 C128 18,122 18,120 25 C116 40,117 64,123 66Z" fill={`url(#${p}earPinkL)`}/>
       </g>
 
-      {/* Head */}
-      <ellipse cx="100" cy="105" rx="58" ry="52" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
-      <ellipse cx="90" cy="72" rx="26" ry="14" fill="rgba(255,255,255,0.45)" transform="rotate(-8,90,72)"/>
+      {/* Head — big and round */}
+      <ellipse cx="100" cy="100" rx="55" ry="50" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
+      {/* Head shine */}
+      <ellipse cx="88" cy="68" rx="24" ry="13" fill="rgba(255,255,255,0.5)" transform="rotate(-8,88,68)"/>
 
       {/* Eyes — injected per stage */}
       <g dangerouslySetInnerHTML={{ __html: fixRefs(eyeHtml) }}/>
 
-      {/* Cheeks */}
-      <ellipse cx="62" cy="115" rx="16" ry="10" fill={`url(#${p}cheekG)`}/>
-      <ellipse cx="138" cy="115" rx="16" ry="10" fill={`url(#${p}cheekG)`}/>
+      {/* Cheeks — bigger blush circles */}
+      <ellipse cx="60" cy="112" rx="14" ry="9" fill={`url(#${p}cheekG)`}/>
+      <ellipse cx="140" cy="112" rx="14" ry="9" fill={`url(#${p}cheekG)`}/>
+      {/* Cheek shine dots */}
+      <circle cx="55" cy="109" r="1.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="145" cy="109" r="1.5" fill="rgba(255,255,255,0.5)"/>
 
-      {/* Nose */}
-      <ellipse cx="100" cy="112" rx="5.5" ry="3.8" fill={`url(#${p}noseG)`}/>
-      <ellipse cx="98.5" cy="111" rx="1.8" ry="1.1" fill="rgba(255,255,255,0.7)" transform="rotate(-15,98.5,111)"/>
+      {/* Nose — heart-shaped */}
+      <path d="M100 112 C97 108,93 109,95 112 C96 114,100 117,100 117 C100 117,104 114,105 112 C107 109,103 108,100 112Z" fill={`url(#${p}noseG)`}/>
 
       {/* Mouth — injected per stage */}
       <g dangerouslySetInnerHTML={{ __html: fixRefs(mouthHtml) }}/>
 
-      {/* Extras */}
-      {showSweat && (
-        <g transform="translate(148,78)">
-          <path d="M0 0 Q6 8,0 14 Q-6 8,0 0Z" fill="rgba(130,200,255,0.5)"/>
-          <ellipse cx="-1" cy="4" rx="1.5" ry="1" fill="rgba(255,255,255,0.4)"/>
-        </g>
-      )}
-      {showSteam && (
-        <g transform="translate(145,70)">
-          <path d="M0 8 Q3 4,-3 0" stroke="rgba(255,140,165,0.5)" strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path d="M8 8 Q11 4,6 0" stroke="rgba(255,140,165,0.4)" strokeWidth="2" fill="none" strokeLinecap="round"/>
-        </g>
-      )}
+      {/* ── Expression marks (outside the body, manga-style) ── */}
+
+      {/* Sweat drops */}
+      {showSweat && <>
+        <path d="M152 72 Q156 80,152 88 Q148 80,152 72Z" fill="rgba(130,200,255,0.55)"/>
+        <ellipse cx="151" cy="77" rx="1.5" ry="1" fill="rgba(255,255,255,0.5)"/>
+      </>}
+
+      {/* Steam puffs (angry) */}
+      {showSteam && <>
+        <circle cx="155" cy="65" r="4" fill="rgba(255,200,200,0.3)"/>
+        <circle cx="162" cy="58" r="5.5" fill="rgba(255,200,200,0.25)"/>
+        <circle cx="170" cy="53" r="4" fill="rgba(255,200,200,0.2)"/>
+      </>}
+
+      {/* Anger cross mark — 💢 style */}
       {showAnger && (
-        <g transform="translate(150,72)">
-          <path d="M-4 -4 L0 0 L4 -4 M-4 4 L0 0 L4 4" stroke="#e05070" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <g transform="translate(153,68)">
+          <line x1="-5" y1="-5" x2="5" y2="5" stroke="#e05070" strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="5" y1="-5" x2="-5" y2="5" stroke="#e05070" strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="-5" y1="0" x2="5" y2="0" stroke="#e05070" strokeWidth="2" strokeLinecap="round"/>
+          <line x1="0" y1="-5" x2="0" y2="5" stroke="#e05070" strokeWidth="2" strokeLinecap="round"/>
         </g>
       )}
-      {showTears && (
-        <g>
-          <path d="M75 110 Q77 118,75 125 Q73 118,75 110Z" fill="rgba(100,180,255,0.45)" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
-          <path d="M125 110 Q127 118,125 125 Q123 118,125 110Z" fill="rgba(100,180,255,0.45)" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
-        </g>
-      )}
+
+      {/* Tear streams */}
+      {showTears && <>
+        <path d="M74 110 Q72 120,74 130" stroke="rgba(100,180,255,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
+        <path d="M126 110 Q128 120,126 130" stroke="rgba(100,180,255,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
+        {/* Extra tear drops */}
+        <path d="M70 128 Q72 132,70 136 Q68 132,70 128Z" fill="rgba(100,180,255,0.4)"/>
+        <path d="M130 128 Q132 132,130 136 Q128 132,130 128Z" fill="rgba(100,180,255,0.4)"/>
+      </>}
+
+      {/* Shock lines — short manga lines radiating out */}
+      {showShock && <>
+        <line x1="30" y1="70" x2="22" y2="62" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="28" y1="90" x2="18" y2="88" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="32" y1="110" x2="22" y2="115" stroke="#888" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="170" y1="70" x2="178" y2="62" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="172" y1="90" x2="182" y2="88" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
+        <line x1="168" y1="110" x2="178" y2="115" stroke="#888" strokeWidth="1.5" strokeLinecap="round"/>
+      </>}
+
+      {/* Question marks */}
+      {showQuestion && <>
+        <text x="155" y="55" fontSize="18" fill="#888" fontWeight="bold" fontFamily="sans-serif">?</text>
+        <text x="38" y="60" fontSize="14" fill="#aaa" fontWeight="bold" fontFamily="sans-serif">?</text>
+      </>}
     </svg>
   );
 }
 
 // ─── Bunny holding heart SVG (final celebration) ─────────────────────────────
+// Bunny hugging a big heart with stubby arms, kiss mouth, closed happy eyes
 function BunnyKissSVG({ idPrefix = '' }: { idPrefix?: string }) {
   const p = idPrefix;
   return (
@@ -151,7 +186,7 @@ function BunnyKissSVG({ idPrefix = '' }: { idPrefix?: string }) {
           <stop offset="100%" stopColor="#f0e6ee"/>
         </radialGradient>
         <radialGradient id={`${p}kCheekG`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(255,120,160,0.7)"/>
+          <stop offset="0%" stopColor="rgba(255,130,170,0.75)"/>
           <stop offset="100%" stopColor="rgba(255,160,185,0)"/>
         </radialGradient>
         <linearGradient id={`${p}kEarPinkL`} x1="0" y1="0" x2="0" y2="1">
@@ -163,70 +198,94 @@ function BunnyKissSVG({ idPrefix = '' }: { idPrefix?: string }) {
           <stop offset="0%" stopColor="#ffbed0"/>
           <stop offset="100%" stopColor="#ff90ac"/>
         </radialGradient>
-        <radialGradient id={`${p}kHeartG`} cx="40%" cy="30%">
-          <stop offset="0%" stopColor="#ff8aab"/>
+        <radialGradient id={`${p}kHeartG`} cx="35%" cy="25%">
+          <stop offset="0%" stopColor="#ff9ebb"/>
           <stop offset="100%" stopColor="#ff4d78"/>
         </radialGradient>
       </defs>
 
-      {/* Big heart — bunny is hugging it */}
-      <g transform="translate(148,65)">
-        <path d="M0 40 C-50 -5,-30-45,0-15 C30-45,50-5,0 40Z" fill={`url(#${p}kHeartG)`} stroke="#e04070" strokeWidth="2"/>
+      {/* ── Big heart the bunny is holding ── */}
+      <g transform="translate(155,60)">
+        <path d="M0 45 C-55 -5,-33-50,0-18 C33-50,55-5,0 45Z" fill={`url(#${p}kHeartG)`} stroke="#e04070" strokeWidth="2"/>
         {/* Heart shine */}
-        <ellipse cx="-12" cy="-8" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-25,-12,-8)"/>
+        <ellipse cx="-14" cy="-10" rx="9" ry="5.5" fill="rgba(255,255,255,0.35)" transform="rotate(-25,-14,-10)"/>
+        <circle cx="-8" cy="-18" r="2.5" fill="rgba(255,255,255,0.25)"/>
       </g>
 
       {/* Shadow */}
-      <ellipse cx="100" cy="188" rx="45" ry="6" fill="rgba(0,0,0,0.06)"/>
+      <ellipse cx="105" cy="190" rx="50" ry="5" fill="rgba(0,0,0,0.05)"/>
 
-      {/* Body — slightly tilted toward heart */}
-      <ellipse cx="95" cy="145" rx="40" ry="30" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="2" transform="rotate(5,95,145)"/>
-      <ellipse cx="95" cy="148" rx="20" ry="15" fill="rgba(255,240,248,0.3)"/>
+      {/* Tail */}
+      <circle cx="48" cy="155" r="8" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
 
-      {/* Paws */}
-      <ellipse cx="72" cy="172" rx="14" ry="9" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(-5,72,172)"/>
-      <ellipse cx="118" cy="172" rx="14" ry="9" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(5,118,172)"/>
+      {/* Body — tilted slightly toward heart */}
+      <ellipse cx="90" cy="150" rx="35" ry="26" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="2" transform="rotate(5,90,150)"/>
+      {/* Belly */}
+      <ellipse cx="90" cy="153" rx="16" ry="12" fill="rgba(255,245,250,0.5)"/>
 
-      {/* Left arm — reaching toward heart */}
-      <path d="M60 130 Q45 110,55 95 Q60 88,65 93 Q72 100,68 115Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
-      {/* Right arm — hugging the heart */}
-      <path d="M130 125 Q145 105,155 85 Q160 78,163 83 Q168 95,148 115Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
-      {/* Right hand/paw on heart */}
-      <circle cx="158" cy="82" r="7" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
+      {/* Feet */}
+      <ellipse cx="70" cy="174" rx="12" ry="7" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5" transform="rotate(-5,70,174)"/>
+      <ellipse cx="110" cy="174" rx="12" ry="7" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5" transform="rotate(5,110,174)"/>
+      {/* Toe pads */}
+      <circle cx="66" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
+      <circle cx="74" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
+      <circle cx="106" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
+      <circle cx="114" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
+
+      {/* Left arm — reaching up toward heart */}
+      <path d="M62 135 Q50 115,58 100 Q62 93,66 97 Q72 105,67 120Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
+      {/* Left paw */}
+      <circle cx="61" cy="98" r="6" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
+
+      {/* Right arm — hugging heart */}
+      <path d="M125 130 Q140 110,150 92 Q155 84,158 88 Q162 98,145 118Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
+      {/* Right paw on heart */}
+      <circle cx="155" cy="86" r="6.5" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
+      {/* Paw pads */}
+      <circle cx="153" cy="85" r="1.5" fill="rgba(255,180,200,0.4)"/>
+      <circle cx="157" cy="85" r="1.5" fill="rgba(255,180,200,0.4)"/>
+      <circle cx="155" cy="89" r="1.5" fill="rgba(255,180,200,0.4)"/>
 
       {/* Left ear */}
-      <g style={{ transformOrigin: '70px 68px', animation: 'earWiggle 3s ease-in-out infinite' }}>
-        <path d="M70 68 C58 64,52 30,62 8 C65 0,75-1,78 8 C85 28,84 64,70 68Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M72 58 C65 56,61 35,65 19 C67 13,73 13,75 19 C79 34,78 56,72 58Z" fill={`url(#${p}kEarPinkL)`}/>
+      <g style={{ transformOrigin: '72px 65px', animation: 'earWiggle 3s ease-in-out infinite' }}>
+        <path d="M72 65 C60 61,54 30,63 8 C66 0,76-1,79 8 C86 28,84 61,72 65Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
+        <path d="M74 56 C67 54,63 35,67 20 C69 14,75 14,77 20 C80 33,80 54,74 56Z" fill={`url(#${p}kEarPinkL)`}/>
       </g>
       {/* Right ear */}
-      <g style={{ transformOrigin: '120px 68px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
-        <path d="M120 68 C132 64,138 30,128 8 C125 0,115-1,112 8 C105 28,106 64,120 68Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M118 58 C125 56,129 35,125 19 C123 13,117 13,115 19 C111 34,112 56,118 58Z" fill={`url(#${p}kEarPinkL)`}/>
+      <g style={{ transformOrigin: '118px 65px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
+        <path d="M118 65 C130 61,136 30,127 8 C124 0,114-1,111 8 C104 28,106 61,118 65Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
+        <path d="M116 56 C123 54,127 35,123 20 C121 14,115 14,113 20 C110 33,110 54,116 56Z" fill={`url(#${p}kEarPinkL)`}/>
       </g>
 
-      {/* Head */}
-      <ellipse cx="95" cy="88" rx="50" ry="45" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
-      <ellipse cx="85" cy="60" rx="22" ry="12" fill="rgba(255,255,255,0.45)" transform="rotate(-8,85,60)"/>
+      {/* Head — big and round */}
+      <ellipse cx="95" cy="85" rx="48" ry="43" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
+      {/* Head shine */}
+      <ellipse cx="83" cy="58" rx="20" ry="11" fill="rgba(255,255,255,0.5)" transform="rotate(-8,83,58)"/>
 
-      {/* Eyes — closed happy */}
-      <path d="M72 88 Q80 78,88 88" stroke="#1a1018" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <path d="M102 88 Q110 78,118 88" stroke="#1a1018" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      {/* Eyes — closed happy arcs (^  ^) */}
+      <path d="M72 84 Q80 74,88 84" stroke="#1a1018" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+      <path d="M102 84 Q110 74,118 84" stroke="#1a1018" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
 
-      {/* Cheeks */}
-      <ellipse cx="60" cy="98" rx="13" ry="8" fill={`url(#${p}kCheekG)`}/>
-      <ellipse cx="128" cy="98" rx="13" ry="8" fill={`url(#${p}kCheekG)`}/>
+      {/* Cheeks — big rosy blush */}
+      <ellipse cx="60" cy="94" rx="12" ry="8" fill={`url(#${p}kCheekG)`}/>
+      <ellipse cx="128" cy="94" rx="12" ry="8" fill={`url(#${p}kCheekG)`}/>
+      <circle cx="55" cy="91" r="1.5" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="133" cy="91" r="1.5" fill="rgba(255,255,255,0.4)"/>
 
-      {/* Nose */}
-      <ellipse cx="95" cy="95" rx="4.5" ry="3" fill={`url(#${p}kNoseG)`}/>
+      {/* Heart-shaped nose */}
+      <path d="M95 93 C93 90,89 91,91 93 C92 95,95 97,95 97 C95 97,98 95,99 93 C101 91,97 90,95 93Z" fill={`url(#${p}kNoseG)`}/>
 
-      {/* Kiss mouth — puckered toward heart side */}
-      <ellipse cx="103" cy="102" rx="5" ry="3.5" fill="#e06080" stroke="#c04868" strokeWidth="1"/>
-      <ellipse cx="102" cy="101" rx="1.8" ry="1" fill="rgba(255,255,255,0.45)" transform="rotate(-20,102,101)"/>
+      {/* Kiss mouth — puckered toward heart */}
+      <g transform="translate(103,100)">
+        <ellipse cx="0" cy="0" rx="5" ry="3.5" fill="#e06080" stroke="#c04868" strokeWidth="1"/>
+        <ellipse cx="-1" cy="-1" rx="1.8" ry="1" fill="rgba(255,255,255,0.45)" transform="rotate(-20,-1,-1)"/>
+      </g>
 
-      {/* Little kiss marks near heart */}
-      <g opacity="0.7">
-        <text x="135" y="60" fontSize="12" fill="#ff6b8a">💋</text>
+      {/* Floating mini hearts between bunny and heart */}
+      <g opacity="0.6">
+        <path d="M130 72 C128 69,125 70,126 72 C127 73,130 75,130 75 C130 75,133 73,134 72 C135 70,132 69,130 72Z" fill="#ff7a95"/>
+        <path d="M138 55 C136.5 53,134 53.5,135 55 C135.5 56,138 58,138 58 C138 58,140.5 56,141 55 C142 53.5,139.5 53,138 55Z" fill="#ff7a95" opacity="0.5"/>
+        <path d="M125 58 C124 56.5,122 57,123 58 C123.5 59,125 60,125 60 C125 60,126.5 59,127 58 C128 57,126 56.5,125 58Z" fill="#ff7a95" opacity="0.4"/>
       </g>
     </svg>
   );
@@ -320,49 +379,35 @@ const MOUTHS: Record<string, string> = {
     <path d="M90 119 Q100 131,110 119" fill="rgba(60,15,30,0.25)"/>`,
 };
 
-// ─── Expression emojis that float outside the bunny ──────────────────────────
-const STAGE_EMOJIS: Record<number, string[]> = {
-  0: [],
-  1: ['❓'],
-  2: ['❓', '❓'],
-  3: ['😰'],
-  4: ['😥', '💔'],
-  5: ['😢', '💧'],
-  6: ['😤', '💢'],
-  7: ['😭', '💧', '💧'],
-  8: ['😭', '😭'],
-  9: ['😭', '🥺', '💔'],
-};
-
 // ─── Stage config ─────────────────────────────────────────────────────────────
+// sw=sweat, st=steam, ag=anger cross, te=tears, sh=shock lines, qu=question marks
 interface Stage {
   ey: string; mo: string; an: string;
-  sw: boolean; st: boolean; ag: boolean; te: boolean;
+  sw: boolean; st: boolean; ag: boolean; te: boolean; sh: boolean; qu: boolean;
   tx: string; yT: string; nT: string;
-  // Percentage-based widths for side-by-side layout
   yW: number; nW: number; nO: number;
 }
 
 const STAGES: Stage[] = [
-  { ey:'normal', mo:'smile',  an:'bounce', sw:false, st:false, ag:false, te:false,
+  { ey:'normal', mo:'smile',  an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:false,
     tx:'Voce me ama? ❤️',           yT:'SIM',           nT:'NAO.',   yW:45, nW:45, nO:1 },
-  { ey:'half',   mo:'pout',   an:'shake',  sw:false, st:false, ag:false, te:false,
+  { ey:'half',   mo:'pout',   an:'shake',  sw:false, st:false, ag:false, te:false, sh:false, qu:true,
     tx:'espera... tem certeza? 🥺',  yT:'SIM',           nT:'NAO.',   yW:48, nW:42, nO:.95 },
-  { ey:'squint', mo:'wavy',   an:'bounce', sw:false, st:false, ag:false, te:false,
+  { ey:'squint', mo:'wavy',   an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:true,
     tx:'pensa direito...',           yT:'SIM',           nT:'nao',    yW:52, nW:38, nO:.85 },
-  { ey:'side',   mo:'frown',  an:'shake',  sw:true,  st:false, ag:false, te:false,
-    tx:'ta brincando ne...? 😰',     yT:'SIM!',          nT:'nao..',  yW:58, nW:32, nO:.7 },
-  { ey:'half',   mo:'pout',   an:'sad',    sw:false, st:false, ag:false, te:false,
+  { ey:'side',   mo:'frown',  an:'shake',  sw:true,  st:false, ag:false, te:false, sh:true,  qu:false,
+    tx:'ta brincando ne...?',        yT:'SIM!',          nT:'nao..',  yW:58, nW:32, nO:.7 },
+  { ey:'half',   mo:'pout',   an:'sad',    sw:false, st:false, ag:false, te:false, sh:true,  qu:false,
     tx:'nao ta certo isso...',       yT:'SIM!!',         nT:'nao..',  yW:62, nW:28, nO:.55 },
-  { ey:'cry',    mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,
-    tx:'voce nao me ama...? 😢',     yT:'EU TE AMO',     nT:'n...',   yW:68, nW:22, nO:.4 },
-  { ey:'angry',  mo:'open',   an:'angry',  sw:false, st:true,  ag:true,  te:false,
-    tx:'tenta de novo 🤨',           yT:'SIMM!!!',       nT:'n.',     yW:74, nW:18, nO:.3 },
-  { ey:'cry',    mo:'pout',   an:'cry',    sw:true,  st:false, ag:false, te:true,
+  { ey:'cry',    mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
+    tx:'voce nao me ama...?',        yT:'EU TE AMO',     nT:'n...',   yW:68, nW:22, nO:.4 },
+  { ey:'angry',  mo:'open',   an:'angry',  sw:false, st:true,  ag:true,  te:false, sh:true,  qu:false,
+    tx:'tenta de novo...',           yT:'SIMM!!!',       nT:'n.',     yW:74, nW:18, nO:.3 },
+  { ey:'cry',    mo:'pout',   an:'cry',    sw:true,  st:false, ag:false, te:true,  sh:false, qu:false,
     tx:'fala serio...',              yT:'POR FAVOR SIM',  nT:'..',    yW:78, nW:14, nO:.2 },
-  { ey:'closed', mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,
-    tx:'ta me zoando... 😭',         yT:'SIM SIM SIM',   nT:'.',      yW:84, nW:10, nO:.15 },
-  { ey:'cry',    mo:'wavy',   an:'cry',    sw:false, st:false, ag:false, te:true,
+  { ey:'closed', mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
+    tx:'ta me zoando...',            yT:'SIM SIM SIM',   nT:'.',      yW:84, nW:10, nO:.15 },
+  { ey:'cry',    mo:'wavy',   an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
     tx:'ultima chance...',           yT:'DIGA SIM!!',    nT:'.',      yW:90, nW:6,  nO:.15 },
 ];
 
@@ -480,9 +525,6 @@ export default function BunnyLoveIntro({ onReveal }: Props) {
   const activeMo = celebrating ? MOUTHS.kiss : simFlow ? (MOUTHS[simStage.mo] || MOUTHS.smile) : (MOUTHS[stage.mo] || MOUTHS.smile);
   const activeTx = celebrating ? 'EU SABIA!!!' : simFlow ? simStage.tx : stage.tx;
 
-  // Expression emojis around the bunny
-  const currentEmojis = !simFlow && !celebrating ? (STAGE_EMOJIS[stageIdx] || []) : [];
-
   return (
     <>
       <style>{`
@@ -523,48 +565,24 @@ export default function BunnyLoveIntro({ onReveal }: Props) {
               transition={{ duration: 0.15 }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%' }}
             >
-              {/* Bunny + floating expression emojis */}
-              <div style={{ position: 'relative', width: 160, height: 175 }}>
-                <motion.div
-                  key={`bunny-${stageIdx}-${simStageIdx}-${simFlow}`}
-                  animate={currentAnim}
-                  style={{ width: '100%', height: '100%' }}
-                >
-                  <BunnySVG
-                    eyeHtml={activeEy}
-                    mouthHtml={activeMo}
-                    showSweat={!simFlow && stage.sw && !celebrating}
-                    showSteam={!simFlow && stage.st && !celebrating}
-                    showAnger={!simFlow && stage.ag && !celebrating}
-                    showTears={!simFlow && stage.te && !celebrating}
-                    idPrefix={svgId}
-                  />
-                </motion.div>
-
-                {/* Expression emojis floating around bunny */}
-                {currentEmojis.map((emoji, i) => {
-                  const positions = [
-                    { x: -18, y: 10 },
-                    { x: 155, y: 15 },
-                    { x: -15, y: 60 },
-                    { x: 158, y: 55 },
-                  ];
-                  const pos = positions[i % positions.length];
-                  return (
-                    <motion.div
-                      key={`expr-${stageIdx}-${i}`}
-                      initial={{ opacity: 0, scale: 0.5, y: 5 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      style={{
-                        position: 'absolute', left: pos.x, top: pos.y,
-                        fontSize: 18, pointerEvents: 'none',
-                      }}
-                    >
-                      {emoji}
-                    </motion.div>
-                  );
-                })}
-              </div>
+              {/* Bunny */}
+              <motion.div
+                key={`bunny-${stageIdx}-${simStageIdx}-${simFlow}`}
+                animate={currentAnim}
+                style={{ width: 160, height: 170 }}
+              >
+                <BunnySVG
+                  eyeHtml={activeEy}
+                  mouthHtml={activeMo}
+                  showSweat={!simFlow && stage.sw && !celebrating}
+                  showSteam={!simFlow && stage.st && !celebrating}
+                  showAnger={!simFlow && stage.ag && !celebrating}
+                  showTears={!simFlow && stage.te && !celebrating}
+                  showShock={!simFlow && stage.sh && !celebrating}
+                  showQuestion={!simFlow && stage.qu && !celebrating}
+                  idPrefix={svgId}
+                />
+              </motion.div>
 
               {/* Text — no animation, instant */}
               <p style={{
