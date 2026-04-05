@@ -1,747 +1,965 @@
 'use client';
 /**
  * BunnyLoveIntro — "Voce me ama?" interactive intro.
- * Inspired by the kawaii cat "Do you love me?" meme.
- *
- * Coelhinho kawaii pergunta "Voce me ama?".
- * YES e NAO lado a lado. NAO encolhe, SIM cresce.
- * SIM → skeptic flow → celebração com coelhinho beijando coração.
+ * Canvas-drawn kawaii bunny with progressive stages.
  */
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 
-import React, { useState, useCallback, useRef, useId } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANVAS DRAWING SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+type Ctx = CanvasRenderingContext2D;
+const CW = 240, CH = 360, SC = 1.9;
+const OL = '#cbaabb', BG = '#fde8ef';
+const RS = '#ff8aab', RS2 = '#ff5e8a';
+const PK = '#ffb6c1', PK2 = '#ffc8d6', PK3 = '#ffd6e0';
 
-// ─── Bunny SVG Component ─────────────────────────────────────────────────────
-// Kawaii bunny with big head, tiny body, stubby arms, and expression marks
-function BunnySVG({
-  eyeHtml, mouthHtml, showSweat, showSteam, showAnger, showTears,
-  showShock, showQuestion, idPrefix = '',
-}: {
-  eyeHtml: string; mouthHtml: string;
-  showSweat: boolean; showSteam: boolean; showAnger: boolean; showTears: boolean;
-  showShock?: boolean; showQuestion?: boolean;
-  idPrefix?: string;
-}) {
-  const p = idPrefix;
-  const fixRefs = (html: string) =>
-    p ? html.replace(/url\(#(headG|bodyG|cheekG|earPinkL|noseG|padG|tailG)\)/g, `url(#${p}$1)`) : html;
-
-  return (
-    <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <defs>
-        <radialGradient id={`${p}headG`} cx="40%" cy="35%">
-          <stop offset="0%" stopColor="#fff"/>
-          <stop offset="100%" stopColor="#f0e8ef"/>
-        </radialGradient>
-        <radialGradient id={`${p}bodyG`} cx="40%" cy="30%">
-          <stop offset="0%" stopColor="#fff"/>
-          <stop offset="100%" stopColor="#f0e6ee"/>
-        </radialGradient>
-        <radialGradient id={`${p}cheekG`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(255,130,170,0.75)"/>
-          <stop offset="100%" stopColor="rgba(255,160,185,0)"/>
-        </radialGradient>
-        <linearGradient id={`${p}earPinkL`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffc8e0"/>
-          <stop offset="50%" stopColor="#ffaed0"/>
-          <stop offset="100%" stopColor="#ff96be"/>
-        </linearGradient>
-        <radialGradient id={`${p}noseG`} cx="35%" cy="35%">
-          <stop offset="0%" stopColor="#ffbed0"/>
-          <stop offset="100%" stopColor="#ff90ac"/>
-        </radialGradient>
-        <radialGradient id={`${p}padG`} cx="35%" cy="35%">
-          <stop offset="0%" stopColor="#ffb8c8"/>
-          <stop offset="100%" stopColor="#ff9eb8"/>
-        </radialGradient>
-        <radialGradient id={`${p}tailG`} cx="30%" cy="30%">
-          <stop offset="0%" stopColor="#fff"/>
-          <stop offset="100%" stopColor="#ebe0e8"/>
-        </radialGradient>
-      </defs>
-
-      {/* Shadow */}
-      <ellipse cx="100" cy="200" rx="30" ry="5" fill="rgba(0,0,0,0.06)"/>
-
-      {/* Tail — fluffy round */}
-      <circle cx="55" cy="162" r="10" fill={`url(#${p}tailG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
-
-      {/* Body — small and round (kawaii proportions: big head, tiny body) */}
-      <ellipse cx="100" cy="162" rx="38" ry="28" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="2"/>
-      {/* Belly highlight */}
-      <ellipse cx="100" cy="165" rx="18" ry="14" fill="rgba(255,245,250,0.5)"/>
-
-      {/* Stubby feet */}
-      <ellipse cx="80" cy="188" rx="13" ry="8" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(-4,80,188)"/>
-      <ellipse cx="120" cy="188" rx="13" ry="8" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(4,120,188)"/>
-      {/* Toe pads */}
-      <circle cx="76" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
-      <circle cx="84" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
-      <circle cx="116" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
-      <circle cx="124" cy="187" r="2.5" fill={`url(#${p}padG)`}/>
-
-      {/* Left arm — stubby, sticking out */}
-      <ellipse cx="60" cy="152" rx="11" ry="7" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(-25,60,152)"/>
-      {/* Right arm — stubby, sticking out */}
-      <ellipse cx="140" cy="152" rx="11" ry="7" fill={`url(#${p}bodyG)`} stroke="#d4b0c4" strokeWidth="1.8" transform="rotate(25,140,152)"/>
-
-      {/* Left ear */}
-      <g style={{ transformOrigin: '75px 75px', animation: 'earWiggle 3s ease-in-out infinite' }}>
-        <path d="M75 75 C63 71,57 38,66 14 C69 6,79 5,82 14 C89 36,88 71,75 75Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M77 66 C69 64,65 42,69 25 C72 18,78 18,80 25 C84 40,83 64,77 66Z" fill={`url(#${p}earPinkL)`}/>
-      </g>
-      {/* Right ear */}
-      <g style={{ transformOrigin: '125px 75px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
-        <path d="M125 75 C137 71,143 38,134 14 C131 6,121 5,118 14 C111 36,112 71,125 75Z" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M123 66 C131 64,135 42,131 25 C128 18,122 18,120 25 C116 40,117 64,123 66Z" fill={`url(#${p}earPinkL)`}/>
-      </g>
-
-      {/* Head — big and round */}
-      <ellipse cx="100" cy="100" rx="55" ry="50" fill={`url(#${p}headG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
-      {/* Head shine */}
-      <ellipse cx="88" cy="68" rx="24" ry="13" fill="rgba(255,255,255,0.5)" transform="rotate(-8,88,68)"/>
-
-      {/* Eyes — injected per stage */}
-      <g dangerouslySetInnerHTML={{ __html: fixRefs(eyeHtml) }}/>
-
-      {/* Cheeks — bigger blush circles */}
-      <ellipse cx="60" cy="112" rx="14" ry="9" fill={`url(#${p}cheekG)`}/>
-      <ellipse cx="140" cy="112" rx="14" ry="9" fill={`url(#${p}cheekG)`}/>
-      {/* Cheek shine dots */}
-      <circle cx="55" cy="109" r="1.5" fill="rgba(255,255,255,0.5)"/>
-      <circle cx="145" cy="109" r="1.5" fill="rgba(255,255,255,0.5)"/>
-
-      {/* Nose — heart-shaped */}
-      <path d="M100 112 C97 108,93 109,95 112 C96 114,100 117,100 117 C100 117,104 114,105 112 C107 109,103 108,100 112Z" fill={`url(#${p}noseG)`}/>
-
-      {/* Mouth — injected per stage */}
-      <g dangerouslySetInnerHTML={{ __html: fixRefs(mouthHtml) }}/>
-
-      {/* ── Expression marks (outside the body, manga-style) ── */}
-
-      {/* Sweat drops */}
-      {showSweat && <>
-        <path d="M152 72 Q156 80,152 88 Q148 80,152 72Z" fill="rgba(130,200,255,0.55)"/>
-        <ellipse cx="151" cy="77" rx="1.5" ry="1" fill="rgba(255,255,255,0.5)"/>
-      </>}
-
-      {/* Steam puffs (angry) */}
-      {showSteam && <>
-        <circle cx="155" cy="65" r="4" fill="rgba(255,200,200,0.3)"/>
-        <circle cx="162" cy="58" r="5.5" fill="rgba(255,200,200,0.25)"/>
-        <circle cx="170" cy="53" r="4" fill="rgba(255,200,200,0.2)"/>
-      </>}
-
-      {/* Anger cross mark — 💢 style */}
-      {showAnger && (
-        <g transform="translate(153,68)">
-          <line x1="-5" y1="-5" x2="5" y2="5" stroke="#e05070" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="5" y1="-5" x2="-5" y2="5" stroke="#e05070" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="-5" y1="0" x2="5" y2="0" stroke="#e05070" strokeWidth="2" strokeLinecap="round"/>
-          <line x1="0" y1="-5" x2="0" y2="5" stroke="#e05070" strokeWidth="2" strokeLinecap="round"/>
-        </g>
-      )}
-
-      {/* Tear streams */}
-      {showTears && <>
-        <path d="M74 110 Q72 120,74 130" stroke="rgba(100,180,255,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
-        <path d="M126 110 Q128 120,126 130" stroke="rgba(100,180,255,0.5)" strokeWidth="3" fill="none" strokeLinecap="round" style={{ animation: 'tearFall 0.8s ease-in-out infinite' }}/>
-        {/* Extra tear drops */}
-        <path d="M70 128 Q72 132,70 136 Q68 132,70 128Z" fill="rgba(100,180,255,0.4)"/>
-        <path d="M130 128 Q132 132,130 136 Q128 132,130 128Z" fill="rgba(100,180,255,0.4)"/>
-      </>}
-
-      {/* Shock lines — short manga lines radiating out */}
-      {showShock && <>
-        <line x1="30" y1="70" x2="22" y2="62" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="28" y1="90" x2="18" y2="88" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="32" y1="110" x2="22" y2="115" stroke="#888" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="170" y1="70" x2="178" y2="62" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="172" y1="90" x2="182" y2="88" stroke="#888" strokeWidth="2" strokeLinecap="round"/>
-        <line x1="168" y1="110" x2="178" y2="115" stroke="#888" strokeWidth="1.5" strokeLinecap="round"/>
-      </>}
-
-      {/* Question marks */}
-      {showQuestion && <>
-        <text x="155" y="55" fontSize="18" fill="#888" fontWeight="bold" fontFamily="sans-serif">?</text>
-        <text x="38" y="60" fontSize="14" fill="#aaa" fontWeight="bold" fontFamily="sans-serif">?</text>
-      </>}
-    </svg>
-  );
+function rg(c: Ctx, x: number, y: number, r0: number, r1: number, c0: string, c1: string) {
+  const g = c.createRadialGradient(x, y, r0, x, y, r1);
+  g.addColorStop(0, c0); g.addColorStop(1, c1); return g;
+}
+function lg(c: Ctx, x0: number, y0: number, x1: number, y1: number, stops: [number, string][]) {
+  const g = c.createLinearGradient(x0, y0, x1, y1);
+  stops.forEach(([t, col]) => g.addColorStop(t, col)); return g;
 }
 
-// ─── Bunny holding heart SVG (final celebration) ─────────────────────────────
-// Bunny hugging a big heart with stubby arms, kiss mouth, closed happy eyes
-function BunnyKissSVG({ idPrefix = '' }: { idPrefix?: string }) {
-  const p = idPrefix;
-  return (
-    <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <defs>
-        <radialGradient id={`${p}kHeadG`} cx="40%" cy="35%">
-          <stop offset="0%" stopColor="#fff"/>
-          <stop offset="100%" stopColor="#f0e8ef"/>
-        </radialGradient>
-        <radialGradient id={`${p}kBodyG`} cx="40%" cy="30%">
-          <stop offset="0%" stopColor="#fff"/>
-          <stop offset="100%" stopColor="#f0e6ee"/>
-        </radialGradient>
-        <radialGradient id={`${p}kCheekG`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(255,130,170,0.75)"/>
-          <stop offset="100%" stopColor="rgba(255,160,185,0)"/>
-        </radialGradient>
-        <linearGradient id={`${p}kEarPinkL`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffc8e0"/>
-          <stop offset="50%" stopColor="#ffaed0"/>
-          <stop offset="100%" stopColor="#ff96be"/>
-        </linearGradient>
-        <radialGradient id={`${p}kNoseG`} cx="35%" cy="35%">
-          <stop offset="0%" stopColor="#ffbed0"/>
-          <stop offset="100%" stopColor="#ff90ac"/>
-        </radialGradient>
-        <radialGradient id={`${p}kHeartG`} cx="35%" cy="25%">
-          <stop offset="0%" stopColor="#ff9ebb"/>
-          <stop offset="100%" stopColor="#ff4d78"/>
-        </radialGradient>
-      </defs>
-
-      {/* ── Big heart the bunny is holding ── */}
-      <g transform="translate(155,60)">
-        <path d="M0 45 C-55 -5,-33-50,0-18 C33-50,55-5,0 45Z" fill={`url(#${p}kHeartG)`} stroke="#e04070" strokeWidth="2"/>
-        {/* Heart shine */}
-        <ellipse cx="-14" cy="-10" rx="9" ry="5.5" fill="rgba(255,255,255,0.35)" transform="rotate(-25,-14,-10)"/>
-        <circle cx="-8" cy="-18" r="2.5" fill="rgba(255,255,255,0.25)"/>
-      </g>
-
-      {/* Shadow */}
-      <ellipse cx="105" cy="190" rx="50" ry="5" fill="rgba(0,0,0,0.05)"/>
-
-      {/* Tail */}
-      <circle cx="48" cy="155" r="8" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
-
-      {/* Body — tilted slightly toward heart */}
-      <ellipse cx="90" cy="150" rx="35" ry="26" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="2" transform="rotate(5,90,150)"/>
-      {/* Belly */}
-      <ellipse cx="90" cy="153" rx="16" ry="12" fill="rgba(255,245,250,0.5)"/>
-
-      {/* Feet */}
-      <ellipse cx="70" cy="174" rx="12" ry="7" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5" transform="rotate(-5,70,174)"/>
-      <ellipse cx="110" cy="174" rx="12" ry="7" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5" transform="rotate(5,110,174)"/>
-      {/* Toe pads */}
-      <circle cx="66" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
-      <circle cx="74" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
-      <circle cx="106" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
-      <circle cx="114" cy="173" r="2" fill="rgba(255,180,200,0.4)"/>
-
-      {/* Left arm — reaching up toward heart */}
-      <path d="M62 135 Q50 115,58 100 Q62 93,66 97 Q72 105,67 120Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
-      {/* Left paw */}
-      <circle cx="61" cy="98" r="6" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
-
-      {/* Right arm — hugging heart */}
-      <path d="M125 130 Q140 110,150 92 Q155 84,158 88 Q162 98,145 118Z" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.8"/>
-      {/* Right paw on heart */}
-      <circle cx="155" cy="86" r="6.5" fill={`url(#${p}kBodyG)`} stroke="#d4b0c4" strokeWidth="1.5"/>
-      {/* Paw pads */}
-      <circle cx="153" cy="85" r="1.5" fill="rgba(255,180,200,0.4)"/>
-      <circle cx="157" cy="85" r="1.5" fill="rgba(255,180,200,0.4)"/>
-      <circle cx="155" cy="89" r="1.5" fill="rgba(255,180,200,0.4)"/>
-
-      {/* Left ear */}
-      <g style={{ transformOrigin: '72px 65px', animation: 'earWiggle 3s ease-in-out infinite' }}>
-        <path d="M72 65 C60 61,54 30,63 8 C66 0,76-1,79 8 C86 28,84 61,72 65Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M74 56 C67 54,63 35,67 20 C69 14,75 14,77 20 C80 33,80 54,74 56Z" fill={`url(#${p}kEarPinkL)`}/>
-      </g>
-      {/* Right ear */}
-      <g style={{ transformOrigin: '118px 65px', animation: 'earWiggle 3s ease-in-out infinite', animationDelay: '-1s' }}>
-        <path d="M118 65 C130 61,136 30,127 8 C124 0,114-1,111 8 C104 28,106 61,118 65Z" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2"/>
-        <path d="M116 56 C123 54,127 35,123 20 C121 14,115 14,113 20 C110 33,110 54,116 56Z" fill={`url(#${p}kEarPinkL)`}/>
-      </g>
-
-      {/* Head — big and round */}
-      <ellipse cx="95" cy="85" rx="48" ry="43" fill={`url(#${p}kHeadG)`} stroke="#d4b0c4" strokeWidth="2.2"/>
-      {/* Head shine */}
-      <ellipse cx="83" cy="58" rx="20" ry="11" fill="rgba(255,255,255,0.5)" transform="rotate(-8,83,58)"/>
-
-      {/* Eyes — closed happy arcs (^  ^) */}
-      <path d="M72 84 Q80 74,88 84" stroke="#1a1018" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-      <path d="M102 84 Q110 74,118 84" stroke="#1a1018" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-
-      {/* Cheeks — big rosy blush */}
-      <ellipse cx="60" cy="94" rx="12" ry="8" fill={`url(#${p}kCheekG)`}/>
-      <ellipse cx="128" cy="94" rx="12" ry="8" fill={`url(#${p}kCheekG)`}/>
-      <circle cx="55" cy="91" r="1.5" fill="rgba(255,255,255,0.4)"/>
-      <circle cx="133" cy="91" r="1.5" fill="rgba(255,255,255,0.4)"/>
-
-      {/* Heart-shaped nose */}
-      <path d="M95 93 C93 90,89 91,91 93 C92 95,95 97,95 97 C95 97,98 95,99 93 C101 91,97 90,95 93Z" fill={`url(#${p}kNoseG)`}/>
-
-      {/* Kiss mouth — puckered toward heart */}
-      <g transform="translate(103,100)">
-        <ellipse cx="0" cy="0" rx="5" ry="3.5" fill="#e06080" stroke="#c04868" strokeWidth="1"/>
-        <ellipse cx="-1" cy="-1" rx="1.8" ry="1" fill="rgba(255,255,255,0.45)" transform="rotate(-20,-1,-1)"/>
-      </g>
-
-      {/* Floating mini hearts between bunny and heart */}
-      <g opacity="0.6">
-        <path d="M130 72 C128 69,125 70,126 72 C127 73,130 75,130 75 C130 75,133 73,134 72 C135 70,132 69,130 72Z" fill="#ff7a95"/>
-        <path d="M138 55 C136.5 53,134 53.5,135 55 C135.5 56,138 58,138 58 C138 58,140.5 56,141 55 C142 53.5,139.5 53,138 55Z" fill="#ff7a95" opacity="0.5"/>
-        <path d="M125 58 C124 56.5,122 57,123 58 C123.5 59,125 60,125 60 C125 60,126.5 59,127 58 C128 57,126 56.5,125 58Z" fill="#ff7a95" opacity="0.4"/>
-      </g>
-    </svg>
-  );
+function drawMiniStar(c: Ctx, x: number, y: number, sz: number, color: string) {
+  c.save(); c.translate(x, y); c.fillStyle = color;
+  for (let i = 0; i < 4; i++) {
+    c.save(); c.rotate(i * Math.PI / 2);
+    c.beginPath(); c.moveTo(0, -sz);
+    c.quadraticCurveTo(sz * 0.12, -sz * 0.12, sz * 0.18, 0);
+    c.quadraticCurveTo(sz * 0.12, sz * 0.12, 0, sz * 0.15);
+    c.fill(); c.restore();
+  }
+  c.beginPath(); c.arc(0, 0, sz * 0.2, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(255,255,255,0.7)'; c.fill(); c.restore();
+}
+function drawSparkle(c: Ctx, x: number, y: number, sz: number, col?: string) {
+  drawMiniStar(c, x, y, sz, col || '#ffe8b5');
 }
 
-// ─── SVG Eye templates ───────────────────────────────────────────────────────
-const EYES: Record<string, string> = {
-  normal: `<circle cx="80" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="76.5" cy="99" rx="4" ry="3.6" fill="#fff" transform="rotate(-20,76.5,99)"/>
-    <circle cx="83" cy="105" r="1.8" fill="rgba(255,255,255,0.6)"/>
-    <circle cx="120" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="116.5" cy="99" rx="4" ry="3.6" fill="#fff" transform="rotate(-20,116.5,99)"/>
-    <circle cx="123" cy="105" r="1.8" fill="rgba(255,255,255,0.6)"/>`,
+function drawEar(c: Ctx, x: number, y: number, angle: number, s: number) {
+  c.save(); c.translate(x, y); c.rotate(angle);
+  // shadow
+  c.beginPath(); c.moveTo(1.5*s,9*s);
+  c.bezierCurveTo(-11*s,5*s,-15*s,-31*s,-2*s,-47*s);
+  c.bezierCurveTo(3*s,-52*s,11*s,-51*s,14*s,-47*s);
+  c.bezierCurveTo(23*s,-31*s,20*s,5*s,1.5*s,9*s);
+  c.fillStyle='rgba(215,175,192,0.2)'; c.fill();
+  // outer
+  c.beginPath(); c.moveTo(0,10*s);
+  c.bezierCurveTo(-12*s,7*s,-15.5*s,-32*s,-2.5*s,-48*s);
+  c.bezierCurveTo(2*s,-53*s,10*s,-53*s,13.5*s,-48*s);
+  c.bezierCurveTo(22*s,-32*s,18*s,7*s,0,10*s);
+  c.fillStyle=rg(c,2*s,-20*s,2*s,32*s,'#ffffff','#f5edf3'); c.fill();
+  c.strokeStyle=OL; c.lineWidth=2.3*s; c.lineJoin='round'; c.stroke();
+  // edge shade
+  c.beginPath(); c.moveTo(0,10*s);
+  c.bezierCurveTo(-12*s,7*s,-15.5*s,-32*s,-2.5*s,-48*s);
+  c.bezierCurveTo(-1*s,-50*s,1*s,-50*s,0,-48*s);
+  c.bezierCurveTo(-10*s,-32*s,-12*s,7*s,0,10*s);
+  c.fillStyle='rgba(210,170,188,0.18)'; c.fill();
+  // inner pink
+  c.beginPath(); c.moveTo(1*s,5*s);
+  c.bezierCurveTo(-5.5*s,3*s,-8.5*s,-25*s,-0.5*s,-37*s);
+  c.bezierCurveTo(2*s,-41*s,7.5*s,-41*s,9.5*s,-37*s);
+  c.bezierCurveTo(15.5*s,-25*s,11*s,3*s,1*s,5*s);
+  c.fillStyle=lg(c,1*s,-38*s,1*s,5*s,[[0,'#ffd0e5'],[0.5,'#ffb5d0'],[1,'#ffa2c2']]); c.fill();
+  // vein
+  c.beginPath(); c.moveTo(4*s,-5*s); c.bezierCurveTo(5*s,-14*s,6*s,-26*s,5*s,-33*s);
+  c.strokeStyle='rgba(255,255,255,0.6)'; c.lineWidth=1.5*s; c.lineCap='round'; c.stroke();
+  // fur lines
+  c.strokeStyle='rgba(200,160,178,0.4)'; c.lineWidth=0.8*s;
+  ([[-3*s,4*s,-2*s,10*s],[0,5*s,1*s,10*s],[4*s,4*s,3*s,9.5*s]] as number[][]).forEach(([x1,y1,x2,y2])=>{
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  });
+  c.restore();
+}
 
-  half: `<ellipse cx="80" cy="104" rx="8" ry="5" fill="#1a1018"/>
-    <ellipse cx="77" cy="103" rx="3" ry="2" fill="#fff"/>
-    <path d="M70 100 Q80 94,90 100" fill="url(#headG)" stroke="#1a1018" stroke-width="1.5"/>
-    <ellipse cx="120" cy="104" rx="8" ry="5" fill="#1a1018"/>
-    <ellipse cx="117" cy="103" rx="3" ry="2" fill="#fff"/>
-    <path d="M110 100 Q120 94,130 100" fill="url(#headG)" stroke="#1a1018" stroke-width="1.5"/>`,
+function drawBody(c: Ctx, x: number, y: number, s: number) {
+  c.save(); c.translate(x, y);
+  c.beginPath(); c.ellipse(0,0,33*s,24*s,0,0,Math.PI*2);
+  c.fillStyle=rg(c,-5*s,-10*s,3*s,36*s,'#ffffff','#f8f0f6'); c.fill();
+  c.strokeStyle=OL; c.lineWidth=2.4*s; c.stroke();
+  // side shading
+  c.beginPath(); c.ellipse(16*s,5*s,12*s,20*s,0.3,0,Math.PI*2);
+  c.fillStyle='rgba(210,170,188,0.1)'; c.fill();
+  c.beginPath(); c.ellipse(-18*s,5*s,10*s,18*s,-0.3,0,Math.PI*2);
+  c.fillStyle='rgba(210,170,188,0.1)'; c.fill();
+  // belly
+  c.beginPath(); c.ellipse(0,3*s,16*s,13*s,0,0,Math.PI*2);
+  c.fillStyle=rg(c,0,2*s,2*s,17*s,'#fff0f6','rgba(255,235,245,0)'); c.fill();
+  // belly lines
+  c.strokeStyle='rgba(210,170,188,0.38)'; c.lineWidth=0.9*s; c.lineCap='round';
+  ([[-7*s,-5*s,-5*s,2*s],[0,-6*s,0,2*s],[7*s,-5*s,5*s,2*s]] as number[][]).forEach(([x1,y1,x2,y2])=>{
+    c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo((x1+x2)/2,(y1+y2)/2-1*s,x2,y2); c.stroke();
+  });
+  // tail
+  c.beginPath(); c.arc(-32*s,-4*s,8.5*s,0,Math.PI*2);
+  c.fillStyle=rg(c,-33*s,-7*s,1*s,8.5*s,'#ffffff','#ecdeed'); c.fill();
+  c.strokeStyle=OL; c.lineWidth=1.8*s; c.stroke();
+  c.strokeStyle='rgba(200,165,182,0.35)'; c.lineWidth=0.75*s;
+  ([[-34*s,-10*s,-36*s,-5*s],[-32*s,-10*s,-35*s,-3*s],[-30*s,-9*s,-32*s,-2*s]] as number[][]).forEach(([x1,y1,x2,y2])=>{
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  });
+  c.restore();
+}
 
-  squint: `<path d="M72 105 Q80 95,88 105" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M112 105 Q120 95,128 105" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+function drawFeet(c: Ctx, x: number, y: number, s: number) {
+  c.save(); c.translate(x, y);
+  [-16*s,16*s].forEach(fx=>{
+    c.beginPath(); c.ellipse(fx,0,9.5*s,6.5*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,fx,-1*s,1*s,9*s,'#ffffff','#f0e8f0'); c.fill();
+    c.strokeStyle=OL; c.lineWidth=2*s; c.stroke();
+    const dir=fx<0?-1:1;
+    [0,1,-1].forEach(ti=>{
+      c.beginPath(); c.arc(fx+dir*(4+ti*0.5)*s,1*s,2.5*s,Math.PI*0.8,Math.PI*2.2);
+      c.strokeStyle=OL; c.lineWidth=1.3*s; c.stroke();
+    });
+  });
+  c.restore();
+}
 
-  side: `<circle cx="80" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="85" cy="100" rx="3.2" ry="3" fill="#fff"/>
-    <circle cx="86" cy="102" r="1" fill="rgba(255,255,255,0.5)"/>
-    <circle cx="120" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="125" cy="100" rx="3.2" ry="3" fill="#fff"/>
-    <circle cx="126" cy="102" r="1" fill="rgba(255,255,255,0.5)"/>`,
+function drawPaw(c: Ctx, x: number, y: number, s: number, rot?: number) {
+  c.save(); c.translate(x, y); c.rotate(rot||0);
+  c.beginPath(); c.ellipse(0,0,11.5*s,7.5*s,0,0,Math.PI*2);
+  c.fillStyle=rg(c,0,-2*s,2*s,11*s,'#ffffff','#f2e8f0'); c.fill();
+  c.strokeStyle=OL; c.lineWidth=2.1*s; c.stroke();
+  ([[-3.8*s,-1.3*s,2.1*s],[3.8*s,-1.3*s,2.1*s],[0,2.8*s,1.8*s]] as number[][]).forEach(([px,py,pr])=>{
+    c.beginPath(); c.arc(px,py,pr,0,Math.PI*2);
+    c.fillStyle=rg(c,px-0.5*s,py-0.5*s,0.3*s,pr,'#ffb8c8','#ff9eb8'); c.fill();
+    c.beginPath(); c.arc(px-0.5*s,py-0.5*s,0.65*s,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,0.62)'; c.fill();
+  });
+  c.restore();
+}
 
-  angry: `<circle cx="80" cy="104" r="7" fill="#1a1018"/>
-    <ellipse cx="78" cy="103" rx="2.5" ry="2" fill="#fff"/>
-    <line x1="68" y1="89" x2="92" y2="96" stroke="#1a1018" stroke-width="3.5" stroke-linecap="round"/>
-    <circle cx="120" cy="104" r="7" fill="#1a1018"/>
-    <ellipse cx="118" cy="103" rx="2.5" ry="2" fill="#fff"/>
-    <line x1="132" y1="89" x2="108" y2="96" stroke="#1a1018" stroke-width="3.5" stroke-linecap="round"/>`,
+function drawHead(c: Ctx, x: number, y: number, s: number) {
+  c.save(); c.translate(x, y);
+  c.beginPath(); c.ellipse(0,0,44*s,39*s,0,0,Math.PI*2);
+  c.fillStyle=rg(c,-8*s,-14*s,5*s,48*s,'#ffffff','#f8f2f8'); c.fill();
+  c.strokeStyle=OL; c.lineWidth=2.5*s; c.stroke();
+  c.beginPath(); c.ellipse(-6*s,-22*s,18*s,9*s,-0.15,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.65)'; c.fill();
+  c.beginPath(); c.ellipse(22*s,5*s,11*s,24*s,0.28,0,Math.PI*2);
+  c.fillStyle='rgba(215,175,195,0.1)'; c.fill();
+  c.beginPath(); c.ellipse(-24*s,5*s,9*s,22*s,-0.28,0,Math.PI*2);
+  c.fillStyle='rgba(215,175,195,0.1)'; c.fill();
+  c.restore();
+}
 
-  closed: `<path d="M72 102 Q80 112,88 102" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M112 102 Q120 112,128 102" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+function drawHeart(c: Ctx, x: number, y: number, size: number, color?: string) {
+  c.save(); c.translate(x, y);
+  c.beginPath(); c.moveTo(0,size*0.38);
+  c.bezierCurveTo(-size*0.95,-size*0.02,-size*0.56,-size*0.78,0,-size*0.28);
+  c.bezierCurveTo(size*0.56,-size*0.78,size*0.95,-size*0.02,0,size*0.38);
+  c.fillStyle=color||RS; c.fill();
+  c.beginPath(); c.ellipse(-size*0.22,-size*0.2,size*0.15,size*0.09,-0.5,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.72)'; c.fill();
+  c.beginPath(); c.arc(-size*0.05,size*0.05,size*0.06,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.38)'; c.fill();
+  c.restore();
+}
 
-  cry: `<path d="M72 102 Q80 112,88 102" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M112 102 Q120 112,128 102" stroke="#1a1018" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M74 108 Q72 118,74 126" stroke="rgba(100,180,255,0.6)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M126 108 Q128 118,126 126" stroke="rgba(100,180,255,0.6)" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+function drawBigHeart(c: Ctx, x: number, y: number, size: number, color?: string) {
+  c.save(); c.translate(x, y); const sz = size;
+  // glow
+  c.beginPath(); c.moveTo(0,sz*0.5);
+  c.bezierCurveTo(-sz*1.22,-sz*0.06,-sz*0.65,-sz*1.02,0,-sz*0.38);
+  c.bezierCurveTo(sz*0.65,-sz*1.02,sz*1.22,-sz*0.06,0,sz*0.5);
+  c.fillStyle='rgba(255,140,175,0.18)'; c.fill();
+  // main
+  c.beginPath(); c.moveTo(0,sz*0.4);
+  c.bezierCurveTo(-sz*1.06,-sz*0.04,-sz*0.56,-sz*0.86,0,-sz*0.32);
+  c.bezierCurveTo(sz*0.56,-sz*0.86,sz*1.06,-sz*0.04,0,sz*0.4);
+  c.fillStyle=lg(c,0,-sz*0.9,0,sz*0.4,[[0,'#ffaac8'],[0.45,color||RS],[1,'#d84870']]); c.fill();
+  c.strokeStyle='rgba(200,70,115,0.28)'; c.lineWidth=Math.max(1.5,sz*0.04); c.stroke();
+  // shine
+  c.beginPath(); c.ellipse(-sz*0.26,-sz*0.26,sz*0.22,sz*0.13,-0.5,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.72)'; c.fill();
+  c.beginPath(); c.ellipse(-sz*0.4,-sz*0.08,sz*0.09,sz*0.055,-0.3,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.45)'; c.fill();
+  c.beginPath(); c.arc(-sz*0.1,sz*0.1,sz*0.05,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.3)'; c.fill();
+  // top sparkle
+  c.save(); c.translate(sz*0.38,-sz*0.42); c.fillStyle='rgba(255,255,255,0.82)';
+  const sp=sz*0.1;
+  for(let i=0;i<4;i++){
+    c.save();c.rotate(i*Math.PI/2);
+    c.beginPath();c.moveTo(0,-sp);c.quadraticCurveTo(sp*0.15,-sp*0.15,sp*0.2,0);
+    c.quadraticCurveTo(sp*0.15,sp*0.15,0,sp*0.2);c.fill();c.restore();
+  }
+  c.restore(); c.restore();
+}
 
-  hearteye: `<g transform="translate(80,102) scale(0.72)">
-    <path d="M0 6 C-14 -2,-8-14,0-5 C8-14,14-2,0 6Z" fill="#ff4d78"/>
-    <ellipse cx="-3.5" cy="-4" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30,-3.5,-4)"/>
-  </g>
-  <g transform="translate(120,102) scale(0.72)">
-    <path d="M0 6 C-14 -2,-8-14,0-5 C8-14,14-2,0 6Z" fill="#ff4d78"/>
-    <ellipse cx="-3.5" cy="-4" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30,-3.5,-4)"/>
-  </g>`,
+function drawEyes(c: Ctx, x: number, y: number, s: number, type: string) {
+  c.save(); c.translate(x, y);
+  function fullEye(ex: number, ey: number, rx: number, ry: number) {
+    c.beginPath(); c.arc(ex*s,ey,rx*s,0,Math.PI*2); c.fillStyle='#1a1018'; c.fill();
+    c.beginPath(); c.ellipse((ex-rx*0.3)*s,ey-ry*0.35,(rx*0.52)*s,(ry*0.48)*s,-0.35,0,Math.PI*2);
+    c.fillStyle='#fff'; c.fill();
+    c.beginPath(); c.arc((ex+rx*0.28)*s,ey+ry*0.3,(rx*0.2)*s,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,0.7)'; c.fill();
+  }
+  if(type==='normal'||type==='serious'){fullEye(-14,0,6.2,6.2);fullEye(14,0,6.2,6.2);}
+  else if(type==='halfClosed'){
+    [-14,14].forEach(ex=>{
+      c.save(); c.beginPath(); c.rect((ex-9)*s,-1*s,18*s,14*s); c.clip();
+      fullEye(ex,2,6,6); c.restore();
+      c.beginPath(); c.moveTo((ex-8)*s,0); c.quadraticCurveTo(ex*s,-6*s,(ex+8)*s,0);
+      c.lineTo((ex+8)*s,-12*s); c.lineTo((ex-8)*s,-12*s); c.closePath();
+      c.fillStyle='#fffcfd'; c.fill();
+      c.beginPath(); c.moveTo((ex-8)*s,0); c.quadraticCurveTo(ex*s,-6*s,(ex+8)*s,0);
+      c.strokeStyle='#1a1018'; c.lineWidth=2.4*s; c.lineCap='round'; c.stroke();
+    });
+  }
+  else if(type==='squint'){
+    [-14,14].forEach(ex=>{
+      c.beginPath(); c.moveTo((ex-6.5)*s,1.5*s); c.quadraticCurveTo(ex*s,-6*s,(ex+6.5)*s,1.5*s);
+      c.strokeStyle='#1a1018'; c.lineWidth=2.8*s; c.lineCap='round'; c.stroke();
+    });
+  }
+  else if(type==='sideR'){
+    [-14,14].forEach(ex=>{
+      c.beginPath(); c.arc(ex*s,0,6.2*s,0,Math.PI*2); c.fillStyle='#1a1018'; c.fill();
+      c.beginPath(); c.ellipse((ex+2.5)*s,-2*s,2.8*s,2.6*s,0,0,Math.PI*2); c.fillStyle='#fff'; c.fill();
+      c.beginPath(); c.arc((ex+1)*s,2*s,1.1*s,0,Math.PI*2); c.fillStyle='rgba(255,255,255,0.6)'; c.fill();
+    });
+  }
+  else if(type==='angry'){
+    [-14,14].forEach((ex,i)=>{
+      c.beginPath(); c.ellipse(ex*s,1.5*s,5.8*s,4.8*s,0,0,Math.PI*2); c.fillStyle='#1a1018'; c.fill();
+      c.beginPath(); c.ellipse((ex-2)*s,0,2.2*s,2*s,0,0,Math.PI*2); c.fillStyle='#fff'; c.fill();
+      const dir=i===0?1:-1;
+      c.beginPath(); c.moveTo((ex-7*dir)*s,-8.5*s); c.lineTo((ex+6*dir)*s,-4*s);
+      c.strokeStyle='#1a1018'; c.lineWidth=3.2*s; c.lineCap='round'; c.stroke();
+    });
+  }
+  else if(type==='closed'){
+    [-14,14].forEach(ex=>{
+      c.beginPath(); c.arc(ex*s,-1*s,5.5*s,0.05,Math.PI-0.05);
+      c.strokeStyle='#1a1018'; c.lineWidth=2.6*s; c.lineCap='round'; c.stroke();
+    });
+  }
+  else if(type==='hearty'){
+    [-14,14].forEach(ex=>{
+      drawHeart(c,ex*s,0,10*s,'#ff4d78');
+      c.beginPath(); c.ellipse((ex-2.5)*s,-2.5*s,2*s,1.3*s,-0.4,0,Math.PI*2);
+      c.fillStyle='rgba(255,255,255,0.75)'; c.fill();
+    });
+  }
+  c.restore();
+}
 
-  happy: `<circle cx="80" cy="102" r="9.5" fill="#1a1018"/>
-    <ellipse cx="76" cy="98" rx="4.5" ry="4" fill="#fff" transform="rotate(-15,76,98)"/>
-    <circle cx="84" cy="105" r="2.2" fill="#fff"/>
-    <circle cx="120" cy="102" r="9.5" fill="#1a1018"/>
-    <ellipse cx="116" cy="98" rx="4.5" ry="4" fill="#fff" transform="rotate(-15,116,98)"/>
-    <circle cx="124" cy="105" r="2.2" fill="#fff"/>`,
+function drawCheeks(c: Ctx, x: number, y: number, s: number, intensity?: number) {
+  const op=intensity||0.4;
+  [-28,28].forEach(cx=>{
+    c.beginPath(); c.ellipse(x+cx*s,y+9*s,12*s,7.5*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,x+cx*s,y+9*s,0,12*s,`rgba(255,130,162,${op*0.95})`,'rgba(255,165,185,0)'); c.fill();
+  });
+  if(op>0.5){
+    c.strokeStyle=`rgba(225,115,148,${op*0.38})`; c.lineWidth=0.9*s; c.lineCap='round';
+    [-27,27].forEach(cx=>{
+      for(let j=-1;j<=1;j++){
+        c.beginPath(); c.moveTo(x+(cx+j*3.8-1.3)*s,y+8*s); c.lineTo(x+(cx+j*3.8+1.3)*s,y+12*s); c.stroke();
+      }
+    });
+  }
+}
 
-  suspicious: `<circle cx="80" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="76.5" cy="99" rx="4" ry="3.6" fill="#fff" transform="rotate(-20,76.5,99)"/>
-    <circle cx="83" cy="105" r="1.8" fill="rgba(255,255,255,0.6)"/>
-    <line x1="68" y1="96" x2="92" y2="93" stroke="#1a1018" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="120" cy="102" r="8.5" fill="#1a1018"/>
-    <ellipse cx="116.5" cy="99" rx="4" ry="3.6" fill="#fff" transform="rotate(-20,116.5,99)"/>
-    <circle cx="123" cy="105" r="1.8" fill="rgba(255,255,255,0.6)"/>
-    <line x1="108" y1="93" x2="132" y2="96" stroke="#1a1018" stroke-width="2.5" stroke-linecap="round"/>`,
+function drawNose(c: Ctx, x: number, y: number, s: number) {
+  c.beginPath(); c.moveTo(x,y-2.2*s);
+  c.bezierCurveTo(x-4.2*s,y-2.2*s,x-4.2*s,y+3.2*s,x,y+3.2*s);
+  c.bezierCurveTo(x+4.2*s,y+3.2*s,x+4.2*s,y-2.2*s,x,y-2.2*s);
+  c.fillStyle=rg(c,x-1*s,y-1*s,0.5*s,4.5*s,'#ffbed0','#ff90ac'); c.fill();
+  c.beginPath(); c.ellipse(x-1.3*s,y-0.9*s,1.4*s,0.85*s,-0.3,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.82)'; c.fill();
+  c.beginPath(); c.arc(x+1*s,y+0.5*s,0.5*s,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.4)'; c.fill();
+}
 
-  wideEye: `<circle cx="80" cy="102" r="11" fill="#1a1018"/>
-    <ellipse cx="76" cy="98" rx="5" ry="4.5" fill="#fff" transform="rotate(-15,76,98)"/>
-    <circle cx="83" cy="104" r="2" fill="rgba(255,255,255,0.6)"/>
-    <circle cx="120" cy="102" r="11" fill="#1a1018"/>
-    <ellipse cx="116" cy="98" rx="5" ry="4.5" fill="#fff" transform="rotate(-15,116,98)"/>
-    <circle cx="123" cy="104" r="2" fill="rgba(255,255,255,0.6)"/>`,
-};
+function drawMouth(c: Ctx, x: number, y: number, s: number, type: string) {
+  c.save(); c.translate(x, y);
+  c.strokeStyle='#a87080'; c.lineWidth=2.2*s; c.lineCap='round'; c.lineJoin='round';
+  if(type==='flat'){
+    c.beginPath(); c.moveTo(-5*s,0); c.quadraticCurveTo(0,4*s,5*s,0); c.stroke();
+  } else if(type==='pout'){
+    c.beginPath(); c.moveTo(-6*s,0); c.quadraticCurveTo(-2.5*s,3.5*s,0,0.5*s);
+    c.quadraticCurveTo(2.5*s,3.5*s,6*s,0); c.stroke();
+    c.beginPath(); c.moveTo(-5*s,1.5*s); c.quadraticCurveTo(0,7*s,5*s,1.5*s);
+    c.strokeStyle='rgba(170,110,135,0.4)'; c.lineWidth=1.3*s; c.stroke();
+  } else if(type==='wavy'){
+    c.beginPath(); c.moveTo(-6.5*s,0);
+    c.bezierCurveTo(-4*s,-3*s,-2*s,3.5*s,0,0.5*s);
+    c.bezierCurveTo(2*s,-2.5*s,4.5*s,3.5*s,6.5*s,0); c.stroke();
+  } else if(type==='frown'){
+    c.beginPath(); c.moveTo(-5.5*s,1.5*s); c.quadraticCurveTo(0,-4*s,5.5*s,1.5*s); c.stroke();
+    c.lineWidth=1.1*s;
+    c.beginPath(); c.moveTo(-5.5*s,1.5*s); c.quadraticCurveTo(-7*s,-0.5*s,-6.5*s,-2*s);
+    c.moveTo(5.5*s,1.5*s); c.quadraticCurveTo(7*s,-0.5*s,6.5*s,-2*s); c.stroke();
+  } else if(type==='open'){
+    c.beginPath(); c.moveTo(-6*s,1*s);
+    c.bezierCurveTo(-6*s,7*s,-3*s,9*s,0,9*s);
+    c.bezierCurveTo(3*s,9*s,6*s,7*s,6*s,1*s); c.closePath();
+    c.fillStyle='#5a2838'; c.fill();
+    c.beginPath(); c.moveTo(-6*s,1*s); c.quadraticCurveTo(0,-2*s,6*s,1*s);
+    c.strokeStyle='#a87080'; c.lineWidth=2.2*s; c.stroke();
+    c.beginPath(); c.ellipse(0,5.5*s,3.2*s,2.5*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,0,5*s,1*s,4*s,'#ff9eb8','#ff72a0'); c.fill();
+  } else if(type==='smile'){
+    c.beginPath(); c.arc(0,-1*s,6*s,0.15,Math.PI-0.15); c.stroke();
+  } else if(type==='kiss'){
+    c.beginPath(); c.ellipse(5.5*s,0,4*s,3*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,4*s,-1*s,0.5*s,4*s,'#ff9abc','#d8506a'); c.fill();
+    c.strokeStyle='#c04868'; c.lineWidth=1.2*s; c.stroke();
+    c.strokeStyle='#b84060'; c.lineWidth=1.1*s; c.lineCap='round';
+    ([[-0.5,-3,2,-1.5],[-0.5,3,2,1.5],[-1,-2,2.5,-1],[-1,2,2.5,1]] as number[][]).forEach(([dx,dy,tx,ty])=>{
+      c.beginPath(); c.moveTo(dx*s,dy*s); c.lineTo(tx*s,ty*s); c.stroke();
+    });
+    c.beginPath(); c.ellipse(3.5*s,-1*s,1.2*s,0.7*s,-0.3,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,0.5)'; c.fill();
+  } else if(type==='bigSmile'){
+    c.beginPath(); c.moveTo(-7*s,0);
+    c.bezierCurveTo(-7*s,7*s,-3.5*s,9*s,0,9*s);
+    c.bezierCurveTo(3.5*s,9*s,7*s,7*s,7*s,0); c.closePath();
+    c.fillStyle='#5a2838'; c.fill();
+    c.beginPath(); c.moveTo(-7*s,0); c.quadraticCurveTo(-3.5*s,-2*s,0,0);
+    c.quadraticCurveTo(3.5*s,-2*s,7*s,0);
+    c.strokeStyle='#a87080'; c.lineWidth=2.2*s; c.stroke();
+    c.fillStyle='#fffbfc';
+    c.beginPath(); c.arc(-2.8*s,0,2.5*s,Math.PI,0); c.fill();
+    c.beginPath(); c.arc(2.8*s,0,2.5*s,Math.PI,0); c.fill();
+    c.beginPath(); c.ellipse(0,6*s,3.5*s,2.5*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,0,5.5*s,1*s,4*s,'#ffb8cc','#ff88a8'); c.fill();
+  }
+  c.restore();
+}
 
-// ─── SVG Mouth templates ─────────────────────────────────────────────────────
-const MOUTHS: Record<string, string> = {
-  smile: `<path d="M93 119 Q100 127,107 119" stroke="#b07888" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
-  pout: `<path d="M91 119 Q95 123,100 120 Q105 123,109 119" stroke="#b07888" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
-  wavy: `<path d="M90 121 Q93 117,97 121 Q100 125,103 121 Q107 117,110 121" stroke="#b07888" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
-  frown: `<path d="M92 124 Q100 116,108 124" stroke="#b07888" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
-  open: `<ellipse cx="100" cy="122" rx="8" ry="7" fill="#3a1020"/>
-    <ellipse cx="100" cy="126" rx="5" ry="3.5" fill="#ff7a9a"/>`,
-  kiss: `<ellipse cx="108" cy="120" rx="5.5" ry="4" fill="#e06080" stroke="#c04868" stroke-width="1.2"/>
-    <ellipse cx="107" cy="118.5" rx="2" ry="1.1" fill="rgba(255,255,255,0.5)" transform="rotate(-20,107,118.5)"/>`,
-  bigSmile: `<path d="M86 118 Q100 135,114 118" stroke="#b07888" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <path d="M90 119 Q100 131,110 119" fill="rgba(60,15,30,0.25)"/>`,
-};
+function drawSweat(c: Ctx, x: number, y: number, s: number) {
+  c.save();
+  c.beginPath(); c.moveTo(x,y);
+  c.quadraticCurveTo(x+6*s,y+8*s,x,y+14*s);
+  c.quadraticCurveTo(x-6*s,y+8*s,x,y);
+  c.fillStyle=lg(c,x,y,x,y+14*s,[[0,'rgba(150,210,255,0.85)'],[1,'rgba(110,175,240,0.3)']]); c.fill();
+  c.beginPath(); c.ellipse(x-1.2*s,y+3*s,1.4*s,2.2*s,-0.3,0,Math.PI*2);
+  c.fillStyle='rgba(255,255,255,0.6)'; c.fill();
+  c.beginPath(); c.arc(x-4*s,y+10*s,1.5*s,0,Math.PI*2);
+  c.fillStyle='rgba(150,210,255,0.45)'; c.fill();
+  c.beginPath(); c.arc(x+2*s,y+16*s,1*s,0,Math.PI*2);
+  c.fillStyle='rgba(140,200,250,0.35)'; c.fill();
+  c.restore();
+}
 
-// ─── Stage config ─────────────────────────────────────────────────────────────
-// sw=sweat, st=steam, ag=anger cross, te=tears, sh=shock lines, qu=question marks
+function drawSteam(c: Ctx, x: number, y: number, s: number) {
+  c.save(); c.lineCap='round';
+  ([[0,0,4,5,-3,10,2.2,'rgba(255,140,165,0.7)'],
+    [9,0,12,5,7,10,2,'rgba(255,150,175,0.6)'],
+    [4,-5,7,-1,2,-8,1.6,'rgba(255,160,180,0.5)'],
+    [-3,2,0,7,-4,5,1.4,'rgba(255,145,170,0.4)']] as (number|string)[][]).forEach(([sx,sy,mx,my,ex,ey,lw,col])=>{
+    c.beginPath(); c.moveTo(x+(sx as number)*s,y+(sy as number)*s);
+    c.quadraticCurveTo(x+(mx as number)*s,y+(my as number)*s,x+(ex as number)*s,y+(ey as number)*s);
+    c.strokeStyle=col as string; c.lineWidth=(lw as number)*s; c.stroke();
+  });
+  c.beginPath(); c.arc(x-2*s,y-6*s,2*s,0,Math.PI*2);
+  c.fillStyle='rgba(255,160,180,0.2)'; c.fill();
+  c.beginPath(); c.arc(x+10*s,y-4*s,1.5*s,0,Math.PI*2);
+  c.fillStyle='rgba(255,150,170,0.15)'; c.fill();
+  c.restore();
+}
+
+function drawAngerMark(c: Ctx, x: number, y: number, s: number) {
+  c.save(); c.translate(x, y);
+  const r=3.2*s, d=4*s;
+  ([[0,-d],[-d,0],[0,d],[d,0]] as number[][]).forEach(([px,py])=>{
+    c.beginPath(); c.arc(px,py,r,0,Math.PI*2); c.fillStyle='#e05070'; c.fill();
+  });
+  c.strokeStyle='#e05070'; c.lineWidth=2.2*s;
+  c.beginPath(); c.moveTo(-d,0); c.lineTo(d,0);
+  c.moveTo(0,-d); c.lineTo(0,d); c.stroke();
+  c.restore();
+}
+
+function drawActionLines(c: Ctx, cx: number, cy: number, r1: number, r2: number, count: number) {
+  c.save();
+  for(let i=0;i<count;i++){
+    const a=(Math.PI*2/count)*i+0.1, frac=i/count;
+    c.beginPath();
+    c.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+    c.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);
+    c.strokeStyle=`rgba(232,110,145,${0.2+0.22*Math.sin(frac*Math.PI*4)})`;
+    c.lineWidth=2+frac*1.5; c.lineCap='round'; c.stroke();
+  }
+  c.restore();
+}
+
+function drawTears(c: Ctx, x: number, y: number, s: number, heavy?: boolean) {
+  c.save();
+  [[-14*s,4*s],[14*s,4*s]].forEach(([tx,ty])=>{
+    const tg=lg(c,x+tx,y+ty,x+tx,y+ty+28*s,
+      [[0,'rgba(160,210,255,0.6)'],[0.6,'rgba(140,200,250,0.35)'],[1,'rgba(130,190,245,0)']]);
+    c.beginPath(); c.moveTo(x+tx-2.5*s,y+ty);
+    c.quadraticCurveTo(x+tx-3*s,y+ty+14*s,x+tx-1.5*s,y+ty+28*s);
+    c.lineTo(x+tx+1.5*s,y+ty+28*s);
+    c.quadraticCurveTo(x+tx+3*s,y+ty+14*s,x+tx+2.5*s,y+ty);
+    c.fillStyle=tg; c.fill();
+    c.beginPath(); c.moveTo(x+tx,y+ty);
+    c.quadraticCurveTo(x+tx+3.5*s,y+ty+6*s,x+tx,y+ty+12*s);
+    c.quadraticCurveTo(x+tx-3.5*s,y+ty+6*s,x+tx,y+ty);
+    c.fillStyle=rg(c,x+tx,y+ty+4*s,0,6*s,'rgba(170,215,255,0.9)','rgba(140,195,245,0.25)'); c.fill();
+    c.beginPath(); c.ellipse(x+tx-1*s,y+ty+3*s,1*s,1.5*s,-0.3,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,0.65)'; c.fill();
+    c.beginPath(); c.arc(x+tx-1*s,y+ty+18*s,1.8*s,0,Math.PI*2);
+    c.fillStyle='rgba(160,210,255,0.5)'; c.fill();
+    c.beginPath(); c.arc(x+tx+1.5*s,y+ty+24*s,1.2*s,0,Math.PI*2);
+    c.fillStyle='rgba(150,200,250,0.35)'; c.fill();
+  });
+  if(heavy){
+    [[-20*s,8*s],[20*s,8*s]].forEach(([tx,ty])=>{
+      c.beginPath(); c.moveTo(x+tx,y+ty);
+      c.quadraticCurveTo(x+tx+2*s,y+ty+4*s,x+tx,y+ty+8*s);
+      c.quadraticCurveTo(x+tx-2*s,y+ty+4*s,x+tx,y+ty);
+      c.fillStyle='rgba(160,215,255,0.55)'; c.fill();
+    });
+    [[-16*s,30*s],[16*s,30*s]].forEach(([tx,ty])=>{
+      c.beginPath();
+      c.arc(x+tx-2*s,y+ty,1*s,0,Math.PI*2);
+      c.arc(x+tx+2*s,y+ty-1*s,0.8*s,0,Math.PI*2);
+      c.fillStyle='rgba(160,210,255,0.3)'; c.fill();
+    });
+  }
+  c.restore();
+}
+
+// ─── Main bunny composite ─────────────────────────────────────────────────────
+interface BunnyOpts {
+  eyes?: string; mouth?: string; blush?: number;
+  headRot?: number; earL?: number; earR?: number;
+  sweat?: boolean; tears?: boolean; heavyTears?: boolean;
+  steam?: boolean; anger?: boolean;
+}
+
+function drawBunny(c: Ctx, x: number, y: number, s: number, opts?: BunnyOpts) {
+  const o = opts || {};
+  c.save(); c.translate(x, y);
+  // shadow
+  c.beginPath(); c.ellipse(0,72*s,30*s,6*s,0,0,Math.PI*2);
+  c.fillStyle=rg(c,0,72*s,0,32*s,'rgba(200,158,175,0.3)','rgba(200,158,175,0)'); c.fill();
+  drawBody(c, 0, 40*s, s);
+  // arms
+  [[-30,34,7.5,0.15],[30,34,7.5,-0.15]].forEach(([ax,ay,ar,arot])=>{
+    c.save(); c.translate(ax*s,ay*s); c.rotate(arot);
+    c.beginPath(); c.ellipse(0,0,ar*s,(ar-1.5)*s,0,0,Math.PI*2);
+    c.fillStyle=rg(c,0,-1*s,1*s,ar*s,'#ffffff','#f2e8f0'); c.fill();
+    c.strokeStyle=OL; c.lineWidth=2*s; c.stroke();
+    c.restore();
+  });
+  drawPaw(c,-16*s,64*s,s,-0.1);
+  drawPaw(c,16*s,64*s,s,0.1);
+  drawEar(c,-10*s,-28*s,o.earL!==undefined?o.earL:-0.14,s);
+  drawEar(c,14*s,-28*s,o.earR!==undefined?o.earR:0.14,s);
+  // head group (rotatable)
+  c.save(); c.rotate((o.headRot||0)*Math.PI/180);
+  drawHead(c,0,0,s);
+  drawEyes(c,0,-4*s,s,o.eyes||'normal');
+  drawCheeks(c,0,0,s,o.blush||0.4);
+  drawNose(c,0,5*s,s);
+  drawMouth(c,0,13*s,s,o.mouth||'flat');
+  if(o.sweat) drawSweat(c,36*s,-22*s,s);
+  if(o.tears) drawTears(c,0,4*s,s,o.heavyTears);
+  if(o.steam) drawSteam(c,30*s,-30*s,s);
+  if(o.anger) drawAngerMark(c,34*s,-28*s,s);
+  c.restore();
+  c.restore();
+}
+
+// ─── Scene B frames (final celebration) ────────────────────────────────────
+function sceneB1(c: Ctx) {
+  c.clearRect(0,0,CW,CH); c.fillStyle=BG; c.fillRect(0,0,CW,CH);
+  drawSparkle(c,20,24,3.5,'rgba(255,210,225,0.55)');
+  drawSparkle(c,CW-22,30,3,'rgba(255,200,218,0.5)');
+  drawBunny(c,CW/2-10,CH/2,SC,{eyes:'closed',mouth:'kiss',blush:0.55,earL:-0.1,earR:0.08});
+  drawHeart(c,CW/2+30,CH/2,14,RS);
+  c.fillStyle='rgba(255,140,170,0.5)';
+  [3,5.5,8].forEach(d=>{c.beginPath();c.arc(CW/2+18+d*2.8,CH/2-2,1.4,0,Math.PI*2);c.fill()});
+  drawSparkle(c,CW/2+38,CH/2-14,3,'rgba(255,180,200,0.55)');
+}
+function sceneB2(c: Ctx) {
+  c.clearRect(0,0,CW,CH); c.fillStyle=BG; c.fillRect(0,0,CW,CH);
+  drawSparkle(c,18,22,3.5,'rgba(255,205,222,0.55)');
+  drawSparkle(c,CW-20,CH-30,3,'rgba(255,195,215,0.5)');
+  drawBunny(c,CW/2-12,CH/2,SC,{eyes:'closed',mouth:'kiss',blush:0.6,earL:-0.13,earR:0.06});
+  drawBigHeart(c,CW/2+30,CH/2-30,48,RS);
+  drawHeart(c,CW/2+22,CH/2,8,PK2);
+  drawSparkle(c,CW/2+50,CH/2-40,4.5,'rgba(255,180,200,0.65)');
+  drawSparkle(c,CW/2+18,CH/2-5,3,'rgba(255,200,218,0.5)');
+}
+function sceneB3(c: Ctx) {
+  c.clearRect(0,0,CW,CH); c.fillStyle=BG; c.fillRect(0,0,CW,CH);
+  drawSparkle(c,20,22,5,'#ffe4b5');
+  drawSparkle(c,CW-22,28,4.5,PK2);
+  drawSparkle(c,CW/2-55,CH-24,4,'rgba(255,200,215,0.8)');
+  drawSparkle(c,CW/2+60,CH-20,3.5,'rgba(255,210,225,0.6)');
+  drawBunny(c,CW/2-10,CH/2,SC,{eyes:'hearty',mouth:'bigSmile',blush:0.68,earL:-0.17,earR:0.05});
+  drawHeart(c,26,32,10,PK); drawHeart(c,CW-28,36,9,PK2);
+  drawHeart(c,28,CH-36,8,PK3); drawHeart(c,CW-26,CH-44,9,PK);
+  drawBigHeart(c,CW/2+24,CH/2-28,75,RS);
+  drawSparkle(c,CW/2+56,CH/2-40,5,'rgba(255,225,240,0.7)');
+}
+function sceneB4(c: Ctx) {
+  c.clearRect(0,0,CW,CH); c.fillStyle=BG; c.fillRect(0,0,CW,CH);
+  drawSparkle(c,14,16,5.5,'#ffe0b5'); drawSparkle(c,CW-16,20,5,'#ffe4c0');
+  drawSparkle(c,CW/2-72,12,4.5,PK3); drawSparkle(c,CW/2+70,14,4,PK2);
+  drawSparkle(c,12,CH/2+20,3.5,'rgba(255,200,220,0.6)');
+  drawSparkle(c,CW-14,CH/2+10,3.5,'rgba(255,195,218,0.6)');
+  drawBunny(c,CW/2,CH/2,SC,{eyes:'hearty',mouth:'bigSmile',blush:0.82,earL:-0.11,earR:0.11});
+  drawBigHeart(c,CW/2+14,CH/2-20,115,RS);
+  drawHeart(c,16,14,11,PK); drawHeart(c,CW-16,16,10,RS);
+  drawHeart(c,20,CH-24,9,PK2); drawHeart(c,CW-18,CH-26,10,PK);
+  drawHeart(c,CW/2-58,10,8,PK3); drawHeart(c,CW/2+56,12,9,PK2);
+  drawHeart(c,10,CH/2+4,8,RS); drawHeart(c,CW-12,CH/2+28,8,PK);
+  drawHeart(c,CW/2-32,CH-18,7,RS2); drawHeart(c,CW/2+34,CH-16,7,PK);
+  drawSparkle(c,42,55,6,'#ffe4b5'); drawSparkle(c,CW-38,46,5.5,'#ffe4b5');
+  drawSparkle(c,CW/2-12,CH-14,4.5,PK2);
+  drawSparkle(c,CW/2+40,CH/2+50,4,'rgba(255,225,240,0.6)');
+}
+
+function renderBunny(c: Ctx, idx: number, stages: Stage[]) {
+  const st = stages[Math.min(idx, stages.length - 1)];
+  c.clearRect(0, 0, CW, CH);
+  c.fillStyle = BG; c.fillRect(0, 0, CW, CH);
+  if (idx >= 4) drawActionLines(c, CW / 2, CH / 2, 72, 105, 18);
+  drawBunny(c, CW / 2, CH / 2, SC, st.opts);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STAGES
+// ═══════════════════════════════════════════════════════════════════════════════
 interface Stage {
-  ey: string; mo: string; an: string;
-  sw: boolean; st: boolean; ag: boolean; te: boolean; sh: boolean; qu: boolean;
-  tx: string; yT: string; nT: string;
-  yW: number;
+  opts: BunnyOpts; an: string; tx: string;
+  yT: string; nT: string;
+  yW: number; yH: number; yF: number;
+  nW: number; nH: number; nF: number; nO: number;
 }
 
 const STAGES: Stage[] = [
-  { ey:'normal', mo:'smile',  an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:false,
-    tx:'Voce me ama? ❤️',           yT:'SIM',           nT:'NAO.',   yW:45 },
-  { ey:'half',   mo:'pout',   an:'shake',  sw:false, st:false, ag:false, te:false, sh:false, qu:true,
-    tx:'espera... tem certeza? 🥺',  yT:'SIM',           nT:'NAO.',   yW:48 },
-  { ey:'squint', mo:'wavy',   an:'bounce', sw:false, st:false, ag:false, te:false, sh:false, qu:true,
-    tx:'pensa direito...',           yT:'SIM',           nT:'nao',    yW:52 },
-  { ey:'side',   mo:'frown',  an:'shake',  sw:true,  st:false, ag:false, te:false, sh:true,  qu:false,
-    tx:'ta brincando ne...?',        yT:'SIM!',          nT:'nao..',  yW:56 },
-  { ey:'half',   mo:'pout',   an:'sad',    sw:false, st:false, ag:false, te:false, sh:true,  qu:false,
-    tx:'nao ta certo isso...',       yT:'SIM!!',         nT:'nao..',  yW:60 },
-  { ey:'cry',    mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'voce nao me ama...?',        yT:'EU TE AMO',     nT:'n...',   yW:64 },
-  { ey:'angry',  mo:'open',   an:'angry',  sw:false, st:true,  ag:true,  te:false, sh:true,  qu:false,
-    tx:'tenta de novo...',           yT:'SIMM!!!',       nT:'n.',     yW:68 },
-  { ey:'cry',    mo:'pout',   an:'cry',    sw:true,  st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'fala serio...',              yT:'POR FAVOR SIM',  nT:'..',    yW:72 },
-  { ey:'closed', mo:'frown',  an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'ta me zoando...',            yT:'SIM SIM SIM',   nT:'.',      yW:78 },
-  { ey:'cry',    mo:'wavy',   an:'cry',    sw:false, st:false, ag:false, te:true,  sh:false, qu:false,
-    tx:'ultima chance...',           yT:'DIGA SIM!!',    nT:'.',      yW:85 },
+  { opts:{eyes:'normal',mouth:'smile',blush:0.42},an:'bli-bounce',
+    tx:'Voce me ama? \u2764\uFE0F',yT:'SIM',nT:'NAO',
+    yW:42,yH:52,yF:20,nW:42,nH:52,nF:20,nO:1 },
+  { opts:{eyes:'halfClosed',mouth:'pout',blush:0.55,headRot:-6,earL:-0.2,earR:0.05},an:'bli-shake',
+    tx:'RESPOSTA ERRADA \uD83D\uDE24',yT:'SIM',nT:'NAO',
+    yW:55,yH:60,yF:24,nW:28,nH:42,nF:15,nO:.85 },
+  { opts:{eyes:'sideR',mouth:'wavy',blush:0.55,headRot:5,earL:-0.08,earR:0.2,sweat:true},an:'bli-sad',
+    tx:'tem certeza? \uD83E\uDD7A',yT:'SIM!',nT:'nao',
+    yW:65,yH:70,yF:28,nW:20,nH:34,nF:13,nO:.7 },
+  { opts:{eyes:'squint',mouth:'wavy',blush:0.78,sweat:true,tears:true},an:'bli-cry',
+    tx:'tenta de novo \uD83D\uDE2D',yT:'SIM!!',nT:'nao',
+    yW:75,yH:80,yF:32,nW:14,nH:28,nF:11,nO:.5 },
+  { opts:{eyes:'angry',mouth:'open',blush:0.68,anger:true,steam:true,earL:-0.25,earR:0.25},an:'bli-angry',
+    tx:'agora vc ta brincando...',yT:'SIMM!!!',nT:'NO',
+    yW:84,yH:90,yF:36,nW:10,nH:22,nF:9,nO:.35 },
+  { opts:{eyes:'squint',mouth:'open',blush:0.85,sweat:true,tears:true,heavyTears:true},an:'bli-cry',
+    tx:'fala serio... \uD83D\uDE2D\uD83D\uDE2D',yT:'SIM SIM SIM',nT:'NO',
+    yW:92,yH:100,yF:38,nW:7,nH:18,nF:8,nO:.18 },
+  { opts:{eyes:'closed',mouth:'frown',blush:0.6,steam:true,tears:true,heavyTears:true},an:'bli-cry',
+    tx:'ultima chance...',yT:'DIGA SIM!!',nT:'.',
+    yW:98,yH:110,yF:42,nW:0,nH:0,nF:6,nO:0 },
 ];
-
-// ─── SIM skeptic stages ─────────────────────────────────────────────────────
-interface SimStage {
-  ey: string; mo: string; an: string;
-  tx: string; btnText: string;
-}
-
-const SIM_STAGES: SimStage[] = [
-  { ey: 'wideEye',    mo: 'open',     an: 'shake',  tx: 'espera... serio?! 😳',        btnText: 'SIM!' },
-  { ey: 'suspicious', mo: 'pout',     an: 'bounce', tx: 'hmmm tem certeza mesmo?',      btnText: 'TENHO!' },
-  { ey: 'squint',     mo: 'wavy',     an: 'shake',  tx: 'ce acha que me ama mais? 🤔',  btnText: 'COM CERTEZA' },
-  { ey: 'side',       mo: 'smile',    an: 'bounce', tx: 'promete que e pra sempre?',     btnText: 'PROMETO!' },
-  { ey: 'happy',      mo: 'bigSmile', an: 'happy',  tx: 'AAAA EU SABIAAAA!!! 🥹',       btnText: '❤️ SIM PRA SEMPRE ❤️' },
-];
-
-// ─── Floating heart ──────────────────────────────────────────────────────────
-interface FloatingHeart { id: number; x: number; emoji: string; duration: number; size: number }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// CSS
+// ═══════════════════════════════════════════════════════════════════════════════
+const CSS = `
+@keyframes bliBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes bliShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@keyframes bliSad{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(4px) rotate(-3deg)}}
+@keyframes bliAngry{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes bliCry{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(4px) rotate(-4deg)}70%{transform:translateY(3px) rotate(3deg)}}
+@keyframes bliHappy{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
+@keyframes bliPop{0%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(.94)}100%{transform:scale(1)}}
+@keyframes bliMsgIn{0%{opacity:0;transform:translateY(8px) scale(.85)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bliFlash{0%{opacity:0}15%{opacity:.7}100%{opacity:0}}
+@keyframes bliFloatH{0%{transform:translateY(110%) rotate(0deg)}100%{transform:translateY(-110%) rotate(25deg)}}
+@keyframes bliConfetti{0%{transform:translate(0,0) scale(1) rotate(0);opacity:1}100%{transform:translate(var(--cx),var(--cy)) scale(0) rotate(var(--cr));opacity:0}}
+@keyframes bliFltH{0%{transform:translateY(0) scale(1) rotate(0);opacity:.8}100%{transform:translateY(-500px) scale(.4) rotate(20deg);opacity:0}}
+@keyframes bliCharEnter{0%{transform:scale(0) rotate(-20deg);opacity:0}60%{transform:scale(1.12) rotate(4deg);opacity:1}80%{transform:scale(.95) rotate(-2deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes bliFmsgIn{0%{opacity:0;transform:translateY(12px) scale(.8)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bliGPulse{0%,100%{box-shadow:0 4px 20px rgba(60,200,150,.3)}50%{box-shadow:0 8px 40px rgba(60,200,150,.5)}}
+@keyframes bliSpk{0%{transform:scale(1) translate(0,0);opacity:1}100%{transform:scale(0) translate(var(--dx),var(--dy));opacity:0}}
+.bli-bounce{animation:bliBounce 1.8s ease-in-out infinite}
+.bli-shake{animation:bliShake .6s ease-in-out infinite}
+.bli-sad{animation:bliSad 1.5s ease-in-out infinite}
+.bli-angry{animation:bliAngry .3s ease-in-out infinite}
+.bli-cry{animation:bliCry 1.6s ease-in-out infinite}
+.bli-happy{animation:bliHappy .7s ease-in-out infinite}
+.bli-pop{animation:bliPop .35s cubic-bezier(.34,1.56,.64,1)}
+.bli-msg-in{animation:bliMsgIn .4s cubic-bezier(.34,1.56,.64,1) forwards}
+.bli-glow{animation:bliGPulse 1.5s ease-in-out infinite}
+.bli-confetti{position:absolute;pointer-events:none;z-index:1001;animation:bliConfetti ease-out forwards}
+.bli-spk{position:absolute;pointer-events:none;z-index:50;border-radius:50%;animation:bliSpk linear forwards}
+.bli-fh{position:absolute;animation:bliFltH linear forwards;pointer-events:none;z-index:1000}
+.bli-char-enter{animation:bliCharEnter .7s cubic-bezier(.34,1.56,.64,1) forwards}
+`;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 interface Props { onReveal: () => void }
+
+interface FHeart { id: number; x: number; emoji: string; dur: number; sz: number; delay: number }
 
 export default function BunnyLoveIntro({ onReveal }: Props) {
   const [stageIdx, setStageIdx] = useState(0);
   const [done, setDone] = useState(false);
+  const [animClass, setAnimClass] = useState('bli-bounce');
+  const [msgText, setMsgText] = useState(STAGES[0].tx);
+  const [msgAnim, setMsgAnim] = useState(true);
+  const [popping, setPopping] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
-  const [showFinal, setShowFinal] = useState(false);
-  const [hearts, setHearts] = useState<FloatingHeart[]>([]);
-  const [simFlow, setSimFlow] = useState(false);
-  const [simStageIdx, setSimStageIdx] = useState(0);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [flashActive, setFlashActive] = useState(false);
+  const [floatingHearts, setFloatingHearts] = useState<FHeart[]>([]);
+  const [yBtnStyle, setYBtnStyle] = useState<React.CSSProperties>({});
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const finalCanvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const lockRef = useRef(false);
-  const heartIdRef = useRef(0);
+  const kissRef = useRef<ReturnType<typeof setInterval>>();
 
-  const svgId = useId().replace(/:/g, '');
   const stage = STAGES[Math.min(stageIdx, STAGES.length - 1)];
-  const simStage = SIM_STAGES[Math.min(simStageIdx, SIM_STAGES.length - 1)];
 
-  const vib = (ms: number | number[]) => {
-    try { navigator?.vibrate?.(ms); } catch {}
-  };
+  // BG hearts
+  const bgHearts = useMemo(() =>
+    Array.from({ length: 14 }, (_, i) => ({
+      id: i,
+      color: ['#f48fb1','#e91e63','#f06292','#ec407a'][i % 4],
+      size: 16 + Math.random() * 28,
+      left: Math.random() * 100,
+      dur: 7 + Math.random() * 14,
+      delay: -Math.random() * 15,
+    })), []);
 
-  // launch floating hearts
-  const launchHearts = useCallback((count: number, container: HTMLElement) => {
-    const emojis = ['❤️','💕','💖','💗','💝'];
-    let added = 0;
-    const interval = setInterval(() => {
-      if (added >= count) { clearInterval(interval); return; }
-      const newHeart: FloatingHeart = {
-        id: heartIdRef.current++,
+  // Render canvas on stage change
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv || showOverlay) return;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    if (celebrating) {
+      ctx.clearRect(0, 0, CW, CH);
+      ctx.fillStyle = BG; ctx.fillRect(0, 0, CW, CH);
+      drawBunny(ctx, CW / 2, CH / 2, SC, { eyes: 'hearty', mouth: 'bigSmile', blush: 0.8 });
+    } else {
+      renderBunny(ctx, stageIdx, STAGES);
+    }
+  }, [stageIdx, celebrating, showOverlay]);
+
+  // Final scene B cycling
+  useEffect(() => {
+    if (!showOverlay) return;
+    const cv = finalCanvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    const scenes = [sceneB1, sceneB2, sceneB3, sceneB4];
+    let fi = 0;
+    scenes[0](ctx);
+    kissRef.current = setInterval(() => {
+      fi = (fi + 1) % scenes.length;
+      scenes[fi](ctx);
+    }, 820);
+    return () => { if (kissRef.current) clearInterval(kissRef.current); };
+  }, [showOverlay]);
+
+  // Launch floating hearts when overlay shows
+  useEffect(() => {
+    if (!showOverlay) return;
+    const emojis = ['\u2764\uFE0F','\uD83D\uDC95','\uD83D\uDC96','\uD83D\uDC97'];
+    const hearts: FHeart[] = [];
+    for (let i = 0; i < 25; i++) {
+      hearts.push({
+        id: i,
         x: 10 + Math.random() * 80,
-        emoji: emojis[Math.floor(Math.random() * emojis.length)],
-        duration: 3 + Math.random() * 3,
-        size: 14 + Math.random() * 16,
-      };
-      setHearts(prev => [...prev, newHeart]);
-      added++;
-      setTimeout(() => {
-        setHearts(prev => prev.filter(h => h.id !== newHeart.id));
-      }, (newHeart.duration + 0.5) * 1000);
-    }, 100);
-    return () => clearInterval(interval);
+        emoji: emojis[Math.random() * emojis.length | 0],
+        dur: 5 + Math.random() * 4,
+        sz: 14 + Math.random() * 18,
+        delay: i < 6 ? i * 0.2 : 1.2 + (i - 6) * 0.9,
+      });
+    }
+    setFloatingHearts(hearts);
+  }, [showOverlay]);
+
+  const vib = (ms: number | number[]) => { try { navigator?.vibrate?.(ms); } catch {} };
+
+  const sparks = useCallback((el: HTMLElement, n: number, colors?: string[]) => {
+    const cont = containerRef.current;
+    if (!cont) return;
+    const pr = cont.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const mx = r.left - pr.left + r.width / 2;
+    const my = r.top - pr.top + r.height / 2;
+    const cols = colors || ['#e91e63','#f48fb1','#ff5e8a','#fce4ec'];
+    for (let i = 0; i < n; i++) {
+      const sp = document.createElement('div');
+      sp.className = 'bli-spk';
+      const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * 60;
+      sp.style.setProperty('--dx', Math.cos(a) * d + 'px');
+      sp.style.setProperty('--dy', Math.sin(a) * d + 'px');
+      sp.style.background = cols[Math.random() * cols.length | 0];
+      sp.style.left = mx + 'px'; sp.style.top = my + 'px';
+      const sz = 3 + Math.random() * 6;
+      sp.style.width = sp.style.height = sz + 'px';
+      sp.style.animationDuration = (0.3 + Math.random() * 0.4) + 's';
+      cont.appendChild(sp);
+      sp.onanimationend = () => sp.remove();
+    }
+  }, []);
+
+  const confettiBurst = useCallback((cx: number, cy: number, count: number) => {
+    const cont = containerRef.current;
+    if (!cont) return;
+    const emo = ['\u2764\uFE0F','\uD83D\uDC95','\uD83D\uDC96','\uD83D\uDC97','\u2728'];
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div');
+      d.className = 'bli-confetti';
+      d.textContent = emo[Math.random() * emo.length | 0];
+      d.style.left = cx + 'px'; d.style.top = cy + 'px';
+      d.style.fontSize = (14 + Math.random() * 16) + 'px';
+      const angle = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 140;
+      d.style.setProperty('--cx', Math.cos(angle) * dist + 'px');
+      d.style.setProperty('--cy', (Math.sin(angle) * dist - 70) + 'px');
+      d.style.setProperty('--cr', (Math.random() * 720 - 360) + 'deg');
+      d.style.animationDuration = (0.5 + Math.random() * 0.6) + 's';
+      cont.appendChild(d);
+      d.onanimationend = () => d.remove();
+    }
   }, []);
 
   const handleNo = useCallback(() => {
     if (lockRef.current || done) return;
     lockRef.current = true;
     vib(50);
-    setStageIdx(prev => Math.min(prev + 1, STAGES.length - 1));
-    setTimeout(() => { lockRef.current = false; }, 150);
-  }, [done]);
-
-  const triggerCelebration = useCallback(() => {
-    setDone(true);
-    setCelebrating(true);
-    vib([100, 50, 100, 50, 200]);
+    const next = Math.min(stageIdx + 1, STAGES.length - 1);
+    setStageIdx(next);
+    setPopping(true);
+    setTimeout(() => setPopping(false), 350);
+    const st = STAGES[next];
+    setMsgAnim(false);
     setTimeout(() => {
-      setShowFinal(true);
-      const container = document.getElementById('bunny-love-container');
-      if (container) launchHearts(30, container);
-      setTimeout(() => onReveal(), 2800);
-    }, 500);
-  }, [launchHearts, onReveal]);
+      setMsgText(st.tx);
+      setMsgAnim(true);
+      setTimeout(() => setAnimClass(st.an), 350);
+    }, 100);
+    // sparkles on NAO button
+    const nb = document.getElementById('bli-nb');
+    if (nb) sparks(nb, 5);
+    setTimeout(() => { lockRef.current = false; }, 400);
+  }, [done, stageIdx, sparks]);
+
+  const ybRef = useRef<HTMLButtonElement>(null);
 
   const handleYes = useCallback(() => {
-    if (done || lockRef.current) return;
-    lockRef.current = true;
-    vib(50);
+    if (done) return;
+    setDone(true);
+    vib([100, 50, 100, 50, 200]);
 
-    if (!simFlow) {
-      setSimFlow(true);
-      setSimStageIdx(0);
-    } else if (simStageIdx < SIM_STAGES.length - 1) {
-      setSimStageIdx(prev => prev + 1);
-    } else {
-      triggerCelebration();
+    // Celebrate
+    setCelebrating(true);
+    setPopping(true);
+    setTimeout(() => { setPopping(false); setAnimClass('bli-happy'); }, 350);
+    setMsgAnim(false);
+    setTimeout(() => { setMsgText('EU SABIA!!! \uD83D\uDC95'); setMsgAnim(true); }, 100);
+    setYBtnStyle({
+      background: 'linear-gradient(180deg,#f48fb1,#e91e63)',
+      boxShadow: '0 6px 25px rgba(233,30,99,.4)',
+    });
+
+    // Sparkles + confetti
+    if (ybRef.current) sparks(ybRef.current, 15, ['#66e8b8','#44d4a2','#fff','#ffd700','#f48fb1']);
+    const cont = containerRef.current;
+    if (cont) {
+      const cr = cont.getBoundingClientRect();
+      confettiBurst(cr.width / 2, cr.height / 2 - 60, 25);
     }
-    setTimeout(() => { lockRef.current = false; }, 150);
-  }, [done, simFlow, simStageIdx, triggerCelebration]);
 
-  const bunnyAnim = {
-    bounce: { y: [0, -6, 0], transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const } },
-    shake: { rotate: [0, -4, 4, -3, 3, 0], transition: { duration: 0.8, repeat: Infinity, ease: 'easeInOut' as const } },
-    sad: { y: [0, 3, 0], rotate: [0, -2, 0], transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const } },
-    angry: { x: [0, -3, 3, -2, 2, 0], transition: { duration: 0.4, repeat: Infinity, ease: 'easeInOut' as const } },
-    cry: { y: [0, 3, 2, 0], rotate: [0, -2, 2, 0], transition: { duration: 2, repeat: Infinity, ease: 'easeInOut' as const } },
-    happy: { y: [0, -8, 0], scale: [1, 1.05, 1], transition: { duration: 1, repeat: Infinity, ease: 'easeInOut' as const } },
-  };
-
-  const activeAn = simFlow ? simStage.an : stage.an;
-  const currentAnim = celebrating ? bunnyAnim.happy : bunnyAnim[activeAn as keyof typeof bunnyAnim] || bunnyAnim.bounce;
-  const activeEy = celebrating ? EYES.hearteye : simFlow ? (EYES[simStage.ey] || EYES.normal) : (EYES[stage.ey] || EYES.normal);
-  const activeMo = celebrating ? MOUTHS.kiss : simFlow ? (MOUTHS[simStage.mo] || MOUTHS.smile) : (MOUTHS[stage.mo] || MOUTHS.smile);
-  const activeTx = celebrating ? 'EU SABIA!!!' : simFlow ? simStage.tx : stage.tx;
+    // Flash → overlay
+    setTimeout(() => {
+      setFlashActive(true);
+      setTimeout(() => {
+        setFlashActive(false);
+        setShowOverlay(true);
+        // confetti on overlay
+        setTimeout(() => {
+          const cont2 = containerRef.current;
+          if (cont2) confettiBurst(cont2.clientWidth / 2, cont2.clientHeight / 2 - 30, 25);
+        }, 400);
+        // Reveal
+        setTimeout(() => onReveal(), 2800);
+      }, 300);
+    }, 700);
+  }, [done, sparks, confettiBurst, onReveal]);
 
   return (
     <>
-      <style>{`
-        @keyframes earWiggle { 0%,100%{transform:rotate(0)} 50%{transform:rotate(3deg)} }
-        @keyframes tearFall { 0%,100%{transform:translateY(0);opacity:.7} 50%{transform:translateY(5px);opacity:.4} }
-        @keyframes floatUp { 0%{transform:translateY(0) scale(1);opacity:1} 100%{transform:translateY(-400px) scale(0.5) rotate(15deg);opacity:0} }
-        @keyframes emojiFloat { 0%{opacity:0;transform:translateY(5px) scale(0.5)} 30%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-15px) scale(0.8)} }
-      `}</style>
-
+      <style>{CSS}</style>
       <div
-        id="bunny-love-container"
+        ref={containerRef}
         style={{
           position: 'absolute', inset: 0, zIndex: 10, overflow: 'hidden',
           borderRadius: 'inherit', touchAction: 'manipulation',
-          background: '#f8e8ee',
+          background: BG,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '24px 16px 20px',
-          gap: 6,
-          userSelect: 'none',
+          padding: '24px 16px 20px', gap: 6, userSelect: 'none',
         }}
       >
-        {/* Floating hearts (celebration) */}
-        {hearts.map(h => (
+        {/* BG floating hearts */}
+        {bgHearts.map(h => (
           <div key={h.id} style={{
-            position: 'absolute', left: `${h.x}%`, bottom: -30,
-            fontSize: h.size, pointerEvents: 'none', zIndex: 100,
-            animation: `floatUp ${h.duration}s linear forwards`,
-          }}>{h.emoji}</div>
+            position: 'absolute', opacity: 0.35, pointerEvents: 'none',
+            left: h.left + '%', bottom: '-10%',
+            animation: `bliFloatH ${h.dur}s linear ${h.delay}s infinite`,
+          }}>
+            <svg width={h.size} height={h.size} viewBox="0 0 24 24">
+              <path d="M12 21 C-6 10,-2-4,12 5 C26-4,30 10,12 21Z" fill={h.color}/>
+            </svg>
+          </div>
         ))}
 
-        {/* Main game UI */}
-        <AnimatePresence mode="popLayout">
-          {!showFinal ? (
-            <motion.div
-              key="game"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: '100%' }}
+        {/* ── GAME UI ── */}
+        {!showOverlay && (
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, width:'100%', position:'relative', zIndex:1 }}>
+            {/* Character */}
+            <div
+              className={`${animClass}${popping ? ' bli-pop' : ''}`}
+              style={{ width: 180, height: 270, transition: 'transform .3s ease' }}
             >
-              {/* Bunny */}
-              <motion.div
-                key={`bunny-${stageIdx}-${simStageIdx}-${simFlow}`}
-                animate={currentAnim}
-                style={{ width: 160, height: 170 }}
-              >
-                <BunnySVG
-                  eyeHtml={activeEy}
-                  mouthHtml={activeMo}
-                  showSweat={!simFlow && stage.sw && !celebrating}
-                  showSteam={!simFlow && stage.st && !celebrating}
-                  showAnger={!simFlow && stage.ag && !celebrating}
-                  showTears={!simFlow && stage.te && !celebrating}
-                  showShock={!simFlow && stage.sh && !celebrating}
-                  showQuestion={!simFlow && stage.qu && !celebrating}
-                  idPrefix={svgId}
-                />
-              </motion.div>
+              <canvas ref={canvasRef} width={CW} height={CH} style={{ width: 180, height: 270, display: 'block' }} />
+            </div>
 
-              {/* Text — no animation, instant */}
-              <p style={{
-                color: celebrating ? '#5ee8b5' : simFlow ? '#e8456a' : '#e8456a',
-                fontWeight: 800, fontSize: 17, textAlign: 'center',
-                padding: '0 12px', minHeight: 24,
-              }}>
-                {activeTx}
-              </p>
-
-              {/* Buttons — YES and NO side by side, NO swaps position and shrinks */}
-              {!celebrating && !simFlow && (
-                <div style={{
-                  width: '100%', display: 'flex',
-                  flexDirection: stageIdx % 2 === 0 ? 'row' : 'row-reverse',
-                  justifyContent: 'center', gap: 10, marginTop: 8, padding: '0 12px',
-                }}>
-                  {/* YES button — grows */}
-                  <motion.button
-                    onClick={handleYes}
-                    animate={{
-                      width: `${stage.yW}%`,
-                      height: Math.min(56, 42 + stageIdx * 2),
-                      fontSize: 16 + Math.min(stageIdx * 2, 16),
-                    }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-                    whileTap={{ scale: 0.93 }}
-                    style={{
-                      background: '#5ee8b5',
-                      border: 'none', color: '#fff', fontWeight: 900,
-                      borderRadius: 12, cursor: 'pointer', letterSpacing: 1,
-                      WebkitTapHighlightColor: 'transparent',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {stage.yT}
-                  </motion.button>
-
-                  {/* NO button — shrinks but stays visible, swaps sides each click */}
-                  <motion.button
-                    onClick={handleNo}
-                    layout
-                    animate={{
-                      width: Math.max(36, 100 - stageIdx * 9),
-                      height: Math.max(32, 42 - stageIdx * 2),
-                      fontSize: Math.max(10, 16 - stageIdx),
-                    }}
-                    transition={{ type: 'spring', stiffness: 250, damping: 20 }}
-                    whileTap={{ scale: 0.85 }}
-                    style={{
-                      background: '#f087a0',
-                      border: 'none', color: '#fff', fontWeight: 900,
-                      borderRadius: 10, cursor: 'pointer', letterSpacing: 1,
-                      WebkitTapHighlightColor: 'transparent',
-                      overflow: 'hidden', whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {stage.nT}
-                  </motion.button>
-                </div>
-              )}
-
-              {/* SIM skeptic flow — single button */}
-              {!celebrating && simFlow && (
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 8, padding: '0 12px' }}>
-                  <motion.button
-                    key={`sim-btn-${simStageIdx}`}
-                    onClick={handleYes}
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    whileTap={{ scale: 0.93 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    style={{
-                      background: simStageIdx >= SIM_STAGES.length - 1
-                        ? 'linear-gradient(180deg,#ff8aab,#ff5e8a)'
-                        : '#5ee8b5',
-                      border: 'none', color: '#fff', fontWeight: 900,
-                      borderRadius: 12, cursor: 'pointer', letterSpacing: 1,
-                      padding: `${12 + simStageIdx}px 24px`,
-                      fontSize: 16 + simStageIdx * 2,
-                      width: `${55 + simStageIdx * 8}%`,
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    {simStage.btnText}
-                  </motion.button>
-                </div>
-              )}
-
-              {/* Celebrating state */}
-              {celebrating && (
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  style={{
-                    background: 'linear-gradient(180deg,#ff8aab,#ff5e8a)',
-                    color: '#fff', fontWeight: 900,
-                    borderRadius: 12, letterSpacing: 1, padding: '12px 24px',
-                    fontSize: 18, textAlign: 'center',
-                  }}
-                >
-                  ❤️ SIM!!! ❤️
-                </motion.div>
-              )}
-            </motion.div>
-          ) : (
-            // ── Final overlay — bunny kissing/holding heart ──
-            <motion.div
-              key="final"
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            {/* Message */}
+            <p
+              className={msgAnim ? 'bli-msg-in' : ''}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: 8, width: '100%',
+                color: '#d32f4a', fontWeight: 800, fontSize: 18, textAlign: 'center',
+                minHeight: 28, letterSpacing: 0.3, marginTop: 2, fontStyle: 'italic',
+                opacity: msgAnim ? undefined : 0,
               }}
             >
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
+              {msgText}
+            </p>
+
+            {/* Buttons */}
+            <div style={{
+              width: '100%', position: 'relative', marginTop: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              minHeight: 60,
+            }}>
+              {/* SIM */}
+              <button
+                ref={ybRef}
+                onClick={handleYes}
+                className={stageIdx >= 4 && !celebrating ? 'bli-glow' : ''}
                 style={{
-                  color: '#e8456a', fontWeight: 900, fontSize: 19, textAlign: 'center',
-                  padding: '0 16px',
+                  background: 'linear-gradient(180deg,#72ddb8,#50c89e,#3dba8e)',
+                  color: '#fff', fontWeight: 900, border: 'none', borderRadius: 20,
+                  cursor: 'pointer', letterSpacing: 2,
+                  boxShadow: '0 6px 24px rgba(60,200,150,.3)',
+                  transition: 'all .5s cubic-bezier(.34,1.56,.64,1)',
+                  WebkitTapHighlightColor: 'transparent',
+                  textShadow: '0 2px 3px rgba(0,60,40,.2)',
+                  fontStyle: 'italic',
+                  width: stage.yW + '%',
+                  height: stage.yH,
+                  fontSize: stage.yF,
+                  ...yBtnStyle,
                 }}
               >
-                eu sabia que vc ia dizer sim 💕
-              </motion.p>
+                {celebrating ? '\u2764\uFE0F SIM!!! \u2764\uFE0F' : stage.yT}
+              </button>
 
-              <motion.div
-                initial={{ scale: 0, rotate: -10 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 280, damping: 16, delay: 0.15 }}
-                style={{ width: 200, height: 170 }}
-              >
-                <motion.div
-                  animate={{ y: [0, -6, 0], rotate: [0, 2, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  style={{ width: '100%', height: '100%' }}
+              {/* NAO */}
+              {!celebrating && stage.nO > 0.03 && (
+                <button
+                  id="bli-nb"
+                  onClick={handleNo}
+                  style={{
+                    background: 'linear-gradient(180deg,#ff8a9e,#f06880,#e8456a)',
+                    border: 'none', color: '#fff', fontWeight: 900,
+                    borderRadius: Math.max(6, 12 - stageIdx),
+                    cursor: 'pointer', letterSpacing: 1,
+                    boxShadow: '0 3px 12px rgba(255,80,120,.2)',
+                    transition: 'all .5s cubic-bezier(.34,1.56,.64,1)',
+                    WebkitTapHighlightColor: 'transparent',
+                    flexShrink: 0,
+                    width: stage.nW + '%',
+                    height: stage.nH,
+                    fontSize: stage.nF,
+                    opacity: stage.nO,
+                  }}
                 >
-                  <BunnyKissSVG idPrefix={`${svgId}k`} />
-                </motion.div>
-              </motion.div>
+                  {stage.nT}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.5, 1, 0.5] }}
-                transition={{ delay: 0.5, duration: 1.5, repeat: Infinity }}
-                style={{
-                  color: 'rgba(180,80,120,0.5)', fontSize: 11, letterSpacing: 2,
-                  textTransform: 'uppercase', fontWeight: 600,
-                }}
-              >
-                revelando sua surpresa...
-              </motion.p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Flash */}
+        {flashActive && (
+          <div style={{
+            position: 'absolute', inset: 0, background: '#fff', zIndex: 998,
+            borderRadius: 'inherit', pointerEvents: 'none',
+            animation: 'bliFlash .5s ease-out forwards',
+          }} />
+        )}
+
+        {/* ── FINAL OVERLAY ── */}
+        {showOverlay && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 999,
+            background: BG, borderRadius: 'inherit',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '30px 20px', gap: 10,
+            animation: 'bliFmsgIn .6s ease forwards',
+          }}>
+            {/* Message */}
+            <p style={{
+              color: '#d32f4a', fontWeight: 900, fontSize: 22, textAlign: 'center',
+              fontStyle: 'italic',
+              animation: 'bliFmsgIn .5s cubic-bezier(.34,1.56,.64,1) .2s both',
+            }}>
+              eu sabia que vc ia dizer sim 💕
+            </p>
+
+            {/* Final bunny canvas */}
+            <div
+              className="bli-char-enter"
+              style={{ width: 180, height: 270 }}
+            >
+              <canvas ref={finalCanvasRef} width={CW} height={CH} style={{ width: '100%', height: '100%', display: 'block' }} />
+            </div>
+
+            {/* Reveal text */}
+            <p style={{
+              color: 'rgba(180,80,120,0.5)', fontSize: 11, letterSpacing: 2,
+              textTransform: 'uppercase', fontWeight: 600,
+              animation: 'bliFmsgIn .4s ease .8s both',
+            }}>
+              revelando sua surpresa...
+            </p>
+
+            {/* Floating emoji hearts */}
+            {floatingHearts.map(h => (
+              <div key={h.id} className="bli-fh" style={{
+                left: h.x + '%', bottom: -30,
+                fontSize: h.sz,
+                animationDuration: h.dur + 's',
+                animationDelay: h.delay + 's',
+              }}>{h.emoji}</div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

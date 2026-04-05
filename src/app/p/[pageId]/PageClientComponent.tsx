@@ -5,6 +5,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useUser } from '@/firebase';
+import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -183,6 +185,8 @@ function ExpiryBanner({ expireAt }: { expireAt: any }) {
 }
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
+  const { user } = useUser();
+  const isAdmin = useMemo(() => ADMIN_EMAILS.includes(user?.email ?? ''), [user?.email]);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -212,12 +216,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [pageData.enablePuzzle, puzzleImageSrc]);
 
   const hasEasterIntro = useMemo(() => {
-    return pageData.introType === 'easter';
-  }, [pageData.introType]);
+    return !isAdmin && pageData.introType === 'easter';
+  }, [isAdmin, pageData.introType]);
 
   const hasLoveIntro = useMemo(() => {
-    return pageData.introType === 'love';
-  }, [pageData.introType]);
+    return !isAdmin && pageData.introType === 'love';
+  }, [isAdmin, pageData.introType]);
 
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);

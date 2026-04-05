@@ -46,17 +46,6 @@ const QR_OPTIONS = [
     transparent: true,
   },
   {
-    id: 'qrcode-chocolate',
-    title: '🍫 Páscoa Especial',
-    price: 3.90,
-    preview: '/qr-templates/qrcode-chocolate.png',
-    qrColor: '#3d1a00',
-    qrXPct: 0.264,
-    qrYPct: 0.374,
-    qrSizePct: 0.412,
-    chocolateBorder: true,
-  },
-  {
     id: 'qrcode-coelho',
     title: '🐰 Feliz Páscoa',
     price: 3.90,
