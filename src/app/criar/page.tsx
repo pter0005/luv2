@@ -197,26 +197,29 @@ export default function CriarPage() {
             className="relative w-full rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 outline-none text-left"
             style={{
               background: selected === 'pascoa'
-                ? 'linear-gradient(135deg, rgba(45,17,82,0.98) 0%, rgba(26,10,46,0.98) 30%, rgba(60,20,90,0.98) 70%, rgba(45,17,82,0.98) 100%)'
-                : 'linear-gradient(135deg, rgba(45,17,82,0.7) 0%, rgba(26,10,46,0.7) 30%, rgba(60,20,90,0.7) 70%, rgba(45,17,82,0.7) 100%)',
+                ? 'linear-gradient(135deg, rgba(252,228,236,0.12) 0%, rgba(255,182,193,0.08) 50%, rgba(252,228,236,0.12) 100%)'
+                : 'linear-gradient(135deg, rgba(45,17,82,0.7) 0%, rgba(26,10,46,0.7) 50%, rgba(45,17,82,0.7) 100%)',
               border: selected === 'pascoa'
-                ? '2px solid rgba(255,180,60,0.8)'
-                : '2px solid rgba(255,180,60,0.25)',
+                ? '2px solid rgba(255,150,180,0.6)'
+                : '2px solid rgba(255,150,180,0.2)',
               boxShadow: selected === 'pascoa'
-                ? '0 0 40px rgba(255,160,60,0.25), 0 0 80px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.08)'
+                ? '0 0 40px rgba(255,150,180,0.2), inset 0 1px 0 rgba(255,255,255,0.08)'
                 : '0 0 20px rgba(139,92,246,0.08)',
             }}
           >
             {/* TOP BADGE */}
             <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 px-6 py-1.5 text-[10px] font-black rounded-b-xl z-10 tracking-[0.2em] uppercase"
+              className="absolute top-0 left-1/2 -translate-x-1/2 px-5 py-1.5 text-[10px] font-black rounded-b-xl z-10 tracking-[0.15em] uppercase flex items-center gap-1.5"
               style={{
-                background: 'linear-gradient(135deg, #ff6b9d, #ff8c42, #ffd700)',
+                background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)',
                 color: 'white',
-                boxShadow: '0 4px 15px rgba(255,140,60,0.3)',
+                boxShadow: '0 4px 15px rgba(255,100,140,0.3)',
               }}
             >
-              Especial de Pascoa
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" fillOpacity="0.9"/>
+              </svg>
+              Novidade
             </div>
 
             {/* Selection check */}
@@ -237,12 +240,48 @@ export default function CriarPage() {
             </AnimatePresence>
 
             <div className="flex items-center gap-5 p-6 pt-9">
-              {/* Bunny + egg illustration */}
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <span className="text-5xl">🐰</span>
-                <div className="flex gap-1">
-                  <span className="text-lg">🥚</span>
-                  <span className="text-lg">🥚</span>
+              {/* Bunny SVG illustration */}
+              <div className="flex flex-col items-center gap-1.5 shrink-0">
+                <svg width="56" height="72" viewBox="0 0 56 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Ears */}
+                  <ellipse cx="18" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
+                  <ellipse cx="18" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
+                  <ellipse cx="38" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
+                  <ellipse cx="38" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
+                  {/* Head */}
+                  <ellipse cx="28" cy="38" rx="22" ry="19" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
+                  {/* Cheeks */}
+                  <ellipse cx="14" cy="42" rx="5" ry="3.5" fill="#ffb6c1" fillOpacity="0.5"/>
+                  <ellipse cx="42" cy="42" rx="5" ry="3.5" fill="#ffb6c1" fillOpacity="0.5"/>
+                  {/* Eyes */}
+                  <circle cx="21" cy="37" r="3" fill="#2e1f28"/>
+                  <ellipse cx="19.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
+                  <circle cx="35" cy="37" r="3" fill="#2e1f28"/>
+                  <ellipse cx="33.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
+                  {/* Nose */}
+                  <ellipse cx="28" cy="41" rx="2.2" ry="1.5" fill="#ff90ac"/>
+                  {/* Mouth */}
+                  <path d="M25 43.5Q28 47 31 43.5" stroke="#b07888" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                  {/* Body */}
+                  <ellipse cx="28" cy="60" rx="16" ry="11" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
+                  {/* Paws */}
+                  <ellipse cx="18" cy="68" rx="5" ry="3.5" fill="#fff" stroke="#ddb8c8" strokeWidth="1.2"/>
+                  <ellipse cx="38" cy="68" rx="5" ry="3.5" fill="#fff" stroke="#ddb8c8" strokeWidth="1.2"/>
+                </svg>
+                {/* Easter eggs SVG */}
+                <div className="flex gap-1.5">
+                  <svg width="16" height="20" viewBox="0 0 16 20">
+                    <ellipse cx="8" cy="11" rx="6.5" ry="8.5" fill="#ffb347"/>
+                    <path d="M3 9Q8 6 13 9" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                    <path d="M3.5 13Q8 16 12.5 13" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                    <circle cx="6" cy="7" r="1" fill="#fff" fillOpacity="0.6"/>
+                  </svg>
+                  <svg width="16" height="20" viewBox="0 0 16 20">
+                    <ellipse cx="8" cy="11" rx="6.5" ry="8.5" fill="#ff8aab"/>
+                    <path d="M3 8Q8 5 13 8" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                    <path d="M4 12Q8 15 12 12" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                    <circle cx="10" cy="7" r="1" fill="#fff" fillOpacity="0.6"/>
+                  </svg>
                 </div>
               </div>
 
@@ -251,38 +290,26 @@ export default function CriarPage() {
                   Surpresa de Pascoa
                 </h3>
                 <p className="text-[12px] mt-1.5 leading-relaxed" style={{ color: 'rgba(255,200,220,0.65)' }}>
-                  Coelhinho kawaii interativo &quot;Voce me ama?&quot; com 10 reacoes diferentes + celebracao com coracoes + revelacao cinematografica da sua pagina
+                  Coelhinho kawaii interativo &quot;Voce me ama?&quot; com 7 reacoes diferentes + celebracao com coracoes + revelacao cinematografica da sua pagina
                 </p>
-                <div className="flex items-center gap-3 mt-3">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-sm line-through" style={{ color: 'rgba(255,200,220,0.35)' }}>R$49,90</span>
-                    <span className="text-2xl font-black" style={{ color: '#ffd700', textShadow: '0 0 20px rgba(255,215,0,0.3)' }}>R$24,90</span>
-                  </div>
-                  <span className="px-2 py-0.5 text-[9px] font-black rounded-full uppercase tracking-wider"
-                    style={{ background: 'rgba(94,232,181,0.15)', color: '#5ee8b5', border: '1px solid rgba(94,232,181,0.3)' }}>
-                    50% OFF
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="px-3 py-1 text-[11px] font-black rounded-full"
+                    style={{ background: 'rgba(255,138,171,0.15)', color: '#ff8aab', border: '1px solid rgba(255,138,171,0.3)' }}>
+                    Incluso no template
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Bottom bar */}
-            <div className={`w-full p-3 text-center font-bold text-sm border-t mt-0 transition-all duration-300`}
+            <div className="w-full p-3 text-center font-bold text-sm border-t mt-0 transition-all duration-300"
               style={{
-                background: selected === 'pascoa' ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.03)',
-                borderColor: selected === 'pascoa' ? 'rgba(255,180,60,0.3)' : 'rgba(255,255,255,0.06)',
-                color: selected === 'pascoa' ? '#ffd700' : 'rgba(255,200,220,0.5)',
+                background: selected === 'pascoa' ? 'rgba(255,138,171,0.1)' : 'rgba(255,255,255,0.03)',
+                borderColor: selected === 'pascoa' ? 'rgba(255,138,171,0.3)' : 'rgba(255,255,255,0.06)',
+                color: selected === 'pascoa' ? '#ff8aab' : 'rgba(255,200,220,0.5)',
               }}
             >
-              {selected === 'pascoa' ? '🐰 Template Selecionado!' : 'Clique para selecionar'}
-            </div>
-
-            {/* Sparkle decorations */}
-            <div className="absolute top-4 left-4 opacity-20 text-yellow-300 animate-pulse">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="absolute bottom-10 right-4 opacity-15 text-pink-300 animate-pulse" style={{ animationDelay: '1s' }}>
-              <Sparkles className="w-3.5 h-3.5" />
+              {selected === 'pascoa' ? 'Template Selecionado!' : 'Clique para selecionar'}
             </div>
           </motion.button>
         </motion.div>
@@ -382,7 +409,6 @@ export default function CriarPage() {
                 </svg>
               ) : (
                 <>
-                  {selected === 'pascoa' && <span className="mr-1">����</span>}
                   <span>{selected === 'pascoa' ? 'Criar surpresa de Pascoa' : 'Criar a surpresa agora'}</span>
                   <ChevronRight className="w-5 h-5" />
                 </>

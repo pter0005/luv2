@@ -216,12 +216,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [pageData.enablePuzzle, puzzleImageSrc]);
 
   const hasEasterIntro = useMemo(() => {
-    return !isAdmin && pageData.introType === 'easter';
-  }, [isAdmin, pageData.introType]);
+    return pageData.introType === 'easter';
+  }, [pageData.introType]);
 
   const hasLoveIntro = useMemo(() => {
-    return !isAdmin && pageData.introType === 'love';
-  }, [isAdmin, pageData.introType]);
+    return pageData.introType === 'love';
+  }, [pageData.introType]);
 
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
