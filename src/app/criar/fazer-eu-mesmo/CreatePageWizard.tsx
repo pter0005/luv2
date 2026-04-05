@@ -1113,17 +1113,27 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                     }}
                 >
                     <div className="flex items-center gap-4">
-                        <div className="flex items-end gap-1 shrink-0">
-                            <span className="text-3xl">🐰</span>
-                            <span className="text-2xl -mb-0.5">💖</span>
+                        <div className="shrink-0">
+                            <svg width="36" height="48" viewBox="0 0 120 160" fill="none">
+                                <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                                <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                                <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="#ffc8e0"/>
+                                <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                                <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="#ffc8e0"/>
+                                <ellipse cx="60" cy="70" rx="34" ry="30" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                                <circle cx="48" cy="68" r="5" fill="#1a1018"/><ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                                <circle cx="72" cy="68" r="5" fill="#1a1018"/><ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                                <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="#ff90ac"/>
+                                <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                            </svg>
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-base font-bold" style={{ color: '#ffe8f0' }}>Intro Especial de Pascoa</h3>
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42)', color: 'white' }}>INCLUIDO</span>
+                                <h3 className="text-base font-bold" style={{ color: '#ffe8f0' }}>Intro de Pascoa</h3>
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white' }}>INCLUIDO</span>
                             </div>
                             <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,200,220,0.6)' }}>
-                                Coelhinho kawaii interativo &quot;Voce me ama?&quot; com 10 reacoes + celebracao com coracoes + revelacao da pagina
+                                Coelhinho kawaii interativo &quot;Voce me ama?&quot; com 7 reacoes + celebracao com coracoes + revelacao da pagina
                             </p>
                         </div>
                     </div>
@@ -1592,8 +1602,8 @@ const PlanStep = React.memo(() => {
                 className={cn(
                     "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
                     field.value === 'pascoa'
-                        ? "border-amber-400 shadow-2xl shadow-amber-400/25"
-                        : "border-amber-400/40 hover:border-amber-400/70"
+                        ? "border-pink-400 shadow-2xl shadow-pink-400/25"
+                        : "border-pink-400/40 hover:border-pink-400/70"
                 )}
                 style={{
                     background: 'linear-gradient(135deg, #2d1152 0%, #1a0a2e 50%, #2d1152 100%)',
@@ -1603,46 +1613,51 @@ const PlanStep = React.memo(() => {
                 <input type="radio" name="plan" value="pascoa" id="plan-pascoa" className="sr-only" checked={field.value === 'pascoa'} onChange={() => field.onChange('pascoa')} />
 
                 {/* Easter badge */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-5 py-1.5 text-[10px] font-black rounded-b-xl z-10 tracking-[0.15em] uppercase"
-                    style={{ background: 'linear-gradient(135deg, #ff6b9d, #ff8c42, #ffd700)', color: 'white', boxShadow: '0 4px 15px rgba(255,140,60,0.3)' }}>
-                    Especial de Pascoa
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-5 py-1.5 text-[10px] font-black rounded-b-xl z-10 tracking-[0.15em] uppercase flex items-center gap-1.5"
+                    style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white', boxShadow: '0 4px 15px rgba(255,100,140,0.3)' }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" fillOpacity="0.9"/></svg>
+                    Novidade
                 </div>
 
                 <div className="p-6 pt-12 flex flex-col items-center text-center">
-                    {/* Easter decorations */}
-                    <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl" style={{ display: 'inline-block', animation: 'eggWobble 2.5s ease-in-out infinite' }}>🥚</span>
-                        <span className="text-4xl" style={{ display: 'inline-block', animation: 'bunnyBounce 2s ease-in-out infinite' }}>🐰</span>
-                        <span className="text-2xl" style={{ display: 'inline-block', animation: 'eggWobble 2.5s ease-in-out infinite 0.5s' }}>🥚</span>
+                    {/* Bunny SVG */}
+                    <div className="mb-3" style={{ animation: 'bunnyBounce 2s ease-in-out infinite' }}>
+                        <svg width="52" height="68" viewBox="0 0 120 160" fill="none">
+                            <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                            <circle cx="38" cy="118" r="6" fill="#fff" stroke="#cbaabb" strokeWidth="1.2"/>
+                            <ellipse cx="48" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
+                            <ellipse cx="72" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
+                            <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                            <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="#ffc8e0"/>
+                            <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                            <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="#ffc8e0"/>
+                            <ellipse cx="60" cy="70" rx="34" ry="30" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                            <circle cx="48" cy="68" r="5" fill="#1a1018"/>
+                            <ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                            <circle cx="72" cy="68" r="5" fill="#1a1018"/>
+                            <ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                            <ellipse cx="38" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
+                            <ellipse cx="82" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
+                            <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="#ff90ac"/>
+                            <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                        </svg>
                     </div>
-                    <style>{`
-                        @keyframes eggWobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-                        @keyframes bunnyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-                    `}</style>
+                    <style>{`@keyframes bunnyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}`}</style>
 
                     <h3 className="text-xl font-black mb-1" style={{ color: '#ffe8f0' }}>Surpresa de Pascoa</h3>
                     <p className="text-sm mb-4" style={{ color: 'rgba(255,200,220,0.7)' }}>
                         Coelhinho kawaii &quot;Voce me ama?&quot; + pagina permanente
                     </p>
 
-                    <div className="my-2">
-                        <div className="flex items-baseline gap-2 justify-center">
-                            <span className="text-lg line-through" style={{ color: 'rgba(255,200,220,0.35)' }}>R$49,90</span>
-                            <span className="text-4xl font-black" style={{ color: '#ffd700', textShadow: '0 0 20px rgba(255,215,0,0.3)' }}>R$24,90</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 mt-1">
-                            <span className="px-2 py-0.5 text-[9px] font-black rounded-full uppercase tracking-wider"
-                                style={{ background: 'rgba(94,232,181,0.15)', color: '#5ee8b5', border: '1px solid rgba(94,232,181,0.3)' }}>
-                                50% OFF
-                            </span>
-                            <span className="text-xs" style={{ color: 'rgba(255,200,220,0.4)' }}>pagamento unico</span>
-                        </div>
-                    </div>
+                    <span className="px-4 py-1.5 text-[11px] font-black rounded-full mb-3"
+                        style={{ background: 'rgba(255,138,171,0.15)', color: '#ff8aab', border: '1px solid rgba(255,138,171,0.3)' }}>
+                        Incluso no template
+                    </span>
 
-                    <ul className="space-y-2 text-sm mt-3 text-left w-full max-w-xs">
+                    <ul className="space-y-2 text-sm mt-2 text-left w-full max-w-xs">
                         {[
                             'Intro interativa do coelhinho kawaii',
-                            '10 reacoes + celebracao com coracoes',
+                            '7 reacoes + celebracao com coracoes',
                             'Revelacao cinematografica da pagina',
                             'Todos os recursos do Plano Avancado',
                             'Pagina permanente + backup infinito',
@@ -1653,23 +1668,15 @@ const PlanStep = React.memo(() => {
                             </li>
                         ))}
                     </ul>
-
-                    {/* Sparkle decoration */}
-                    <div className="absolute top-4 right-4 opacity-40 text-yellow-300 animate-pulse">
-                        <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div className="absolute bottom-4 left-4 opacity-30 text-pink-300 animate-pulse" style={{ animationDelay: '0.5s' }}>
-                        <Sparkles className="w-4 h-4" />
-                    </div>
                 </div>
 
                 <div className={cn(
                     "w-full p-3 text-center font-bold text-sm border-t mt-2",
                     field.value === 'pascoa'
-                        ? "text-white border-amber-400/30"
-                        : "text-amber-200/60 border-white/10"
-                )} style={{ background: field.value === 'pascoa' ? 'rgba(255,180,60,0.15)' : 'rgba(255,255,255,0.03)' }}>
-                    {field.value === 'pascoa' ? '🐰 Template Selecionado!' : 'Selecionar Surpresa de Pascoa'}
+                        ? "text-white border-pink-400/30"
+                        : "text-pink-200/60 border-white/10"
+                )} style={{ background: field.value === 'pascoa' ? 'rgba(255,138,171,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                    {field.value === 'pascoa' ? 'Template Selecionado!' : 'Selecionar Surpresa de Pascoa'}
                 </div>
             </Label>
 
@@ -1858,6 +1865,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const wordGameQuestions = watch('wordGameQuestions');
     const hasWordGameContent = !!(enableWordGame && wordGameQuestions?.length > 0);
     const WORD_GAME_PRICE = 2.00;
+    const TIMELINE_PASCOA_PRICE = 4.99;
+    const timelineEvents = watch('timelineEvents');
+    const hasTimelineContent = !!(timelineEvents && timelineEvents.length > 0);
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
     const offerExpired = typeof window !== 'undefined' && (() => {
@@ -1869,7 +1879,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const basePriceBRL = plan === 'basico'
         ? 19.90
         : (offerExpired ? 29.90 : 24.90);
-    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) - discountAmount);
+    const timelineExtra = (plan === 'pascoa' && hasTimelineContent) ? TIMELINE_PASCOA_PRICE : 0;
+    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + timelineExtra - discountAmount);
     const totalUSD = basePriceUSD;
 
     const adminEmails = ADMIN_EMAILS;
@@ -2323,6 +2334,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 {hasWordGameContent && (
                   <p className="text-xs text-pink-300 mt-0.5">
                     Inclui Jogo Adivinhe a Palavra (+R$2,00)
+                  </p>
+                )}
+                {timelineExtra > 0 && (
+                  <p className="text-xs text-pink-300 mt-0.5">
+                    Inclui Linha do Tempo 3D (+R$4,99)
                   </p>
                 )}
                 {discountAmount > 0 && (

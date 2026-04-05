@@ -133,7 +133,7 @@ export default function CriarPage() {
         </div>
       )}
 
-      {/* ── EASTER COUNTDOWN BANNER ── */}
+      {/* ── EASTER BANNER ── */}
       {EASTER_MODE && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -141,19 +141,30 @@ export default function CriarPage() {
           transition={{ duration: 0.3 }}
           className="fixed top-0 left-0 right-0 z-50"
         >
-          <div className="bg-[#0d0d0d] border-b border-white/[0.06]">
-            <div className="flex items-center justify-center gap-2.5 px-4 py-2 text-center">
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-white/40">
-                Promocao limitada pascoa
+          <div style={{ background: 'linear-gradient(90deg, #fce4ec 0%, #fff0f5 30%, #fce4ec 50%, #fff0f5 70%, #fce4ec 100%)' }}
+            className="border-b border-pink-200/30">
+            <div className="flex items-center justify-center gap-3 px-4 py-2 text-center">
+              <svg width="16" height="20" viewBox="0 0 56 72" fill="none" className="shrink-0">
+                <ellipse cx="18" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="2"/>
+                <ellipse cx="18" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
+                <ellipse cx="38" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="2"/>
+                <ellipse cx="38" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
+                <ellipse cx="28" cy="38" rx="22" ry="19" fill="#fff" stroke="#ddb8c8" strokeWidth="2"/>
+                <circle cx="21" cy="37" r="3" fill="#2e1f28"/>
+                <ellipse cx="19.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
+                <circle cx="35" cy="37" r="3" fill="#2e1f28"/>
+                <ellipse cx="33.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
+                <ellipse cx="28" cy="41" rx="2.2" ry="1.5" fill="#ff90ac"/>
+                <path d="M25 43.5Q28 47 31 43.5" stroke="#b07888" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              </svg>
+              <span className="text-[12px] font-bold tracking-wide" style={{ color: '#d32f4a' }}>
+                Feliz Pascoa! Crie uma surpresa especial com o coelhinho
               </span>
-              <span className="text-white/10">|</span>
-              {!countdown.expired ? (
-                <span className="text-[11px] font-mono font-semibold tabular-nums text-white/50">
-                  {String(countdown.h).padStart(2, '0')}:{String(countdown.m).padStart(2, '0')}:{String(countdown.s).padStart(2, '0')}
-                </span>
-              ) : (
-                <span className="text-[11px] font-semibold text-white/40">Ultimas horas</span>
-              )}
+              <svg width="14" height="18" viewBox="0 0 16 20" className="shrink-0">
+                <ellipse cx="8" cy="11" rx="6.5" ry="8.5" fill="#ffb347"/>
+                <path d="M3 9Q8 6 13 9" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+                <path d="M3.5 13Q8 16 12.5 13" stroke="#fff" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+              </svg>
             </div>
           </div>
         </motion.div>
@@ -240,47 +251,79 @@ export default function CriarPage() {
             </AnimatePresence>
 
             <div className="flex items-center gap-5 p-6 pt-9">
-              {/* Bunny SVG illustration */}
+              {/* Bunny SVG illustration — kawaii style matching the intro */}
               <div className="flex flex-col items-center gap-1.5 shrink-0">
-                <svg width="56" height="72" viewBox="0 0 56 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  {/* Ears */}
-                  <ellipse cx="18" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
-                  <ellipse cx="18" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
-                  <ellipse cx="38" cy="16" rx="7" ry="18" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
-                  <ellipse cx="38" cy="16" rx="4" ry="13" fill="#ffc8e0"/>
-                  {/* Head */}
-                  <ellipse cx="28" cy="38" rx="22" ry="19" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
-                  {/* Cheeks */}
-                  <ellipse cx="14" cy="42" rx="5" ry="3.5" fill="#ffb6c1" fillOpacity="0.5"/>
-                  <ellipse cx="42" cy="42" rx="5" ry="3.5" fill="#ffb6c1" fillOpacity="0.5"/>
-                  {/* Eyes */}
-                  <circle cx="21" cy="37" r="3" fill="#2e1f28"/>
-                  <ellipse cx="19.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
-                  <circle cx="35" cy="37" r="3" fill="#2e1f28"/>
-                  <ellipse cx="33.8" cy="35.8" rx="1.3" ry="1.1" fill="#fff"/>
-                  {/* Nose */}
-                  <ellipse cx="28" cy="41" rx="2.2" ry="1.5" fill="#ff90ac"/>
-                  {/* Mouth */}
-                  <path d="M25 43.5Q28 47 31 43.5" stroke="#b07888" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                <svg width="64" height="88" viewBox="0 0 120 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="pcHeadG" cx="40%" cy="35%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#f5edf3"/></radialGradient>
+                    <radialGradient id="pcBodyG" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#f0e6ee"/></radialGradient>
+                    <linearGradient id="pcEarP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffd0e5"/><stop offset="50%" stopColor="#ffb5d0"/><stop offset="100%" stopColor="#ffa2c2"/></linearGradient>
+                    <radialGradient id="pcCheek" cx="50%" cy="50%"><stop offset="0%" stopColor="rgba(255,130,170,0.7)"/><stop offset="100%" stopColor="rgba(255,160,185,0)"/></radialGradient>
+                    <radialGradient id="pcNose" cx="35%" cy="35%"><stop offset="0%" stopColor="#ffbed0"/><stop offset="100%" stopColor="#ff90ac"/></radialGradient>
+                  </defs>
+                  {/* Shadow */}
+                  <ellipse cx="60" cy="152" rx="22" ry="4" fill="rgba(200,158,175,0.25)"/>
                   {/* Body */}
-                  <ellipse cx="28" cy="60" rx="16" ry="11" fill="#fff" stroke="#ddb8c8" strokeWidth="1.5"/>
-                  {/* Paws */}
-                  <ellipse cx="18" cy="68" rx="5" ry="3.5" fill="#fff" stroke="#ddb8c8" strokeWidth="1.2"/>
-                  <ellipse cx="38" cy="68" rx="5" ry="3.5" fill="#fff" stroke="#ddb8c8" strokeWidth="1.2"/>
+                  <ellipse cx="60" cy="120" rx="24" ry="18" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.8"/>
+                  <ellipse cx="60" cy="122" rx="12" ry="9" fill="rgba(255,245,250,0.5)"/>
+                  {/* Tail */}
+                  <circle cx="38" cy="118" r="6" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.2"/>
+                  {/* Feet */}
+                  <ellipse cx="48" cy="136" rx="8" ry="5" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.4"/>
+                  <ellipse cx="72" cy="136" rx="8" ry="5" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.4"/>
+                  {/* Paw pads */}
+                  <circle cx="45" cy="135.5" r="1.8" fill="#ff9eb8"/><circle cx="51" cy="135.5" r="1.8" fill="#ff9eb8"/>
+                  <circle cx="69" cy="135.5" r="1.8" fill="#ff9eb8"/><circle cx="75" cy="135.5" r="1.8" fill="#ff9eb8"/>
+                  {/* Arms */}
+                  <ellipse cx="38" cy="112" rx="8" ry="5" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.4" transform="rotate(-25,38,112)"/>
+                  <ellipse cx="82" cy="112" rx="8" ry="5" fill="url(#pcBodyG)" stroke="#cbaabb" strokeWidth="1.4" transform="rotate(25,82,112)"/>
+                  {/* Left ear */}
+                  <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="url(#pcHeadG)" stroke="#cbaabb" strokeWidth="1.8"/>
+                  <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="url(#pcEarP)"/>
+                  {/* Right ear */}
+                  <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="url(#pcHeadG)" stroke="#cbaabb" strokeWidth="1.8"/>
+                  <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="url(#pcEarP)"/>
+                  {/* Head */}
+                  <ellipse cx="60" cy="70" rx="34" ry="30" fill="url(#pcHeadG)" stroke="#cbaabb" strokeWidth="2"/>
+                  {/* Head shine */}
+                  <ellipse cx="52" cy="52" rx="16" ry="8" fill="rgba(255,255,255,0.5)" transform="rotate(-8,52,52)"/>
+                  {/* Eyes */}
+                  <circle cx="48" cy="68" r="5" fill="#1a1018"/>
+                  <ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff" transform="rotate(-20,46,66)"/>
+                  <circle cx="50" cy="70" r="1.1" fill="rgba(255,255,255,0.6)"/>
+                  <circle cx="72" cy="68" r="5" fill="#1a1018"/>
+                  <ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff" transform="rotate(-20,70,66)"/>
+                  <circle cx="74" cy="70" r="1.1" fill="rgba(255,255,255,0.6)"/>
+                  {/* Cheeks */}
+                  <ellipse cx="38" cy="77" rx="9" ry="6" fill="url(#pcCheek)"/>
+                  <ellipse cx="82" cy="77" rx="9" ry="6" fill="url(#pcCheek)"/>
+                  <circle cx="35" cy="75" r="1" fill="rgba(255,255,255,0.5)"/>
+                  <circle cx="85" cy="75" r="1" fill="rgba(255,255,255,0.5)"/>
+                  {/* Nose */}
+                  <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="url(#pcNose)"/>
+                  {/* Mouth */}
+                  <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                  {/* Heart */}
+                  <g transform="translate(90,56) scale(0.5)">
+                    <path d="M0 12 C-18 -2,-10-18,0-6 C10-18,18-2,0 12Z" fill="#ff5e8a"/>
+                    <ellipse cx="-4" cy="-4" rx="3" ry="1.8" fill="rgba(255,255,255,0.5)" transform="rotate(-30,-4,-4)"/>
+                  </g>
                 </svg>
                 {/* Easter eggs SVG */}
-                <div className="flex gap-1.5">
-                  <svg width="16" height="20" viewBox="0 0 16 20">
-                    <ellipse cx="8" cy="11" rx="6.5" ry="8.5" fill="#ffb347"/>
-                    <path d="M3 9Q8 6 13 9" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                    <path d="M3.5 13Q8 16 12.5 13" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-                    <circle cx="6" cy="7" r="1" fill="#fff" fillOpacity="0.6"/>
+                <div className="flex gap-2 -mt-1">
+                  <svg width="18" height="22" viewBox="0 0 18 22">
+                    <ellipse cx="9" cy="12" rx="7.5" ry="9.5" fill="url(#pcEgg1)" stroke="#e8a040" strokeWidth="1"/>
+                    <defs><linearGradient id="pcEgg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffd06a"/><stop offset="100%" stopColor="#ffb347"/></linearGradient></defs>
+                    <path d="M3 10Q9 7 15 10" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeOpacity="0.7"/>
+                    <path d="M3.5 14Q9 17 14.5 14" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeOpacity="0.5"/>
+                    <circle cx="6" cy="7" r="1.5" fill="#fff" fillOpacity="0.4"/>
                   </svg>
-                  <svg width="16" height="20" viewBox="0 0 16 20">
-                    <ellipse cx="8" cy="11" rx="6.5" ry="8.5" fill="#ff8aab"/>
-                    <path d="M3 8Q8 5 13 8" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                    <path d="M4 12Q8 15 12 12" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-                    <circle cx="10" cy="7" r="1" fill="#fff" fillOpacity="0.6"/>
+                  <svg width="18" height="22" viewBox="0 0 18 22">
+                    <ellipse cx="9" cy="12" rx="7.5" ry="9.5" fill="url(#pcEgg2)" stroke="#d06080" strokeWidth="1"/>
+                    <defs><linearGradient id="pcEgg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffaac8"/><stop offset="100%" stopColor="#ff8aab"/></linearGradient></defs>
+                    <path d="M3 9Q9 6 15 9" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeOpacity="0.7"/>
+                    <path d="M4 13Q9 16 14 13" stroke="#fff" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeOpacity="0.5"/>
+                    <circle cx="11" cy="7" r="1.5" fill="#fff" fillOpacity="0.4"/>
                   </svg>
                 </div>
               </div>
