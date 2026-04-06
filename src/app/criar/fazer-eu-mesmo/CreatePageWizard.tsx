@@ -1865,7 +1865,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const wordGameQuestions = watch('wordGameQuestions');
     const hasWordGameContent = !!(enableWordGame && wordGameQuestions?.length > 0);
     const WORD_GAME_PRICE = 2.00;
-    const TIMELINE_PASCOA_PRICE = 4.99;
+    const TIMELINE_PASCOA_PRICE = 0.99;
     const timelineEvents = watch('timelineEvents');
     const hasTimelineContent = !!(timelineEvents && timelineEvents.length > 0);
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
@@ -2338,7 +2338,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 )}
                 {timelineExtra > 0 && (
                   <p className="text-xs text-pink-300 mt-0.5">
-                    Inclui Linha do Tempo 3D (+R$4,99)
+                    Inclui Linha do Tempo 3D (+R$0,99)
                   </p>
                 )}
                 {discountAmount > 0 && (

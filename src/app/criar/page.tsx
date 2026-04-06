@@ -53,19 +53,16 @@ function useCountdown(durationMs: number) {
   return { h, m, s, expired: remaining <= 0 };
 }
 
-// ── Floating Easter decoration ────────────────────────────────
-const EASTER_FLOATERS = [
-  { emoji: '🥚', x: 8,  y: 12, size: 28, delay: 0,    dur: 12 },
-  { emoji: '🐰', x: 88, y: 8,  size: 24, delay: -3,   dur: 14 },
-  { emoji: '🌸', x: 5,  y: 65, size: 20, delay: -5,   dur: 10 },
-  { emoji: '🥚', x: 92, y: 60, size: 22, delay: -7,   dur: 13 },
-  { emoji: '💐', x: 50, y: 5,  size: 18, delay: -2,   dur: 11 },
-  { emoji: '🐣', x: 15, y: 85, size: 20, delay: -4,   dur: 15 },
-  { emoji: '🌷', x: 82, y: 82, size: 22, delay: -6,   dur: 12 },
-  { emoji: '✨', x: 35, y: 15, size: 16, delay: -1,   dur: 9  },
-  { emoji: '🐇', x: 70, y: 20, size: 18, delay: -8,   dur: 11 },
-  { emoji: '🥚', x: 25, y: 45, size: 16, delay: -3.5, dur: 13 },
-];
+// ── Floating hearts (falling loop like the intro animation) ───
+const FALLING_HEARTS = Array.from({ length: 16 }, (_, i) => ({
+  id: i,
+  color: ['#f48fb1','#e91e63','#f06292','#ec407a','#ff8aab','#ff5e8a'][i % 6],
+  size: 14 + Math.random() * 22,
+  left: Math.random() * 100,
+  dur: 8 + Math.random() * 14,
+  delay: -Math.random() * 16,
+  pulse: 1.5 + Math.random() * 2,
+}));
 
 export default function CriarPage() {
   const router = useRouter();
@@ -98,9 +95,13 @@ export default function CriarPage() {
       {/* ── KEYFRAMES ─────────────────────────────────────── */}
       {EASTER_MODE && (
         <style>{`
-          @keyframes easterFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+          @keyframes heartFall {
+            0% { transform: translateY(-5vh) rotate(0deg); }
+            100% { transform: translateY(110vh) rotate(25deg); }
+          }
+          @keyframes heartPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
           }
         `}</style>
       )}
@@ -111,23 +112,26 @@ export default function CriarPage() {
         <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-pink-500/10 blur-[120px] rounded-full" />
       </div>
 
-      {/* ── Floating Easter decorations ──────────────────── */}
+      {/* ── Falling hearts (loop, pulsing) ─────────────── */}
       {EASTER_MODE && (
         <div className="pointer-events-none fixed inset-0 -z-5 overflow-hidden">
-          {EASTER_FLOATERS.map((f, i) => (
+          {FALLING_HEARTS.map(h => (
             <div
-              key={i}
+              key={h.id}
               style={{
                 position: 'absolute',
-                left: `${f.x}%`,
-                top: `${f.y}%`,
-                fontSize: f.size,
-                opacity: 0.06,
-                animation: `easterFloat ${f.dur}s ease-in-out infinite`,
-                animationDelay: `${f.delay}s`,
+                left: `${h.left}%`,
+                top: 0,
+                opacity: 0.25,
+                animation: `heartFall ${h.dur}s linear ${h.delay}s infinite`,
               }}
             >
-              {f.emoji}
+              <svg
+                width={h.size} height={h.size} viewBox="0 0 24 24"
+                style={{ animation: `heartPulse ${h.pulse}s ease-in-out infinite` }}
+              >
+                <path d="M12 21 C-6 10,-2-4,12 5 C26-4,30 10,12 21Z" fill={h.color}/>
+              </svg>
             </div>
           ))}
         </div>
