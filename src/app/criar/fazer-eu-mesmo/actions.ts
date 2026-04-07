@@ -1,6 +1,7 @@
 'use server';
 
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
+import { getAdminFirestore, getAdminStorage, getAdminDatabase } from '@/lib/firebase/admin/config';
+import { notifyAdmins } from '@/lib/notify-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
@@ -463,6 +464,32 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     await createGuestAccount(data.guestEmail, data.userId as string, newPageId);
   }
   await sendServerSidePurchaseEvent(finalData.plan as 'basico' | 'avancado', newPageId, userEmail);
+
+  // ── Notify admin via Realtime DB + Push ──────────────────────────────────
+  const saleValue = finalData.plan === 'avancado' ? 24.90 : 19.90;
+  const saleTitle = (finalData.title as string) || 'Sem título';
+  const salePlan = finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
+  try {
+    const rtdb = getAdminDatabase();
+    await rtdb.ref('sales_feed').push({
+      pageId: newPageId,
+      title: saleTitle,
+      plan: finalData.plan || 'basico',
+      value: saleValue,
+      ts: Date.now(),
+    });
+  } catch (e) {
+    console.warn('[RTDB] Failed to push sale notification:', e);
+  }
+  try {
+    await notifyAdmins(
+      `Nova venda! R$${saleValue.toFixed(2).replace('.', ',')}`,
+      `${saleTitle} — Plano ${salePlan}`,
+      'https://mycupid.com.br/admin',
+    );
+  } catch (e) {
+    console.warn('[Push] Failed to notify admins:', e);
+  }
   revalidatePath(`/p/${newPageId}`);
   revalidatePath('/minhas-paginas');
 

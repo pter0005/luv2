@@ -15,11 +15,15 @@ export async function POST(req: NextRequest) {
     // Use endpoint hash as doc ID to avoid duplicates
     const id = Buffer.from(subscription.endpoint).toString('base64url').slice(0, 40);
 
+    const isAdmin = subscription.isAdmin === true;
+    const { isAdmin: _, ...subData } = subscription;
+
     await db.collection('push_subscriptions').doc(id).set({
-      ...subscription,
+      ...subData,
       createdAt: Timestamp.now(),
       userAgent: req.headers.get('user-agent') || '',
       active: true,
+      ...(isAdmin ? { isAdmin: true } : {}),
     }, { merge: true });
 
     return NextResponse.json({ success: true });

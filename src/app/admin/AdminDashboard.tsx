@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
+import { SaleNotification } from '@/components/admin/SaleNotification';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -190,6 +191,7 @@ export default function AdminDashboard({
 
   return (
     <div className="space-y-6">
+      <SaleNotification />
 
       {/* ── FILE ISSUES ALERT ──────────────────────────────────────────────── */}
       {pendingFileIssues > 0 ? (

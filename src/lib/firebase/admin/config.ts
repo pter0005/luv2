@@ -2,6 +2,7 @@ import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
+import { getDatabase } from 'firebase-admin/database';
 
 // Esta função centraliza a inicialização do Firebase Admin.
 export function getAdminApp() {
@@ -33,6 +34,7 @@ export function getAdminApp() {
     return initializeApp({
       credential: cert({ projectId, clientEmail, privateKey }),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
     });
   } catch (error: any) {
     console.error('Falha CRÍTICA ao inicializar Firebase Admin:', error.message);
@@ -59,4 +61,9 @@ export function getAdminAuth() {
 export function getAdminStorage() {
   const app = getAdminApp();
   return getStorage(app).bucket();
+}
+
+export function getAdminDatabase() {
+  const app = getAdminApp();
+  return getDatabase(app);
 }
