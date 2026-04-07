@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift } from 'lucide-react';
+import { ChevronRight, Play, Palette, MessageCircle, Star, Zap, Gift, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from "framer-motion";
@@ -107,7 +107,7 @@ const HeroSection = () => {
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <Link href="/criar" className="w-full sm:w-auto">
               <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
-                Criar minha página <ChevronRight className="w-5 h-5 ml-2" />
+                Surpreender agora <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
             <Link href="#demo-section" className="w-full sm:w-auto">
@@ -117,9 +117,13 @@ const HeroSection = () => {
             </Link>
           </div>
 
-          <p className="text-xs text-white/30 mt-4 text-center lg:text-left">
-            A partir de <span className="text-white/50 font-semibold">R$19,90</span> · pagamento único · sem mensalidade
-          </p>
+          <div className="flex items-center justify-center lg:justify-start gap-3 mt-4 text-xs text-white/40">
+            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" /> Pagamento seguro</span>
+            <span className="text-white/15">·</span>
+            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> 4.9 estrelas</span>
+            <span className="text-white/15">·</span>
+            <span>Pronto em 5 min</span>
+          </div>
         </div>
 
         {/* ── PHONES — mobile: segundo (abaixo do texto) ── */}

@@ -6,9 +6,10 @@ import Footer from '@/components/layout/Footer';
 import DiscountBanner from '@/components/layout/DiscountBanner';
 import React from 'react';
 import { cn } from '@/lib/utils';
-import CookieConsent from '@/components/layout/CookieConsent';
 import { PresenceTracker } from '@/components/layout/PresenceTracker';
 import CreditPopup from '@/components/layout/CreditPopup';
+import ExitIntentPopup from '@/components/layout/ExitIntentPopup';
+import PushNotificationPrompt from '@/components/layout/PushNotificationPrompt';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useUser } from '@/firebase';
 
@@ -46,8 +47,9 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
         <main className={cn("flex-grow")}>{children}</main>
         <Footer />
       </div>
-      <CookieConsent />
       <CreditPopup />
+      {showAppHeader && <ExitIntentPopup />}
+      {showAppHeader && <PushNotificationPrompt />}
     </div>
   );
 }

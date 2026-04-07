@@ -7,6 +7,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import InnerLayout from './InnerLayout';
 import TikTokPixel from '@/components/analytics/TikTokPixel';
 import FacebookPixel from '@/components/analytics/FacebookPixel';
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics';
 import { Suspense } from 'react';
 
 const poppins = Poppins({
@@ -173,6 +174,7 @@ export default function RootLayout({
         </FirebaseClientProvider>
         <TikTokPixel />
         <FacebookPixel />
+        <GoogleAnalytics />
       </body>
     </html>
   );

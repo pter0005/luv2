@@ -456,7 +456,7 @@ export default function CriarPage() {
                 </svg>
               ) : (
                 <>
-                  <span>{selected === 'pascoa' ? 'Criar surpresa de Pascoa' : 'Criar a surpresa agora'}</span>
+                  <span>{selected === 'pascoa' ? 'Criar minha surpresa de Pascoa' : 'Declarar meu amor agora'}</span>
                   <ChevronRight className="w-5 h-5" />
                 </>
               )}
@@ -464,8 +464,8 @@ export default function CriarPage() {
 
             <p className="text-center text-xs text-white/25 mt-3">
               {selected === 'pascoa'
-                ? 'Pronto em menos de 5 minutos · inclui intro animada do coelhinho'
-                : 'Pronto em menos de 5 minutos · a partir de R$14,90'}
+                ? 'Pronto em 5 minutos · a pessoa amada vai se emocionar'
+                : 'Pronto em 5 minutos · a pessoa amada vai se emocionar'}
             </p>
           </motion.div>
         )}

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { PlanFeature } from '@/components/layout/PlanFeature';
 import { memo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import GuaranteeBadge from '@/components/layout/GuaranteeBadge';
+import ScarcityIndicator from '@/components/layout/ScarcityIndicator';
 
 function useOfferExpired() {
   const [expired, setExpired] = useState(false);
@@ -138,7 +140,7 @@ function AdvancedCard() {
         </ul>
 
         {/* Trust badges */}
-        <div className="flex items-center justify-center gap-4 mb-6 text-xs text-zinc-500">
+        <div className="flex items-center justify-center gap-4 mb-6 text-xs text-zinc-500 flex-wrap">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
             Pagamento seguro
@@ -146,6 +148,10 @@ function AdvancedCard() {
           <span className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-yellow-500" />
             Acesso imediato
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Garantia 7 dias
           </span>
         </div>
 
@@ -160,15 +166,15 @@ function AdvancedCard() {
               {/* Shimmer */}
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               <Sparkles className="w-4 h-4 relative" />
-              <span className="relative">Criar Minha Página Agora</span>
+              <span className="relative">Surpreender quem eu amo</span>
               <ArrowRight className="w-4 h-4 relative" />
             </button>
           </Link>
         </motion.div>
 
-        <p className="text-center text-xs text-zinc-600 mt-3">
-          🔒 Garantia de 7 dias ou seu dinheiro de volta
-        </p>
+        <div className="mt-4">
+          <GuaranteeBadge compact />
+        </div>
       </div>
     </motion.div>
   );
@@ -229,7 +235,7 @@ function EconomicCard() {
         <Link href="/criar?plan=basico&new=true" className="block">
           <button className="w-full py-3.5 rounded-2xl font-bold text-sm text-zinc-300 transition-all hover:text-white hover:bg-white/10"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            Começar com Plano Básico →
+            Começar minha surpresa →
           </button>
         </Link>
       </div>
@@ -294,6 +300,11 @@ const PlansSection = () => {
         </div>
       </motion.div>
 
+      {/* Scarcity */}
+      <div className="flex justify-center mb-8">
+        <ScarcityIndicator />
+      </div>
+
       {/* Cards — recomendado maior e elevado */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-6 max-w-4xl mx-auto items-start">
         {/* Básico — primeira coluna */}
@@ -302,15 +313,26 @@ const PlansSection = () => {
         <AdvancedCard />
       </div>
 
+      {/* Garantia */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.25 }}
+        className="max-w-md mx-auto mt-10"
+      >
+        <GuaranteeBadge />
+      </motion.div>
+
       {/* Rodapé de confiança */}
       <motion.p
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ delay: 0.3 }}
-        className="text-center text-xs text-zinc-600 mt-8"
+        className="text-center text-xs text-zinc-600 mt-6"
       >
-        Todos os pagamentos processados com segurança via Stripe • Sem assinatura • Cancele quando quiser
+        Pagamentos processados com segurança · Sem assinatura · Cancele quando quiser
       </motion.p>
     </div>
   );

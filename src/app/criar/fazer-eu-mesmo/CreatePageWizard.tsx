@@ -71,6 +71,7 @@ import QrCodeSelector from "./QrCodeSelector";
 import { Suspense } from "react";
 import { WIZARD_SEGMENTS, DEFAULT_WIZARD_CONFIG, type WizardSegmentKey } from '@/lib/wizard-segment-config';
 import { downloadQrCard } from '@/lib/downloadQrCard';
+import { trackEvent, trackFunnelStep } from '@/lib/analytics';
 
 const RealPuzzle = dynamic(() => import("@/components/puzzle/Puzzle"), {
     ssr: false,
@@ -1773,6 +1774,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [confirmedGuestEmail, setConfirmedGuestEmail] = useState('');
     const [isSavingEmail, setIsSavingEmail] = useState(false);
 
+    // ── WhatsApp capture ──────────────────────────────────────────
+    const [whatsappNumber, setWhatsappNumber] = useState('');
+    const formatPhone = (raw: string) => {
+        const digits = raw.replace(/\D/g, '').slice(0, 11);
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+        return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    };
+
     // ── GIFT TOKEN (link de presente) ─────────────────────────────
     const [giftToken, setGiftToken] = useState<string | null>(null);
     const [giftCredits, setGiftCredits] = useState(0);
@@ -1949,6 +1959,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             }
         };
         fireMeta();
+
+        // ── GA4 ───────────────────────────────────────────────────────
+        trackEvent('Purchase', {
+            value: getValues('plan') === 'avancado' ? 24.90 : 19.90,
+            currency: 'BRL',
+            transaction_id: pageId,
+            items: [{ item_name: getValues('plan') === 'avancado' ? 'Plano Avançado' : 'Plano Básico' }],
+        });
         // ─────────────────────────────────────────────────────────────
 
     }, [setPageId, toast, getValues]);
@@ -2014,6 +2032,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     ...getValues(),
                     userId: user.uid,
                     ...(isAnonymousUser && confirmedGuestEmail ? { guestEmail: confirmedGuestEmail } : {}),
+                    ...(whatsappNumber ? { whatsappNumber: whatsappNumber.replace(/\D/g, '') } : {}),
                 };
                 const saveResult = await createOrUpdatePaymentIntent(fullData);
                 if (!saveResult.success) {
@@ -2590,6 +2609,27 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     <span>E-mail confirmado: <strong>{confirmedGuestEmail}</strong></span>
                 </div>
             )}
+            {/* WhatsApp capture — optional */}
+            {!pixData && (
+                <div className="rounded-2xl p-4 border border-green-500/20 bg-green-500/5">
+                    <div className="flex items-start gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg className="w-4 h-4 text-green-400" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.111.546 4.096 1.504 5.823L0 24l6.335-1.627A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.82c-1.886 0-3.63-.509-5.14-1.388l-.368-.218-3.817.981.99-3.637-.24-.38A9.766 9.766 0 012.18 12c0-5.422 4.398-9.82 9.82-9.82 5.422 0 9.82 4.398 9.82 9.82 0 5.422-4.398 9.82-9.82 9.82z"/></svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-white leading-tight">Receba o link por WhatsApp</p>
+                            <p className="text-xs text-white/50 mt-0.5">Opcional — enviaremos o link pronto direto no seu WhatsApp</p>
+                        </div>
+                    </div>
+                    <input
+                        type="tel"
+                        placeholder="(11) 99999-9999"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(formatPhone(e.target.value))}
+                        className="w-full px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-green-500"
+                    />
+                </div>
+            )}
             {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button onClick={handleOneClickPix} disabled={isProcessing} size="lg" className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6]">
                     {isProcessing ? (
@@ -2641,6 +2681,24 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 <span>Pagamento 100% seguro via Mercado Pago</span>
                 <Image src="https://i.imgur.com/QeYjEEv.png" alt="Logo do Mercado Pago" width={90} height={20} className="opacity-90" />
             </div>
+            {/* Trust badges */}
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-zinc-500">
+                <span className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    Garantia 7 dias
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-purple-400" />
+                    Dados protegidos
+                </span>
+                <span className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                    Suporte 24h
+                </span>
+            </div>
+            <p className="text-center text-[11px] text-zinc-600 mt-3">
+                Se nao ficar satisfeito, devolvemos 100% do valor em ate 7 dias.
+            </p>
         </div>
     );
 };
@@ -2690,6 +2748,10 @@ const SuccessStep = ({
         // TikTok
         if (typeof window !== 'undefined' && (window as any).ttq) {
             (window as any).ttq.track('CompletePayment', { value: price, currency: 'BRL' });
+        }
+        // GA4
+        if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+            window.gtag('event', 'purchase', { value: price, currency: 'BRL', transaction_id: pageId });
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2771,6 +2833,7 @@ function WizardInternal() {
     const { user, isUserLoading } = useUser();
     const { auth } = useFirebase();
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const stepEnterTimeRef = useRef<number>(Date.now());
     const [pageId, setPageId] = useState<string | null>(null);
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
 
@@ -2992,60 +3055,49 @@ function WizardInternal() {
         const nextStepIndex = currentStep + 1;
         const nextStepId = steps[nextStepIndex]?.id;
 
+        // ── Funnel step tracking (all pixels) ───────────────────────
+        const timeSpentMs = Date.now() - stepEnterTimeRef.current;
+        trackFunnelStep(currentStepId, currentStep + 1, steps.length, {
+            time_spent_seconds: Math.round(timeSpentMs / 1000),
+            plan: getValues('plan'),
+        });
+        stepEnterTimeRef.current = Date.now();
+
         if (currentStepId === 'plan' && nextStepId === 'payment') {
-             // ── META PIXEL: AddToCart ─────────────────────────────
-            try {
-                if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
-                    const planVal = getValues('plan');
-                    (window as any).fbq('track', 'AddToCart', {
-                        value: planVal === 'avancado' ? 24.90 : 19.90,
-                        currency: 'BRL',
-                        content_ids: [planVal],
-                        content_type: 'product',
-                    });
-                }
-            } catch (e) {
-                console.warn('[Meta Pixel] Falha ao disparar AddToCart:', e);
-            }
+            const planVal = getValues('plan');
+            trackEvent('AddToCart', {
+                value: planVal === 'avancado' ? 24.90 : 19.90,
+                currency: 'BRL',
+                content_ids: [planVal],
+                content_type: 'product',
+            });
         }
 
         if (nextStepId === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
             await handleAutosave();
-             // ── TIKTOK PIXEL: usuário chegou no checkout ──────────────────
-            try {
-                const ttq = (window as any).ttq;
-                if (ttq) {
-                    const planVal = getValues('plan');
-                    ttq.track('InitiateCheckout', {
-                        value: planVal === 'avancado' ? 24.90 : 19.90,
-                        currency: 'BRL',
-                        content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
-                    });
-                }
-            } catch (e) {
-                console.warn('[TikTok Pixel] Falha ao disparar InitiateCheckout:', e);
-            }
-            // ── META PIXEL: InitiateCheckout ─────────────────────────────
-            try {
-                if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
-                    const planVal = getValues('plan');
-                    (window as any).fbq('track', 'InitiateCheckout', {
-                        value: planVal === 'avancado' ? 24.90 : 19.90,
-                        currency: 'BRL',
-                        content_ids: [planVal],
-                        content_type: 'product',
-                    });
-                }
-            } catch (e) {
-                console.warn('[Meta Pixel] Falha ao disparar InitiateCheckout:', e);
-            }
-            // ─────────────────────────────────────────────────────────────
+            const planVal = getValues('plan');
+            trackEvent('InitiateCheckout', {
+                value: planVal === 'avancado' ? 24.90 : 19.90,
+                currency: 'BRL',
+                content_ids: [planVal],
+                content_type: 'product',
+                content_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
+            });
         }
         setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
     };
 
-    const handleBack = () => setCurrentStep(Math.max(0, currentStep - 1));
+    const handleBack = () => {
+        const timeSpentMs = Date.now() - stepEnterTimeRef.current;
+        trackFunnelStep(steps[currentStep].id, currentStep + 1, steps.length, {
+            time_spent_seconds: Math.round(timeSpentMs / 1000),
+            direction: 'back',
+            plan: getValues('plan'),
+        });
+        stepEnterTimeRef.current = Date.now();
+        setCurrentStep(Math.max(0, currentStep - 1));
+    };
 
     const timelineEventsForDisplay = useMemo(() => {
         if (!formData.timelineEvents) return [];
@@ -3109,7 +3161,9 @@ function WizardInternal() {
                             <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
                             <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
                         </div>
-                        <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}><ChevronRightIcon /></Button>
+                        <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}>
+                            {steps[currentStep]?.id === 'plan' ? <><span className="mr-1 text-sm">Ir para pagamento</span><ChevronRightIcon className="w-4 h-4" /></> : <ChevronRightIcon />}
+                        </Button>
                     </div>
                     <div className="mt-8 space-y-2">
                         <h2 className="text-3xl font-bold">{steps[currentStep].title}</h2>
