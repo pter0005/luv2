@@ -1,0 +1,17 @@
+{
+  "name": "MyCupid Admin",
+  "short_name": "MyCupid",
+  "description": "Painel administrativo MyCupid",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/InmbjFb.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
