@@ -39,7 +39,7 @@ export default function GuaranteeBadge({ compact = false }: GuaranteeBadgeProps)
                 <span className="text-sm font-black text-white">Garantia de 7 dias</span>
             </div>
             <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                Se voce nao ficar satisfeito, devolvemos 100% do valor. Sem perguntas.
+                Se você não ficar satisfeito, devolvemos 100% do valor. Sem perguntas.
             </p>
             <div className="flex items-center justify-center gap-4 text-[11px] text-zinc-500">
                 <span className="flex items-center gap-1">

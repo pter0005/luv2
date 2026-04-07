@@ -114,10 +114,10 @@ export default function ExitIntentPopup() {
 
                             {/* Title */}
                             <h3 className="text-xl font-black text-white mb-2">
-                                Espera! Sua surpresa ainda nao esta pronta
+                                Espera! Sua surpresa ainda não está pronta
                             </h3>
                             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-                                Voce ja comecou algo especial. Nao deixe isso se perder — a pessoa amada merece esse presente.
+                                Você já começou algo especial. Não deixe isso se perder — a pessoa amada merece esse presente.
                             </p>
 
                             {/* Countdown */}
@@ -150,7 +150,7 @@ export default function ExitIntentPopup() {
 
                             {/* Dismiss */}
                             <button onClick={dismiss} className="mt-4 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                                Nao, obrigado
+                                Não, obrigado
                             </button>
                         </div>
                     </motion.div>

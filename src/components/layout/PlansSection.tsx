@@ -131,7 +131,7 @@ function AdvancedCard() {
 
         {/* Features */}
         <ul className="space-y-1 mb-8 flex-grow">
-          <PlanFeature text="Galeria de fotos (até 6 fotos)" included />
+          <PlanFeature text="Galeria de fotos (até 10 fotos)" included />
           <PlanFeature text="Música de fundo + gravação de voz" included />
           <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" included />
           <PlanFeature text="Quebra-cabeça Interativo" icon={Puzzle} included highlight />
@@ -214,7 +214,7 @@ function EconomicCard() {
 
         {/* Features */}
         <ul className="space-y-1 mb-8 flex-grow">
-          <PlanFeature text="Galeria de fotos (até 6 fotos)" included />
+          <PlanFeature text="Galeria de fotos (até 10 fotos)" included />
           <PlanFeature text="Música de fundo + gravação de voz" included />
           <PlanFeature text="Linha do Tempo 3D (até 20 momentos)" included />
           <PlanFeature text="Quebra-cabeça Interativo" icon={Puzzle} included />

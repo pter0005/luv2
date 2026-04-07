@@ -3,7 +3,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import webpush from 'web-push';
 
 const VAPID_PUBLIC_KEY = 'BFVpYTPhsd-dbg4p-a09S3t1WoJIWw3ULVv6jpuGYWA5vsbB9ClFkl2Y64_QKSkt2evt9-kFHo9tb35W3oHM1HU';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'MCXrgarAYK4k9rrxEcbvJijckACLhNbudV3jSzd_K9E';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
 
 webpush.setVapidDetails(
   'mailto:contato@mycupid.com.br',

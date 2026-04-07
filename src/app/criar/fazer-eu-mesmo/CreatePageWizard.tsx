@@ -89,8 +89,8 @@ const cpfMask = (v: string) => {
         .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 };
 
-const MAX_GALLERY_IMAGES = 6;
-const MAX_TIMELINE_IMAGES = 20;
+const MAX_GALLERY_IMAGES = 10;
+const MAX_TIMELINE_IMAGES = 24;
 
 const paymentSchema = z.object({
   payerFirstName: z.string().min(1, "Nome é obrigatório.").optional(),
@@ -2697,7 +2697,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 </span>
             </div>
             <p className="text-center text-[11px] text-zinc-600 mt-3">
-                Se nao ficar satisfeito, devolvemos 100% do valor em ate 7 dias.
+                Se não ficar satisfeito, devolvemos 100% do valor em até 7 dias.
             </p>
         </div>
     );

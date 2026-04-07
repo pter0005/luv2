@@ -25,7 +25,7 @@ export default function PushNotificationPrompt() {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (localStorage.getItem(SUBSCRIBED_KEY)) return;
-    if (sessionStorage.getItem(DISMISSED_KEY)) return;
+    if (localStorage.getItem(DISMISSED_KEY)) return;
 
     // Check current permission
     if (Notification.permission === 'granted') {
@@ -77,7 +77,7 @@ export default function PushNotificationPrompt() {
 
   const handleDismiss = () => {
     setVisible(false);
-    sessionStorage.setItem(DISMISSED_KEY, '1');
+    localStorage.setItem(DISMISSED_KEY, '1');
   };
 
   return (
@@ -108,17 +108,17 @@ export default function PushNotificationPrompt() {
               <div className="flex-grow">
                 <p className="text-sm font-bold text-white">Quer receber novidades?</p>
                 <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
-                  Receba ofertas especiais e lembretes pra nao esquecer de presentear quem voce ama
+                  Receba ofertas especiais e lembretes pra não esquecer de presentear quem você ama
                 </p>
                 <div className="flex gap-2 mt-3">
                   <button onClick={handleAllow}
                     className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
                     style={{ background: 'linear-gradient(135deg, #9333ea, #7c3aed)' }}>
-                    Ativar notificacoes
+                    Ativar notificações
                   </button>
                   <button onClick={handleDismiss}
                     className="px-3 py-2 rounded-xl text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-                    Agora nao
+                    Agora não
                   </button>
                 </div>
               </div>
