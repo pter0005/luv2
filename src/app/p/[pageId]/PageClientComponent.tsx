@@ -197,6 +197,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
+  const [musicStarted, setMusicStarted] = useState(false);
 
   const isDemoPage = pageData.id === 'WgZtB23Y4OgatZPdrShO';
 
@@ -265,7 +266,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const handleReveal = useCallback(() => {
     setShowExplosion(true);
     setPuzzleRevealed(true);
-    playerRef.current?.play();
+    try { playerRef.current?.play(); setMusicStarted(true); } catch {}
   }, []);
 
   useEffect(() => {
@@ -426,9 +427,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               </div>
           )}
 
-          <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex justify-center">
+          <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex flex-col items-center gap-3">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
-                <YoutubePlayer 
+                <YoutubePlayer
                   ref={playerRef}
                   url={pageData.youtubeUrl}
                   songName={pageData.songName}
@@ -436,11 +437,22 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   volume={0.6}
                 />
              )}
-             
+
              {pageData.musicOption === 'record' && pageData.audioRecording?.url && (
                 <div className="bg-black/60 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl w-full">
                     <CustomAudioPlayer src={pageData.audioRecording.url} />
                 </div>
+             )}
+
+             {/* Fallback: se a música não tocou automaticamente após o puzzle */}
+             {puzzleRevealed && !musicStarted && pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
+                <button
+                  onClick={() => { playerRef.current?.play(); setMusicStarted(true); }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 transition-colors animate-pulse"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                  Tocar música
+                </button>
              )}
           </div>
 
@@ -593,7 +605,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <div className="p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
                         <RealPuzzle
                             imageSrc={puzzleImageSrc}
-                            onReveal={() => setIsPuzzleComplete(true)}
+                            onReveal={() => {
+                              try { playerRef.current?.play(); setMusicStarted(true); } catch {}
+                              setIsPuzzleComplete(true);
+                            }}
                         />
                         </div>
                    </motion.div>

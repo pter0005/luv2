@@ -26,7 +26,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
     const isSolved = currentPieces.every(p => p.currentX === p.targetX && p.currentY === p.targetY);
     if (isSolved) {
       setIsCompleted(true);
-      if (onReveal) setTimeout(onReveal, 300);
+      if (onReveal) onReveal();
     }
   }, [onReveal]);
 
