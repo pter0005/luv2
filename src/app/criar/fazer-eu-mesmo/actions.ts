@@ -561,12 +561,13 @@ export async function finalizeWithCredit(
     return { success: false, error: 'Sem créditos disponíveis.' };
   }
 
-  // 2. Garante plan='avancado' no intent
+  // 2. Lê o plano original antes de sobrescrever, para preservar introType de páscoa
+  const intentSnap = await db.collection('payment_intents').doc(intentId).get();
+  const originalPlan = intentSnap.data()?.plan;
   try {
-    await db.collection('payment_intents').doc(intentId).update({
-      plan: 'avancado',
-      updatedAt: Timestamp.now(),
-    });
+    const updateData: any = { plan: 'avancado', updatedAt: Timestamp.now() };
+    if (originalPlan === 'pascoa') updateData.introType = 'love';
+    await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {
     console.warn('[finalizeWithCredit] Não conseguiu forçar plan=avancado no intent:', e);
   }
@@ -610,13 +611,12 @@ export async function finalizeWithGiftToken(
   if (tokenSnap.data()?.used) return { success: false, error: 'Este presente já foi utilizado.' };
 
   // 2. Atualiza o intent com plan=avancado, guestEmail e flag isGift
+  const intentSnap = await db.collection('payment_intents').doc(intentId).get();
+  const originalPlan = intentSnap.data()?.plan;
   try {
-    await db.collection('payment_intents').doc(intentId).update({
-      plan: 'avancado',
-      guestEmail: email,
-      isGift: true,
-      updatedAt: Timestamp.now(),
-    });
+    const updateData: any = { plan: 'avancado', guestEmail: email, isGift: true, updatedAt: Timestamp.now() };
+    if (originalPlan === 'pascoa') updateData.introType = 'love';
+    await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {
     console.warn('[finalizeWithGiftToken] Falha ao atualizar intent:', e);
   }
