@@ -1044,6 +1044,103 @@ const BackgroundStep = React.memo(({ isVisible }: { isVisible: boolean }) => {
 BackgroundStep.displayName = 'BackgroundStep';
 
 // ─────────────────────────────────────────────
+// INTRO STEP — Introdução animada do site (+R$5,90)
+// ─────────────────────────────────────────────
+const INTRO_PRICE = 5.90;
+
+const IntroStep = React.memo(() => {
+    const { control, watch } = useFormContext<PageData>();
+    const introType = watch('introType');
+    const enabled = introType === 'love';
+
+    return (
+        <div className="space-y-6">
+            <FormField
+                control={control}
+                name="introType"
+                render={({ field }) => (
+                    <FormItem>
+                        <button
+                            type="button"
+                            onClick={() => field.onChange(field.value === 'love' ? undefined : 'love')}
+                            className={cn(
+                                "w-full relative rounded-2xl overflow-hidden p-5 text-left transition-all duration-300 border-2",
+                                enabled
+                                    ? "border-pink-400 shadow-2xl shadow-pink-400/20"
+                                    : "border-white/10 hover:border-pink-400/40"
+                            )}
+                            style={{
+                                background: enabled
+                                    ? 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)'
+                                    : 'rgba(255,255,255,0.03)',
+                            }}
+                        >
+                            {enabled && (
+                                <div className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ background: 'linear-gradient(135deg, #5ee8b5, #3dd4a0)' }}>
+                                    <svg width="12" height="12" viewBox="0 0 8 8" fill="none">
+                                        <path d="M1.5 4L3.2 5.8L6.5 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-4">
+                                <div className="shrink-0" style={{ animation: enabled ? 'bunnyBounce 2s ease-in-out infinite' : 'none' }}>
+                                    <svg width="48" height="64" viewBox="0 0 120 160" fill="none">
+                                        <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                                        <circle cx="38" cy="118" r="6" fill="#fff" stroke="#cbaabb" strokeWidth="1.2"/>
+                                        <ellipse cx="48" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
+                                        <ellipse cx="72" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
+                                        <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                                        <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="#ffc8e0"/>
+                                        <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
+                                        <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="#ffc8e0"/>
+                                        <ellipse cx="60" cy="70" rx="34" ry="30" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
+                                        <circle cx="48" cy="68" r="5" fill="#1a1018"/><ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                                        <circle cx="72" cy="68" r="5" fill="#1a1018"/><ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
+                                        <ellipse cx="38" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
+                                        <ellipse cx="82" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
+                                        <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="#ff90ac"/>
+                                        <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                                    </svg>
+                                </div>
+                                <style>{`@keyframes bunnyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}`}</style>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base font-bold text-white">Coelhinho Kawaii</h3>
+                                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                                            style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white' }}>
+                                            NOVO
+                                        </span>
+                                    </div>
+                                    <p className="text-[12px] mt-1.5 leading-snug text-white/50">
+                                        Intro interativa &quot;Você me ama?&quot; com 7 reações + celebração com corações + revelação cinematográfica da sua página
+                                    </p>
+                                    <ul className="mt-3 space-y-1.5">
+                                        {['Animação interativa antes da página', 'Coelhinho com reações ao toque', 'Revelação cinematográfica'].map((t, i) => (
+                                            <li key={i} className="flex items-center gap-2 text-[11px] text-white/60">
+                                                <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                                                {t}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div className={cn(
+                                "w-full mt-4 p-2.5 text-center font-bold text-sm rounded-xl transition-all",
+                                enabled ? "bg-pink-500/20 text-pink-300" : "bg-white/5 text-white/40"
+                            )}>
+                                {enabled ? 'Ativado!' : 'Toque para adicionar'}
+                            </div>
+                        </button>
+                    </FormItem>
+                )}
+            />
+        </div>
+    );
+});
+IntroStep.displayName = "IntroStep";
+
+// ─────────────────────────────────────────────
 // PUZZLE STEP — FIX #5: toast quando !user || !storage
 // ─────────────────────────────────────────────
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
@@ -1105,41 +1202,6 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
 
     return (
         <div className="space-y-8">
-            {plan === 'pascoa' && (
-                <div className="relative rounded-2xl overflow-hidden p-5"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)',
-                        border: '2px solid rgba(255,180,60,0.5)',
-                        boxShadow: '0 0 30px rgba(255,160,60,0.15)',
-                    }}
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="shrink-0">
-                            <svg width="36" height="48" viewBox="0 0 120 160" fill="none">
-                                <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
-                                <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
-                                <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="#ffc8e0"/>
-                                <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
-                                <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="#ffc8e0"/>
-                                <ellipse cx="60" cy="70" rx="34" ry="30" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
-                                <circle cx="48" cy="68" r="5" fill="#1a1018"/><ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
-                                <circle cx="72" cy="68" r="5" fill="#1a1018"/><ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
-                                <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="#ff90ac"/>
-                                <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-                            </svg>
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-base font-bold" style={{ color: '#ffe8f0' }}>Intro de Pascoa</h3>
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white' }}>INCLUIDO</span>
-                            </div>
-                            <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,200,220,0.6)' }}>
-                                Coelhinho kawaii interativo &quot;Voce me ama?&quot; com 7 reacoes + celebracao com coracoes + revelacao da pagina
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
             <FormField
                 control={control}
                 name="enablePuzzle"
@@ -1555,9 +1617,33 @@ const PlanStep = React.memo(() => {
     const isAdmin = user?.email && adminEmails.includes(user.email);
 
     const [offerExpired, setOfferExpired] = useState(false);
+    const [offerTimeLeft, setOfferTimeLeft] = useState(0);
     useEffect(() => {
-        const stored = localStorage.getItem('mycupid_offer_deadline');
-        if (stored) setOfferExpired(Date.now() > parseInt(stored));
+        let stored = localStorage.getItem('mycupid_offer_deadline');
+        if (!stored) {
+            const deadline = Date.now() + 15 * 60 * 1000; // 15 minutos
+            localStorage.setItem('mycupid_offer_deadline', String(deadline));
+            stored = String(deadline);
+        }
+        const deadline = parseInt(stored);
+        const remaining = Math.max(0, deadline - Date.now());
+        if (remaining <= 0) {
+            setOfferExpired(true);
+            setOfferTimeLeft(0);
+        } else {
+            setOfferTimeLeft(Math.ceil(remaining / 1000));
+        }
+        const interval = setInterval(() => {
+            const left = Math.max(0, deadline - Date.now());
+            if (left <= 0) {
+                setOfferExpired(true);
+                setOfferTimeLeft(0);
+                clearInterval(interval);
+            } else {
+                setOfferTimeLeft(Math.ceil(left / 1000));
+            }
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
 
     const plans: Array<{
@@ -1583,8 +1669,8 @@ const PlanStep = React.memo(() => {
         {
             id: 'avancado',
             name: 'Plano Avançado',
-            price: offerExpired ? '29,90' : '24,90',
-            originalPrice: '39,90',
+            price: offerExpired ? '27,90' : '24,90',
+            originalPrice: offerExpired ? '34,90' : '29,90',
             description: 'A experiência completa, para sempre.',
             features: [
                 { text: 'Todos os recursos de personalização', included: true },
@@ -1595,93 +1681,32 @@ const PlanStep = React.memo(() => {
         }
     ];
 
+    const offerMins = String(Math.floor(offerTimeLeft / 60)).padStart(2, '0');
+    const offerSecs = String(offerTimeLeft % 60).padStart(2, '0');
+
     return (
         <div className="space-y-6">
-            {/* ── EASTER PROMO CARD — visible to everyone ────────────── */}
-            <Label
-                htmlFor="plan-pascoa"
-                className={cn(
-                    "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
-                    field.value === 'pascoa'
-                        ? "border-pink-400 shadow-2xl shadow-pink-400/25"
-                        : "border-pink-400/40 hover:border-pink-400/70"
-                )}
-                style={{
-                    background: 'linear-gradient(135deg, #2d1152 0%, #1a0a2e 50%, #2d1152 100%)',
-                }}
-                onClick={() => field.onChange('pascoa')}
-            >
-                <input type="radio" name="plan" value="pascoa" id="plan-pascoa" className="sr-only" checked={field.value === 'pascoa'} onChange={() => field.onChange('pascoa')} />
-
-                {/* Easter badge */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-5 py-1.5 text-[10px] font-black rounded-b-xl z-10 tracking-[0.15em] uppercase flex items-center gap-1.5"
-                    style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white', boxShadow: '0 4px 15px rgba(255,100,140,0.3)' }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="white" fillOpacity="0.9"/></svg>
-                    Novidade
+            {/* Countdown banner */}
+            {!offerExpired && offerTimeLeft > 0 && (
+                <div className="rounded-2xl p-4 text-center"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(234,179,8,0.1) 0%, rgba(15,10,30,0.9) 100%)',
+                        border: '1.5px solid rgba(234,179,8,0.3)',
+                    }}>
+                    <p className="text-xs text-amber-300/70 uppercase tracking-wider font-bold mb-1">Preço promocional expira em</p>
+                    <p className="text-3xl font-black tabular-nums text-amber-400">{offerMins}:{offerSecs}</p>
+                    <p className="text-[11px] text-white/40 mt-1">Depois o Plano Avançado sobe para R$27,90</p>
                 </div>
-
-                <div className="p-6 pt-12 flex flex-col items-center text-center">
-                    {/* Bunny SVG */}
-                    <div className="mb-3" style={{ animation: 'bunnyBounce 2s ease-in-out infinite' }}>
-                        <svg width="52" height="68" viewBox="0 0 120 160" fill="none">
-                            <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
-                            <circle cx="38" cy="118" r="6" fill="#fff" stroke="#cbaabb" strokeWidth="1.2"/>
-                            <ellipse cx="48" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
-                            <ellipse cx="72" cy="136" rx="8" ry="5" fill="#fff" stroke="#cbaabb" strokeWidth="1.4"/>
-                            <path d="M45 52 C38 49,35 28,40 12 C42 6,48 5,50 12 C54 28,53 49,45 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
-                            <path d="M46 46 C41 44,39 30,42 19 C43 14,47 14,48 19 C50 30,49 44,46 46Z" fill="#ffc8e0"/>
-                            <path d="M75 52 C82 49,85 28,80 12 C78 6,72 5,70 12 C66 28,67 49,75 52Z" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
-                            <path d="M74 46 C79 44,81 30,78 19 C77 14,73 14,72 19 C70 30,71 44,74 46Z" fill="#ffc8e0"/>
-                            <ellipse cx="60" cy="70" rx="34" ry="30" fill="#fff" stroke="#cbaabb" strokeWidth="2"/>
-                            <circle cx="48" cy="68" r="5" fill="#1a1018"/>
-                            <ellipse cx="46" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
-                            <circle cx="72" cy="68" r="5" fill="#1a1018"/>
-                            <ellipse cx="70" cy="66" rx="2.5" ry="2.2" fill="#fff"/>
-                            <ellipse cx="38" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
-                            <ellipse cx="82" cy="77" rx="9" ry="6" fill="#ffb6c1" fillOpacity="0.45"/>
-                            <path d="M60 76 C58 73,55 74,57 76 C57.5 77,60 79,60 79 C60 79,62.5 77,63 76 C65 74,62 73,60 76Z" fill="#ff90ac"/>
-                            <path d="M55 82 Q60 88,65 82" stroke="#b07888" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-                        </svg>
-                    </div>
-                    <style>{`@keyframes bunnyBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}`}</style>
-
-                    <h3 className="text-xl font-black mb-1" style={{ color: '#ffe8f0' }}>Surpresa de Pascoa</h3>
-                    <p className="text-sm mb-4" style={{ color: 'rgba(255,200,220,0.7)' }}>
-                        Coelhinho kawaii &quot;Voce me ama?&quot; + pagina permanente
-                    </p>
-
-                    <span className="px-4 py-1.5 text-[11px] font-black rounded-full mb-3"
-                        style={{ background: 'rgba(255,138,171,0.15)', color: '#ff8aab', border: '1px solid rgba(255,138,171,0.3)' }}>
-                        Incluso no template
-                    </span>
-
-                    <ul className="space-y-2 text-sm mt-2 text-left w-full max-w-xs">
-                        {[
-                            'Intro interativa do coelhinho kawaii',
-                            '7 reacoes + celebracao com coracoes',
-                            'Revelacao cinematografica da pagina',
-                            'Todos os recursos do Plano Avancado',
-                            'Pagina permanente + backup infinito',
-                        ].map((text, i) => (
-                            <li key={i} className="flex items-center gap-2">
-                                <CheckCircle className="w-4 h-4 shrink-0" style={{ color: '#a8e063' }} />
-                                <span style={{ color: 'rgba(255,220,240,0.85)' }}>{text}</span>
-                            </li>
-                        ))}
-                    </ul>
+            )}
+            {offerExpired && (
+                <div className="rounded-2xl p-3 text-center"
+                    style={{
+                        background: 'rgba(239,68,68,0.08)',
+                        border: '1.5px solid rgba(239,68,68,0.25)',
+                    }}>
+                    <p className="text-xs text-red-400 font-bold">A promoção expirou — preço atualizado</p>
                 </div>
-
-                <div className={cn(
-                    "w-full p-3 text-center font-bold text-sm border-t mt-2",
-                    field.value === 'pascoa'
-                        ? "text-white border-pink-400/30"
-                        : "text-pink-200/60 border-white/10"
-                )} style={{ background: field.value === 'pascoa' ? 'rgba(255,138,171,0.12)' : 'rgba(255,255,255,0.03)' }}>
-                    {field.value === 'pascoa' ? 'Template Selecionado!' : 'Selecionar Surpresa de Pascoa'}
-                </div>
-            </Label>
-
-            {/* ── REGULAR PLANS ──────────────────────────────────────── */}
+            )}
             <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {plans.map((planInfo) => {
                     const isSelected = field.value === planInfo.id;
@@ -1742,11 +1767,12 @@ const stepComponents: React.ComponentType<any>[] = [
     TimelineStep,    // 4 - timeline
     MusicStep,       // 5 - music
     BackgroundStep,  // 6 - background
-    PuzzleStep,      // 7 - puzzle
-    MemoryGameStep,  // 8 - memory
-    QuizStep,        // 9 - quiz
-    WordGameStep,    // 10 - word game
-    PlanStep,        // 11 - plan
+    IntroStep,       // 7 - intro
+    PuzzleStep,      // 8 - puzzle
+    MemoryGameStep,  // 9 - memory
+    QuizStep,        // 10 - quiz
+    WordGameStep,    // 11 - word game
+    PlanStep,        // 12 - plan
 ];
 
 // ─────────────────────────────────────────────
@@ -1754,7 +1780,7 @@ const stepComponents: React.ComponentType<any>[] = [
 // ─────────────────────────────────────────────
 const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
-    const plan = watch('plan') as 'basico' | 'avancado' | 'pascoa';
+    const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
     const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
@@ -1875,9 +1901,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const wordGameQuestions = watch('wordGameQuestions');
     const hasWordGameContent = !!(enableWordGame && wordGameQuestions?.length > 0);
     const WORD_GAME_PRICE = 2.00;
-    const TIMELINE_PASCOA_PRICE = 0.99;
-    const timelineEvents = watch('timelineEvents');
-    const hasTimelineContent = !!(timelineEvents && timelineEvents.length > 0);
+    const introType = watch('introType');
+    const hasIntro = introType === 'love';
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
     const offerExpired = typeof window !== 'undefined' && (() => {
@@ -1888,9 +1913,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const basePriceBRL = plan === 'basico'
         ? 19.90
-        : (offerExpired ? 29.90 : 24.90);
-    const timelineExtra = (plan === 'pascoa' && hasTimelineContent) ? TIMELINE_PASCOA_PRICE : 0;
-    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + timelineExtra - discountAmount);
+        : (offerExpired ? 27.90 : 24.90);
+    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + (hasIntro ? INTRO_PRICE : 0) - discountAmount);
     const totalUSD = basePriceUSD;
 
     const adminEmails = ADMIN_EMAILS;
@@ -2301,7 +2325,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center py-4">Confirm your email above to unlock PayPal</p>
                     ) : intentId ? (
                         <div className="w-full animate-in zoom-in-95 duration-500">
-                            <PayPalButton intentId={intentId} plan={plan === 'pascoa' ? 'avancado' : plan} amount={totalUSD.toFixed(2)} />
+                            <PayPalButton intentId={intentId} plan={plan} amount={totalUSD.toFixed(2)} />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-3 py-6">
@@ -2356,9 +2380,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     Inclui Jogo Adivinhe a Palavra (+R$2,00)
                   </p>
                 )}
-                {timelineExtra > 0 && (
+                {hasIntro && (
                   <p className="text-xs text-pink-300 mt-0.5">
-                    Inclui Linha do Tempo 3D (+R$0,99)
+                    Inclui Introdução Animada (+R$5,90)
                   </p>
                 )}
                 {discountAmount > 0 && (
@@ -2404,7 +2428,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             boxShadow: '0 0 18px rgba(147,51,234,0.4)',
                         }}
                     >
-                        Quero que dure para sempre — R${offerExpired ? '29,90' : '24,90'} →
+                        Quero que dure para sempre — R${offerExpired ? '27,90' : '24,90'} →
                     </button>
                     <p className="text-center text-[10px] text-white/25 mt-2">Continuar com o Plano Básico mesmo assim</p>
                 </motion.div>
@@ -2903,6 +2927,7 @@ function WizardInternal() {
         { id: "timeline",   title: 'Linha do Tempo 3D',         description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
         { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl", "audioRecording"] },
         { id: "background", title: 'Animação de Fundo',         description: 'Escolha um efeito especial para o fundo.',        fields: ["backgroundAnimation", "heartColor"] },
+        { id: "intro",      title: 'Introdução do Site',        description: 'Adicione uma animação interativa antes da página abrir.',  fields: ["introType"] },
         { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
         { id: "memory",     title: 'Jogo da Memória',           description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
         { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
@@ -3148,7 +3173,7 @@ function WizardInternal() {
     }
 
     const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
-    const showEasterPreview = currentStepId === 'puzzle' && formData.plan === 'pascoa';
+    const showEasterPreview = currentStepId === 'intro' && formData.introType === 'love';
 
     return (
         <FormProvider {...methods}>

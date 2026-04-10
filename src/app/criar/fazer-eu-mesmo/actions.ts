@@ -427,11 +427,14 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   finalData.componentVersion = 'v2';
   if (data.paidAmount) finalData.paidAmount = data.paidAmount;
 
+  // introType vem do formulário (ex: 'love') e é preservado no finalData automaticamente
+
   if (isCreatorAdmin) {
     finalData.plan = 'avancado';
     delete finalData.expireAt;
   } else if (finalData.plan === 'pascoa') {
-    finalData.introType = 'love';
+    // backward compat: páginas antigas com plan=pascoa
+    if (!finalData.introType) finalData.introType = 'love';
     finalData.plan = 'avancado';
     delete finalData.expireAt;
   } else if (finalData.plan === 'basico') {
