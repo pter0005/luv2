@@ -15,7 +15,7 @@ function shouldReport(): boolean {
 function sendError(data: { message: string; stack?: string; url: string; extra?: any }) {
   if (!shouldReport()) return;
   // Ignorar erros comuns que não são bugs reais
-  const ignore = ['ResizeObserver', 'Loading chunk', 'ChunkLoadError', 'Network Error', 'AbortError', 'cancelled'];
+  const ignore = ['ResizeObserver', 'Loading chunk', 'ChunkLoadError', 'Network Error', 'AbortError', 'cancelled', 'webkit.messageHandlers', 'WebKit', 'instantSearchSDKJSBridgeClear498'];
   if (ignore.some(i => data.message.includes(i))) return;
 
   fetch('/api/error-log', {
