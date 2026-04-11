@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
+import { logCriticalError } from '@/lib/log-critical-error';
 
 // ─────────────────────────────────────────────
 // META CAPI
@@ -263,9 +264,11 @@ export async function processPixPayment(intentId: string, price: number) {
       }
     }
 
+    await logCriticalError('payment', `PIX falhou: ${lastError}`, { intentId, amount });
     return { error: `Erro ao gerar PIX: ${lastError}. Tente novamente.`, details: lastError };
   } catch (error: any) {
     console.error('[MP] ERRO CRÍTICO:', error?.message);
+    await logCriticalError('payment', `PIX erro crítico: ${error?.message}`, { intentId, stack: error?.stack });
     return { error: `Erro ao gerar PIX: ${error?.message || 'desconhecido'}. Tente novamente.`, details: error?.message };
   }
 }
@@ -530,7 +533,10 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
 
     if (paymentInfo.status === 'approved') {
       const result = await finalizeLovePage(intentId, paymentId);
-      if (!result.success) return { status: 'error', error: result.error || 'Falha ao finalizar.' };
+      if (!result.success) {
+        await logCriticalError('page_creation', `Página não criada após PIX aprovado: ${result.error}`, { intentId, paymentId });
+        return { status: 'error', error: result.error || 'Falha ao finalizar.' };
+      }
       return { status: 'approved', pageId: result.pageId };
     }
 
@@ -539,6 +545,7 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
     if (known.includes(currentStatus)) return { status: currentStatus as any };
     return { status: 'pending' };
   } catch (error: any) {
+    await logCriticalError('payment', `Verificação PIX falhou: ${error.message}`, { paymentId, intentId, stack: error.stack });
     return { status: 'error', error: error.message, details: error };
   }
 }

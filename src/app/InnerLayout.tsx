@@ -12,7 +12,6 @@ import ExitIntentPopup from '@/components/layout/ExitIntentPopup';
 import PushNotificationPrompt from '@/components/layout/PushNotificationPrompt';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useUser } from '@/firebase';
-import ErrorTracker from '@/components/ErrorTracker';
 
 const MemoizedBackground = React.memo(() => (
     <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -37,7 +36,6 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="relative w-full min-h-screen">
-      <ErrorTracker />
       <PresenceTracker userEmail={user?.email} />
       <MemoizedBackground />
       
