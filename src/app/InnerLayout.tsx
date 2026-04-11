@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { PresenceTracker } from '@/components/layout/PresenceTracker';
 import CreditPopup from '@/components/layout/CreditPopup';
 import ExitIntentPopup from '@/components/layout/ExitIntentPopup';
+import ScarcityBanner from '@/components/layout/ScarcityBanner';
 import PushNotificationPrompt from '@/components/layout/PushNotificationPrompt';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useUser } from '@/firebase';
@@ -41,6 +42,7 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
       
       <div className="relative z-10 flex flex-col min-h-screen">
         <div className="sticky top-0 z-50">
+            {showAppHeader && <ScarcityBanner />}
             {showAppHeader && <DiscountBanner />}
             {showAppHeader && <Header />}
         </div>
