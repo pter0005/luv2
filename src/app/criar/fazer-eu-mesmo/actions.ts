@@ -216,8 +216,13 @@ export async function processPixPayment(intentId: string, price: number) {
     const client = new MercadoPagoConfig({ accessToken: token });
     const payment = new Payment(client);
 
+    const amount = Number(price.toFixed(2));
+    if (!amount || amount < 1 || isNaN(amount)) {
+      return { error: `Valor inválido: R$${price}. Tente novamente.` };
+    }
+
     const body = {
-      transaction_amount: Number(price.toFixed(2)),
+      transaction_amount: amount,
       description: `MyCupid - Plano ${intentData?.plan || 'Premium'}`,
       payment_method_id: 'pix',
       payer: {
@@ -229,27 +234,39 @@ export async function processPixPayment(intentId: string, price: number) {
       external_reference: intentId,
     };
 
-    const result = await payment.create({ body });
-    const responseData = result as any;
-    const transactionData = responseData.point_of_interaction?.transaction_data;
-    const qrCode = transactionData?.qr_code;
-    const qrCodeBase64 = transactionData?.qr_code_base64;
-    const paymentId = responseData.id;
+    // Tenta até 2x em caso de erro de rede
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await payment.create({ body });
+        const responseData = result as any;
+        const transactionData = responseData.point_of_interaction?.transaction_data;
+        const qrCode = transactionData?.qr_code;
+        const qrCodeBase64 = transactionData?.qr_code_base64;
+        const paymentId = responseData.id;
 
-    if (qrCode && qrCodeBase64 && paymentId) {
-      await db.collection('payment_intents').doc(intentId).update({
-        paymentId: paymentId.toString(),
-        status: 'waiting_payment',
-        paidAmount: Number(price.toFixed(2)),
-      });
-      return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
+        if (qrCode && qrCodeBase64 && paymentId) {
+          await db.collection('payment_intents').doc(intentId).update({
+            paymentId: paymentId.toString(),
+            status: 'waiting_payment',
+            paidAmount: amount,
+          });
+          return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
+        }
+
+        console.error(`[MP] PIX gerado mas sem QR (attempt ${attempt}):`, JSON.stringify(result, null, 2));
+        lastError = `Resposta inesperada: ${responseData?.status || 'sem status'}`;
+      } catch (err: any) {
+        console.error(`[MP] Erro attempt ${attempt}:`, err?.message, err?.cause);
+        lastError = err?.message || 'erro desconhecido';
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+      }
     }
 
-    console.error('PIX GERADO MAS NÃO LIDO:', JSON.stringify(result, null, 2));
-    return { error: 'PIX gerado, mas falha ao ler o código.', details: JSON.stringify(result) };
+    return { error: `Erro ao gerar PIX: ${lastError}. Tente novamente.`, details: lastError };
   } catch (error: any) {
-    console.error('ERRO CRÍTICO MP:', error);
-    return { error: 'Erro na API Mercado Pago.', details: error.message };
+    console.error('[MP] ERRO CRÍTICO:', error?.message);
+    return { error: `Erro ao gerar PIX: ${error?.message || 'desconhecido'}. Tente novamente.`, details: error?.message };
   }
 }
 
