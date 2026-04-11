@@ -305,19 +305,26 @@ export default function AdminDashboard({
       <SaleNotification />
 
       {/* ── ERROR MONITORING ─────────────────────────────────────────────── */}
-      {unresolvedErrorCount > 0 && (
-        <div className="rounded-2xl overflow-hidden"
-          style={{ border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.04)' }}>
-          <div className="px-5 py-3 border-b flex items-center justify-between"
-            style={{ borderColor: 'rgba(239,68,68,0.12)' }}>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
-              <h2 className="text-sm font-bold text-red-300">
-                {unresolvedErrorCount} erro{unresolvedErrorCount > 1 ? 's' : ''} no site
-              </h2>
-            </div>
-            <span className="text-[10px] text-red-400/60 font-mono">push ativo</span>
+      <div className="rounded-2xl overflow-hidden"
+        style={{
+          border: unresolvedErrorCount > 0 ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(34,197,94,0.15)',
+          background: unresolvedErrorCount > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(34,197,94,0.03)',
+        }}>
+        <div className="px-5 py-3 border-b flex items-center justify-between"
+          style={{ borderColor: unresolvedErrorCount > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)' }}>
+          <div className="flex items-center gap-2">
+            {unresolvedErrorCount > 0
+              ? <AlertTriangle className="w-4 h-4 text-red-400" />
+              : <Check className="w-4 h-4 text-emerald-400" />}
+            <h2 className={`text-sm font-bold ${unresolvedErrorCount > 0 ? 'text-red-300' : 'text-emerald-400'}`}>
+              {unresolvedErrorCount > 0
+                ? `${unresolvedErrorCount} erro${unresolvedErrorCount > 1 ? 's' : ''} no site`
+                : 'Nenhum erro no site'}
+            </h2>
           </div>
+          <span className="text-[10px] text-zinc-500 font-mono">monitoramento ativo</span>
+        </div>
+        {unresolvedErrorCount > 0 && (
           <div className="p-4 space-y-2 max-h-48 overflow-y-auto">
             {recentErrors.filter(e => !e.resolved).slice(0, 8).map(err => (
               <div key={err.id}
@@ -339,8 +346,8 @@ export default function AdminDashboard({
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── PIX ABANDONADOS ─────────────────────────────────────────────── */}
       <AbandonedPixSection />
