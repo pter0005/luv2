@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TIMER_KEY = 'mycupid_offer_deadline';
@@ -56,9 +56,33 @@ function useBannerTimer() {
   return { formatted: `${h}h ${m}min ${s}s`, expired };
 }
 
+function useScarcitySpots() {
+  const [spots, setSpots] = useState(0);
+
+  useEffect(() => {
+    const now = new Date();
+    const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+    const hourBlock = Math.floor(now.getHours() / 2);
+    const base = ((seed * 7 + hourBlock * 13) % 7) + 3;
+    setSpots(base);
+
+    const interval = setInterval(() => {
+      setSpots(prev => {
+        if (prev <= 2) return prev;
+        return Math.random() < 0.3 ? prev - 1 : prev;
+      });
+    }, 150_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return spots;
+}
+
 export default function DiscountBanner() {
   const [visible, setVisible] = useState(false);
+  const [showScarcity, setShowScarcity] = useState(false);
   const { formatted, expired } = useBannerTimer();
+  const spots = useScarcitySpots();
 
   useEffect(() => {
     const BANNER_ACTIVE = true;
@@ -66,6 +90,15 @@ export default function DiscountBanner() {
     const dismissed = sessionStorage.getItem('discount-banner-dismissed');
     if (!dismissed) setVisible(true);
   }, []);
+
+  // Alterna entre as duas mensagens a cada 5 segundos
+  useEffect(() => {
+    if (!visible || expired) return;
+    const interval = setInterval(() => {
+      setShowScarcity(prev => !prev);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [visible, expired]);
 
   const dismiss = () => {
     sessionStorage.setItem('discount-banner-dismissed', '1');
@@ -105,8 +138,16 @@ export default function DiscountBanner() {
               <p className="text-sm text-red-300 leading-none font-semibold">
                 ⚠️ Oferta encerrada — preço normal restaurado
               </p>
+            ) : showScarcity && spots > 0 ? (
+              <p className="text-xs font-bold text-white flex items-center justify-center gap-2 transition-opacity duration-500">
+                <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+                <span>
+                  Restam <span className="text-yellow-300 tabular-nums">{spots}</span> páginas com preço promocional hoje
+                </span>
+                <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+              </p>
             ) : (
-              <p className="text-sm text-white leading-none">
+              <p className="text-sm text-white leading-none transition-opacity duration-500">
                 🔥 <span className="font-black">312 páginas criadas essa semana</span>
                 <span className="mx-2 opacity-40">—</span>
                 <span className="text-pink-200 font-semibold">Oferta especial por mais </span>

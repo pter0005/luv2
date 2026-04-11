@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ComposedChart, Area, Bar, BarChart,
@@ -9,9 +9,9 @@ import {
 } from 'recharts';
 import {
   Users, FileText, DollarSign, Globe, ShoppingCart,
-  TrendingUp, Percent, AlertTriangle, CheckCircle,
+  Percent, AlertTriangle, Copy, Check,
   ExternalLink, Edit, Calendar, Trash2, RefreshCw,
-  Zap, Gift, BarChart2, FileWarning, ImageOff, ArrowUpRight,
+  Zap, ArrowUpRight, ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -35,13 +35,15 @@ export type SaleRecord = {
   id: string; plan: string; price: number; currency: 'BRL' | 'USD';
   createdAt: Date; ownerEmail: string; isGift?: boolean;
 };
+export type ErrorLog = {
+  id: string; message: string; url: string; createdAt: string; resolved: boolean;
+};
 export type DashboardProps = {
   totalUsers: number;
   avancadoCount: number;
   basicoCount: number;
   totalSalesBRL: number;
   totalSalesUSD: number;
-  pendingFileIssues: number;
   salesHistory: SaleRecord[];
   todayVisitors: number;
   todaySales: number;
@@ -54,6 +56,8 @@ export type DashboardProps = {
   chartData: DayData[];
   sourceRows: SourceRow[];
   recentSales: RecentSale[];
+  recentErrors: ErrorLog[];
+  unresolvedErrorCount: number;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,11 +166,118 @@ function Section({ title, sub, children, action }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ABANDONED PIX
+// ─────────────────────────────────────────────────────────────────────────────
+type AbandonedPix = {
+  id: string; email: string; whatsapp: string; plan: string;
+  amount: number; title: string; createdAt: string | null; updatedAt: string | null;
+};
+
+function AbandonedPixSection() {
+  const [items, setItems] = useState<AbandonedPix[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/abandoned-pix');
+      const data = await res.json();
+      setItems(data.abandoned || []);
+    } catch {} finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const buildMessage = (item: AbandonedPix) => {
+    const name = item.email.split('@')[0];
+    return `Oi ${name}! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 😊\n\nSe quiser, tenho um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só usar no checkout!\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=${item.plan}`;
+  };
+
+  const handleCopy = (item: AbandonedPix) => {
+    navigator.clipboard.writeText(buildMessage(item));
+    setCopiedId(item.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const whatsappLink = (item: AbandonedPix) => {
+    const phone = item.whatsapp.replace(/\D/g, '');
+    if (phone.length < 10) return null;
+    const full = phone.startsWith('55') ? phone : `55${phone}`;
+    return `https://wa.me/${full}?text=${encodeURIComponent(buildMessage(item))}`;
+  };
+
+  if (loading) return null;
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ border: '1px solid rgba(251,191,36,0.15)', background: 'rgba(251,191,36,0.03)' }}>
+      <div className="px-5 py-3 border-b flex items-center justify-between"
+        style={{ borderColor: 'rgba(251,191,36,0.1)' }}>
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4 text-amber-400" />
+          <h2 className="text-sm font-bold text-amber-300">
+            {items.length} PIX abandonado{items.length > 1 ? 's' : ''}
+          </h2>
+        </div>
+        <button onClick={() => { setLoading(true); load(); }}
+          className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors">
+          atualizar
+        </button>
+      </div>
+      <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+        {items.map(item => {
+          const waLink = whatsappLink(item);
+          const ago = item.updatedAt ? getTimeAgo(item.updatedAt) : '—';
+          return (
+            <div key={item.id}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs"
+              style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="flex-grow min-w-0">
+                <p className="text-zinc-200 font-medium truncate">{item.email}</p>
+                <p className="text-zinc-600">
+                  {item.whatsapp !== '—' ? item.whatsapp : 'sem whatsapp'} · R${item.amount.toFixed(2)} · {ago}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={() => handleCopy(item)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: copiedId === item.id ? '#34d399' : '#a1a1aa' }}>
+                  {copiedId === item.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copiedId === item.id ? 'Copiado' : 'Copiar msg'}
+                </button>
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                    style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    Enviar WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}min atrás`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h atrás`;
+  return `${Math.floor(hours / 24)}d atrás`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard({
   totalUsers, avancadoCount, basicoCount,
-  totalSalesBRL, totalSalesUSD, pendingFileIssues, salesHistory,
+  totalSalesBRL, totalSalesUSD, salesHistory,
+  recentErrors, unresolvedErrorCount,
   todayVisitors, todaySales, todayRevenue,
   totalVisitors, totalSalesCount, totalSoldCount, totalRevenue, overallConv,
   chartData, sourceRows, recentSales,
@@ -193,31 +304,46 @@ export default function AdminDashboard({
     <div className="space-y-6">
       <SaleNotification />
 
-      {/* ── FILE ISSUES ALERT ──────────────────────────────────────────────── */}
-      {pendingFileIssues > 0 ? (
-        <div className="flex items-center justify-between p-4 rounded-2xl"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-            <div>
-              <p className="font-bold text-red-400 text-sm">
-                {pendingFileIssues} arquivo{pendingFileIssues > 1 ? 's' : ''} preso{pendingFileIssues > 1 ? 's' : ''} em temp/
-              </p>
-              <p className="text-xs text-red-400/60">Imagens de clientes que falharam ao ser movidas.</p>
+      {/* ── ERROR MONITORING ─────────────────────────────────────────────── */}
+      {unresolvedErrorCount > 0 && (
+        <div className="rounded-2xl overflow-hidden"
+          style={{ border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.04)' }}>
+          <div className="px-5 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: 'rgba(239,68,68,0.12)' }}>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <h2 className="text-sm font-bold text-red-300">
+                {unresolvedErrorCount} erro{unresolvedErrorCount > 1 ? 's' : ''} no site
+              </h2>
             </div>
+            <span className="text-[10px] text-red-400/60 font-mono">push ativo</span>
           </div>
-          <Button asChild size="sm"
-            className="bg-red-600 hover:bg-red-700 shrink-0 rounded-xl">
-            <Link href="/admin/pages">Ver e Reprocessar →</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-3 p-3 rounded-2xl"
-          style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)' }}>
-          <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-          <p className="text-sm text-emerald-400">Todos os arquivos de clientes estão íntegros.</p>
+          <div className="p-4 space-y-2 max-h-48 overflow-y-auto">
+            {recentErrors.filter(e => !e.resolved).slice(0, 8).map(err => (
+              <div key={err.id}
+                className="flex items-start gap-3 px-3 py-2 rounded-xl text-xs"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div className="flex-grow min-w-0">
+                  <p className="text-red-300 font-medium truncate">{err.message}</p>
+                  <p className="text-zinc-600 truncate">{err.url} · {err.createdAt}</p>
+                </div>
+                <button
+                  className="text-[10px] text-zinc-600 hover:text-emerald-400 shrink-0 px-2 py-1 rounded border border-transparent hover:border-emerald-500/30 transition-colors"
+                  onClick={async () => {
+                    await fetch(`/api/error-log/${err.id}/resolve`, { method: 'POST' });
+                    window.location.reload();
+                  }}
+                >
+                  resolver
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* ── PIX ABANDONADOS ─────────────────────────────────────────────── */}
+      <AbandonedPixSection />
 
       {/* ── KPI GRID ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

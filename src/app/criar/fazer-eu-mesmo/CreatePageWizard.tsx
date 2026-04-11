@@ -1788,6 +1788,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [error, setError] = useState<{ message: string; details?: any } | null>(null);
     const { toast } = useToast();
     const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string; paymentId: string } | null>(null);
+    const [pixExpired, setPixExpired] = useState(false);
+    const [pixTimeLeft, setPixTimeLeft] = useState(0);
+    const pixCreatedAtRef = useRef<number>(0);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
@@ -2014,6 +2017,22 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return () => { if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current); };
     }, [pixData, intentId, startPolling]);
 
+    // PIX expiry countdown (30 min)
+    useEffect(() => {
+        if (!pixData) { setPixExpired(false); setPixTimeLeft(0); return; }
+        if (!pixCreatedAtRef.current) pixCreatedAtRef.current = Date.now();
+        const PIX_TTL = 30 * 60 * 1000; // 30 min
+        const tick = () => {
+            const elapsed = Date.now() - pixCreatedAtRef.current;
+            const remaining = Math.max(0, PIX_TTL - elapsed);
+            setPixTimeLeft(Math.ceil(remaining / 1000));
+            if (remaining <= 0) setPixExpired(true);
+        };
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [pixData]);
+
     // Saves the guest email into the payment intent so the backend can create a real account after payment.
     const handleConfirmGuestEmail = async () => {
         if (!user) return;
@@ -2047,6 +2066,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const handleOneClickPix = () => {
         setError(null);
         setPixData(null);
+        setPixExpired(false);
+        pixCreatedAtRef.current = 0;
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) { setError({ message: 'Preencha seu WhatsApp com DDD para continuar.' }); return; }
@@ -2674,26 +2695,55 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 </Button>
             ) : (!isAnonymousUser || confirmedGuestEmail) && pixData ? (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center text-center gap-6">
-                    <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
-                    <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código "Copia e Cola".</p>
-                    <div className="p-4 bg-white rounded-lg border">
-                        {pixData.qrCodeBase64 ? (
-                            <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={256} height={256} unoptimized />
-                        ) : (
-                            <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
-                                <Loader2 className="animate-spin mb-2" />
-                                <p className="text-xs">Gerando QR Code...</p>
+                    {pixExpired ? (
+                        <>
+                            <div className="w-full p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+                                <h3 className="text-lg font-bold text-amber-300 mb-2">Seu PIX expirou!</h3>
+                                <p className="text-sm text-zinc-300 mb-4">
+                                    Mas não se preocupe — use o cupom abaixo e ganhe <span className="font-black text-emerald-400">R$5 de desconto</span>:
+                                </p>
+                                <div className="flex items-center justify-center gap-2 mb-4">
+                                    <code className="text-xl font-black text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-xl tracking-wider">DESCONTO5</code>
+                                    <Button size="sm" variant="ghost" className="text-zinc-400 hover:text-white"
+                                        onClick={() => { navigator.clipboard.writeText('DESCONTO5'); toast({ title: 'Cupom copiado!' }); }}>
+                                        <Copy className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                                <Button onClick={handleOneClickPix} disabled={isProcessing} className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold">
+                                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Gerar novo PIX com desconto
+                                </Button>
                             </div>
-                        )}
-                    </div>
-                    <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
-                        <Copy className="mr-2 h-4 w-4" />Copiar Código PIX
-                    </Button>
-                    <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
-                    <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
-                        {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                        Verificar Pagamento
-                    </Button>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
+                            <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código &quot;Copia e Cola&quot;.</p>
+                            {pixTimeLeft > 0 && (
+                                <p className="text-xs text-zinc-500">
+                                    Expira em <span className="font-mono font-bold text-zinc-300">{Math.floor(pixTimeLeft / 60)}:{String(pixTimeLeft % 60).padStart(2, '0')}</span>
+                                </p>
+                            )}
+                            <div className="p-4 bg-white rounded-lg border">
+                                {pixData.qrCodeBase64 ? (
+                                    <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={256} height={256} unoptimized />
+                                ) : (
+                                    <div className="w-64 h-64 flex flex-col items-center justify-center bg-zinc-100 text-zinc-400">
+                                        <Loader2 className="animate-spin mb-2" />
+                                        <p className="text-xs">Gerando QR Code...</p>
+                                    </div>
+                                )}
+                            </div>
+                            <Button onClick={() => navigator.clipboard.writeText(pixData.qrCode)} className="w-full max-w-xs bg-[#009EE3] hover:bg-[#008ac6]">
+                                <Copy className="mr-2 h-4 w-4" />Copiar Código PIX
+                            </Button>
+                            <p className="text-xs text-muted-foreground">Aguardando pagamento... A página será liberada automaticamente.</p>
+                            <Button onClick={handleManualVerification} disabled={isVerifying} variant="secondary" className="w-full max-w-xs">
+                                {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                                Verificar Pagamento
+                            </Button>
+                        </>
+                    )}
                 </div>
             ) : null}
             {isAdmin && intentId && (

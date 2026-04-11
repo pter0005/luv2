@@ -1,7 +1,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Gift, Bell, FileWarning, ImageOff, Link2, Tag, MessageCircle } from 'lucide-react';
+import { LogOut, ShieldCheck, Gift, Bell, ImageOff, Link2, Tag, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import AdminDashboard, {
   type DayData, type SourceRow, type RecentSale, type SaleRecord,
@@ -169,11 +169,24 @@ async function getAllData() {
     }
   } catch (_) {}
 
-  // ── 5. File issues ────────────────────────────────────────────────────────
-  let pendingFileIssues = 0;
+  // ── 5. Error logs (últimos 20) ─────────────────────────────────────────
+  type ErrorLog = { id: string; message: string; url: string; createdAt: string; resolved: boolean };
+  let recentErrors: ErrorLog[] = [];
+  let unresolvedErrorCount = 0;
   try {
-    const snap = await db.collection('failed_file_moves').where('resolved', '==', false).get();
-    pendingFileIssues = snap.size;
+    const snap = await db.collection('error_logs').orderBy('createdAt', 'desc').limit(20).get();
+    recentErrors = snap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        message: d.message || '',
+        url: (d.url || '').split('?')[0],
+        createdAt: formatDate(d.createdAt),
+        resolved: !!d.resolved,
+      };
+    });
+    const countSnap = await db.collection('error_logs').where('resolved', '==', false).count().get();
+    unresolvedErrorCount = countSnap.data().count;
   } catch (_) {}
 
   // ── 6. Chart data ─────────────────────────────────────────────────────────
@@ -188,7 +201,7 @@ async function getAllData() {
     };
   });
 
-  // ── 7. Source rows ────────────────────────────────────────────────────────
+  // ── 6. Source rows ────────────────────────────────────────────────────────
   const allSrcs = new Set([...Object.keys(visitsBySource), ...Object.keys(salesBySource)]);
   const sourceRows: SourceRow[] = Array.from(allSrcs).map(source => {
     const visits = visitsBySource[source] || 0;
@@ -207,11 +220,11 @@ async function getAllData() {
 
   return {
     totalUsers, avancadoCount, basicoCount,
-    totalSalesBRL, totalSalesUSD,
-    pendingFileIssues, salesHistory,
+    totalSalesBRL, totalSalesUSD, salesHistory,
     todayVisitors, todaySales, todayRevenue,
     totalVisitors, totalSalesCount: totalPagesCount, totalSoldCount, totalRevenue, overallConv,
     chartData, sourceRows, recentSales,
+    recentErrors, unresolvedErrorCount,
   };
 }
 
@@ -269,18 +282,6 @@ export default async function AdminPage() {
               className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
               <Link href="/admin/notificacoes">
                 <Bell className="h-3.5 w-3.5 text-yellow-400" />Notificações
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm"
-              className={`h-8 px-2.5 text-xs gap-1.5 ${data.pendingFileIssues > 0 ? 'text-red-400 hover:text-red-300' : 'text-zinc-500 hover:text-white'}`}>
-              <Link href="/admin/pages">
-                <FileWarning className="h-3.5 w-3.5" />
-                Arquivos
-                {data.pendingFileIssues > 0 && (
-                  <span className="bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                    {data.pendingFileIssues > 9 ? '9+' : data.pendingFileIssues}
-                  </span>
-                )}
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
