@@ -31,6 +31,8 @@ function toBRDate(date: Date): string {
 async function getAllData() {
   const db = getAdminFirestore();
   const today = toBRDate(new Date());
+  const yesterdayDate = new Date(); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = toBRDate(yesterdayDate);
 
   // Last 30 days array
   const days: string[] = [];
@@ -64,6 +66,7 @@ async function getAllData() {
   } catch (_) {}
 
   const todayVisitors = visitorsByDay[today] ?? 0;
+  const yesterdayVisitors = visitorsByDay[yesterday] ?? 0;
   const totalVisitors = Object.values(visitorsByDay).reduce((s, v) => s + v, 0);
 
   // ── 3. UTM visits ─────────────────────────────────────────────────────────
@@ -85,7 +88,9 @@ async function getAllData() {
   const salesHistory: SaleRecord[] = [];
 
   let todaySales = 0, todayRevenue = 0;
+  let yesterdaySales = 0, yesterdayRevenue = 0;
   let totalSalesBRL = 0, totalSalesUSD = 0;
+  let totalBRLCount = 0; // vendas BRL pra calcular ticket médio
   let avancadoCount = 0, basicoCount = 0;
   let totalPagesCount = 0;  // todas as páginas criadas (exceto admin)
   let totalSoldCount = 0;   // páginas vendidas (exceto gifts e admin)
@@ -116,7 +121,7 @@ async function getAllData() {
       if (!isGift) {
         totalSoldCount++;
         if (isUSD) totalSalesUSD += price;
-        else totalSalesBRL += price;
+        else { totalSalesBRL += price; totalBRLCount++; }
 
         if (d.plan === 'avancado') avancadoCount++;
         else if (d.plan === 'basico') basicoCount++;
@@ -153,6 +158,10 @@ async function getAllData() {
         if (date === today) {
           todaySales++;
           if (currency === 'BRL') todayRevenue += price;
+        }
+        if (date === yesterday) {
+          yesterdaySales++;
+          if (currency === 'BRL') yesterdayRevenue += price;
         }
       }
 
@@ -218,11 +227,15 @@ async function getAllData() {
     ? ((totalSalesFromSources / totalUtmVisits) * 100).toFixed(2)
     : '0.00';
 
+  const avgTicketBRL = totalBRLCount > 0 ? totalSalesBRL / totalBRLCount : 0;
+
   return {
     totalUsers, avancadoCount, basicoCount,
     totalSalesBRL, totalSalesUSD, salesHistory,
     todayVisitors, todaySales, todayRevenue,
+    yesterdayVisitors, yesterdaySales, yesterdayRevenue,
     totalVisitors, totalSalesCount: totalPagesCount, totalSoldCount, totalRevenue, overallConv,
+    avgTicketBRL,
     chartData, sourceRows, recentSales,
     recentErrors, unresolvedErrorCount,
   };

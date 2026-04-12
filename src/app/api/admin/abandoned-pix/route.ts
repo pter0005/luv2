@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const db = getAdminFirestore();
-    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     // Sem orderBy pra evitar exigir índice composto no Firestore
@@ -20,8 +20,8 @@ export async function GET() {
       .filter(doc => {
         const d = doc.data();
         const updated = d.updatedAt?.toDate?.() || d.createdAt?.toDate?.() || new Date(0);
-        // Entre 30 min e 7 dias atrás (ignora muito antigos e muito recentes)
-        return updated < thirtyMinAgo && updated > sevenDaysAgo;
+        // Entre 5 min e 7 dias atrás (pega cedo, PIX ainda tá válido)
+        return updated < fiveMinAgo && updated > sevenDaysAgo;
       })
       .sort((a, b) => {
         const ta = (a.data().updatedAt?.toDate?.() || a.data().createdAt?.toDate?.() || new Date(0)).getTime();

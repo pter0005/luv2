@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ComposedChart, Area, Bar, BarChart,
+  ComposedChart, Area, Bar, BarChart, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer,
 } from 'recharts';
@@ -11,7 +11,8 @@ import {
   Users, FileText, DollarSign, Globe, ShoppingCart,
   Percent, AlertTriangle, Copy, Check,
   ExternalLink, Edit, Calendar, Trash2, RefreshCw,
-  Zap, ArrowUpRight, ShoppingBag,
+  Zap, ArrowUpRight, ArrowDownRight, ShoppingBag,
+  TrendingUp, Receipt, Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -48,11 +49,15 @@ export type DashboardProps = {
   todayVisitors: number;
   todaySales: number;
   todayRevenue: number;
+  yesterdayVisitors: number;
+  yesterdaySales: number;
+  yesterdayRevenue: number;
   totalVisitors: number;
   totalSalesCount: number;
   totalSoldCount: number;
   totalRevenue: number;
   overallConv: string;
+  avgTicketBRL: number;
   chartData: DayData[];
   sourceRows: SourceRow[];
   recentSales: RecentSale[];
@@ -110,35 +115,190 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TREND BADGE (compare vs ontem)
+// ─────────────────────────────────────────────────────────────────────────────
+function TrendBadge({ current, previous }: { current: number; previous: number }) {
+  if (previous === 0 && current === 0) {
+    return <span className="text-[10px] font-bold text-zinc-600">—</span>;
+  }
+  if (previous === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-emerald-400">
+        <ArrowUpRight className="w-2.5 h-2.5" />NOVO
+      </span>
+    );
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const up = pct >= 0;
+  const color = up ? '#34d399' : '#f87171';
+  const Arrow = up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-black" style={{ color }}>
+      <Arrow className="w-2.5 h-2.5" />
+      {up ? '+' : ''}{pct.toFixed(0)}%
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // KPI CARD
 // ─────────────────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon: Icon, accent, today }: {
+function KpiCard({ label, value, sub, icon: Icon, accent, today, trend, sparkline }: {
   label: string; value: string | number; sub?: string;
   icon: any; accent: string; today?: string;
+  trend?: { current: number; previous: number };
+  sparkline?: { date: string; value: number }[];
 }) {
   return (
-    <div className="relative rounded-2xl p-5 overflow-hidden"
+    <div className="relative rounded-2xl p-4 sm:p-5 overflow-hidden group transition-all hover:border-white/15"
       style={{
         background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
         border: `1px solid ${accent}28`,
       }}>
-      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-20 pointer-events-none"
+      <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity"
         style={{ background: accent }} />
-      <div className="flex items-start justify-between mb-3">
-        <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</p>
+      <div className="relative flex items-start justify-between mb-3">
+        <p className="text-[10px] sm:text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">{label}</p>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           style={{ background: `${accent}18` }}>
           <Icon className="w-4 h-4" style={{ color: accent }} />
         </div>
       </div>
-      <p className="text-3xl font-black text-white leading-none mb-1">{value}</p>
-      {today !== undefined && (
-        <div className="flex items-center gap-1 text-[11px] font-semibold mt-2" style={{ color: accent }}>
-          <ArrowUpRight className="w-3 h-3" />
-          {today} hoje
+      <p className="relative text-2xl sm:text-3xl font-black text-white leading-none mb-1">{value}</p>
+      <div className="relative flex items-center justify-between gap-2 mt-2 min-h-[14px]">
+        <div className="flex items-center gap-1.5">
+          {today !== undefined && (
+            <span className="text-[11px] font-semibold" style={{ color: accent }}>
+              +{today} hoje
+            </span>
+          )}
+          {trend && <TrendBadge current={trend.current} previous={trend.previous} />}
         </div>
-      )}
-      {sub && today === undefined && <p className="text-[11px] text-zinc-500 mt-1">{sub}</p>}
+        {sparkline && sparkline.length > 0 && (
+          <div className="w-14 h-6 opacity-60 group-hover:opacity-100 transition-opacity">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sparkline}>
+                <Line type="monotone" dataKey="value" stroke={accent} strokeWidth={1.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+      {sub && today === undefined && !trend && <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-1 relative">{sub}</p>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO REVENUE CARD — destaque do dia
+// ─────────────────────────────────────────────────────────────────────────────
+function HeroRevenueCard({
+  todayRevenue, yesterdayRevenue, todaySales, yesterdaySales, chartData,
+}: {
+  todayRevenue: number; yesterdayRevenue: number;
+  todaySales: number; yesterdaySales: number;
+  chartData: DayData[];
+}) {
+  const diff = todayRevenue - yesterdayRevenue;
+  const pct = yesterdayRevenue > 0 ? (diff / yesterdayRevenue) * 100 : 0;
+  const up = diff >= 0;
+  const last7 = chartData.slice(-7);
+
+  return (
+    <div className="relative rounded-3xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.10) 50%, rgba(99,102,241,0.10) 100%)',
+        border: '1px solid rgba(168,85,247,0.25)',
+        boxShadow: '0 20px 80px -20px rgba(168,85,247,0.35)',
+      }}>
+      {/* ambient glow */}
+      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none"
+        style={{ background: '#ec4899' }} />
+      <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full blur-3xl opacity-15 pointer-events-none"
+        style={{ background: '#a855f7' }} />
+
+      <div className="relative p-5 sm:p-7">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(168,85,247,0.25)', border: '1px solid rgba(168,85,247,0.4)' }}>
+              <Sparkles className="w-5 h-5 text-purple-300" />
+            </div>
+            <div>
+              <p className="text-[10px] sm:text-[11px] font-black text-purple-300 uppercase tracking-widest">Receita de hoje</p>
+              <p className="text-[10px] text-zinc-500 mt-0.5">
+                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold mb-0.5">vs ontem</p>
+            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg"
+              style={{
+                background: up ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+                border: `1px solid ${up ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}`,
+              }}>
+              {up ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-red-400" />}
+              <span className={`text-[10px] font-black ${up ? 'text-emerald-300' : 'text-red-300'}`}>
+                {yesterdayRevenue > 0 ? `${up ? '+' : ''}${pct.toFixed(0)}%` : 'NOVO'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-4 mb-2">
+          <p className="text-4xl sm:text-5xl font-black text-white leading-none tracking-tight"
+            style={{ textShadow: '0 4px 20px rgba(168,85,247,0.3)' }}>
+            {brl(todayRevenue)}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] text-zinc-400 mb-4">
+          <span className="flex items-center gap-1">
+            <ShoppingCart className="w-3 h-3 text-purple-300" />
+            <strong className="text-white">{todaySales}</strong> vendas hoje
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span>
+            Ontem: <strong className="text-zinc-300">{brl(yesterdayRevenue)}</strong> ({yesterdaySales} vendas)
+          </span>
+        </div>
+
+        {/* sparkline 7 dias */}
+        <div className="h-14 -mx-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={last7}>
+              <defs>
+                <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ec4899" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#ec4899" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Tooltip
+                cursor={{ stroke: 'rgba(236,72,153,0.3)', strokeWidth: 1 }}
+                contentStyle={{
+                  background: 'rgba(24,24,27,0.95)',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                  borderRadius: '12px',
+                  padding: '6px 10px',
+                }}
+                labelStyle={{ color: '#c084fc', fontSize: 10, fontWeight: 'bold' }}
+                itemStyle={{ color: '#ec4899', fontSize: 11, fontWeight: 'bold' }}
+                formatter={(v: any) => [brl(Number(v) || 0), 'Receita']}
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#ec4899"
+                strokeWidth={2.5}
+                dot={{ fill: '#ec4899', strokeWidth: 0, r: 2.5 }}
+                activeDot={{ r: 5, fill: '#fff', stroke: '#ec4899', strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="text-[9px] text-zinc-600 mt-1 text-center">últimos 7 dias</p>
+      </div>
     </div>
   );
 }
@@ -174,8 +334,18 @@ type AbandonedPix = {
   contacted: boolean; contactedAt: string | null;
 };
 
+function isPixStillValid(item: AbandonedPix): boolean {
+  const ref = item.updatedAt || item.createdAt;
+  if (!ref) return false;
+  const ageMin = (Date.now() - new Date(ref).getTime()) / 60000;
+  return ageMin < 30;
+}
+
 function buildRecoveryMessage(item: AbandonedPix): string {
-  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nSe quiser, tenho um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar nesse link que você já vai ter acesso!💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=${item.plan || 'basico'}`;
+  if (isPixStillValid(item)) {
+    return `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou 🥹\nTá tudo bem aí? Seu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui 💜\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
+  }
+  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nPra não deixar você na mão, separei um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto 💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
 }
 
 function AbandonedPixSection() {
@@ -317,9 +487,16 @@ export default function AdminDashboard({
   totalSalesBRL, totalSalesUSD, salesHistory,
   recentErrors, unresolvedErrorCount,
   todayVisitors, todaySales, todayRevenue,
+  yesterdayVisitors, yesterdaySales, yesterdayRevenue,
   totalVisitors, totalSalesCount, totalSoldCount, totalRevenue, overallConv,
+  avgTicketBRL,
   chartData, sourceRows, recentSales,
 }: DashboardProps) {
+  // Build sparkline snapshots (last 7 days) para cada KPI
+  const last7 = chartData.slice(-7);
+  const visitorsSpark = last7.map(d => ({ date: d.date, value: d.visitors }));
+  const salesSpark = last7.map(d => ({ date: d.date, value: d.sales }));
+  const revenueSpark = last7.map(d => ({ date: d.date, value: d.revenue }));
   const [confirmStep, setConfirmStep] = useState(0);
   const [confirmInput, setConfirmInput] = useState('');
   const CONFIRM_WORD = 'APAGAR TUDO';
@@ -390,6 +567,28 @@ export default function AdminDashboard({
       {/* ── PIX ABANDONADOS ─────────────────────────────────────────────── */}
       <AbandonedPixSection />
 
+      {/* ── HERO REVENUE + TOP KPIs ──────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <HeroRevenueCard
+            todayRevenue={todayRevenue}
+            yesterdayRevenue={yesterdayRevenue}
+            todaySales={todaySales}
+            yesterdaySales={yesterdaySales}
+            chartData={chartData}
+          />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
+          <KpiCard label="Ticket Médio" value={brl(avgTicketBRL)}
+            sub="média geral BRL" icon={Receipt} accent="#f472b6" />
+          <KpiCard label="Visitantes" value={totalVisitors.toLocaleString('pt-BR')}
+            today={todayVisitors.toLocaleString('pt-BR')}
+            trend={{ current: todayVisitors, previous: yesterdayVisitors }}
+            sparkline={visitorsSpark}
+            icon={Globe} accent="#818cf8" />
+        </div>
+      </div>
+
       {/* ── KPI GRID ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* Active users widget occupies 1 slot */}
@@ -401,15 +600,14 @@ export default function AdminDashboard({
         <KpiCard label="Páginas Criadas" value={totalSalesCount.toLocaleString('pt-BR')}
           sub={`${avancadoCount} Avançado · ${basicoCount} Básico`}
           icon={FileText} accent="#c084fc" />
-        <KpiCard label="Receita BRL" value={brl(totalSalesBRL)} icon={DollarSign} accent="#34d399"
-          sub="vendas brasileiras" />
+        <KpiCard label="Receita BRL Total" value={brl(totalSalesBRL)} icon={DollarSign} accent="#34d399"
+          sub="acumulado brasileiro" />
         <KpiCard label="Receita USD" value={usd(totalSalesUSD)} icon={DollarSign} accent="#22d3ee"
           sub="vendas internacionais" />
-        <KpiCard label="Visitantes Únicos" value={totalVisitors.toLocaleString('pt-BR')}
-          today={todayVisitors.toLocaleString('pt-BR')}
-          icon={Globe} accent="#818cf8" />
         <KpiCard label="Páginas Vendidas" value={totalSoldCount.toLocaleString('pt-BR')}
           today={todaySales.toLocaleString('pt-BR')}
+          trend={{ current: todaySales, previous: yesterdaySales }}
+          sparkline={salesSpark}
           icon={ShoppingCart} accent="#a855f7" />
         <KpiCard label="Conversão (UTM)" value={`${overallConv}%`}
           sub={convNum >= 2 ? '🔥 Excelente' : convNum >= 0.5 ? '👍 Boa' : '⚠️ Melhorar'}

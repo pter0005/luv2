@@ -31,8 +31,20 @@ function getTimeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d atrás`;
 }
 
+function isPixStillValid(item: AbandonedPix): boolean {
+  const ref = item.updatedAt || item.createdAt;
+  if (!ref) return false;
+  const ageMin = (Date.now() - new Date(ref).getTime()) / 60000;
+  return ageMin < 30;
+}
+
 function buildMessage(item: AbandonedPix): string {
-  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nSe quiser, tenho um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar nesse link que você já vai ter acesso!💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=${item.plan || 'basico'}`;
+  if (isPixStillValid(item)) {
+    // PIX ainda tá rolando — só um empurrãozinho, sem cupom
+    return `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou 🥹\nTá tudo bem aí? Seu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui 💜\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
+  }
+  // PIX expirou — oferece cupom de recuperação
+  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nPra não deixar você na mão, separei um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto 💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
 }
 
 function whatsappLink(item: AbandonedPix): string | null {
@@ -329,6 +341,11 @@ function PixCard({
           <InfoChip>{planLabel}</InfoChip>
           <InfoChip accent="#34d399">R${item.amount.toFixed(2)}</InfoChip>
           <InfoChip>{ago}</InfoChip>
+          {isPixStillValid(item) ? (
+            <InfoChip accent="#60a5fa">⏱ PIX válido · sem cupom</InfoChip>
+          ) : (
+            <InfoChip accent="#fbbf24">💸 expirado · oferece DESCONTO5</InfoChip>
+          )}
           {item.whatsapp !== '—' && item.whatsapp.replace(/\D/g, '').length >= 10 ? (
             <InfoChip accent="#4ade80">📱 {formatPhone(item.whatsapp)}</InfoChip>
           ) : (
