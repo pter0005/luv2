@@ -31,18 +31,21 @@ type FilterMode = 'all' | 'pending' | 'contacted' | 'with_whatsapp';
 
 const LINK = 'https://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado';
 
+// Emojis universais — Unicode 6.0 (2010), funcionam em qualquer aparelho antigo/novo
+const SAFE_EMOJIS = ['😊', '😉', '😢', '❤️', '💜', '💖', '💕', '🎉', '✨', '🙏', '👀', '😍', '🌸', '💫', '😎', '😘'];
+
 const BUILTIN_PRESETS: MessagePreset[] = [
   {
     id: 'builtin_valid',
     name: 'PIX ainda válido',
     builtin: true,
-    content: `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou. Tá tudo bem aí?\nSeu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui, vou te ajudar ❤\n\n${LINK}`,
+    content: `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou. Tá tudo bem aí?\nSeu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui, vou te ajudar.\n\n${LINK}`,
   },
   {
     id: 'builtin_coupon',
     name: 'Cupom DESCONTO5',
     builtin: true,
-    content: `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem?\nPra não deixar você na mão, separei um cupom especial: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto, vou adorar te ver finalizar ❤\n\n${LINK}`,
+    content: `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem?\nPra não deixar você na mão, separei um cupom especial: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto, vou adorar te ver finalizar.\n\n${LINK}`,
   },
   {
     id: 'builtin_simple',
@@ -703,6 +706,20 @@ function PixCard({
                 className="w-full px-3 py-2.5 bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none resize-none font-mono leading-relaxed"
                 placeholder="Escreva sua mensagem personalizada..."
               />
+              {/* Safe emoji palette */}
+              <div className="px-3 py-2 border-t flex items-center gap-1 flex-wrap"
+                style={{ borderColor: 'rgba(251,191,36,0.15)', background: 'rgba(0,0,0,0.15)' }}>
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mr-1">Emojis seguros:</span>
+                {SAFE_EMOJIS.map(e => (
+                  <button
+                    key={e}
+                    onClick={() => onMessageChange((message + e).slice(0, 1000))}
+                    className="text-base hover:scale-125 transition-transform"
+                    title={`Inserir ${e}`}>
+                    {e}
+                  </button>
+                ))}
+              </div>
               <div className="px-3 py-2 border-t flex items-center gap-1.5 flex-wrap"
                 style={{ borderColor: 'rgba(251,191,36,0.15)', background: 'rgba(0,0,0,0.2)' }}>
                 <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mr-0.5">Inserir:</span>

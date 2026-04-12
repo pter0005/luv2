@@ -207,26 +207,22 @@ function HeroRevenueCard({
   const last7 = chartData.slice(-7);
 
   return (
-    <div className="relative rounded-3xl overflow-hidden glow-border"
+    <div className="relative rounded-2xl overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, rgba(168,85,247,0.22) 0%, rgba(236,72,153,0.14) 50%, rgba(99,102,241,0.14) 100%)',
-        boxShadow: '0 30px 100px -20px rgba(168,85,247,0.5), 0 10px 40px -10px rgba(236,72,153,0.3)',
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(139,92,246,0.2)',
+        boxShadow: '0 12px 40px -12px rgba(139,92,246,0.25)',
       }}>
-      {/* ambient glow */}
-      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none"
-        style={{ background: '#ec4899' }} />
-      <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full blur-3xl opacity-15 pointer-events-none"
+      {/* ambient glow sutil */}
+      <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full blur-3xl opacity-[0.08] pointer-events-none"
         style={{ background: '#a855f7' }} />
 
       <div className="relative p-5 sm:p-7">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(168,85,247,0.25)', border: '1px solid rgba(168,85,247,0.4)' }}>
-              <Sparkles className="w-5 h-5 text-purple-300" />
-            </div>
+            <Sparkles className="w-4 h-4 text-purple-400" />
             <div>
-              <p className="text-[10px] sm:text-[11px] font-black text-purple-300 uppercase tracking-widest">Receita de hoje</p>
+              <p className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Receita de hoje</p>
               <p className="text-[10px] text-zinc-500 mt-0.5">
                 {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
               </p>
@@ -248,13 +244,7 @@ function HeroRevenueCard({
         </div>
 
         <div className="flex items-end gap-4 mb-2">
-          <p className="text-5xl sm:text-6xl font-black text-white leading-none tracking-tighter number-glow"
-            style={{
-              backgroundImage: 'linear-gradient(135deg, #ffffff 0%, #f5d0fe 60%, #fbcfe8 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>
+          <p className="text-4xl sm:text-5xl font-black text-white leading-none tracking-tight">
             {brl(todayRevenue)}
           </p>
         </div>
@@ -310,48 +300,32 @@ function HeroRevenueCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION WRAPPER — gradient accent bar + icon
+// SECTION WRAPPER — clean, profissional
 // ─────────────────────────────────────────────────────────────────────────────
 function Section({ title, sub, children, action, icon: Icon, accent = '#a855f7' }: {
   title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode;
   icon?: any; accent?: string;
 }) {
   return (
-    <div className="rounded-3xl overflow-hidden relative group"
+    <div className="rounded-2xl overflow-hidden"
       style={{
-        border: '1px solid rgba(255,255,255,0.07)',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.01) 100%)',
-        boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(255,255,255,0.02)',
       }}>
-      {/* gradient accent bar (top) */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] accent-bar"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-        }} />
-      {/* soft corner glow */}
-      <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-20 pointer-events-none group-hover:opacity-30 transition-opacity"
-        style={{ background: accent }} />
-
-      <div className="relative px-5 sm:px-6 py-4 border-b flex items-center justify-between gap-3"
+      <div className="px-5 sm:px-6 py-4 border-b flex items-center justify-between gap-3"
         style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           {Icon && (
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${accent}22 0%, ${accent}0a 100%)`,
-                border: `1px solid ${accent}33`,
-              }}>
-              <Icon className="w-4 h-4" style={{ color: accent }} />
-            </div>
+            <Icon className="w-4 h-4 shrink-0" style={{ color: accent }} />
           )}
           <div className="min-w-0">
-            <h2 className="text-[13px] sm:text-sm font-black text-white tracking-tight truncate">{title}</h2>
+            <h2 className="text-[13px] sm:text-sm font-bold text-white tracking-tight truncate">{title}</h2>
             {sub && <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">{sub}</p>}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className="relative p-5 sm:p-6">{children}</div>
+      <div className="p-5 sm:p-6">{children}</div>
     </div>
   );
 }
@@ -714,31 +688,26 @@ function WeekdayHeatmap({ chartData }: { chartData: DayData[] }) {
       <div className="grid grid-cols-7 gap-1.5 mb-2">
         {buckets.map((count, i) => {
           const intensity = count / max;
-          const isBest = i === bestIdx && count > 0;
           return (
             <div key={i} className="flex flex-col items-center gap-1">
-              <div className="relative w-full aspect-square rounded-lg flex items-center justify-center font-black transition-all"
+              <div className="relative w-full aspect-square rounded-lg flex items-center justify-center font-bold"
                 style={{
                   background: count === 0
                     ? 'rgba(255,255,255,0.02)'
-                    : `linear-gradient(135deg, rgba(168,85,247,${0.15 + intensity * 0.6}) 0%, rgba(236,72,153,${0.1 + intensity * 0.5}) 100%)`,
-                  border: `1px solid ${isBest ? 'rgba(236,72,153,0.5)' : count > 0 ? `rgba(168,85,247,${0.2 + intensity * 0.4})` : 'rgba(255,255,255,0.04)'}`,
-                  boxShadow: isBest ? '0 0 20px -4px rgba(236,72,153,0.5)' : 'none',
+                    : `rgba(139,92,246,${0.1 + intensity * 0.35})`,
+                  border: `1px solid rgba(139,92,246,${0.15 + intensity * 0.25})`,
                 }}>
                 <span className={`text-xs ${count === 0 ? 'text-zinc-700' : 'text-white'}`}>
                   {count}
                 </span>
-                {isBest && (
-                  <Flame className="absolute -top-1 -right-1 w-3 h-3 text-pink-400 fill-pink-400/30" />
-                )}
               </div>
-              <span className="text-[9px] font-bold text-zinc-500 uppercase">{days[i]}</span>
+              <span className="text-[9px] font-semibold text-zinc-500 uppercase">{days[i]}</span>
             </div>
           );
         })}
       </div>
       <p className="text-[10px] text-zinc-500 text-center mt-2">
-        Melhor dia: <span className="font-black text-pink-300">{days[bestIdx]}</span> ·{' '}
+        Melhor dia: <span className="font-bold text-purple-300">{days[bestIdx]}</span> ·{' '}
         <span className="font-mono">{buckets[bestIdx]} vendas</span>
       </p>
     </div>
