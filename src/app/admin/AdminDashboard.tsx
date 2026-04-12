@@ -5,14 +5,16 @@ import Link from 'next/link';
 import {
   ComposedChart, Area, Bar, BarChart, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
+  ResponsiveContainer, PieChart, Pie, Cell,
+  RadialBarChart, RadialBar, AreaChart,
 } from 'recharts';
 import {
   Users, FileText, DollarSign, Globe, ShoppingCart,
   Percent, AlertTriangle, Copy, Check,
   ExternalLink, Edit, Calendar, Trash2, RefreshCw,
   Zap, ArrowUpRight, ArrowDownRight, ShoppingBag,
-  TrendingUp, Receipt, Sparkles,
+  TrendingUp, Receipt, Sparkles, Target, Flame, Crown,
+  BarChart3, Activity, Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -205,11 +207,10 @@ function HeroRevenueCard({
   const last7 = chartData.slice(-7);
 
   return (
-    <div className="relative rounded-3xl overflow-hidden"
+    <div className="relative rounded-3xl overflow-hidden glow-border"
       style={{
-        background: 'linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.10) 50%, rgba(99,102,241,0.10) 100%)',
-        border: '1px solid rgba(168,85,247,0.25)',
-        boxShadow: '0 20px 80px -20px rgba(168,85,247,0.35)',
+        background: 'linear-gradient(135deg, rgba(168,85,247,0.22) 0%, rgba(236,72,153,0.14) 50%, rgba(99,102,241,0.14) 100%)',
+        boxShadow: '0 30px 100px -20px rgba(168,85,247,0.5), 0 10px 40px -10px rgba(236,72,153,0.3)',
       }}>
       {/* ambient glow */}
       <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl opacity-20 pointer-events-none"
@@ -247,8 +248,13 @@ function HeroRevenueCard({
         </div>
 
         <div className="flex items-end gap-4 mb-2">
-          <p className="text-4xl sm:text-5xl font-black text-white leading-none tracking-tight"
-            style={{ textShadow: '0 4px 20px rgba(168,85,247,0.3)' }}>
+          <p className="text-5xl sm:text-6xl font-black text-white leading-none tracking-tighter number-glow"
+            style={{
+              backgroundImage: 'linear-gradient(135deg, #ffffff 0%, #f5d0fe 60%, #fbcfe8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
             {brl(todayRevenue)}
           </p>
         </div>
@@ -304,23 +310,48 @@ function HeroRevenueCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION WRAPPER
+// SECTION WRAPPER — gradient accent bar + icon
 // ─────────────────────────────────────────────────────────────────────────────
-function Section({ title, sub, children, action }: {
+function Section({ title, sub, children, action, icon: Icon, accent = '#a855f7' }: {
   title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode;
+  icon?: any; accent?: string;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden"
-      style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
-      <div className="px-6 py-4 border-b flex items-center justify-between"
-        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-        <div>
-          <h2 className="text-sm font-bold text-white">{title}</h2>
-          {sub && <p className="text-[11px] text-zinc-500 mt-0.5">{sub}</p>}
+    <div className="rounded-3xl overflow-hidden relative group"
+      style={{
+        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.01) 100%)',
+        boxShadow: '0 8px 32px -12px rgba(0,0,0,0.5)',
+      }}>
+      {/* gradient accent bar (top) */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] accent-bar"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+        }} />
+      {/* soft corner glow */}
+      <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-20 pointer-events-none group-hover:opacity-30 transition-opacity"
+        style={{ background: accent }} />
+
+      <div className="relative px-5 sm:px-6 py-4 border-b flex items-center justify-between gap-3"
+        style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div className="flex items-center gap-3 min-w-0">
+          {Icon && (
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${accent}22 0%, ${accent}0a 100%)`,
+                border: `1px solid ${accent}33`,
+              }}>
+              <Icon className="w-4 h-4" style={{ color: accent }} />
+            </div>
+          )}
+          <div className="min-w-0">
+            <h2 className="text-[13px] sm:text-sm font-black text-white tracking-tight truncate">{title}</h2>
+            {sub && <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">{sub}</p>}
+          </div>
         </div>
-        {action}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
-      <div className="p-6">{children}</div>
+      <div className="relative p-5 sm:p-6">{children}</div>
     </div>
   );
 }
@@ -480,6 +511,241 @@ function getTimeAgo(iso: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PLAN DISTRIBUTION DONUT
+// ─────────────────────────────────────────────────────────────────────────────
+function PlanDonut({ avancado, basico }: { avancado: number; basico: number }) {
+  const total = avancado + basico;
+  const data = [
+    { name: 'Avançado', value: avancado, color: '#a855f7' },
+    { name: 'Básico',   value: basico,   color: '#6366f1' },
+  ];
+  const advPct = total > 0 ? Math.round((avancado / total) * 100) : 0;
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative w-[120px] h-[120px] shrink-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%" cy="50%"
+              innerRadius={42} outerRadius={58}
+              paddingAngle={total > 0 ? 3 : 0}
+              dataKey="value"
+              stroke="none"
+              startAngle={90}
+              endAngle={-270}>
+              {data.map((entry, i) => (
+                <Cell key={i} fill={entry.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-2xl font-black text-white leading-none">{total}</span>
+          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mt-1">vendas</span>
+        </div>
+      </div>
+      <div className="flex-grow min-w-0 space-y-2.5">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Crown className="w-3 h-3 text-purple-400" />
+            <span className="text-[11px] font-black text-purple-300 uppercase tracking-wider">Avançado</span>
+            <span className="ml-auto text-[11px] font-black text-white font-mono">{avancado}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-1000"
+              style={{
+                width: `${advPct}%`,
+                background: 'linear-gradient(90deg, #a855f7, #ec4899)',
+                boxShadow: '0 0 12px rgba(168,85,247,0.6)',
+              }} />
+          </div>
+          <span className="text-[9px] text-zinc-600 font-mono">{advPct}% do mix</span>
+        </div>
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
+            <FileText className="w-3 h-3 text-indigo-400" />
+            <span className="text-[11px] font-black text-indigo-300 uppercase tracking-wider">Básico</span>
+            <span className="ml-auto text-[11px] font-black text-white font-mono">{basico}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-1000"
+              style={{
+                width: `${100 - advPct}%`,
+                background: 'linear-gradient(90deg, #6366f1, #818cf8)',
+              }} />
+          </div>
+          <span className="text-[9px] text-zinc-600 font-mono">{100 - advPct}% do mix</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSION FUNNEL — Visitantes → Vendas
+// ─────────────────────────────────────────────────────────────────────────────
+function ConversionFunnel({
+  visitors, sales, revenue,
+}: { visitors: number; sales: number; revenue: number }) {
+  const convPct = visitors > 0 ? (sales / visitors) * 100 : 0;
+  const avg = sales > 0 ? revenue / sales : 0;
+  const stages = [
+    { label: 'Visitantes', value: visitors, color: '#60a5fa', width: 100, icon: Globe },
+    { label: 'Vendas',     value: sales,    color: '#a855f7', width: Math.min(60 + (convPct * 4), 85), icon: ShoppingCart },
+    { label: 'Receita',    value: brl(revenue), raw: revenue, color: '#34d399', width: 50, icon: DollarSign, highlight: true },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {stages.map((s, i) => {
+        const Icon = s.icon;
+        return (
+          <div key={s.label} className="relative">
+            <div className="relative rounded-xl p-3 transition-all hover:scale-[1.01]"
+              style={{
+                width: `${s.width}%`,
+                background: `linear-gradient(90deg, ${s.color}22 0%, ${s.color}08 100%)`,
+                border: `1px solid ${s.color}35`,
+                boxShadow: s.highlight ? `0 8px 24px -8px ${s.color}44` : 'none',
+              }}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `${s.color}20`, border: `1px solid ${s.color}44` }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: s.color }}>
+                      {s.label}
+                    </p>
+                    <p className="text-lg font-black text-white leading-none mt-0.5">
+                      {typeof s.value === 'number' ? s.value.toLocaleString('pt-BR') : s.value}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {i < stages.length - 1 && (
+              <div className="flex items-center gap-1 pl-4 py-0.5">
+                <div className="w-px h-3" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                {i === 0 && (
+                  <span className="text-[9px] font-black text-zinc-500 ml-1">
+                    → {convPct.toFixed(2)}% convertem
+                  </span>
+                )}
+                {i === 1 && sales > 0 && (
+                  <span className="text-[9px] font-black text-zinc-500 ml-1">
+                    → ticket médio {brl(avg)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GOAL PROGRESS RING — meta do dia
+// ─────────────────────────────────────────────────────────────────────────────
+function GoalProgressRing({
+  current, goal, label, color,
+}: { current: number; goal: number; label: string; color: string }) {
+  const pct = Math.min((current / goal) * 100, 100);
+  const data = [{ name: 'goal', value: pct, fill: color }];
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative w-[92px] h-[92px] shrink-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            innerRadius="75%" outerRadius="100%"
+            data={data} startAngle={90} endAngle={-270}>
+            <RadialBar
+              background={{ fill: 'rgba(255,255,255,0.05)' } as any}
+              dataKey="value"
+              cornerRadius={20}
+              fill={color}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-lg font-black text-white leading-none">{pct.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div className="flex-grow min-w-0">
+        <p className="text-[9px] uppercase tracking-wider font-black text-zinc-500">{label}</p>
+        <p className="text-lg font-black text-white mt-0.5 leading-none">
+          {brl(current)}
+        </p>
+        <p className="text-[10px] text-zinc-500 mt-1">
+          meta <span className="font-bold text-zinc-300">{brl(goal)}</span>
+        </p>
+        {pct >= 100 && (
+          <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-black text-emerald-300 bg-emerald-500/15 border border-emerald-500/30">
+            <Trophy className="w-2.5 h-2.5" />
+            BATIDA
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEEKDAY HEATMAP — vendas por dia da semana (últimos 30d)
+// ─────────────────────────────────────────────────────────────────────────────
+function WeekdayHeatmap({ chartData }: { chartData: DayData[] }) {
+  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const buckets = [0, 0, 0, 0, 0, 0, 0];
+  chartData.forEach(d => {
+    const date = new Date(`${d.date}T12:00:00`);
+    buckets[date.getDay()] += d.sales;
+  });
+  const max = Math.max(...buckets, 1);
+  const bestIdx = buckets.indexOf(Math.max(...buckets));
+
+  return (
+    <div>
+      <div className="grid grid-cols-7 gap-1.5 mb-2">
+        {buckets.map((count, i) => {
+          const intensity = count / max;
+          const isBest = i === bestIdx && count > 0;
+          return (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className="relative w-full aspect-square rounded-lg flex items-center justify-center font-black transition-all"
+                style={{
+                  background: count === 0
+                    ? 'rgba(255,255,255,0.02)'
+                    : `linear-gradient(135deg, rgba(168,85,247,${0.15 + intensity * 0.6}) 0%, rgba(236,72,153,${0.1 + intensity * 0.5}) 100%)`,
+                  border: `1px solid ${isBest ? 'rgba(236,72,153,0.5)' : count > 0 ? `rgba(168,85,247,${0.2 + intensity * 0.4})` : 'rgba(255,255,255,0.04)'}`,
+                  boxShadow: isBest ? '0 0 20px -4px rgba(236,72,153,0.5)' : 'none',
+                }}>
+                <span className={`text-xs ${count === 0 ? 'text-zinc-700' : 'text-white'}`}>
+                  {count}
+                </span>
+                {isBest && (
+                  <Flame className="absolute -top-1 -right-1 w-3 h-3 text-pink-400 fill-pink-400/30" />
+                )}
+              </div>
+              <span className="text-[9px] font-bold text-zinc-500 uppercase">{days[i]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-zinc-500 text-center mt-2">
+        Melhor dia: <span className="font-black text-pink-300">{days[bestIdx]}</span> ·{' '}
+        <span className="font-mono">{buckets[bestIdx]} vendas</span>
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard({
@@ -589,6 +855,38 @@ export default function AdminDashboard({
         </div>
       </div>
 
+      {/* ── FUNNEL + GOAL + PLAN MIX ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Section title="Funil de Conversão" sub="Visitantes → vendas hoje" icon={Target} accent="#60a5fa">
+          <ConversionFunnel
+            visitors={todayVisitors}
+            sales={todaySales}
+            revenue={todayRevenue}
+          />
+        </Section>
+        <Section title="Meta do Dia" sub="R$500 diários" icon={Trophy} accent="#fbbf24">
+          <div className="space-y-4">
+            <GoalProgressRing
+              current={todayRevenue}
+              goal={500}
+              label="Hoje"
+              color="#fbbf24"
+            />
+            <div className="pt-3 border-t border-white/5">
+              <GoalProgressRing
+                current={last7.reduce((s, d) => s + d.revenue, 0)}
+                goal={3500}
+                label="Semana"
+                color="#a855f7"
+              />
+            </div>
+          </div>
+        </Section>
+        <Section title="Mix de Planos" sub="Avançado vs Básico" icon={Crown} accent="#a855f7">
+          <PlanDonut avancado={avancadoCount} basico={basicoCount} />
+        </Section>
+      </div>
+
       {/* ── KPI GRID ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* Active users widget occupies 1 slot */}
@@ -614,56 +912,85 @@ export default function AdminDashboard({
           icon={Percent} accent={convAccent} />
       </div>
 
-      {/* ── CHARTS ROW ──────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Section title="Visitantes & Vendas" sub="Últimos 30 dias">
-          <div className="flex items-center gap-6 mb-4 text-xs text-zinc-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-indigo-400 inline-block rounded" />Visitantes únicos
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-2 bg-purple-400/70 inline-block rounded-sm" />Vendas
-            </span>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#818cf8" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<ChartTooltip />} />
-              <Area dataKey="visitors" name="Visitantes" fill="url(#gV)" stroke="#818cf8"
-                strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-              <Bar dataKey="sales" name="Vendas" fill="#a855f7" opacity={0.8}
-                radius={[3, 3, 0, 0]} maxBarSize={16} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </Section>
-
-        <Section title="Receita Diária (BRL)" sub="Faturamento por dia nos últimos 30 dias">
-          <ResponsiveContainer width="100%" height={252}>
-            <BarChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false}
-                tickFormatter={v => `R$${v}`} />
-              <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="revenue" name="Receita" radius={[4, 4, 0, 0]} maxBarSize={24}
-                fill="#34d399" opacity={0.85} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* ── MAIN CHART + HEATMAP ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2">
+          <Section title="Visitantes & Vendas" sub="Últimos 30 dias" icon={BarChart3} accent="#818cf8">
+            <div className="flex items-center gap-5 mb-4 text-[10px]">
+              <span className="flex items-center gap-1.5 text-indigo-300">
+                <span className="w-3 h-2 rounded inline-block"
+                  style={{ background: 'linear-gradient(180deg, #818cf8, rgba(129,140,248,0.3))' }} />
+                <span className="font-bold">Visitantes únicos</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-purple-300">
+                <span className="w-3 h-2 inline-block rounded"
+                  style={{ background: 'linear-gradient(180deg, #c084fc, #a855f7)' }} />
+                <span className="font-bold">Vendas</span>
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#818cf8" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#c084fc" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} />
+                <Area dataKey="visitors" name="Visitantes" fill="url(#gV)" stroke="#818cf8"
+                  strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#818cf8', stroke: '#fff', strokeWidth: 2 }} />
+                <Bar dataKey="sales" name="Vendas" fill="url(#gS)"
+                  radius={[4, 4, 0, 0]} maxBarSize={18} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </Section>
+        </div>
+        <Section title="Melhor Dia da Semana" sub="Vendas por dia (30d)" icon={Flame} accent="#ec4899">
+          <WeekdayHeatmap chartData={chartData} />
         </Section>
       </div>
 
-      {/* ── RECENT SALES + SOURCES ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* ── REVENUE AREA CHART ─────────────────────────────────────────── */}
+      <Section title="Receita Diária (BRL)" sub="Faturamento nos últimos 30 dias" icon={TrendingUp} accent="#34d399">
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={chartData} margin={{ top: 4, right: 12, left: -8, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#34d399" stopOpacity={0.6} />
+                <stop offset="50%" stopColor="#10b981" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false}
+              tickFormatter={v => `R$${v}`} />
+            <Tooltip content={<ChartTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="revenue"
+              name="Receita"
+              stroke="#34d399"
+              strokeWidth={3}
+              fill="url(#gR)"
+              dot={false}
+              activeDot={{ r: 6, fill: '#34d399', stroke: '#fff', strokeWidth: 2 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </Section>
 
-        <Section title="Últimas Vendas" sub={`${recentSales.length} páginas mais recentes`}>
+      {/* ── RECENT SALES + SOURCES ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <Section title="Últimas Vendas" sub={`${recentSales.length} páginas mais recentes`} icon={ShoppingCart} accent="#a855f7">
           {recentSales.length === 0 ? (
             <p className="text-sm text-zinc-600 py-4 text-center">Nenhuma venda ainda.</p>
           ) : (
@@ -704,7 +1031,7 @@ export default function AdminDashboard({
           )}
         </Section>
 
-        <Section title="Performance por Fonte" sub="UTM — últimos 30 dias">
+        <Section title="Performance por Fonte" sub="UTM — últimos 30 dias" icon={Activity} accent="#f472b6">
           {sourceRows.length === 0 ? (
             <div className="py-4 text-center">
               <p className="text-sm text-zinc-600 mb-2">Nenhuma visita UTM registrada.</p>
@@ -747,7 +1074,7 @@ export default function AdminDashboard({
       </div>
 
       {/* ── UTM LINKS ────────────────────────────────────────────────────────── */}
-      <Section title="Links UTM Prontos" sub="Clique para copiar — use nas suas bios e anúncios">
+      <Section title="Links UTM Prontos" sub="Clique para copiar — use nas suas bios e anúncios" icon={Copy} accent="#22d3ee">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2">
           {Object.entries(SOURCE_META).map(([key, meta]) => (
             <div key={key}
@@ -766,6 +1093,8 @@ export default function AdminDashboard({
       <Section
         title="Histórico de Vendas"
         sub="Últimas 100 páginas criadas"
+        icon={FileText}
+        accent="#60a5fa"
         action={
           <span className="text-[11px] bg-white/5 text-zinc-400 px-3 py-1 rounded-full border border-white/8">
             {salesHistory.length} registros

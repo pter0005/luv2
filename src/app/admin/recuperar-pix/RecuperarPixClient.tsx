@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Copy, Check, ExternalLink, RefreshCw, ShoppingBag,
-  Search, MessageCircle, CheckCircle2, Filter,
+  Copy, Check, RefreshCw, ShoppingBag,
+  Search, MessageCircle, CheckCircle2, Edit3, RotateCcw, X,
+  Sparkles, Plus, Trash2, Star, StarOff, BookmarkPlus, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
 type AbandonedPix = {
@@ -19,7 +20,40 @@ type AbandonedPix = {
   contactedAt: string | null;
 };
 
+type MessagePreset = {
+  id: string;
+  name: string;
+  content: string;
+  builtin?: boolean;
+};
+
 type FilterMode = 'all' | 'pending' | 'contacted' | 'with_whatsapp';
+
+const LINK = 'https://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado';
+
+const BUILTIN_PRESETS: MessagePreset[] = [
+  {
+    id: 'builtin_valid',
+    name: 'PIX ainda válido',
+    builtin: true,
+    content: `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou. Tá tudo bem aí?\nSeu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui, vou te ajudar ❤\n\n${LINK}`,
+  },
+  {
+    id: 'builtin_coupon',
+    name: 'Cupom DESCONTO5',
+    builtin: true,
+    content: `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem?\nPra não deixar você na mão, separei um cupom especial: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto, vou adorar te ver finalizar ❤\n\n${LINK}`,
+  },
+  {
+    id: 'builtin_simple',
+    name: 'Curta e direta',
+    builtin: true,
+    content: `Oii! Vi que você começou a criar sua página no MyCupid e ainda não finalizou. Posso te ajudar em alguma coisa?\n\n${LINK}`,
+  },
+];
+
+const STORAGE_PRESETS = 'recuperar_pix_presets_v1';
+const STORAGE_DEFAULT = 'recuperar_pix_default_preset_v1';
 
 function getTimeAgo(iso: string | null): string {
   if (!iso) return '—';
@@ -38,20 +72,11 @@ function isPixStillValid(item: AbandonedPix): boolean {
   return ageMin < 30;
 }
 
-function buildMessage(item: AbandonedPix): string {
-  if (isPixStillValid(item)) {
-    // PIX ainda tá rolando — só um empurrãozinho, sem cupom
-    return `Oii! Vi que você gerou o PIX pra sua página no MyCupid mas ainda não finalizou 🥹\nTá tudo bem aí? Seu PIX ainda tá funcionando viu, é só abrir de novo e pagar rapidinho! Qualquer coisa me chama por aqui 💜\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
-  }
-  // PIX expirou — oferece cupom de recuperação
-  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nPra não deixar você na mão, separei um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar no link aqui que já vai direto 💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado`;
-}
-
-function whatsappLink(item: AbandonedPix): string | null {
+function whatsappLink(item: AbandonedPix, message: string): string | null {
   const phone = item.whatsapp.replace(/\D/g, '');
   if (phone.length < 10) return null;
   const full = phone.startsWith('55') ? phone : `55${phone}`;
-  return `https://wa.me/${full}?text=${encodeURIComponent(buildMessage(item))}`;
+  return `https://wa.me/${full}?text=${encodeURIComponent(message)}`;
 }
 
 function formatPhone(raw: string): string {
@@ -70,6 +95,94 @@ export default function RecuperarPixClient() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterMode>('pending');
   const [search, setSearch] = useState('');
+  const [customMessages, setCustomMessages] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Presets
+  const [customPresets, setCustomPresets] = useState<MessagePreset[]>([]);
+  const [defaultPresetId, setDefaultPresetId] = useState<string>('');
+  const [presetsOpen, setPresetsOpen] = useState(true);
+  const [creatingPreset, setCreatingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetContent, setNewPresetContent] = useState('');
+
+  // Load presets from localStorage
+  useEffect(() => {
+    try {
+      const savedPresets = localStorage.getItem(STORAGE_PRESETS);
+      if (savedPresets) setCustomPresets(JSON.parse(savedPresets));
+      const savedDefault = localStorage.getItem(STORAGE_DEFAULT);
+      if (savedDefault) setDefaultPresetId(savedDefault);
+    } catch {}
+  }, []);
+
+  const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
+
+  const saveCustomPresets = (next: MessagePreset[]) => {
+    setCustomPresets(next);
+    try { localStorage.setItem(STORAGE_PRESETS, JSON.stringify(next)); } catch {}
+  };
+
+  const saveDefaultPreset = (id: string) => {
+    setDefaultPresetId(id);
+    try { localStorage.setItem(STORAGE_DEFAULT, id); } catch {}
+  };
+
+  const createPreset = () => {
+    const name = newPresetName.trim();
+    const content = newPresetContent.trim();
+    if (!name || !content) return;
+    const preset: MessagePreset = {
+      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      name, content,
+    };
+    saveCustomPresets([...customPresets, preset]);
+    setNewPresetName('');
+    setNewPresetContent('');
+    setCreatingPreset(false);
+  };
+
+  const deletePreset = (id: string) => {
+    saveCustomPresets(customPresets.filter(p => p.id !== id));
+    if (defaultPresetId === id) saveDefaultPreset('');
+  };
+
+  // Build default message — uses default preset if set, otherwise validity-based
+  const buildMessage = useCallback((item: AbandonedPix): string => {
+    if (defaultPresetId) {
+      const p = allPresets.find(p => p.id === defaultPresetId);
+      if (p) return p.content;
+    }
+    return isPixStillValid(item)
+      ? BUILTIN_PRESETS[0].content
+      : BUILTIN_PRESETS[1].content;
+  }, [defaultPresetId, allPresets]);
+
+  const getMessage = (item: AbandonedPix) => customMessages[item.id] ?? buildMessage(item);
+  const setMessage = (id: string, value: string) => setCustomMessages(prev => ({ ...prev, [id]: value }));
+  const resetMessage = (item: AbandonedPix) => {
+    setCustomMessages(prev => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
+  };
+
+  const applyPresetToCard = (cardId: string, presetContent: string) => {
+    setMessage(cardId, presetContent);
+  };
+
+  const saveCardAsPreset = (cardId: string) => {
+    const content = customMessages[cardId];
+    if (!content) return;
+    const name = prompt('Nome da mensagem pronta:');
+    if (!name?.trim()) return;
+    const preset: MessagePreset = {
+      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      name: name.trim(), content,
+    };
+    saveCustomPresets([...customPresets, preset]);
+  };
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -86,7 +199,6 @@ export default function RecuperarPixClient() {
   useEffect(() => { load(); }, [load]);
 
   const markContacted = async (item: AbandonedPix, contacted: boolean) => {
-    // Optimistic update
     setItems(prev => prev.map(p =>
       p.id === item.id
         ? { ...p, contacted, contactedAt: contacted ? new Date().toISOString() : null }
@@ -99,7 +211,6 @@ export default function RecuperarPixClient() {
         body: JSON.stringify({ id: item.id, contacted }),
       });
     } catch {
-      // Revert on error
       setItems(prev => prev.map(p =>
         p.id === item.id
           ? { ...p, contacted: !contacted, contactedAt: !contacted ? new Date().toISOString() : null }
@@ -109,13 +220,15 @@ export default function RecuperarPixClient() {
   };
 
   const handleCopy = (item: AbandonedPix) => {
-    navigator.clipboard.writeText(buildMessage(item));
+    navigator.clipboard.writeText(getMessage(item));
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 2000);
     if (!item.contacted) markContacted(item, true);
   };
 
-  const handleWhatsApp = (item: AbandonedPix, link: string) => {
+  const handleWhatsApp = (item: AbandonedPix) => {
+    const link = whatsappLink(item, getMessage(item));
+    if (!link) return;
     window.open(link, '_blank', 'noopener,noreferrer');
     if (!item.contacted) markContacted(item, true);
   };
@@ -191,6 +304,101 @@ export default function RecuperarPixClient() {
         </div>
       </div>
 
+      {/* ── PRESETS MANAGER ─────────────────────────────────────────── */}
+      <div className="rounded-2xl overflow-hidden"
+        style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}>
+        <button
+          onClick={() => setPresetsOpen(!presetsOpen)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.25)' }}>
+              <Sparkles className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-black text-white">Mensagens prontas</p>
+              <p className="text-[10px] text-zinc-500">
+                {customPresets.length} personalizadas · {BUILTIN_PRESETS.length} padrão
+                {defaultPresetId && (
+                  <span className="text-purple-300 ml-1">· Padrão definido</span>
+                )}
+              </p>
+            </div>
+          </div>
+          {presetsOpen
+            ? <ChevronUp className="w-4 h-4 text-zinc-500" />
+            : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+        </button>
+
+        {presetsOpen && (
+          <div className="border-t px-3 sm:px-4 py-3 space-y-2.5"
+            style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <p className="text-[10px] text-zinc-500 leading-relaxed">
+              Clique na estrela pra definir como mensagem padrão em todos os cards. Você ainda pode editar individualmente depois.
+            </p>
+
+            <div className="space-y-1.5">
+              {allPresets.map(preset => (
+                <PresetRow
+                  key={preset.id}
+                  preset={preset}
+                  isDefault={defaultPresetId === preset.id}
+                  onSetDefault={() => saveDefaultPreset(defaultPresetId === preset.id ? '' : preset.id)}
+                  onDelete={() => deletePreset(preset.id)}
+                />
+              ))}
+            </div>
+
+            {creatingPreset ? (
+              <div className="rounded-xl p-3 space-y-2"
+                style={{ background: 'rgba(168,85,247,0.04)', border: '1px solid rgba(168,85,247,0.25)' }}>
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value.slice(0, 40))}
+                  placeholder="Nome (ex: Desconto VIP)"
+                  autoFocus
+                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50"
+                />
+                <textarea
+                  value={newPresetContent}
+                  onChange={(e) => setNewPresetContent(e.target.value.slice(0, 1000))}
+                  placeholder="Escreva sua mensagem aqui..."
+                  rows={5}
+                  className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 resize-none font-mono leading-relaxed"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-600 font-mono">{newPresetContent.length}/1000</span>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => { setCreatingPreset(false); setNewPresetName(''); setNewPresetContent(''); }}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={createPreset}
+                      disabled={!newPresetName.trim() || !newPresetContent.trim()}
+                      className="px-3 py-1.5 rounded-lg text-[10px] font-black text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setCreatingPreset(true)}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold text-purple-300 bg-purple-500/10 border border-purple-500/25 border-dashed hover:bg-purple-500/15 transition-colors">
+                <Plus className="w-3.5 h-3.5" />
+                Criar nova mensagem pronta
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ── SEARCH + FILTERS ───────────────────────────────────────── */}
       <div className="space-y-2">
         <div className="relative">
@@ -225,7 +433,7 @@ export default function RecuperarPixClient() {
           </p>
           <p className="text-xs text-zinc-500">
             {items.length === 0
-              ? 'Todos os PIX gerados foram pagos. 🎉'
+              ? 'Todos os PIX gerados foram pagos.'
               : filter === 'pending'
                 ? 'Todos os PIX pendentes já foram contatados.'
                 : 'Nenhum resultado encontrado com esse filtro.'}
@@ -238,9 +446,18 @@ export default function RecuperarPixClient() {
               key={item.id}
               item={item}
               copied={copiedId === item.id}
+              message={getMessage(item)}
+              isEditing={editingId === item.id}
+              isCustom={customMessages[item.id] !== undefined}
+              presets={allPresets}
               onCopy={() => handleCopy(item)}
-              onWhatsApp={(link) => handleWhatsApp(item, link)}
+              onWhatsApp={() => handleWhatsApp(item)}
               onToggleContacted={() => markContacted(item, !item.contacted)}
+              onToggleEdit={() => setEditingId(editingId === item.id ? null : item.id)}
+              onMessageChange={(val) => setMessage(item.id, val)}
+              onResetMessage={() => resetMessage(item)}
+              onApplyPreset={(content) => applyPresetToCard(item.id, content)}
+              onSaveAsPreset={() => saveCardAsPreset(item.id)}
             />
           ))}
         </div>
@@ -276,20 +493,96 @@ function FilterChip({ label, active, onClick, count }: { label: string; active: 
   );
 }
 
+function PresetRow({
+  preset, isDefault, onSetDefault, onDelete,
+}: {
+  preset: MessagePreset;
+  isDefault: boolean;
+  onSetDefault: () => void;
+  onDelete: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-xl overflow-hidden"
+      style={{
+        background: isDefault ? 'rgba(168,85,247,0.06)' : 'rgba(0,0,0,0.2)',
+        border: `1px solid ${isDefault ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.05)'}`,
+      }}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button
+          onClick={onSetDefault}
+          className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-colors hover:bg-white/10"
+          title={isDefault ? 'Remover como padrão' : 'Definir como padrão'}>
+          {isDefault
+            ? <Star className="w-3.5 h-3.5 text-purple-400 fill-purple-400" />
+            : <StarOff className="w-3.5 h-3.5 text-zinc-600" />}
+        </button>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex-grow min-w-0 text-left">
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-bold text-white truncate">{preset.name}</p>
+            {preset.builtin && (
+              <span className="text-[8px] font-bold text-zinc-500 bg-white/5 px-1 py-0.5 rounded uppercase tracking-wider">
+                Padrão
+              </span>
+            )}
+            {isDefault && (
+              <span className="text-[8px] font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1 py-0.5 rounded uppercase tracking-wider">
+                Em uso
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+            {preset.content.slice(0, 70)}{preset.content.length > 70 ? '…' : ''}
+          </p>
+        </button>
+        {!preset.builtin && (
+          <button
+            onClick={onDelete}
+            className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            title="Excluir">
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      {expanded && (
+        <div className="px-3 pb-2.5 pt-0">
+          <pre className="text-[10px] text-zinc-400 whitespace-pre-wrap font-mono leading-relaxed bg-black/30 rounded-lg p-2 border border-white/5">
+            {preset.content}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PixCard({
-  item, copied, onCopy, onWhatsApp, onToggleContacted,
+  item, copied, message, isEditing, isCustom, presets,
+  onCopy, onWhatsApp, onToggleContacted, onToggleEdit, onMessageChange, onResetMessage,
+  onApplyPreset, onSaveAsPreset,
 }: {
   item: AbandonedPix;
   copied: boolean;
+  message: string;
+  isEditing: boolean;
+  isCustom: boolean;
+  presets: MessagePreset[];
   onCopy: () => void;
-  onWhatsApp: (link: string) => void;
+  onWhatsApp: () => void;
   onToggleContacted: () => void;
+  onToggleEdit: () => void;
+  onMessageChange: (val: string) => void;
+  onResetMessage: () => void;
+  onApplyPreset: (content: string) => void;
+  onSaveAsPreset: () => void;
 }) {
-  const waLink = whatsappLink(item);
+  const hasWhats = item.whatsapp !== '—' && item.whatsapp.replace(/\D/g, '').length >= 10;
   const ago = getTimeAgo(item.updatedAt || item.createdAt);
   const planLabel = item.plan === 'avancado' ? 'Avançado' : 'Básico';
   const name = (item.email.split('@')[0] || 'cliente').replace(/[._-]+/g, ' ');
   const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+  const charCount = message.length;
 
   return (
     <div className={`rounded-2xl overflow-hidden transition-all ${item.contacted ? 'opacity-60' : ''}`}
@@ -297,7 +590,10 @@ function PixCard({
         background: item.contacted ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.02)',
         border: item.contacted
           ? '1px solid rgba(34,197,94,0.15)'
-          : '1px solid rgba(255,255,255,0.06)',
+          : isEditing
+            ? '1px solid rgba(251,191,36,0.3)'
+            : '1px solid rgba(255,255,255,0.06)',
+        boxShadow: isEditing ? '0 0 40px -10px rgba(251,191,36,0.3)' : 'none',
       }}>
       <div className="p-3.5 sm:p-4">
         {/* Header row */}
@@ -317,6 +613,12 @@ function PixCard({
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30">
                   <CheckCircle2 className="w-2.5 h-2.5" />
                   ENVIADO
+                </span>
+              )}
+              {isCustom && !isEditing && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30">
+                  <Edit3 className="w-2.5 h-2.5" />
+                  EDITADA
                 </span>
               )}
             </div>
@@ -342,14 +644,91 @@ function PixCard({
           <InfoChip accent="#34d399">R${item.amount.toFixed(2)}</InfoChip>
           <InfoChip>{ago}</InfoChip>
           {isPixStillValid(item) ? (
-            <InfoChip accent="#60a5fa">⏱ PIX válido · sem cupom</InfoChip>
+            <InfoChip accent="#60a5fa">PIX ainda válido</InfoChip>
           ) : (
-            <InfoChip accent="#fbbf24">💸 expirado · oferece DESCONTO5</InfoChip>
+            <InfoChip accent="#fbbf24">PIX expirado</InfoChip>
           )}
-          {item.whatsapp !== '—' && item.whatsapp.replace(/\D/g, '').length >= 10 ? (
-            <InfoChip accent="#4ade80">📱 {formatPhone(item.whatsapp)}</InfoChip>
+          {hasWhats ? (
+            <InfoChip accent="#4ade80">{formatPhone(item.whatsapp)}</InfoChip>
           ) : (
             <InfoChip accent="#f87171">sem WhatsApp</InfoChip>
+          )}
+        </div>
+
+        {/* Message preview / editor */}
+        <div className="mb-3 rounded-xl overflow-hidden"
+          style={{
+            background: isEditing ? 'rgba(251,191,36,0.04)' : 'rgba(0,0,0,0.25)',
+            border: `1px solid ${isEditing ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.05)'}`,
+          }}>
+          <div className="flex items-center justify-between px-3 py-2 border-b"
+            style={{ borderColor: isEditing ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)' }}>
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="w-3 h-3 text-zinc-500" />
+              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">
+                {isEditing ? 'Editando mensagem' : 'Mensagem a enviar'}
+              </span>
+              {isEditing && (
+                <span className="text-[9px] text-zinc-600 font-mono ml-1">{charCount}/1000</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {isCustom && (
+                <button
+                  onClick={onResetMessage}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-zinc-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+                  title="Restaurar mensagem padrão">
+                  <RotateCcw className="w-2.5 h-2.5" />
+                  Padrão
+                </button>
+              )}
+              <button
+                onClick={onToggleEdit}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors"
+                style={{
+                  color: isEditing ? '#fbbf24' : '#a1a1aa',
+                  background: isEditing ? 'rgba(251,191,36,0.12)' : 'transparent',
+                }}>
+                {isEditing ? <><X className="w-2.5 h-2.5" />Fechar</> : <><Edit3 className="w-2.5 h-2.5" />Editar</>}
+              </button>
+            </div>
+          </div>
+          {isEditing ? (
+            <div>
+              <textarea
+                value={message}
+                onChange={(e) => onMessageChange(e.target.value.slice(0, 1000))}
+                rows={6}
+                autoFocus
+                className="w-full px-3 py-2.5 bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none resize-none font-mono leading-relaxed"
+                placeholder="Escreva sua mensagem personalizada..."
+              />
+              <div className="px-3 py-2 border-t flex items-center gap-1.5 flex-wrap"
+                style={{ borderColor: 'rgba(251,191,36,0.15)', background: 'rgba(0,0,0,0.2)' }}>
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mr-0.5">Inserir:</span>
+                {presets.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => onApplyPreset(p.content)}
+                    className="text-[9px] font-bold text-zinc-300 bg-white/5 hover:bg-purple-500/15 hover:text-purple-200 border border-white/10 hover:border-purple-500/30 rounded-full px-2 py-0.5 transition-colors"
+                    title={p.content}>
+                    {p.name}
+                  </button>
+                ))}
+                {isCustom && (
+                  <button
+                    onClick={onSaveAsPreset}
+                    className="ml-auto flex items-center gap-1 text-[9px] font-bold text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-full px-2 py-0.5 transition-colors">
+                    <BookmarkPlus className="w-2.5 h-2.5" />
+                    Salvar como pronta
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="px-3 py-2.5 text-[11px] text-zinc-400 leading-relaxed whitespace-pre-line line-clamp-4 font-mono">
+              {message}
+            </p>
           )}
         </div>
 
@@ -357,29 +736,29 @@ function PixCard({
         <div className="flex items-center gap-2">
           <button
             onClick={onCopy}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-bold transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl text-[11px] font-bold transition-all"
             style={{
               background: copied ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.05)',
               border: `1px solid ${copied ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'}`,
               color: copied ? '#34d399' : '#d4d4d8',
             }}>
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? 'Copiado!' : 'Copiar mensagem'}
+            {copied ? 'Copiado!' : 'Copiar'}
           </button>
-          {waLink ? (
+          {hasWhats ? (
             <button
-              onClick={() => onWhatsApp(waLink)}
-              className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[11px] font-black transition-all"
+              onClick={onWhatsApp}
+              className="flex-[1.5] flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl text-[11px] font-black transition-all hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                 color: 'white',
-                boxShadow: '0 4px 12px rgba(37,211,102,0.25)',
+                boxShadow: '0 6px 20px -4px rgba(37,211,102,0.4)',
               }}>
-              <MessageCircle className="w-3.5 h-3.5" />
+              <MessageCircle className="w-4 h-4" />
               Enviar no WhatsApp
             </button>
           ) : (
-            <div className="flex-1 flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[10px] text-zinc-600"
+            <div className="flex-[1.5] flex items-center justify-center gap-1.5 h-10 px-3 rounded-xl text-[10px] text-zinc-600"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}>
               sem WhatsApp
             </div>

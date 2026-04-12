@@ -459,4 +459,78 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* ── Admin page animated gradient mesh bg ───────────────────────── */
+  .admin-mesh-bg {
+    background: #09090b;
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-mesh-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 0%, rgba(168,85,247,0.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 85% 10%, rgba(236,72,153,0.14), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 50% 100%, rgba(34,211,238,0.08), transparent 60%);
+    z-index: 0;
+    animation: mesh-drift 22s ease-in-out infinite alternate;
+  }
+  @keyframes mesh-drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(2%, -1%, 0) scale(1.05); }
+    100% { transform: translate3d(-1%, 2%, 0) scale(1); }
+  }
+
+  /* ── Glowing animated border for hero cards ─────────────────────── */
+  .glow-border {
+    position: relative;
+  }
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.6), rgba(236,72,153,0.4), rgba(99,102,241,0.6), rgba(168,85,247,0.6));
+    background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: glow-rotate 8s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes glow-rotate {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── Pulsing accent bar for section headers ─────────────────────── */
+  @keyframes accent-pulse {
+    0%, 100% { opacity: 0.7; }
+    50%      { opacity: 1; }
+  }
+  .accent-bar {
+    animation: accent-pulse 3s ease-in-out infinite;
+  }
+
+  /* ── Number counter glow ─────────────────────────────────────────── */
+  .number-glow {
+    text-shadow: 0 0 40px rgba(168,85,247,0.3), 0 0 80px rgba(236,72,153,0.15);
+  }
+
+  /* ── Shimmer effect for loading states ──────────────────────────── */
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(168,85,247,0.12) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
 }

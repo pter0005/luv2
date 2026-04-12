@@ -245,24 +245,29 @@ export default async function AdminPage() {
   const data = await getAllData();
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: '#09090b' }}>
+    <div className="min-h-screen pb-24 admin-mesh-bg">
 
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b"
         style={{
-          background: 'rgba(9,9,11,0.92)',
-          borderColor: 'rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(16px)',
+          background: 'rgba(9,9,11,0.82)',
+          borderColor: 'rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(20px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(160%)',
         }}>
         <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:px-4 gap-2">
 
           {/* Logo */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(139,92,246,0.2)' }}>
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center relative"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.3) 0%, rgba(236,72,153,0.2) 100%)',
+                border: '1px solid rgba(168,85,247,0.35)',
+                boxShadow: '0 4px 20px -4px rgba(168,85,247,0.4)',
+              }}>
+              <ShieldCheck className="w-4 h-4 text-purple-300" />
             </div>
-            <span className="text-sm font-black text-white tracking-tight hidden sm:block">Admin</span>
+            <span className="text-sm font-black bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent tracking-tight hidden sm:block">Admin</span>
           </div>
 
           {/* Nav links — horizontal scroll on mobile */}
@@ -330,7 +335,7 @@ export default async function AdminPage() {
       </header>
 
       {/* ── CONTENT ──────────────────────────────────────────────────────────── */}
-      <main className="container mx-auto px-4 pt-6">
+      <main className="container mx-auto px-4 pt-6 relative z-10">
         <AdminDashboard {...data} />
       </main>
 
