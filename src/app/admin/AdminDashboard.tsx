@@ -166,12 +166,17 @@ function Section({ title, sub, children, action }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ABANDONED PIX
+// ABANDONED PIX (summary widget — full UI lives at /admin/recuperar-pix)
 // ─────────────────────────────────────────────────────────────────────────────
 type AbandonedPix = {
   id: string; email: string; whatsapp: string; plan: string;
   amount: number; title: string; createdAt: string | null; updatedAt: string | null;
+  contacted: boolean; contactedAt: string | null;
 };
+
+function buildRecoveryMessage(item: AbandonedPix): string {
+  return `Oii! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 🥹\nSe quiser, tenho um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só clicar nesse link que você já vai ter acesso!💜🥰\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=${item.plan || 'basico'}`;
+}
 
 function AbandonedPixSection() {
   const [items, setItems] = useState<AbandonedPix[]>([]);
@@ -180,7 +185,7 @@ function AbandonedPixSection() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/abandoned-pix');
+      const res = await fetch('/api/admin/abandoned-pix', { cache: 'no-store' });
       const data = await res.json();
       setItems(data.abandoned || []);
     } catch {} finally { setLoading(false); }
@@ -188,78 +193,107 @@ function AbandonedPixSection() {
 
   useEffect(() => { load(); }, [load]);
 
-  const buildMessage = (item: AbandonedPix) => {
-    const name = item.email.split('@')[0];
-    return `Oi ${name}! Vi que você começou a criar sua página no MyCupid mas não finalizou. Tá tudo bem? 😊\n\nSe quiser, tenho um cupom especial pra você: *DESCONTO5* (R$5 de desconto). É só usar no checkout!\n\nhttps://mycupid.com.br/criar/fazer-eu-mesmo?plan=${item.plan}`;
+  const markContacted = async (id: string) => {
+    setItems(prev => prev.map(p =>
+      p.id === id ? { ...p, contacted: true, contactedAt: new Date().toISOString() } : p
+    ));
+    try {
+      await fetch('/api/admin/abandoned-pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, contacted: true }),
+      });
+    } catch {}
   };
 
   const handleCopy = (item: AbandonedPix) => {
-    navigator.clipboard.writeText(buildMessage(item));
+    navigator.clipboard.writeText(buildRecoveryMessage(item));
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 2000);
+    if (!item.contacted) markContacted(item.id);
   };
 
   const whatsappLink = (item: AbandonedPix) => {
     const phone = item.whatsapp.replace(/\D/g, '');
     if (phone.length < 10) return null;
     const full = phone.startsWith('55') ? phone : `55${phone}`;
-    return `https://wa.me/${full}?text=${encodeURIComponent(buildMessage(item))}`;
+    return `https://wa.me/${full}?text=${encodeURIComponent(buildRecoveryMessage(item))}`;
   };
 
+  const pending = items.filter(i => !i.contacted);
   const hasItems = items.length > 0;
+  const hasPending = pending.length > 0;
+  const preview = pending.slice(0, 3);
 
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{
-        border: hasItems ? '1px solid rgba(251,191,36,0.2)' : '1px solid rgba(255,255,255,0.07)',
-        background: hasItems ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
+        border: hasPending ? '1px solid rgba(251,191,36,0.2)' : '1px solid rgba(255,255,255,0.07)',
+        background: hasPending ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
       }}>
-      <div className="px-5 py-3 border-b flex items-center justify-between"
-        style={{ borderColor: hasItems ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-2">
-          <ShoppingBag className={`w-4 h-4 ${hasItems ? 'text-amber-400' : 'text-zinc-500'}`} />
-          <h2 className={`text-sm font-bold ${hasItems ? 'text-amber-300' : 'text-zinc-400'}`}>
-            {loading ? 'Carregando PIX abandonados...' : hasItems ? `${items.length} PIX abandonado${items.length > 1 ? 's' : ''}` : 'Nenhum PIX abandonado'}
+      <div className="px-4 sm:px-5 py-3 border-b flex items-center justify-between gap-3"
+        style={{ borderColor: hasPending ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2 min-w-0">
+          <ShoppingBag className={`w-4 h-4 shrink-0 ${hasPending ? 'text-amber-400' : 'text-zinc-500'}`} />
+          <h2 className={`text-xs sm:text-sm font-bold truncate ${hasPending ? 'text-amber-300' : 'text-zinc-400'}`}>
+            {loading
+              ? 'Carregando PIX...'
+              : hasPending
+                ? `${pending.length} PIX a contactar${items.length > pending.length ? ` · ${items.length - pending.length} contatados` : ''}`
+                : hasItems ? `Tudo contatado (${items.length})` : 'Nenhum PIX abandonado'}
           </h2>
         </div>
-        <button onClick={() => { setLoading(true); load(); }}
-          className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors">
-          atualizar
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/admin/recuperar-pix"
+            className="text-[10px] sm:text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1">
+            Ver todos <ArrowUpRight className="w-3 h-3" />
+          </Link>
+          <button onClick={() => { setLoading(true); load(); }}
+            className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors hidden sm:block">
+            atualizar
+          </button>
+        </div>
       </div>
-      {hasItems && (
-      <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
-        {items.map(item => {
+      {hasPending && (
+      <div className="p-3 sm:p-4 space-y-2">
+        {preview.map(item => {
           const waLink = whatsappLink(item);
           const ago = item.updatedAt ? getTimeAgo(item.updatedAt) : '—';
           return (
             <div key={item.id}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs"
+              className="flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-xl text-xs"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div className="flex-grow min-w-0">
                 <p className="text-zinc-200 font-medium truncate">{item.email}</p>
-                <p className="text-zinc-600">
+                <p className="text-[10px] text-zinc-600 truncate">
                   {item.whatsapp !== '—' ? item.whatsapp : 'sem whatsapp'} · R${item.amount.toFixed(2)} · {ago}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <button onClick={() => handleCopy(item)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: copiedId === item.id ? '#34d399' : '#a1a1aa' }}>
                   {copiedId === item.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {copiedId === item.id ? 'Copiado' : 'Copiar msg'}
+                  <span className="hidden sm:inline">{copiedId === item.id ? 'Copiado' : 'Copiar'}</span>
                 </button>
                 {waLink && (
                   <a href={waLink} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-emerald-400 transition-colors hover:bg-emerald-500/10"
-                    style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    Enviar WhatsApp
+                    onClick={() => !item.contacted && markContacted(item.id)}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold text-white transition-colors"
+                    style={{ background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)' }}>
+                    <span className="hidden sm:inline">Enviar </span>WhatsApp
                   </a>
                 )}
               </div>
             </div>
           );
         })}
+        {pending.length > preview.length && (
+          <Link href="/admin/recuperar-pix"
+            className="block text-center py-2 rounded-xl text-[11px] font-bold text-amber-400 hover:bg-amber-500/5 transition-colors">
+            + {pending.length - preview.length} outros — abrir página completa →
+          </Link>
+        )}
       </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Gift, Bell, ImageOff, Link2, Tag, MessageCircle } from 'lucide-react';
+import { LogOut, ShieldCheck, Gift, Bell, ImageOff, Link2, Tag, MessageCircle, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import AdminDashboard, {
   type DayData, type SourceRow, type RecentSale, type SaleRecord,
@@ -241,66 +241,74 @@ export default async function AdminPage() {
           borderColor: 'rgba(255,255,255,0.07)',
           backdropFilter: 'blur(16px)',
         }}>
-        <div className="container mx-auto flex h-14 items-center justify-between px-4 gap-4">
+        <div className="container mx-auto flex h-14 items-center justify-between px-3 sm:px-4 gap-2">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
               style={{ background: 'rgba(139,92,246,0.2)' }}>
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
             </div>
-            <span className="text-sm font-black text-white tracking-tight">Admin</span>
+            <span className="text-sm font-black text-white tracking-tight hidden sm:block">Admin</span>
           </div>
 
-          {/* Nav links */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Nav links — horizontal scroll on mobile */}
+          <nav className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide min-w-0"
+            style={{ scrollbarWidth: 'none' } as any}>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
+              <Link href="/admin/recuperar-pix">
+                <ShoppingBag className="h-3.5 w-3.5 text-amber-400" />Recuperar
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm"
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/creditos">
                 <Gift className="h-3.5 w-3.5 text-emerald-400" />Créditos
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/gift">
                 <Link2 className="h-3.5 w-3.5 text-purple-400" />Presentes
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/discount">
                 <Tag className="h-3.5 w-3.5 text-green-400" />Descontos
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/whatsapp">
                 <MessageCircle className="h-3.5 w-3.5 text-green-400" />WhatsApp
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/notificacoes">
                 <Bell className="h-3.5 w-3.5 text-yellow-400" />Notificações
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm"
-              className="text-zinc-500 hover:text-white h-8 px-2.5 text-xs gap-1.5">
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/fix-images">
                 <ImageOff className="h-3.5 w-3.5 text-orange-400" />Imagens
               </Link>
             </Button>
-          </div>
+          </nav>
 
-          {/* Right: date + logout */}
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs text-zinc-600 hidden sm:block">
+          {/* Right: logout only on mobile */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-zinc-600 hidden lg:block">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
             </span>
             <form action={removeAdminSession}>
               <Button variant="ghost" size="sm"
-                className="text-zinc-500 hover:text-red-400 gap-1.5 h-8 px-2.5 text-xs">
-                <LogOut className="h-3.5 w-3.5" />Sair
+                className="text-zinc-500 hover:text-red-400 gap-1.5 h-8 px-2 text-xs">
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             </form>
           </div>

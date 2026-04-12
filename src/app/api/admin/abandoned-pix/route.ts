@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,11 +10,10 @@ export async function GET() {
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Busca intents que ficaram em waiting_payment (PIX gerado mas não pago)
     // Sem orderBy pra evitar exigir índice composto no Firestore
     const snap = await db.collection('payment_intents')
       .where('status', '==', 'waiting_payment')
-      .limit(200)
+      .limit(300)
       .get();
 
     const abandoned = snap.docs
@@ -28,7 +28,7 @@ export async function GET() {
         const tb = (b.data().updatedAt?.toDate?.() || b.data().createdAt?.toDate?.() || new Date(0)).getTime();
         return tb - ta;
       })
-      .slice(0, 50)
+      .slice(0, 100)
       .map(doc => {
         const d = doc.data();
         return {
@@ -40,12 +40,30 @@ export async function GET() {
           title: d.title || 'Sem título',
           createdAt: d.createdAt?.toDate?.()?.toISOString() || null,
           updatedAt: d.updatedAt?.toDate?.()?.toISOString() || null,
+          contacted: !!d.recoveryContactedAt,
+          contactedAt: d.recoveryContactedAt?.toDate?.()?.toISOString() || null,
         };
       });
 
     return NextResponse.json({ abandoned });
   } catch (error: any) {
     console.error('[abandoned-pix]', error);
+    return NextResponse.json({ error: 'failed' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { id, contacted } = await req.json();
+    if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
+    const db = getAdminFirestore();
+    await db.collection('payment_intents').doc(id).set(
+      { recoveryContactedAt: contacted === false ? null : Timestamp.now() },
+      { merge: true },
+    );
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    console.error('[abandoned-pix POST]', error);
     return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
 }

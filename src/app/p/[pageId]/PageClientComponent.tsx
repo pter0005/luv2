@@ -26,7 +26,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
@@ -198,6 +198,23 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showExplosion, setShowExplosion] = useState(false);
   const playerRef = useRef<{ play: () => void }>(null);
   const [musicStarted, setMusicStarted] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleShareLink = async () => {
+    const url = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageData.id}` : '';
+    const shareText = 'Olha essa página de amor que encontrei 💝';
+    if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      try {
+        await (navigator as any).share({ title: 'MyCupid', text: shareText, url });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {}
+  };
 
   const isDemoPage = pageData.id === 'WgZtB23Y4OgatZPdrShO';
 
@@ -457,7 +474,39 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           </div>
 
         </div>
-        <footer className="relative z-10 w-full mt-4 text-center">
+
+        {/* ── SHARE CTA ─────────────────────────────────────────── */}
+        <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">
+            <div className="relative rounded-2xl p-6 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm text-center">
+                <div className="flex items-center justify-center mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                        <Heart className="w-6 h-6 text-white" fill="white" />
+                    </div>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Gostou dessa página?</h3>
+                <p className="text-xs text-gray-400 mb-4">Crie a sua e surpreenda alguém especial também</p>
+                <div className="flex flex-col gap-2">
+                    <button
+                        onClick={handleShareLink}
+                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white text-sm bg-white/10 hover:bg-white/15 border border-white/10 transition-all active:scale-95"
+                    >
+                        {linkCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
+                        {linkCopied ? 'Link copiado!' : 'Compartilhar esta página'}
+                    </button>
+                    <a
+                        href="https://mycupid.com.br/criar"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-white text-sm bg-gradient-to-r from-pink-600 to-purple-600 hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-purple-900/40"
+                    >
+                        <Heart className="w-4 h-4" fill="white" />
+                        Criar minha página
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <footer className="relative z-10 w-full mt-8 text-center">
             <p className="text-sm text-muted-foreground mb-4">Siga-nos</p>
             <div className="flex items-center justify-center gap-4">
             <a href="https://www.instagram.com/mycupid.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-purple-500 hover:text-white transition-all duration-300">

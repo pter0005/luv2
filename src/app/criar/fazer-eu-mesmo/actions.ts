@@ -209,6 +209,10 @@ export async function processPixPayment(intentId: string, price: number) {
     if (!intentDoc.exists) return { error: 'Rascunho não encontrado.' };
 
     const intentData = intentDoc.data();
+    const rawWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '');
+    if (rawWhatsapp.length < 10) {
+      return { error: 'WhatsApp obrigatório. Preencha seu número com DDD antes de gerar o PIX.' };
+    }
     const cleanEmail = (intentData?.guestEmail || intentData?.userEmail || 'pagamento@mycupid.com.br').trim().toLowerCase();
     const rawName = intentData?.userName || 'Cliente MyCupid';
     const firstName = rawName.split(' ')[0];
@@ -251,7 +255,14 @@ export async function processPixPayment(intentId: string, price: number) {
             paymentId: paymentId.toString(),
             status: 'waiting_payment',
             paidAmount: amount,
+            updatedAt: Timestamp.now(),
           });
+          // Notifica admin que um PIX foi gerado (ainda não pago)
+          notifyAdmins(
+            `PIX gerado · R$${amount.toFixed(2).replace('.', ',')}`,
+            `${intentData?.plan === 'avancado' ? 'Avançado' : 'Básico'} · ${cleanEmail}`,
+            'https://mycupid.com.br/admin/recuperar-pix',
+          ).catch(() => {});
           return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
         }
 
