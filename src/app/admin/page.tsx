@@ -108,7 +108,10 @@ async function getAllData() {
       const createdAtDate: Date = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
       const isGift = !!d.isGift;
 
-      totalPagesCount++; // conta todas, inclusive gifts
+      totalPagesCount++; // conta todas, inclusive gifts, drafts e não pagas
+
+      // Venda real = tem paymentId (webhook confirmou pagamento) OU é gift explícito
+      const isPaid = !!d.paymentId;
 
       const isUSD = d.paymentId && isNaN(Number(d.paymentId));
       const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
@@ -117,8 +120,8 @@ async function getAllData() {
         : (isUSD ? 14.90 : 19.90);
       const price = d.paidAmount ?? basePrice;
 
-      // Páginas de presente não contam como venda / receita
-      if (!isGift) {
+      // Páginas de presente e páginas sem pagamento (drafts) não contam como venda / receita
+      if (!isGift && isPaid) {
         totalSoldCount++;
         if (isUSD) totalSalesUSD += price;
         else { totalSalesBRL += price; totalBRLCount++; }
@@ -140,7 +143,7 @@ async function getAllData() {
         });
       }
 
-      if (isGift) continue; // gifts não afetam charts/fontes de tráfego
+      if (isGift || !isPaid) continue; // gifts e não-pagas não afetam charts/fontes de tráfego
 
       // Date-based analytics
       let date: string | null = null;
