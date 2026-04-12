@@ -206,18 +206,20 @@ function AbandonedPixSection() {
     return `https://wa.me/${full}?text=${encodeURIComponent(buildMessage(item))}`;
   };
 
-  if (loading) return null;
-  if (items.length === 0) return null;
+  const hasItems = items.length > 0;
 
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ border: '1px solid rgba(251,191,36,0.15)', background: 'rgba(251,191,36,0.03)' }}>
+      style={{
+        border: hasItems ? '1px solid rgba(251,191,36,0.2)' : '1px solid rgba(255,255,255,0.07)',
+        background: hasItems ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
+      }}>
       <div className="px-5 py-3 border-b flex items-center justify-between"
-        style={{ borderColor: 'rgba(251,191,36,0.1)' }}>
+        style={{ borderColor: hasItems ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2">
-          <ShoppingBag className="w-4 h-4 text-amber-400" />
-          <h2 className="text-sm font-bold text-amber-300">
-            {items.length} PIX abandonado{items.length > 1 ? 's' : ''}
+          <ShoppingBag className={`w-4 h-4 ${hasItems ? 'text-amber-400' : 'text-zinc-500'}`} />
+          <h2 className={`text-sm font-bold ${hasItems ? 'text-amber-300' : 'text-zinc-400'}`}>
+            {loading ? 'Carregando PIX abandonados...' : hasItems ? `${items.length} PIX abandonado${items.length > 1 ? 's' : ''}` : 'Nenhum PIX abandonado'}
           </h2>
         </div>
         <button onClick={() => { setLoading(true); load(); }}
@@ -225,6 +227,7 @@ function AbandonedPixSection() {
           atualizar
         </button>
       </div>
+      {hasItems && (
       <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
         {items.map(item => {
           const waLink = whatsappLink(item);
@@ -258,6 +261,7 @@ function AbandonedPixSection() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
