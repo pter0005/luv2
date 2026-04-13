@@ -753,17 +753,12 @@ TimelineStep.displayName = 'TimelineStep';
 // ─────────────────────────────────────────────
 const MusicStep = React.memo(() => {
     const { control, setValue, getValues } = useFormContext<PageData>();
-    const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const musicOption = useWatch({ control, name: "musicOption" });
     const youtubeUrl = useWatch({ control, name: "youtubeUrl" });
     const [isSearching, startSearchTransition] = useTransition();
     const [showManualLinkInput, setShowManualLinkInput] = useState(false);
     const manualLinkInputRef = useRef<HTMLInputElement>(null);
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
-    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'recorded' | 'uploading'>('idle');
-    const audioRecording = useWatch({ control, name: "audioRecording" });
 
     const handleSearchMusic = () => {
         const sName = getValues("songName");
@@ -795,73 +790,6 @@ const MusicStep = React.memo(() => {
         }
     };
 
-    const uploadRecording = async (audioBlob: Blob) => {
-        if (isUserLoading) {
-            toast({ variant: 'default', title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
-            return;
-        }
-        if (!storage || !user) {
-            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível salvar sua gravação. Faça login novamente.' });
-            return;
-        }
-        setRecordingStatus('uploading');
-        try {
-            const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
-            setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
-            setRecordingStatus('recorded');
-            toast({ title: 'Gravação Salva!', description: 'Sua mensagem de voz foi salva com segurança.' });
-        } catch (error: any) {
-            console.error("Error uploading audio:", error);
-            setRecordingStatus('recorded');
-            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Upload',
-                description: (
-                    <div>
-                        <p>Não foi possível salvar sua gravação.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                    </div>
-                )
-            });
-        }
-    };
-
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
-            audioChunksRef.current = [];
-            setValue("audioRecording", undefined, { shouldDirty: true });
-            mediaRecorderRef.current.ondataavailable = (event) => { audioChunksRef.current.push(event.data); };
-            mediaRecorderRef.current.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm;codecs=opus' });
-                uploadRecording(audioBlob);
-                audioChunksRef.current = [];
-            };
-            mediaRecorderRef.current.start();
-            setRecordingStatus("recording");
-        } catch (err: any) {
-            console.error("Error accessing microphone:", err);
-            toast({
-                variant: "destructive",
-                title: 'Erro no Microfone',
-                description: (
-                    <div>
-                        <p>Não foi possível acessar o microfone. Verifique as permissões do navegador.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {err.name || 'unknown'}</p>
-                    </div>
-                )
-            });
-        }
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorderRef.current && recordingStatus === "recording") {
-            mediaRecorderRef.current.stop();
-        }
-    };
-
     return (
         <div className="space-y-8">
             <FormField
@@ -883,10 +811,6 @@ const MusicStep = React.memo(() => {
                                 <FormItem>
                                     <FormControl><RadioGroupItem value="none" id="music-none" className="peer sr-only" /></FormControl>
                                     <Label htmlFor="music-none" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Nenhum Som</Label>
-                                </FormItem>
-                                <FormItem>
-                                    <FormControl><RadioGroupItem value="record" id="music-record" className="peer sr-only" /></FormControl>
-                                    <Label htmlFor="music-record" className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">Gravar Mensagem de Voz <Mic className="h-5 w-5" /></Label>
                                 </FormItem>
                                 <FormItem>
                                     <FormControl><RadioGroupItem value="youtube" id="music-youtube" className="peer sr-only" /></FormControl>
@@ -929,22 +853,6 @@ const MusicStep = React.memo(() => {
                             </div>
                         </div>
                     )}
-                </div>
-            )}
-            {musicOption === 'record' && (
-                <div className="space-y-4 rounded-lg border bg-card/80 p-4">
-                    <h4 className="font-semibold">Gravador de Voz</h4>
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
-                        {recordingStatus === "idle" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar</Button>}
-                        {recordingStatus === "recording" && <Button type="button" onClick={stopRecording} variant="destructive"><StopCircle className="mr-2 h-4 w-4" />Parar</Button>}
-                        {recordingStatus === "recorded" && <Button type="button" onClick={startRecording}><Mic className="mr-2 h-4 w-4" />Gravar Novamente</Button>}
-                        {recordingStatus === 'uploading' && <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</Button>}
-                        {audioRecording?.url && <audio src={audioRecording.url} controls className="w-full" />}
-                    </div>
-                    <p className="text-sm text-muted-foreground text-center sm:text-left mt-2">
-                        {recordingStatus === 'recording' && 'Gravando...'}
-                        {recordingStatus === 'recorded' && 'Gravação concluída. Ouça acima.'}
-                    </p>
                 </div>
             )}
         </div>
@@ -1139,6 +1047,240 @@ const IntroStep = React.memo(() => {
     );
 });
 IntroStep.displayName = "IntroStep";
+
+// ─────────────────────────────────────────────
+// VOICE MESSAGE STEP — Order bump (+R$5,90)
+// ─────────────────────────────────────────────
+const VOICE_MESSAGE_PRICE = 5.90;
+
+const VoiceMessageStep = React.memo(() => {
+    const { control, setValue } = useFormContext<PageData>();
+    const { user, storage, isUserLoading } = useFirebase();
+    const { toast } = useToast();
+    const audioRecording = useWatch({ control, name: "audioRecording" });
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const streamRef = useRef<MediaStream | null>(null);
+    const [status, setStatus] = useState<'idle' | 'recording' | 'uploading' | 'recorded'>(
+        audioRecording?.url ? 'recorded' : 'idle'
+    );
+    const [elapsed, setElapsed] = useState(0);
+    const timerRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (audioRecording?.url && status === 'idle') setStatus('recorded');
+    }, [audioRecording?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) window.clearInterval(timerRef.current);
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+        };
+    }, []);
+
+    const uploadRecording = async (audioBlob: Blob) => {
+        if (isUserLoading) {
+            toast({ title: 'Aguarde um momento', description: 'Verificando sua sessão...' });
+            return;
+        }
+        if (!storage || !user) {
+            setStatus('idle');
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Faça login novamente pra salvar sua gravação.' });
+            return;
+        }
+        setStatus('uploading');
+        try {
+            const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
+            setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
+            setStatus('recorded');
+            toast({ title: 'Mensagem salva! 💝', description: 'Sua voz vai emocionar demais.' });
+        } catch (error: any) {
+            console.error("Error uploading audio:", error);
+            setStatus('idle');
+            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            toast({
+                variant: 'destructive',
+                title: 'Erro no Upload',
+                description: (
+                    <div>
+                        <p>Não foi possível salvar sua gravação.</p>
+                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
+                    </div>
+                )
+            });
+        }
+    };
+
+    const startRecording = async () => {
+        if (status === 'recording' || status === 'uploading') return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
+            let mr: MediaRecorder;
+            try {
+                mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+            } catch {
+                // Safari iOS não suporta webm — cai no default do navegador.
+                mr = new MediaRecorder(stream);
+            }
+            mediaRecorderRef.current = mr;
+            audioChunksRef.current = [];
+            mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+            mr.onstop = () => {
+                // Usa o mimeType real do MediaRecorder (Safari pode usar mp4/aac).
+                const mime = mr.mimeType || 'audio/webm;codecs=opus';
+                const blob = new Blob(audioChunksRef.current, { type: mime });
+                audioChunksRef.current = [];
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(t => t.stop());
+                    streamRef.current = null;
+                }
+                uploadRecording(blob);
+            };
+            mr.start();
+            setStatus('recording');
+            setElapsed(0);
+            if (timerRef.current) window.clearInterval(timerRef.current);
+            timerRef.current = window.setInterval(() => {
+                setElapsed(prev => {
+                    if (prev >= 59) {
+                        stopRecording();
+                        return 60;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+        } catch (err: any) {
+            console.error("Error accessing microphone:", err);
+            toast({
+                variant: "destructive",
+                title: 'Microfone bloqueado',
+                description: 'Libere o microfone nas permissões do navegador pra gravar.',
+            });
+        }
+    };
+
+    const stopRecording = () => {
+        if (timerRef.current) { window.clearInterval(timerRef.current); timerRef.current = null; }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+    };
+
+    const removeRecording = () => {
+        setValue("audioRecording", undefined, { shouldDirty: true, shouldValidate: true });
+        setStatus('idle');
+        setElapsed(0);
+    };
+
+    const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+
+    return (
+        <div className="space-y-6">
+            <div className="relative overflow-hidden rounded-3xl border-2 border-pink-500/40 bg-gradient-to-br from-pink-500/10 via-fuchsia-500/10 to-rose-500/10 p-6 shadow-2xl">
+                <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-pink-500/30 blur-3xl animate-pulse" />
+                <div className="absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
+                <div className="relative z-10">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-pink-500/40">
+                                <Mic className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold leading-tight">Mensagem de Voz</h3>
+                                <p className="text-xs text-muted-foreground">A parte mais emocionante da página</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-xs font-bold shadow-lg">
+                                + R$ 5,90
+                            </span>
+                            <span className="text-[10px] text-muted-foreground mt-1">opcional</span>
+                        </div>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                        Grave até <strong>60 segundos</strong> da sua voz. Imagina o rostinho dela ao abrir a página e ouvir <em>você</em> dizendo o que sente. 🥹
+                    </p>
+
+                    {status === 'idle' && (
+                        <button
+                            type="button"
+                            onClick={startRecording}
+                            className="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-500 to-fuchsia-500 px-6 py-5 text-white font-bold shadow-xl shadow-pink-500/40 transition-all hover:scale-[1.02] active:scale-95"
+                        >
+                            <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
+                            <span className="relative flex items-center justify-center gap-3">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                                    <span className="relative inline-flex h-3 w-3 rounded-full bg-white" />
+                                </span>
+                                Gravar minha mensagem
+                            </span>
+                        </button>
+                    )}
+
+                    {status === 'recording' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-500/20 border border-red-500/40">
+                                <span className="relative flex h-4 w-4">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                                    <span className="relative inline-flex h-4 w-4 rounded-full bg-red-500" />
+                                </span>
+                                <span className="font-mono text-2xl font-bold tabular-nums">{mmss}</span>
+                                <span className="text-xs text-red-300 uppercase tracking-wider">Gravando</span>
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={stopRecording}
+                                variant="destructive"
+                                className="w-full py-6 text-base font-bold"
+                            >
+                                <StopCircle className="mr-2 h-5 w-5" />
+                                Parar gravação
+                            </Button>
+                        </div>
+                    )}
+
+                    {status === 'uploading' && (
+                        <div className="flex items-center justify-center gap-3 py-6 rounded-2xl bg-card border border-border">
+                            <Loader2 className="h-5 w-5 animate-spin text-pink-500" />
+                            <span className="text-sm font-medium">Salvando sua mensagem...</span>
+                        </div>
+                    )}
+
+                    {status === 'recorded' && audioRecording?.url && (
+                        <div className="space-y-3">
+                            <div className="rounded-2xl bg-card/80 border border-pink-500/30 p-4 backdrop-blur">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm font-semibold text-green-500">Mensagem gravada</span>
+                                </div>
+                                <audio src={audioRecording.url} controls className="w-full" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button type="button" variant="outline" onClick={startRecording}>
+                                    <Mic className="mr-2 h-4 w-4" /> Gravar de novo
+                                </Button>
+                                <Button type="button" variant="ghost" onClick={removeRecording} className="text-muted-foreground hover:text-destructive">
+                                    <Trash className="mr-2 h-4 w-4" /> Remover
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <p>
+                    O valor de R$ 5,90 só é cobrado se você gravar uma mensagem. Pode pular essa etapa sem problema.
+                </p>
+            </div>
+        </div>
+    );
+});
+VoiceMessageStep.displayName = "VoiceMessageStep";
 
 // ─────────────────────────────────────────────
 // PUZZLE STEP — FIX #5: toast quando !user || !storage
@@ -1760,19 +1902,20 @@ PlanStep.displayName = "PlanStep";
 // índice 11 (payment) é tratado separadamente no WizardInternal
 // ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,       // 0 - title
-    MessageStep,     // 1 - message
-    SpecialDateStep, // 2 - specialDate
-    GalleryStep,     // 3 - gallery
-    TimelineStep,    // 4 - timeline
-    MusicStep,       // 5 - music
-    BackgroundStep,  // 6 - background
-    IntroStep,       // 7 - intro
-    PuzzleStep,      // 8 - puzzle
-    MemoryGameStep,  // 9 - memory
-    QuizStep,        // 10 - quiz
-    WordGameStep,    // 11 - word game
-    PlanStep,        // 12 - plan
+    TitleStep,         // 0 - title
+    MessageStep,       // 1 - message
+    SpecialDateStep,   // 2 - specialDate
+    GalleryStep,       // 3 - gallery
+    TimelineStep,      // 4 - timeline
+    MusicStep,         // 5 - music
+    BackgroundStep,    // 6 - background
+    IntroStep,         // 7 - intro
+    PuzzleStep,        // 8 - puzzle
+    MemoryGameStep,    // 9 - memory
+    QuizStep,          // 10 - quiz
+    WordGameStep,      // 11 - word game
+    PlanStep,          // 12 - plan
+    VoiceMessageStep,  // 13 - voice
 ];
 
 // ─────────────────────────────────────────────
@@ -1906,6 +2049,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const WORD_GAME_PRICE = 2.00;
     const introType = watch('introType');
     const hasIntro = introType === 'love';
+    const audioRecordingField = watch('audioRecording');
+    const hasVoiceMessage = !!audioRecordingField?.url;
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
     const offerExpired = typeof window !== 'undefined' && (() => {
@@ -1917,7 +2062,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const basePriceBRL = plan === 'basico'
         ? 19.90
         : (offerExpired ? 27.90 : 24.90);
-    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + (hasIntro ? INTRO_PRICE : 0) - discountAmount);
+    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + (hasIntro ? INTRO_PRICE : 0) + (hasVoiceMessage ? VOICE_MESSAGE_PRICE : 0) - discountAmount);
     const totalUSD = basePriceUSD;
 
     const adminEmails = ADMIN_EMAILS;
@@ -1949,14 +2094,32 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPageId(pageId);
         localStorage.removeItem('amore-pages-autosave');
 
+        // ── DEDUP GUARD ───────────────────────────────────────────────
+        // Impede que o mesmo pageId dispare Purchase mais de uma vez neste
+        // browser, mesmo se o componente remontar, o usuário voltar pra página,
+        // ou o polling bater várias vezes.
+        const dedupeKey = `purchase_fired_${pageId}`;
+        try {
+            if (sessionStorage.getItem(dedupeKey)) {
+                console.log('[Pixel] Purchase já disparado pra', pageId, '— pulando.');
+                return;
+            }
+            sessionStorage.setItem(dedupeKey, '1');
+        } catch (_) { /* sessionStorage bloqueado */ }
+
+        const planVal = getValues('plan');
+        // Usa o totalBRL real (inclui add-ons: voice, intro, word game, desconto).
+        // Fallback defensivo caso totalBRL não esteja pronto.
+        const value = Number.isFinite(totalBRL) && totalBRL > 0
+            ? Number(totalBRL.toFixed(2))
+            : (planVal === 'avancado' ? 24.90 : 19.90);
+
         // ── TIKTOK PIXEL ──────────────────────────────────────────────
         try {
             const ttq = (window as any).ttq;
             if (ttq) {
-                const planVal = getValues('plan');
-                const priceBRL = planVal === 'avancado' ? 24.90 : 19.90;
                 ttq.track('CompletePayment', {
-                    value: priceBRL,
+                    value,
                     currency: 'BRL',
                     content_id: pageId,
                     content_type: 'product',
@@ -1968,17 +2131,17 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         }
 
         // ── META PIXEL ────────────────────────────────────────────────
+        // eventID = pageId permite o Meta deduplicar este fire com o CAPI server-side
+        // (que também usa pageId como event_id).
         const fireMeta = (retries = 15) => {
             if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                const planVal = getValues('plan');
-                const value = planVal === 'avancado' ? 24.90 : 19.90;
                 window.fbq('track', 'Purchase', {
                     value,
                     currency: 'BRL',
                     content_ids: [planVal],
                     content_type: 'product',
-                });
-                console.log('[Meta Pixel] Purchase disparado:', { value, planVal });
+                }, { eventID: pageId });
+                console.log('[Meta Pixel] Purchase disparado:', { value, planVal, eventID: pageId });
             } else if (retries > 0) {
                 setTimeout(() => fireMeta(retries - 1), 500);
             } else {
@@ -1989,14 +2152,14 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
         // ── GA4 ───────────────────────────────────────────────────────
         trackEvent('Purchase', {
-            value: getValues('plan') === 'avancado' ? 24.90 : 19.90,
+            value,
             currency: 'BRL',
             transaction_id: pageId,
-            items: [{ item_name: getValues('plan') === 'avancado' ? 'Plano Avançado' : 'Plano Básico' }],
+            items: [{ item_name: planVal === 'avancado' ? 'Plano Avançado' : 'Plano Básico' }],
         });
         // ─────────────────────────────────────────────────────────────
 
-    }, [setPageId, toast, getValues]);
+    }, [setPageId, toast, getValues, totalBRL]);
 
     const startPolling = useCallback((paymentId: string, currentIntentId: string) => {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current!);
@@ -2827,23 +2990,8 @@ const SuccessStep = ({
       }
     };
 
-    useEffect(() => {
-        const plan = getValues('plan') as string;
-        const price = plan === 'basico' ? 19.90 : 24.90;
-    
-        // Meta Pixel
-        if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
-            (window as any).fbq('track', 'Purchase', { value: price, currency: 'BRL' });
-        }
-        // TikTok
-        if (typeof window !== 'undefined' && (window as any).ttq) {
-            (window as any).ttq.track('CompletePayment', { value: price, currency: 'BRL' });
-        }
-        // GA4
-        if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-            window.gtag('event', 'purchase', { value: price, currency: 'BRL', transaction_id: pageId });
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Nota: Purchase já é disparado em handlePaymentSuccess com deduplicação por pageId.
+    // Este step é só UI — não dispara pixel de novo pra não inflar contagem.
 
     const handleCopy = () => {
         navigator.clipboard.writeText(pageUrl).then(() => {
@@ -3028,7 +3176,7 @@ function WizardInternal() {
         { id: "specialDate",title: segCfg.dateStepTitle,        description: segCfg.dateStepDescription,     fields: ["specialDate", "countdownStyle", "countdownColor"] },
         { id: "gallery",    title: 'Galeria de Fotos',          description: segCfg.galleryStepDescription,  fields: ["galleryImages", "galleryStyle"] },
         { id: "timeline",   title: 'Linha do Tempo 3D',         description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
-        { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl", "audioRecording"] },
+        { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl"] },
         { id: "background", title: 'Animação de Fundo',         description: 'Escolha um efeito especial para o fundo.',        fields: ["backgroundAnimation", "heartColor"] },
         { id: "intro",      title: 'Introdução do Site',        description: 'Adicione uma animação interativa antes da página abrir.',  fields: ["introType"] },
         { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
@@ -3036,6 +3184,7 @@ function WizardInternal() {
         { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
         { id: "word-game",  title: 'Adivinhe a Palavra 💘',     description: 'Crie palavras secretas para a pessoa amada descobrir letra por letra.',  fields: ["enableWordGame", "wordGameQuestions"] },
         { id: "plan",       title: 'Escolha seu Plano',         description: 'Selecione o plano ideal para sua página.',        fields: ["plan"] },
+        { id: "voice",      title: 'Mensagem de Voz',           description: 'Grave sua voz pra deixar a surpresa ainda mais especial.',  fields: ["audioRecording"] },
         { id: "payment",    title: 'Finalizar',                 description: 'Pague para gerar o link e QR Code.',              fields: ["payment", "qrCodeDesign"] },
     // eslint-disable-line react-hooks/exhaustive-deps
     ], [segmentKey]);
@@ -3201,10 +3350,25 @@ function WizardInternal() {
         });
         stepEnterTimeRef.current = Date.now();
 
-        if (currentStepId === 'plan' && nextStepId === 'payment') {
+        // Estimativa de valor pra eventos de funil (AddToCart/InitiateCheckout).
+        // Inclui add-ons conhecidos pelo form state. Não inclui desconto/qrCode
+        // porque esses vivem no PaymentStep — o valor final preciso é disparado
+        // no Purchase (handlePaymentSuccess) com totalBRL real.
+        const estimateValue = () => {
+            const fd = getValues();
+            const base = fd.plan === 'basico' ? 19.90 : 24.90;
+            const voice = fd.audioRecording?.url ? 5.90 : 0;
+            const intro = fd.introType === 'love' ? 5.90 : 0;
+            const wordGame = (fd.enableWordGame && (fd.wordGameQuestions?.length ?? 0) > 0) ? 2.00 : 0;
+            return Number((base + voice + intro + wordGame).toFixed(2));
+        };
+
+        // AddToCart ao sair da etapa de plano (independe do próximo step,
+        // agora que 'voice' fica entre 'plan' e 'payment').
+        if (currentStepId === 'plan') {
             const planVal = getValues('plan');
             trackEvent('AddToCart', {
-                value: planVal === 'avancado' ? 24.90 : 19.90,
+                value: estimateValue(),
                 currency: 'BRL',
                 content_ids: [planVal],
                 content_type: 'product',
@@ -3216,7 +3380,7 @@ function WizardInternal() {
             await handleAutosave();
             const planVal = getValues('plan');
             trackEvent('InitiateCheckout', {
-                value: planVal === 'avancado' ? 24.90 : 19.90,
+                value: estimateValue(),
                 currency: 'BRL',
                 content_ids: [planVal],
                 content_type: 'product',

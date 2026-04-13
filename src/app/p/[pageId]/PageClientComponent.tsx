@@ -37,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Imports Dinâmicos
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
+const YoutubePlayerV2 = dynamic(() => import('@/components/ui/YoutubePlayerV2'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
@@ -446,17 +447,27 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex flex-col items-center gap-3">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
-                <YoutubePlayer
-                  ref={playerRef}
-                  url={pageData.youtubeUrl}
-                  songName={pageData.songName}
-                  artistName={pageData.artistName}
-                  volume={0.6}
-                />
+                isAdmin ? (
+                  <YoutubePlayerV2
+                    ref={playerRef}
+                    url={pageData.youtubeUrl}
+                    songName={pageData.songName}
+                    artistName={pageData.artistName}
+                    volume={0.6}
+                  />
+                ) : (
+                  <YoutubePlayer
+                    ref={playerRef}
+                    url={pageData.youtubeUrl}
+                    songName={pageData.songName}
+                    artistName={pageData.artistName}
+                    volume={0.6}
+                  />
+                )
              )}
 
-             {pageData.musicOption === 'record' && pageData.audioRecording?.url && (
-                <div className="bg-black/60 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl w-full">
+             {pageData.audioRecording?.url && (
+                <div className="w-full">
                     <CustomAudioPlayer src={pageData.audioRecording.url} />
                 </div>
              )}

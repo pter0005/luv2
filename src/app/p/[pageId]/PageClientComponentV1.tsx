@@ -304,8 +304,8 @@ export default function PageClientComponentV1({ pageData }: { pageData: any }) {
                 />
              )}
              
-             {pageData.musicOption === 'record' && pageData.audioRecording?.url && (
-                <div className="bg-black/60 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl w-full">
+             {pageData.audioRecording?.url && (
+                <div className="w-full">
                     <CustomAudioPlayer src={pageData.audioRecording.url} />
                 </div>
              )}

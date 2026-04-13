@@ -45,10 +45,23 @@ function CreatingPageContent() {
             setIsFinalized(true);
             setPageId(page.id);
 
+            // ── DEDUP GUARD ─────────────────────────────────────────
+            // Se o wizard já disparou Purchase pra este pageId, não dispara de novo.
+            // Meta também deduplicaria via eventID, mas sessionStorage evita fire desnecessário.
+            const dedupeKey = `purchase_fired_${page.id}`;
+            try {
+                if (sessionStorage.getItem(dedupeKey)) {
+                    console.log('[Pixel] Purchase já disparado pra', page.id, '— pulando.');
+                    return;
+                }
+                sessionStorage.setItem(dedupeKey, '1');
+            } catch (_) { /* sessionStorage bloqueado */ }
+
+            const plan = page.plan || 'avancado';
+            const value = PLAN_PRICES[plan] ?? 24.90;
+
             // ─── TIKTOK PIXEL ───────────────────────────────────────
             if (typeof window !== 'undefined' && window.ttq?.track) {
-                const plan = page.plan || 'avancado';
-                const value = PLAN_PRICES[plan] ?? 24.90;
                 window.ttq.track('Purchase', {
                     value,
                     currency: 'BRL',
@@ -63,16 +76,15 @@ function CreatingPageContent() {
             }
 
             // ─── META PIXEL ─────────────────────────────────────────
+            // eventID = pageId permite o Meta deduplicar com o CAPI server-side.
             const fireMeta = (retries = 5) => {
                 if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
-                    const plan = page.plan || 'avancado';
-                    const value = PLAN_PRICES[plan] ?? 24.90;
                     window.fbq('track', 'Purchase', {
                         value,
                         currency: 'BRL',
                         content_ids: [plan],
                         content_type: 'product',
-                    });
+                    }, { eventID: page.id });
                 } else if (retries > 0) {
                     setTimeout(() => fireMeta(retries - 1), 500);
                 }

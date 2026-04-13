@@ -36,6 +36,9 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
       body: JSON.stringify({
         data: [{
           event_name: 'Purchase',
+          // event_id = pageId permite o Meta deduplicar este CAPI com o pixel do browser
+          // (que também usa pageId como eventID). Cada venda real = 1 event_id único.
+          event_id: pageId,
           event_time: Math.floor(Date.now() / 1000),
           event_source_url: 'https://mycupid.com.br/criar/fazer-eu-mesmo',
           action_source: 'website',

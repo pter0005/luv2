@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const db = getAdminFirestore();
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     // Sem orderBy pra evitar exigir índice composto no Firestore
@@ -20,8 +19,9 @@ export async function GET() {
       .filter(doc => {
         const d = doc.data();
         const updated = d.updatedAt?.toDate?.() || d.createdAt?.toDate?.() || new Date(0);
-        // Entre 5 min e 7 dias atrás (pega cedo, PIX ainda tá válido)
-        return updated < fiveMinAgo && updated > sevenDaysAgo;
+        // PIX gerado nos últimos 7 dias — aparece imediatamente após geração.
+        // Quando pago, o status muda pra 'completed' e sai automaticamente daqui.
+        return updated > sevenDaysAgo;
       })
       .sort((a, b) => {
         const ta = (a.data().updatedAt?.toDate?.() || a.data().createdAt?.toDate?.() || new Date(0)).getTime();

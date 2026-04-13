@@ -269,7 +269,7 @@ export default function PreviewContent({
                                 />
                             )}
 
-                            {isClient && formData.musicOption === 'record' && formData.audioRecording?.url && (
+                            {isClient && formData.audioRecording?.url && (
                             <CustomAudioPlayer src={formData.audioRecording.url} />
                             )}
                         </div>

@@ -5,6 +5,7 @@ import {
   Copy, Check, RefreshCw, ShoppingBag,
   Search, MessageCircle, CheckCircle2, Edit3, RotateCcw, X,
   Sparkles, Plus, Trash2, Star, StarOff, BookmarkPlus, ChevronDown, ChevronUp,
+  ExternalLink, Eye,
 } from 'lucide-react';
 
 type AbandonedPix = {
@@ -30,6 +31,7 @@ type MessagePreset = {
 type FilterMode = 'all' | 'pending' | 'contacted' | 'with_whatsapp';
 
 const LINK = 'https://mycupid.com.br/criar/fazer-eu-mesmo?plan=avancado';
+const EXAMPLE_PAGE_URL = 'https://mycupid.com.br/p/FmpSee8q4pO4mEzmXo45';
 
 // Emojis universais — Unicode 6.0 (2010), funcionam em qualquer aparelho antigo/novo
 const SAFE_EMOJIS = ['😊', '😉', '😢', '❤️', '💜', '💖', '💕', '🎉', '✨', '🙏', '👀', '😍', '🌸', '💫', '😎', '😘'];
@@ -304,6 +306,38 @@ export default function RecuperarPixClient() {
           <StatBox label="A contactar" value={stats.pending} color="#f87171" />
           <StatBox label="Já contatados" value={stats.contacted} color="#34d399" />
           <StatBox label="Potencial" value={`R$${stats.totalAmount.toFixed(0)}`} color="#a78bfa" />
+        </div>
+
+        {/* ── Página de exemplo pra mostrar pro prospect ───────────── */}
+        <div className="relative mt-3 flex items-center gap-2 flex-wrap">
+          <a
+            href={EXAMPLE_PAGE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-purple-200 hover:text-white transition-colors"
+            style={{
+              background: 'rgba(168,85,247,0.12)',
+              border: '1px solid rgba(168,85,247,0.3)',
+            }}>
+            <Eye className="w-3 h-3" />
+            Ver página exemplo
+            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </a>
+          <button
+            onClick={async () => {
+              try { await navigator.clipboard.writeText(EXAMPLE_PAGE_URL); } catch {}
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-300 hover:text-white transition-colors"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+            <Copy className="w-3 h-3" />
+            Copiar link do exemplo
+          </button>
+          <span className="text-[10px] text-zinc-500 truncate flex-1 min-w-0">
+            {EXAMPLE_PAGE_URL}
+          </span>
         </div>
       </div>
 
@@ -706,7 +740,7 @@ function PixCard({
                 className="w-full px-3 py-2.5 bg-transparent text-xs text-white placeholder:text-zinc-600 focus:outline-none resize-none font-mono leading-relaxed"
                 placeholder="Escreva sua mensagem personalizada..."
               />
-              {/* Safe emoji palette */}
+              {/* Safe emoji palette + example link quick-insert */}
               <div className="px-3 py-2 border-t flex items-center gap-1 flex-wrap"
                 style={{ borderColor: 'rgba(251,191,36,0.15)', background: 'rgba(0,0,0,0.15)' }}>
                 <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mr-1">Emojis seguros:</span>
@@ -719,6 +753,13 @@ function PixCard({
                     {e}
                   </button>
                 ))}
+                <button
+                  onClick={() => onMessageChange((message + '\n\nVeja um exemplo: ' + EXAMPLE_PAGE_URL).slice(0, 1000))}
+                  className="ml-auto flex items-center gap-1 text-[9px] font-bold text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-full px-2 py-0.5 transition-colors"
+                  title="Inserir link da página de exemplo">
+                  <Eye className="w-2.5 h-2.5" />
+                  + Exemplo
+                </button>
               </div>
               <div className="px-3 py-2 border-t flex items-center gap-1.5 flex-wrap"
                 style={{ borderColor: 'rgba(251,191,36,0.15)', background: 'rgba(0,0,0,0.2)' }}>
