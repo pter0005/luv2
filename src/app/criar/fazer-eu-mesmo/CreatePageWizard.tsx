@@ -2180,11 +2180,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         return () => { if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current); };
     }, [pixData, intentId, startPolling]);
 
-    // PIX expiry countdown (30 min)
+    // PIX expiry countdown (15 min)
     useEffect(() => {
         if (!pixData) { setPixExpired(false); setPixTimeLeft(0); return; }
         if (!pixCreatedAtRef.current) pixCreatedAtRef.current = Date.now();
-        const PIX_TTL = 30 * 60 * 1000; // 30 min
+        const PIX_TTL = 15 * 60 * 1000; // 15 min
         const tick = () => {
             const elapsed = Date.now() - pixCreatedAtRef.current;
             const remaining = Math.max(0, PIX_TTL - elapsed);
@@ -2888,11 +2888,39 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         <>
                             <h3 className="text-xl font-bold font-headline">Pague com PIX para Finalizar</h3>
                             <p className="text-muted-foreground max-w-sm">Escaneie o QR Code com o aplicativo do seu banco ou use o código &quot;Copia e Cola&quot;.</p>
-                            {pixTimeLeft > 0 && (
-                                <p className="text-xs text-zinc-500">
-                                    Expira em <span className="font-mono font-bold text-zinc-300">{Math.floor(pixTimeLeft / 60)}:{String(pixTimeLeft % 60).padStart(2, '0')}</span>
-                                </p>
-                            )}
+                            {pixTimeLeft > 0 && (() => {
+                                const mm = Math.floor(pixTimeLeft / 60);
+                                const ss = pixTimeLeft % 60;
+                                const pct = Math.max(0, Math.min(100, (pixTimeLeft / 900) * 100));
+                                const isCritical = pixTimeLeft <= 180; // ≤ 3min
+                                const isWarning = pixTimeLeft <= 360 && pixTimeLeft > 180; // 3-6min
+                                const tone = isCritical
+                                    ? { border: 'border-red-500/40', bg: 'bg-red-500/10', text: 'text-red-300', label: 'text-red-300/90', bar: 'bg-red-500' }
+                                    : isWarning
+                                    ? { border: 'border-amber-500/40', bg: 'bg-amber-500/10', text: 'text-amber-200', label: 'text-amber-200/90', bar: 'bg-amber-400' }
+                                    : { border: 'border-zinc-700/60', bg: 'bg-zinc-900/60', text: 'text-zinc-100', label: 'text-zinc-400', bar: 'bg-zinc-400' };
+                                return (
+                                    <div className={cn('w-full max-w-sm rounded-2xl border backdrop-blur-sm px-4 py-3 flex items-center gap-3', tone.border, tone.bg)}>
+                                        <div className={cn('shrink-0 w-9 h-9 rounded-full flex items-center justify-center border', tone.border)}>
+                                            <Clock className={cn('w-4 h-4', tone.text)} />
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <div className={cn('text-[10px] uppercase tracking-wider font-semibold', tone.label)}>
+                                                {isCritical ? 'Últimos minutos!' : 'Garanta sua página'}
+                                            </div>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span className={cn('text-xl font-black font-mono tabular-nums leading-none', tone.text)}>
+                                                    {String(mm).padStart(2, '0')}:{String(ss).padStart(2, '0')}
+                                                </span>
+                                                <span className={cn('text-[10px]', tone.label)}>até expirar</span>
+                                            </div>
+                                            <div className="mt-1.5 h-1 rounded-full bg-white/5 overflow-hidden">
+                                                <div className={cn('h-full transition-[width] duration-1000 ease-linear', tone.bar)} style={{ width: `${pct}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             <div className="p-4 bg-white rounded-lg border">
                                 {pixData.qrCodeBase64 ? (
                                     <Image src={`data:image/png;base64,${pixData.qrCodeBase64}`} alt="PIX QR Code" width={256} height={256} unoptimized />

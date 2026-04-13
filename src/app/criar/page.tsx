@@ -158,17 +158,17 @@ export default function CriarPage() {
             disabled={!!loadingKey}
             className="w-full relative text-left rounded-2xl p-5 sm:p-6 transition-all active:scale-[0.99] group"
             style={{
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(109,40,217,0.12) 100%)',
-              border: '1.5px solid rgba(168,85,247,0.55)',
-              boxShadow: '0 0 32px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(109,40,217,0.08) 100%)',
+              border: '1px solid rgba(168,85,247,0.35)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
           >
-            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-black text-white tracking-widest uppercase"
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-bold text-white/90 tracking-wider uppercase"
               style={{
-                background: 'linear-gradient(90deg, #9333ea, #c026d3)',
-                boxShadow: '0 4px 14px rgba(147,51,234,0.45)',
+                background: 'rgba(147,51,234,0.8)',
+                border: '1px solid rgba(255,255,255,0.08)',
               }}>
-              ⚡ Mais Popular
+              Mais popular
             </div>
 
             <div className="flex items-center gap-4">
@@ -202,17 +202,16 @@ export default function CriarPage() {
             disabled={!!loadingKey}
             className="w-full relative text-left rounded-2xl p-5 sm:p-6 transition-all active:scale-[0.99] group"
             style={{
-              background: 'linear-gradient(135deg, rgba(251,146,60,0.12) 0%, rgba(236,72,153,0.08) 100%)',
-              border: '1.5px solid rgba(251,146,60,0.35)',
-              boxShadow: '0 0 24px rgba(251,146,60,0.12)',
+              background: 'linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(236,72,153,0.05) 100%)',
+              border: '1px solid rgba(251,146,60,0.22)',
             }}
           >
-            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-black text-white tracking-widest uppercase flex items-center gap-1"
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-bold text-white/90 tracking-wider uppercase"
               style={{
-                background: 'linear-gradient(90deg, #f97316, #ec4899)',
-                boxShadow: '0 4px 14px rgba(249,115,22,0.4)',
+                background: 'rgba(249,115,22,0.75)',
+                border: '1px solid rgba(255,255,255,0.08)',
               }}>
-              🎉 Dia do Amigo
+              Dia do Amigo
             </div>
 
             <div className="flex items-center gap-4">
@@ -386,7 +385,7 @@ export default function CriarPage() {
               className="w-full py-4 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 relative overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
-                boxShadow: '0 0 30px rgba(147,51,234,0.5), 0 4px 16px rgba(0,0,0,0.3)',
+                boxShadow: '0 0 14px rgba(147,51,234,0.18), 0 4px 16px rgba(0,0,0,0.25)',
                 opacity: confirming ? 0.7 : 1,
               }}
             >

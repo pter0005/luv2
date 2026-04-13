@@ -5,7 +5,7 @@ import {
   Copy, Check, RefreshCw, ShoppingBag,
   Search, MessageCircle, CheckCircle2, Edit3, RotateCcw, X,
   Sparkles, Plus, Trash2, Star, StarOff, BookmarkPlus, ChevronDown, ChevronUp,
-  ExternalLink, Eye,
+  ExternalLink, Eye, Zap, AlertTriangle,
 } from 'lucide-react';
 
 type AbandonedPix = {
@@ -102,6 +102,10 @@ export default function RecuperarPixClient() {
   const [search, setSearch] = useState('');
   const [customMessages, setCustomMessages] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // ── BROADCAST (disparar pra todos) ───────────────────────────────
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{ opened: number; blocked: number } | null>(null);
 
   // Presets
   const [customPresets, setCustomPresets] = useState<MessagePreset[]>([]);
@@ -238,6 +242,43 @@ export default function RecuperarPixClient() {
     if (!item.contacted) markContacted(item, true);
   };
 
+  // Dispara WhatsApp pra todos os itens elegíveis do filtro atual.
+  // Abre N abas sincronamente dentro do click handler pra respeitar popup blocker.
+  const handleSendAll = (targets: AbandonedPix[]) => {
+    let opened = 0;
+    let blocked = 0;
+    const openedIds: string[] = [];
+    for (const item of targets) {
+      const link = whatsappLink(item, getMessage(item));
+      if (!link) continue;
+      const w = window.open(link, '_blank', 'noopener,noreferrer');
+      if (w) {
+        opened++;
+        openedIds.push(item.id);
+      } else {
+        blocked++;
+      }
+    }
+
+    // Marca todas que abriram como contatadas (otimista + API fire-and-forget)
+    if (openedIds.length > 0) {
+      const nowIso = new Date().toISOString();
+      setItems(prev => prev.map(p =>
+        openedIds.includes(p.id) ? { ...p, contacted: true, contactedAt: nowIso } : p
+      ));
+      openedIds.forEach(id => {
+        fetch('/api/admin/abandoned-pix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, contacted: true }),
+        }).catch(() => {});
+      });
+    }
+
+    setBroadcastResult({ opened, blocked });
+    setBroadcastOpen(false);
+  };
+
   const filtered = useMemo(() => {
     return items.filter(item => {
       if (filter === 'pending' && item.contacted) return false;
@@ -260,6 +301,16 @@ export default function RecuperarPixClient() {
     const totalAmount = items.reduce((s, i) => s + (i.amount || 0), 0);
     return { total, contacted, pending: total - contacted, withWhats, totalAmount };
   }, [items]);
+
+  // Itens do filtro atual que têm WhatsApp válido E ainda não foram contatados.
+  const eligibleForBroadcast = useMemo(
+    () => filtered.filter(i =>
+      !i.contacted &&
+      i.whatsapp !== '—' &&
+      i.whatsapp.replace(/\D/g, '').length >= 10
+    ),
+    [filtered]
+  );
 
   if (loading) {
     return (
@@ -307,6 +358,33 @@ export default function RecuperarPixClient() {
           <StatBox label="Já contatados" value={stats.contacted} color="#34d399" />
           <StatBox label="Potencial" value={`R$${stats.totalAmount.toFixed(0)}`} color="#a78bfa" />
         </div>
+
+        {/* ── BROADCAST — disparar WhatsApp pra todos do filtro ───── */}
+        <button
+          onClick={() => setBroadcastOpen(true)}
+          disabled={eligibleForBroadcast.length === 0}
+          className="relative mt-3 w-full group overflow-hidden rounded-xl py-3 px-4 text-white font-black text-sm transition-all disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:scale-[1.01] enabled:active:scale-[0.99]"
+          style={{
+            background: eligibleForBroadcast.length > 0
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : 'rgba(255,255,255,0.04)',
+            border: eligibleForBroadcast.length > 0
+              ? '1px solid rgba(16,185,129,0.5)'
+              : '1px solid rgba(255,255,255,0.08)',
+            boxShadow: eligibleForBroadcast.length > 0
+              ? '0 8px 24px rgba(16,185,129,0.3)'
+              : 'none',
+          }}>
+          {eligibleForBroadcast.length > 0 && (
+            <span className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors pointer-events-none" />
+          )}
+          <span className="relative flex items-center justify-center gap-2">
+            <Zap className="w-4 h-4" />
+            {eligibleForBroadcast.length > 0
+              ? `Disparar WhatsApp pros ${eligibleForBroadcast.length} do filtro`
+              : 'Nenhum elegível no filtro atual'}
+          </span>
+        </button>
 
         {/* ── Página de exemplo pra mostrar pro prospect ───────────── */}
         <div className="relative mt-3 flex items-center gap-2 flex-wrap">

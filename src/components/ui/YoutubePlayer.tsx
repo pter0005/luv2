@@ -26,21 +26,22 @@ const getYoutubeThumbnail = (url: string) => {
     return videoId ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg` : null;
 };
 
-const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({ 
-  url, 
-  songName, 
-  artistName, 
+const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
+  url,
+  songName,
+  artistName,
   coverImage,
   volume = 0.5,
-  autoplay = false
+  autoplay = true
 }, ref) => {
   const [hasWindow, setHasWindow] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true); // Always start muted for autoplay to work
+  const [isPlaying, setIsPlaying] = useState(true); // Start true — muted autoplay always allowed
+  const [isMuted, setIsMuted] = useState(true); // Start muted; unlock on first user gesture
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
+  const pendingPlayRef = useRef(false);
 
   const thumbnailUrl = getYoutubeThumbnail(url);
   const finalCoverImage = coverImage || thumbnailUrl || "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000";
@@ -51,12 +52,56 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
     }
   }, []);
 
+  // Global unlock: once the user touches ANY part of the page, unmute.
+  // This is the key fix for "precisa clicar duas vezes" — the music is already
+  // playing muted, and the first page interaction (puzzle reveal, button click,
+  // scroll, anything) unmutes it automatically.
+  useEffect(() => {
+    if (!isMuted) return;
+    const unlock = () => {
+      setIsMuted(false);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('click', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('click', unlock);
+    };
+  }, [isMuted]);
+
+  // If parent called play() before the player was ready, fire it now.
+  useEffect(() => {
+    if (isReady && pendingPlayRef.current) {
+      pendingPlayRef.current = false;
+      setIsMuted(false);
+      setIsPlaying(true);
+      try {
+        const p = playerRef.current;
+        if (p) p.seekTo(p.getCurrentTime?.() ?? 0, 'seconds');
+      } catch {}
+    }
+  }, [isReady]);
+
   useImperativeHandle(ref, () => ({
     play: () => {
-      if (isReady) {
-        setIsMuted(false);
-        setIsPlaying(true);
+      if (!isReady) {
+        pendingPlayRef.current = true;
+        return;
       }
+      setIsMuted(false);
+      setIsPlaying(true);
+      try {
+        const p = playerRef.current;
+        if (p) p.seekTo(p.getCurrentTime?.() ?? 0, 'seconds');
+      } catch {}
     }
   }), [isReady]);
 
