@@ -6,7 +6,6 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useUser } from '@/firebase';
-import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -36,7 +35,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 // Imports Dinâmicos
-const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
 const YoutubePlayerV2 = dynamic(() => import('@/components/ui/YoutubePlayerV2'), { ssr: false });
 const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
@@ -187,7 +185,6 @@ function ExpiryBanner({ expireAt }: { expireAt: any }) {
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const { user } = useUser();
-  const isAdmin = useMemo(() => ADMIN_EMAILS.includes(user?.email ?? ''), [user?.email]);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -447,23 +444,13 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
           <div className="w-full max-w-[95vw] md:max-w-sm z-10 mt-8 mb-8 flex flex-col items-center gap-3">
              {pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
-                isAdmin ? (
-                  <YoutubePlayerV2
-                    ref={playerRef}
-                    url={pageData.youtubeUrl}
-                    songName={pageData.songName}
-                    artistName={pageData.artistName}
-                    volume={0.6}
-                  />
-                ) : (
-                  <YoutubePlayer
-                    ref={playerRef}
-                    url={pageData.youtubeUrl}
-                    songName={pageData.songName}
-                    artistName={pageData.artistName}
-                    volume={0.6}
-                  />
-                )
+                <YoutubePlayerV2
+                  ref={playerRef}
+                  url={pageData.youtubeUrl}
+                  songName={pageData.songName}
+                  artistName={pageData.artistName}
+                  volume={0.6}
+                />
              )}
 
              {pageData.audioRecording?.url && (
