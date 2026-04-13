@@ -1050,9 +1050,9 @@ const IntroStep = React.memo(() => {
 IntroStep.displayName = "IntroStep";
 
 // ─────────────────────────────────────────────
-// VOICE MESSAGE STEP — Order bump (+R$5,90)
+// VOICE MESSAGE STEP — Order bump (+R$4,90)
 // ─────────────────────────────────────────────
-const VOICE_MESSAGE_PRICE = 5.90;
+const VOICE_MESSAGE_PRICE = 4.90;
 
 const VoiceMessageStep = React.memo(() => {
     const { control, setValue } = useFormContext<PageData>();
@@ -1193,10 +1193,9 @@ const VoiceMessageStep = React.memo(() => {
                             </div>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-xs font-bold shadow-lg">
-                                + R$ 5,90
+                            <span className="px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-[10px] font-bold shadow-lg uppercase tracking-wider">
+                                Opcional
                             </span>
-                            <span className="text-[10px] text-muted-foreground mt-1">opcional</span>
                         </div>
                     </div>
 
@@ -1275,7 +1274,7 @@ const VoiceMessageStep = React.memo(() => {
             <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <p>
-                    O valor de R$ 5,90 só é cobrado se você gravar uma mensagem. Pode pular essa etapa sem problema.
+                    Opcional — pode pular essa etapa sem problema.
                 </p>
             </div>
         </div>
@@ -2574,6 +2573,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     Inclui Introdução Animada (+R$5,90)
                   </p>
                 )}
+                {hasVoiceMessage && (
+                  <p className="text-xs text-pink-300 mt-0.5">
+                    Inclui Mensagem de Voz (+R$4,90)
+                  </p>
+                )}
                 {discountAmount > 0 && (
                   <p className="text-xs text-green-400 mt-0.5 font-bold">
                     Desconto aplicado (-R${discountAmount.toFixed(2).replace('.', ',')}) 🎉
@@ -3390,7 +3394,7 @@ function WizardInternal() {
         const estimateValue = () => {
             const fd = getValues();
             const base = fd.plan === 'basico' ? 19.90 : 24.90;
-            const voice = fd.audioRecording?.url ? 5.90 : 0;
+            const voice = fd.audioRecording?.url ? 4.90 : 0;
             const intro = fd.introType === 'love' ? 5.90 : 0;
             const wordGame = (fd.enableWordGame && (fd.wordGameQuestions?.length ?? 0) > 0) ? 2.00 : 0;
             return Number((base + voice + intro + wordGame).toFixed(2));
