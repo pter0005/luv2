@@ -1050,9 +1050,9 @@ const IntroStep = React.memo(() => {
 IntroStep.displayName = "IntroStep";
 
 // ─────────────────────────────────────────────
-// VOICE MESSAGE STEP — Order bump (+R$4,90)
+// VOICE MESSAGE STEP — Order bump (+R$2,90)
 // ─────────────────────────────────────────────
-const VOICE_MESSAGE_PRICE = 4.90;
+const VOICE_MESSAGE_PRICE = 2.90;
 
 const VoiceMessageStep = React.memo(() => {
     const { control, setValue } = useFormContext<PageData>();
@@ -1758,138 +1758,234 @@ const PlanStep = React.memo(() => {
     const adminEmails = ADMIN_EMAILS;
     const isAdmin = user?.email && adminEmails.includes(user.email);
 
-    const [offerExpired, setOfferExpired] = useState(false);
-    const [offerTimeLeft, setOfferTimeLeft] = useState(0);
+    const selectedPlan = field.value;
+    const isBasicoSelected = selectedPlan === 'basico';
+    const isAvancadoSelected = selectedPlan === 'avancado';
+
+    // ── Flash offer countdown (10 min, per-session) ──
+    const [offerLeft, setOfferLeft] = useState(0);
     useEffect(() => {
-        let stored = localStorage.getItem('mycupid_offer_deadline');
+        const KEY = 'mycupid_offer_deadline_v2';
+        let stored = localStorage.getItem(KEY);
+        const now = Date.now();
+        let deadline: number;
         if (!stored) {
-            const deadline = Date.now() + 15 * 60 * 1000; // 15 minutos
-            localStorage.setItem('mycupid_offer_deadline', String(deadline));
-            stored = String(deadline);
-        }
-        const deadline = parseInt(stored);
-        const remaining = Math.max(0, deadline - Date.now());
-        if (remaining <= 0) {
-            setOfferExpired(true);
-            setOfferTimeLeft(0);
+            deadline = now + 10 * 60 * 1000; // 10 min
+            localStorage.setItem(KEY, String(deadline));
         } else {
-            setOfferTimeLeft(Math.ceil(remaining / 1000));
-        }
-        const interval = setInterval(() => {
-            const left = Math.max(0, deadline - Date.now());
-            if (left <= 0) {
-                setOfferExpired(true);
-                setOfferTimeLeft(0);
-                clearInterval(interval);
-            } else {
-                setOfferTimeLeft(Math.ceil(left / 1000));
+            deadline = parseInt(stored, 10);
+            // Safety: reset if corrupted/too far in the future
+            if (!Number.isFinite(deadline) || deadline - now > 10 * 60 * 1000) {
+                deadline = now + 10 * 60 * 1000;
+                localStorage.setItem(KEY, String(deadline));
             }
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const plans: Array<{
-        id: string;
-        name: string;
-        price: string;
-        originalPrice?: string;
-        description: string;
-        features: Array<{ text: string; included: boolean; icon?: any; highlight?: boolean }>;
-    }> = [
-        {
-            id: 'basico',
-            name: 'Plano Básico',
-            price: '19,90',
-            description: 'Uma surpresa impactante com prazo definido.',
-            features: [
-                { text: 'Todos os recursos de personalização', included: true },
-                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
-                { text: 'Página disponível por 25 horas', included: true, icon: Hourglass },
-                { text: 'Página permanente', included: false },
-            ]
-        },
-        {
-            id: 'avancado',
-            name: 'Plano Avançado',
-            price: offerExpired ? '27,90' : '24,90',
-            originalPrice: offerExpired ? '34,90' : '29,90',
-            description: 'A experiência completa, para sempre.',
-            features: [
-                { text: 'Todos os recursos de personalização', included: true },
-                { text: 'Quebra-cabeça, Jogo da Memória e Quiz', included: true },
-                { text: 'Página permanente + backup infinito', included: true, icon: DatabaseZap, highlight: true },
-                { text: 'Página disponível por 25 horas', included: false },
-            ]
         }
-    ];
-
-    const offerMins = String(Math.floor(offerTimeLeft / 60)).padStart(2, '0');
-    const offerSecs = String(offerTimeLeft % 60).padStart(2, '0');
+        const tick = () => {
+            const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+            setOfferLeft(left);
+        };
+        tick();
+        const id = window.setInterval(tick, 1000);
+        return () => window.clearInterval(id);
+    }, []);
+    const offerActive = offerLeft > 0;
+    const mm = String(Math.floor(offerLeft / 60)).padStart(2, '0');
+    const ss = String(offerLeft % 60).padStart(2, '0');
+    const offerPct = Math.max(0, Math.min(100, (offerLeft / 600) * 100));
 
     return (
-        <div className="space-y-6">
-            {/* Countdown banner */}
-            {!offerExpired && offerTimeLeft > 0 && (
-                <div className="rounded-2xl p-4 text-center"
+        <div className="space-y-5">
+            {/* Flash offer pill — subtle, glass, with progress bar */}
+            {offerActive && (
+                <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="relative overflow-hidden rounded-2xl px-4 py-3 flex items-center gap-3 backdrop-blur-sm"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(234,179,8,0.1) 0%, rgba(15,10,30,0.9) 100%)',
-                        border: '1.5px solid rgba(234,179,8,0.3)',
-                    }}>
-                    <p className="text-xs text-amber-300/70 uppercase tracking-wider font-bold mb-1">Preço promocional expira em</p>
-                    <p className="text-3xl font-black tabular-nums text-amber-400">{offerMins}:{offerSecs}</p>
-                    <p className="text-[11px] text-white/40 mt-1">Depois o Plano Avançado sobe para R$27,90</p>
-                </div>
+                        background: 'linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(20,15,35,0.7) 100%)',
+                        border: '1px solid rgba(168,85,247,0.28)',
+                        boxShadow: '0 0 22px rgba(147,51,234,0.12), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    }}
+                >
+                    <div className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{
+                            background: 'linear-gradient(135deg, rgba(168,85,247,0.25), rgba(236,72,153,0.15))',
+                            border: '1px solid rgba(168,85,247,0.35)',
+                        }}>
+                        <Sparkles className="w-4 h-4 text-purple-300" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase tracking-wider font-black text-purple-300/90">Oferta relâmpago · R$5 off</span>
+                            <span className="text-sm font-black tabular-nums text-white">
+                                {mm}:{ss}
+                            </span>
+                        </div>
+                        <div className="mt-1.5 h-1 rounded-full bg-white/5 overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-[width] duration-1000 ease-linear"
+                                style={{
+                                    width: `${offerPct}%`,
+                                    background: 'linear-gradient(90deg, #a855f7, #ec4899)',
+                                    boxShadow: '0 0 8px rgba(168,85,247,0.5)',
+                                }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-white/40 mt-1 leading-tight">Garanta o desconto antes de acabar</p>
+                    </div>
+                </motion.div>
             )}
-            {offerExpired && (
-                <div className="rounded-2xl p-3 text-center"
-                    style={{
-                        background: 'rgba(239,68,68,0.08)',
-                        border: '1.5px solid rgba(239,68,68,0.25)',
-                    }}>
-                    <p className="text-xs text-red-400 font-bold">A promoção expirou — preço atualizado</p>
-                </div>
-            )}
-            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {plans.map((planInfo) => {
-                    const isSelected = field.value === planInfo.id;
-                    return (
-                        <Label key={planInfo.id} htmlFor={`plan-${planInfo.id}`} className={cn(
-                            "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300",
-                            "bg-card/50 border-2",
-                            isSelected ? "border-primary shadow-2xl shadow-primary/20" : 'border-border hover:border-primary/40'
-                        )}>
-                            <RadioGroupItem value={planInfo.id} id={`plan-${planInfo.id}`} className="sr-only peer" />
-                            {planInfo.id === 'avancado' && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-4 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-b-lg z-10">MAIS POPULAR</div>
-                            )}
-                            <div className="p-6 pt-12 flex-grow flex flex-col">
-                                <h3 className="text-xl font-bold text-foreground mb-2">{planInfo.name}</h3>
-                                <p className="text-muted-foreground text-sm mb-4 h-10">{planInfo.description}</p>
-                                <div className="my-4 text-center">
-                                    {planInfo.originalPrice && (
-                                      <p className="text-zinc-500 text-lg line-through font-medium">De R${planInfo.originalPrice}</p>
-                                    )}
-                                    <div className="flex items-baseline gap-1 justify-center">
-                                        <span className={`text-foreground ${planInfo.originalPrice ? 'text-5xl' : 'text-4xl'} font-black`}>R${planInfo.price}</span>
-                                        <span className="text-muted-foreground text-sm">/pagamento único</span>
-                                    </div>
-                                </div>
-                                <ul className="space-y-3 text-sm flex-grow">
-                                    {planInfo.features.map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-3">
-                                            {feature.included ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <XCircle className="w-5 h-5 text-muted-foreground/50 shrink-0" />}
-                                            <span className={cn('leading-tight', !feature.included && 'line-through text-muted-foreground/70', feature.highlight && 'text-primary font-bold')}>{feature.text}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ── PLANO BÁSICO — tom de alerta (temporário) ── */}
+                <Label htmlFor="plan-basico" className={cn(
+                    "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
+                    isBasicoSelected
+                        ? "border-amber-500/60 shadow-lg shadow-amber-500/10"
+                        : "border-white/10 hover:border-amber-500/30"
+                )}
+                style={{
+                    background: 'linear-gradient(160deg, rgba(45,25,15,0.5) 0%, rgba(15,10,20,0.85) 100%)',
+                }}>
+                    <RadioGroupItem value="basico" id="plan-basico" className="sr-only peer" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-3 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold rounded-b-lg z-10 flex items-center gap-1 uppercase tracking-wider">
+                        <Hourglass className="w-3 h-3" /> Temporário
+                    </div>
+                    <div className="p-5 pt-10 flex-grow flex flex-col">
+                        <h3 className="text-lg font-black text-white mb-1">Plano Básico</h3>
+                        <p className="text-[11px] text-amber-300/70 mb-4 leading-snug">Surpresa impactante, mas com prazo.</p>
+                        <div className="mb-5">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-black text-white">R$19,90</span>
                             </div>
-                            <div className={cn("w-full p-3 text-center font-bold text-sm border-t mt-4", isSelected ? 'bg-primary/20 border-primary/30 text-primary-foreground' : 'bg-muted/30 border-border text-muted-foreground')}>
-                                {isSelected ? 'Plano Selecionado' : 'Selecionar Plano'}
+                            <p className="text-[10px] text-white/40 mt-0.5">pagamento único</p>
+                        </div>
+                        <ul className="space-y-2.5 text-xs flex-grow">
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500/80 shrink-0 mt-0.5" />
+                                <span className="text-white/85 leading-tight">Todos os recursos de personalização</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500/80 shrink-0 mt-0.5" />
+                                <span className="text-white/85 leading-tight">Todos os jogos inclusos</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="shrink-0 mt-0.5">⏰</span>
+                                <span className="text-amber-300 leading-tight font-semibold">Expira em 25 horas</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <XCircle className="w-4 h-4 text-red-400/70 shrink-0 mt-0.5" />
+                                <span className="text-red-300/80 leading-tight font-semibold">Depois ela perde o acesso</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className={cn(
+                        "w-full p-3 text-center font-bold text-xs border-t transition-all",
+                        isBasicoSelected
+                            ? "bg-amber-500/15 border-amber-500/30 text-amber-200"
+                            : "bg-white/[0.02] border-white/10 text-white/50"
+                    )}>
+                        {isBasicoSelected ? '✓ Plano Selecionado' : 'Escolher Básico'}
+                    </div>
+                </Label>
+
+                {/* ── PLANO AVANÇADO — premium, eterno ── */}
+                <Label htmlFor="plan-avancado" className={cn(
+                    "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
+                    isAvancadoSelected
+                        ? "border-purple-400 shadow-2xl shadow-purple-500/25"
+                        : "border-purple-500/40 hover:border-purple-400/70"
+                )}
+                style={{
+                    background: 'linear-gradient(160deg, rgba(88,28,135,0.35) 0%, rgba(30,15,50,0.9) 55%, rgba(15,10,30,0.95) 100%)',
+                    boxShadow: isAvancadoSelected
+                        ? '0 0 40px rgba(168,85,247,0.25), inset 0 1px 0 rgba(255,255,255,0.08)'
+                        : 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                }}>
+                    <RadioGroupItem value="avancado" id="plan-avancado" className="sr-only peer" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-fit px-3 py-1 text-[10px] font-black rounded-b-lg z-10 flex items-center gap-1 uppercase tracking-wider text-white"
+                        style={{
+                            background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                            boxShadow: '0 2px 12px rgba(168,85,247,0.4)',
+                        }}>
+                        ✨ Mais Popular
+                    </div>
+                    <div className="p-5 pt-10 flex-grow flex flex-col">
+                        <h3 className="text-lg font-black text-white mb-1">Plano Avançado</h3>
+                        <p className="text-[11px] text-purple-300/80 mb-4 leading-snug">A mesma surpresa — sem nunca sumir.</p>
+                        <div className="mb-5">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-[13px] text-white/35 line-through font-semibold">R$29,90</span>
+                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 rounded px-1 py-[1px]">-17%</span>
                             </div>
-                        </Label>
-                    );
-                })}
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                                <span className="text-3xl font-black text-white">R$24,90</span>
+                            </div>
+                            <p className="text-[10px] text-white/40 mt-0.5">pagamento único · sem renovação</p>
+                        </div>
+                        <ul className="space-y-2.5 text-xs flex-grow">
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                <span className="text-white/95 leading-tight">Todos os recursos de personalização</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                <span className="text-white/95 leading-tight">Todos os jogos inclusos</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="shrink-0 mt-0.5">💎</span>
+                                <span className="text-purple-200 leading-tight font-black">Online PRA SEMPRE</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                <span className="text-white/95 leading-tight">Backup infinito das fotos e mensagens</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                                <span className="text-white/95 leading-tight">Ela pode rever sempre que quiser</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className={cn(
+                        "w-full p-3 text-center font-black text-xs border-t transition-all",
+                        isAvancadoSelected
+                            ? "bg-purple-500/25 border-purple-400/40 text-white"
+                            : "bg-purple-500/10 border-purple-500/30 text-purple-200"
+                    )}>
+                        {isAvancadoSelected ? '✓ Plano Selecionado' : '✨ Quero pra sempre'}
+                    </div>
+                </Label>
             </RadioGroup>
+
+            {/* Upsell helper quando Básico selecionado */}
+            {isBasicoSelected && (
+                <motion.button
+                    type="button"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => field.onChange('avancado')}
+                    className="w-full relative rounded-2xl p-4 text-left transition-all active:scale-[0.99]"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(30,15,50,0.9) 100%)',
+                        border: '1.5px solid rgba(168,85,247,0.4)',
+                        boxShadow: '0 0 24px rgba(147,51,234,0.15)',
+                    }}
+                >
+                    <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <Sparkles className="w-4 h-4 text-purple-300" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-black text-white leading-tight">
+                                Por só <span className="text-purple-300">R$5 a mais</span>, sua página dura <span className="text-purple-300">pra sempre</span> 💜
+                            </p>
+                            <p className="text-[11px] text-white/50 mt-1 leading-snug">
+                                No Básico, depois de 25h a página some e ela não consegue rever esse momento. No Avançado fica online eternamente.
+                            </p>
+                            <span className="inline-block mt-2 text-[11px] font-bold text-purple-300">Fazer upgrade →</span>
+                        </div>
+                    </div>
+                </motion.button>
+            )}
         </div>
     );
 });
@@ -2057,15 +2153,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const hasVoiceMessage = !!audioRecordingField?.url;
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
-    const offerExpired = typeof window !== 'undefined' && (() => {
-        const stored = localStorage.getItem('mycupid_offer_deadline');
-        if (!stored) return false;
-        return Date.now() > parseInt(stored);
-    })();
-
-    const basePriceBRL = plan === 'basico'
-        ? 19.90
-        : (offerExpired ? 27.90 : 24.90);
+    const basePriceBRL = plan === 'basico' ? 19.90 : 24.90;
     const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + (hasIntro ? INTRO_PRICE : 0) + (hasVoiceMessage ? VOICE_MESSAGE_PRICE : 0) - discountAmount);
     const totalUSD = basePriceUSD;
 
@@ -2575,7 +2663,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 )}
                 {hasVoiceMessage && (
                   <p className="text-xs text-pink-300 mt-0.5">
-                    Inclui Mensagem de Voz (+R$4,90)
+                    Inclui Mensagem de Voz (+R$2,90)
                   </p>
                 )}
                 {discountAmount > 0 && (
@@ -2621,7 +2709,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             boxShadow: '0 0 18px rgba(147,51,234,0.4)',
                         }}
                     >
-                        Quero que dure para sempre — R${offerExpired ? '27,90' : '24,90'} →
+                        Quero que dure para sempre — R$24,90 →
                     </button>
                     <p className="text-center text-[10px] text-white/25 mt-2">Continuar com o Plano Básico mesmo assim</p>
                 </motion.div>
@@ -3394,7 +3482,7 @@ function WizardInternal() {
         const estimateValue = () => {
             const fd = getValues();
             const base = fd.plan === 'basico' ? 19.90 : 24.90;
-            const voice = fd.audioRecording?.url ? 4.90 : 0;
+            const voice = fd.audioRecording?.url ? 2.90 : 0;
             const intro = fd.introType === 'love' ? 5.90 : 0;
             const wordGame = (fd.enableWordGame && (fd.wordGameQuestions?.length ?? 0) > 0) ? 2.00 : 0;
             return Number((base + voice + intro + wordGame).toFixed(2));

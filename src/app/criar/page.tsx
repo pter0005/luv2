@@ -34,8 +34,6 @@ const ADMIN_CHIPS: ChipOpt[] = [
   { key: 'outro',  emoji: '✨', label: 'Outro' },
 ];
 
-const LIVE_KEY = 'criar_live_count_v1';
-
 export default function CriarPage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
@@ -46,21 +44,13 @@ export default function CriarPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  // ── Fake live counter (only increments, admin layout only) ─────────
+  // ── Fake live counter — random between 6 and 23, admin layout only ──
   useEffect(() => {
     if (!isAdmin) return;
-    const stored = parseInt(localStorage.getItem(LIVE_KEY) || '0', 10);
-    const start = stored > 120 ? stored : 847 + Math.floor(Math.random() * 60);
-    setLiveCount(start);
-    localStorage.setItem(LIVE_KEY, String(start));
+    const randInRange = () => 6 + Math.floor(Math.random() * 18); // 6..23
+    setLiveCount(randInRange());
 
-    const tick = () => {
-      setLiveCount(prev => {
-        const next = prev + (Math.floor(Math.random() * 3) + 1);
-        localStorage.setItem(LIVE_KEY, String(next));
-        return next;
-      });
-    };
+    const tick = () => setLiveCount(randInRange());
     const id = window.setInterval(tick, 4500 + Math.random() * 2500);
     return () => window.clearInterval(id);
   }, [isAdmin]);
