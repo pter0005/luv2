@@ -164,6 +164,7 @@ const pageSchema = z.object({
   introType: z.string().optional(),
   qrCodeDesign: z.string().default("classic"),
   utmSource: z.string().optional(),
+  whatsappNumber: z.string().optional(),
   payment: paymentSchema.optional(),
 });
 
@@ -1947,7 +1948,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isSavingEmail, setIsSavingEmail] = useState(false);
 
     // ── WhatsApp capture ──────────────────────────────────────────
-    const [whatsappNumber, setWhatsappNumber] = useState('');
+    // Bound to form state so every saveIntent call persists it — never lost.
+    const whatsappNumber = watch('whatsappNumber') || '';
+    const setWhatsappNumber = useCallback((val: string) => {
+        setValue('whatsappNumber', val, { shouldDirty: true });
+    }, [setValue]);
     const formatPhone = (raw: string) => {
         const digits = raw.replace(/\D/g, '').slice(0, 11);
         if (digits.length <= 2) return digits;
