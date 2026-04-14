@@ -27,11 +27,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ found: false }, { status: 404 });
     }
     const data = snap.data() || {};
+    const rawPaid = Number(data.paidAmount);
     return NextResponse.json({
       found: true,
       status: data.status || null,
       lovePageId: data.lovePageId || null,
       plan: data.plan || null,
+      paidAmount: isFinite(rawPaid) && rawPaid > 0 ? rawPaid : null,
     });
   } catch (err: any) {
     console.error('[PaymentIntentStatus] Error:', err?.message);

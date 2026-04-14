@@ -15,7 +15,7 @@ import { computeTotalBRL } from '@/lib/price';
 // ─────────────────────────────────────────────
 // META CAPI
 // ─────────────────────────────────────────────
-async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string, userEmail?: string) {
+async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string, userEmail?: string, paidAmount?: number) {
   const PIXEL_ID = process.env.META_PIXEL_ID;
   const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   if (!PIXEL_ID || !ACCESS_TOKEN) return;
@@ -23,7 +23,9 @@ async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: 
   const headersList = await headers();
   const clientIp = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || '177.160.0.1';
   const userAgent = headersList.get('user-agent') || 'Mozilla/5.0';
-  const value = plan === 'avancado' ? 24.90 : 19.90;
+  const value = (typeof paidAmount === 'number' && paidAmount > 0)
+    ? paidAmount
+    : (plan === 'avancado' ? 24.90 : 19.90);
 
   const userData: Record<string, any> = { client_ip_address: clientIp, client_user_agent: userAgent };
   if (userEmail) {
@@ -569,10 +571,22 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   if (data.guestEmail) {
     await createGuestAccount(data.guestEmail, data.userId as string, newPageId);
   }
-  await sendServerSidePurchaseEvent(finalData.plan as 'basico' | 'avancado', newPageId, userEmail);
+  await sendServerSidePurchaseEvent(
+    finalData.plan as 'basico' | 'avancado',
+    newPageId,
+    userEmail,
+    typeof data.paidAmount === 'number' ? data.paidAmount : undefined,
+  );
 
   // ── Notify admin via Realtime DB + Push ──────────────────────────────────
-  const saleValue = finalData.plan === 'avancado' ? 24.90 : 19.90;
+  // Use the amount that was actually charged (stored on the intent when PIX
+  // was generated). Falling back to the plan base price is WRONG when the
+  // user applied a coupon or paid for add-ons — it was showing "venda R$24,90"
+  // on sales that actually went through at R$19,90 (or vice-versa).
+  const rawPaid = Number(data.paidAmount);
+  const saleValue = isFinite(rawPaid) && rawPaid > 0
+    ? rawPaid
+    : (finalData.plan === 'avancado' ? 24.90 : 19.90);
   const saleTitle = (finalData.title as string) || 'Sem título';
   const salePlan = finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
   try {

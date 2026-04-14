@@ -13,10 +13,11 @@ declare global {
   }
 }
 
-// Preço por plano — mantém em sincronia com o wizard
+// Fallback price by plan (used ONLY when the server didn't return paidAmount,
+// e.g. for very old intents). Normal flow uses the real charged amount.
 const PLAN_PRICES: Record<string, number> = {
   avancado: 24.90,
-  basico: 14.90,
+  basico: 19.90,
 };
 
 // Poll the server every 3 seconds — doesn't depend on client auth, works
@@ -34,6 +35,7 @@ function CreatingPageContent() {
     const [isFinalized, setIsFinalized] = useState(false);
     const [pageId, setPageId] = useState<string | null>(null);
     const [plan, setPlan] = useState<string | null>(null);
+    const [paidAmount, setPaidAmount] = useState<number | null>(null);
     const [fetchError, setFetchError] = useState(false);
     const pixelFired = useRef(false);
     const [timedOut, setTimedOut] = useState(false);
@@ -62,6 +64,7 @@ function CreatingPageContent() {
                     if (data?.lovePageId) {
                         setPageId(data.lovePageId);
                         setPlan(data.plan || null);
+                        setPaidAmount(typeof data.paidAmount === 'number' ? data.paidAmount : null);
                         setIsFinalized(true);
                         return;
                     }
@@ -103,7 +106,11 @@ function CreatingPageContent() {
             } catch (_) { /* sessionStorage bloqueado */ }
 
             const effectivePlan = plan || 'avancado';
-            const value = PLAN_PRICES[effectivePlan] ?? 24.90;
+            // Prefer the real charged amount so the pixel event matches what
+            // actually hit the bank (coupons, add-ons). Fall back to plan base.
+            const value = (paidAmount && paidAmount > 0)
+                ? paidAmount
+                : (PLAN_PRICES[effectivePlan] ?? 24.90);
 
             if (typeof window !== 'undefined' && window.ttq?.track) {
                 window.ttq.track('Purchase', {
@@ -133,7 +140,7 @@ function CreatingPageContent() {
             };
             fireMeta();
         }
-    }, [pageId, plan]);
+    }, [pageId, plan, paidAmount]);
 
     if (!intentId) {
         return (

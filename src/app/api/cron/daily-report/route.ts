@@ -23,8 +23,16 @@ export async function GET(request: NextRequest) {
       .where('createdAt', '>=', Timestamp.fromDate(new Date(`${today}T00:00:00Z`)))
       .where('createdAt', '<=', Timestamp.fromDate(new Date(`${today}T23:59:59Z`)))
       .get();
-    const sales = salesSnap.size;
-    const revenue = salesSnap.docs.reduce((acc, doc) => acc + (doc.data().plan === 'avancado' ? 24.90 : 19.90), 0);
+    // Only count pages that were actually paid. Use the real charged amount
+    // (paidAmount) so discounts and add-ons are reflected in the daily report.
+    const paidDocs = salesSnap.docs.filter(doc => !!doc.data().paymentId && !doc.data().isGift);
+    const sales = paidDocs.length;
+    const revenue = paidDocs.reduce((acc, doc) => {
+      const d = doc.data();
+      const paid = Number(d.paidAmount);
+      if (isFinite(paid) && paid > 0) return acc + paid;
+      return acc + (d.plan === 'avancado' ? 24.90 : 19.90);
+    }, 0);
     const conversionRate = uniqueVisitors > 0 ? ((sales / uniqueVisitors) * 100).toFixed(2) : '0.00';
     const report = { date: today, uniqueVisitors, sales, revenue: Number(revenue.toFixed(2)), conversionRate: `${conversionRate}%`, topPaths, generatedAt: Timestamp.now() };
     await db.collection('analytics').doc(`report_${today}`).set(report);
