@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { logCriticalError } from '@/lib/log-critical-error';
 
 // Public read of payment_intent status so the /criando-pagina screen can
 // recover when the anonymous browser session that created the intent is lost
@@ -37,6 +38,12 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     console.error('[PaymentIntentStatus] Error:', err?.message);
+    // If this fails, EVERY user on /criando-pagina is stuck on the loader.
+    // Notify admin immediately so they can investigate.
+    logCriticalError('payment', `payment-intent-status falhou: ${err?.message || 'unknown'}`, {
+      intentId,
+      stack: err?.stack,
+    }).catch(() => {});
     return NextResponse.json({ error: 'failed' }, { status: 500 });
   }
 }

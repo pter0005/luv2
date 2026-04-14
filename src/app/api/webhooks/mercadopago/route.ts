@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+import { logCriticalError } from '@/lib/log-critical-error';
 import crypto from 'crypto';
 
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -95,6 +96,14 @@ export async function POST(req: NextRequest) {
                     // Log the error but don't crash the webhook, as it might be a transient issue
                     // or an idempotency case (already processed).
                     console.error(`[WEBHOOK_FINALIZE_ERROR] for intent ${intentId}:`, finalizationResult.error);
+                    // Push notify the admin: a paid PIX failed to materialize a
+                    // page. Without this, paid customers silently disappear and
+                    // we only find out when they complain.
+                    logCriticalError('page_creation', `Webhook: finalize falhou após PIX aprovado`, {
+                        intentId,
+                        paymentId: paymentId.toString(),
+                        error: finalizationResult.error,
+                    }).catch(() => {});
                 } else {
                     console.log(`[WEBHOOK_SUCCESS] Page processed for intent ${intentId}. Page ID: ${finalizationResult.pageId}`);
                 }

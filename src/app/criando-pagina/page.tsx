@@ -79,6 +79,19 @@ function CreatingPageContent() {
             if (cancelled) return;
             if (Date.now() - startTime >= TIMEOUT_MS) {
                 setTimedOut(true);
+                // Tell the admin: someone waited 30 full minutes and the
+                // webhook never finalized their page. This is a real failure
+                // (PIX confirmed but page not created) — needs investigation.
+                fetch('/api/error-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `criando-pagina timeout 30min sem finalização`,
+                        url: typeof window !== 'undefined' ? window.location.href : '',
+                        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+                        extra: { intentId, fetchError },
+                    }),
+                }).catch(() => {});
                 return;
             }
             pollTimer = setTimeout(poll, POLL_INTERVAL_MS);

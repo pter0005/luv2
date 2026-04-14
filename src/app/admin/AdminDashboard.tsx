@@ -36,7 +36,7 @@ export type RecentSale = {
 };
 export type SaleRecord = {
   id: string; plan: string; price: number; currency: 'BRL' | 'USD';
-  createdAt: Date; ownerEmail: string; isGift?: boolean;
+  createdAt: string; ownerEmail: string; isGift?: boolean;
 };
 export type ErrorLog = {
   id: string; message: string; url: string; createdAt: string; resolved: boolean;
@@ -1115,7 +1115,7 @@ export default function AdminDashboard({
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                         <Calendar className="w-3 h-3" />
-                        {fmtDate(sale.createdAt)}
+                        {fmtDate(new Date(sale.createdAt))}
                       </div>
                     </td>
                     <td className="px-6 py-3">

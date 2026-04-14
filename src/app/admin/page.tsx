@@ -138,7 +138,10 @@ async function getAllData() {
           plan: d.plan || 'gratis',
           price: isGift ? 0 : price,
           currency,
-          createdAt: createdAtDate,
+          // Store as ISO string — unstable_cache serializes its return value
+          // and a Date object survives the round-trip as a string anyway,
+          // so be explicit to keep the type honest.
+          createdAt: createdAtDate.toISOString(),
           ownerEmail: owner?.email || 'User deleted',
           isGift,
         });

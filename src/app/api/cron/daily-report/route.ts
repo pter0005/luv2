@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { logCriticalError } from '@/lib/log-critical-error';
 
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization');
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
     await db.collection('analytics').doc(`report_${today}`).set(report);
     return NextResponse.json({ success: true, report });
   } catch (err: any) {
+    logCriticalError('api', `daily-report falhou: ${err?.message || 'unknown'}`, {
+      stack: err?.stack,
+    }).catch(() => {});
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

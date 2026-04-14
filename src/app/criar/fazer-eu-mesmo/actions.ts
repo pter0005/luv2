@@ -589,6 +589,18 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     : (finalData.plan === 'avancado' ? 24.90 : 19.90);
   const saleTitle = (finalData.title as string) || 'Sem título';
   const salePlan = finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
+
+  // Sanity check: every paid intent should have paidAmount saved by
+  // processPixPayment. If it's missing, we're falling back to the plan base
+  // price — log it so we can find and fix the broken code path.
+  if (!isFinite(rawPaid) || rawPaid <= 0) {
+    logCriticalError('payment', 'Intent finalizado sem paidAmount, usando fallback', {
+      intentId,
+      paymentId,
+      plan: finalData.plan,
+      fallbackValue: saleValue,
+    }).catch(() => {});
+  }
   try {
     const rtdb = getAdminDatabase();
     await rtdb.ref('sales_feed').push({
