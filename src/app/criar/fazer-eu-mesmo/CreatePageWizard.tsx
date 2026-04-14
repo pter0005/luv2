@@ -3249,6 +3249,7 @@ function WizardInternal() {
     const [discountBannerAmount, setDiscountBannerAmount] = useState(0);
     const { toast } = useToast();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { user, isUserLoading } = useUser();
     const { auth } = useFirebase();
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -3457,6 +3458,50 @@ function WizardInternal() {
             restoreFromLocalStorage();
         }
     }, [searchParams, methods, restoreFromLocalStorage]);
+
+    // ── RECOVERY: paid-but-returned-here ──────────────────────────────────
+    // If the user already paid this intent (PIX confirmed by webhook) and
+    // then closed the tab + came back to /criar/fazer-eu-mesmo, the form
+    // re-hydrates from localStorage but the success screen / pixData is gone
+    // — they'd be stuck looking at a blank wizard with no idea their page
+    // exists. Check the intent and redirect them straight to /p/<id>.
+    const recoveryCheckedRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!isClient) return;
+        if (!intentId || typeof intentId !== 'string') return;
+        if (recoveryCheckedRef.current === intentId) return;
+        // pageId state is set after a fresh in-session payment — don't fight it
+        if (pageId) return;
+        recoveryCheckedRef.current = intentId;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(
+                    `/api/payment-intent-status?intentId=${encodeURIComponent(intentId)}`,
+                    { cache: 'no-store' },
+                );
+                if (cancelled || !res.ok) return;
+                const data = await res.json();
+                if (data?.lovePageId) {
+                    // Already paid + page exists → ship them to the page they bought.
+                    localStorage.removeItem('amore-pages-autosave');
+                    toast({
+                        title: 'Sua página já foi criada!',
+                        description: 'Estamos te levando até ela.',
+                    });
+                    router.replace(`/p/${data.lovePageId}`);
+                } else if (data?.status === 'completed') {
+                    // status=completed without lovePageId is a webhook race —
+                    // send them to /criando-pagina which will poll until it's ready.
+                    router.replace(`/criando-pagina?intentId=${encodeURIComponent(intentId)}`);
+                }
+            } catch (_) {
+                // network error — fall through silently, user can try again
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isClient, intentId, pageId, router, toast]);
 
     useEffect(() => {
         const subscription = watch(() => {
