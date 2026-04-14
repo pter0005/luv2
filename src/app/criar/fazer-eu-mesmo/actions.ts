@@ -279,14 +279,11 @@ export async function processPixPayment(
       isFinite(clientClaimedTotal) &&
       Math.abs(clientClaimedTotal - amount) > 0.01
     ) {
+      // Don't push-notify here — expired coupons are a normal race and
+      // flood the admin with alerts on every retry. Just log to console.
       console.warn(
         `[PIX] Price mismatch — client=${clientClaimedTotal} server=${amount} intent=${intentId}`,
       );
-      logCriticalError('payment', 'Price mismatch client vs server', {
-        intentId,
-        clientClaimedTotal,
-        serverAmount: amount,
-      }).catch(() => {});
 
       // If the server price is HIGHER than what the client showed (discount
       // expired, cupom esgotado, etc), refuse the PIX instead of silently
