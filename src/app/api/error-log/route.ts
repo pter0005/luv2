@@ -2,8 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { notifyAdmins } from '@/lib/notify-admin';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  // Anti-flood: caps the endpoint at ~20 writes / IP / minute. Legitimate
+  // usage is a handful of errors per visit at worst; anything above this is
+  // abuse or a runaway loop.
+  const ip = getClientIp(req);
+  const { ok, retryAfter } = rateLimit(`error-log:${ip}`, 20, 60_000);
+  if (!ok) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
+  }
   try {
     const body = await req.json();
     const { message, stack, url, userAgent, extra } = body;

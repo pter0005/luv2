@@ -2,11 +2,15 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 // GET /api/gift?token=xxx — valida o token e retorna os créditos
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { ok } = rateLimit(`gift-get:${ip}`, 20, 60_000);
+  if (!ok) return NextResponse.json({ valid: false, reason: 'rate_limited' }, { status: 429 });
   const token = request.nextUrl.searchParams.get('token');
-  if (!token) return NextResponse.json({ valid: false });
+  if (!token || typeof token !== 'string' || token.length > 100) return NextResponse.json({ valid: false });
 
   const db = getAdminFirestore();
   const snap = await db.collection('gift_tokens').doc(token).get();

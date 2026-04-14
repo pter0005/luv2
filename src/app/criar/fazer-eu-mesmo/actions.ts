@@ -10,6 +10,7 @@ import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { logCriticalError } from '@/lib/log-critical-error';
+import { computeTotalBRL } from '@/lib/price';
 
 // ─────────────────────────────────────────────
 // META CAPI
@@ -200,9 +201,39 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
 }
 
 // ─────────────────────────────────────────────
+// VALIDAR DESCONTO NO BANCO (server-trusted)
+// ─────────────────────────────────────────────
+async function getValidatedDiscountAmount(
+  db: FirebaseFirestore.Firestore,
+  code: string | null | undefined,
+  email: string | null | undefined,
+): Promise<number> {
+  if (!code || typeof code !== 'string') return 0;
+  const normalized = code.toUpperCase().trim();
+  if (!normalized) return 0;
+  try {
+    const snap = await db.collection('discount_codes').doc(normalized).get();
+    if (!snap.exists) return 0;
+    const d = snap.data()!;
+    if (!d.active) return 0;
+    if ((d.usedCount ?? 0) >= (d.maxUses ?? 0)) return 0;
+    const cleanEmail = (email || '').toLowerCase().trim();
+    if (cleanEmail && Array.isArray(d.usedEmails) && d.usedEmails.includes(cleanEmail)) return 0;
+    const amount = Number(d.discount ?? 0);
+    return isFinite(amount) && amount > 0 ? amount : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ─────────────────────────────────────────────
 // GERAR PIX
 // ─────────────────────────────────────────────
-export async function processPixPayment(intentId: string, price: number) {
+export async function processPixPayment(
+  intentId: string,
+  clientClaimedTotal?: number,
+  discountCode?: string | null,
+) {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { error: 'Token Mercado Pago não configurado.' };
 
@@ -224,9 +255,47 @@ export async function processPixPayment(intentId: string, price: number) {
     const client = new MercadoPagoConfig({ accessToken: token });
     const payment = new Payment(client);
 
-    const amount = Number(price.toFixed(2));
+    // ── SERVER-TRUSTED PRICE ──
+    // Recompute price from the saved intent data. Client-sent total is only
+    // used for logging/mismatch detection, never trusted.
+    const validatedDiscount = await getValidatedDiscountAmount(db, discountCode, cleanEmail);
+    const serverAmount = computeTotalBRL({
+      plan: intentData?.plan,
+      qrCodeDesign: intentData?.qrCodeDesign,
+      enableWordGame: intentData?.enableWordGame,
+      wordGameQuestions: intentData?.wordGameQuestions,
+      introType: intentData?.introType,
+      audioRecording: intentData?.audioRecording,
+      discountAmount: validatedDiscount,
+    });
+    const amount = Number(serverAmount.toFixed(2));
     if (!amount || amount < 1 || isNaN(amount)) {
-      return { error: `Valor inválido: R$${price}. Tente novamente.` };
+      return { error: `Valor inválido: R$${amount}. Tente novamente.` };
+    }
+    if (
+      typeof clientClaimedTotal === 'number' &&
+      isFinite(clientClaimedTotal) &&
+      Math.abs(clientClaimedTotal - amount) > 0.01
+    ) {
+      console.warn(
+        `[PIX] Price mismatch — client=${clientClaimedTotal} server=${amount} intent=${intentId}`,
+      );
+      logCriticalError('payment', 'Price mismatch client vs server', {
+        intentId,
+        clientClaimedTotal,
+        serverAmount: amount,
+      }).catch(() => {});
+
+      // If the server price is HIGHER than what the client showed (discount
+      // expired, cupom esgotado, etc), refuse the PIX instead of silently
+      // charging more. The user must refresh/retry so they see the real price.
+      // If the server is LOWER we let it through — charging less is safe.
+      if (amount > clientClaimedTotal + 0.01) {
+        return {
+          error:
+            'O valor mudou desde que você começou a compra (desconto expirado ou esgotado). Atualize a página para ver o novo valor.',
+        };
+      }
     }
 
     const body = {

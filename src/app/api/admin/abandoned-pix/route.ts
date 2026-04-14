@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { isAdminRequest } from '@/lib/admin-guard';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
   try {
     const db = getAdminFirestore();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -53,6 +57,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
   try {
     const { id, contacted } = await req.json();
     if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });

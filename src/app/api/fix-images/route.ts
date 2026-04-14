@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
+import { isAdminRequest } from '@/lib/admin-guard';
 
 let PUBLIC_BASE = '';
 
@@ -356,6 +357,9 @@ async function handleFix(request: Request) {
 // ROUTER
 // ========================
 export async function GET(request: Request) {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const mode = searchParams.get('mode');

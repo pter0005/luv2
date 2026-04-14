@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
+import { computeTotalBRL, PRICES } from '@/lib/price';
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -2146,15 +2147,23 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const enableWordGame  = watch('enableWordGame');
     const wordGameQuestions = watch('wordGameQuestions');
     const hasWordGameContent = !!(enableWordGame && wordGameQuestions?.length > 0);
-    const WORD_GAME_PRICE = 2.00;
+    const WORD_GAME_PRICE = PRICES.wordGame;
     const introType = watch('introType');
     const hasIntro = introType === 'love';
     const audioRecordingField = watch('audioRecording');
     const hasVoiceMessage = !!audioRecordingField?.url;
     const basePriceUSD = plan === 'basico' ? 9.90 : 14.90;
 
-    const basePriceBRL = plan === 'basico' ? 19.90 : 24.90;
-    const totalBRL = Math.max(1, basePriceBRL + qrCodePrice + (hasWordGameContent ? WORD_GAME_PRICE : 0) + (hasIntro ? INTRO_PRICE : 0) + (hasVoiceMessage ? VOICE_MESSAGE_PRICE : 0) - discountAmount);
+    const basePriceBRL = plan === 'basico' ? PRICES.basico : PRICES.avancado;
+    const totalBRL = computeTotalBRL({
+        plan,
+        qrCodeDesign,
+        enableWordGame,
+        wordGameQuestions,
+        introType,
+        audioRecording: audioRecordingField,
+        discountAmount,
+    });
     const totalUSD = basePriceUSD;
 
     const adminEmails = ADMIN_EMAILS;
@@ -2343,7 +2352,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     return;
                 }
                 setValue('intentId', saveResult.intentId);
-                const paymentResult = await processPixPayment(saveResult.intentId, totalBRL);
+                const paymentResult = await processPixPayment(saveResult.intentId, totalBRL, discountCode);
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
@@ -3243,6 +3252,8 @@ function WizardInternal() {
     const { user, isUserLoading } = useUser();
     const { auth } = useFirebase();
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const autosaveLastSnapshotRef = useRef<string>('');
+    const autosaveInFlightRef = useRef<boolean>(false);
     const stepEnterTimeRef = useRef<number>(Date.now());
     const [pageId, setPageId] = useState<string | null>(null);
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
@@ -3343,12 +3354,23 @@ function WizardInternal() {
 
     const handleAutosave = useCallback(async () => {
         if (!user || isUserLoading) return;
+        if (autosaveInFlightRef.current) return; // evita writes concorrentes
         const data = getValues();
         const utmSource = sessionStorage.getItem('last_utm_source');
         const dataToSave = { ...data, userId: user.uid, utmSource: utmSource || undefined };
+        // Dedup: se o snapshot é idêntico ao último salvo, não grava no Firestore.
+        // Isso corta writes zerados causados por re-renders/watch loops.
+        let snapshotKey = '';
+        try {
+            const { intentId: _iid, ...rest } = dataToSave as any;
+            snapshotKey = JSON.stringify(rest);
+        } catch { snapshotKey = String(Date.now()); }
+        if (snapshotKey && snapshotKey === autosaveLastSnapshotRef.current) return;
+        autosaveInFlightRef.current = true;
         try {
             const result = await createOrUpdatePaymentIntent(dataToSave);
             if (result.success) {
+                autosaveLastSnapshotRef.current = snapshotKey;
                 localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
                 if (result.intentId && !dataToSave.intentId) {
                     setValue('intentId', result.intentId, { shouldDirty: false });
@@ -3377,6 +3399,8 @@ function WizardInternal() {
             }
         } catch (e) {
             console.error("Error during autosave:", e);
+        } finally {
+            autosaveInFlightRef.current = false;
         }
     }, [user, isUserLoading, getValues, setValue, toast]);
 
@@ -3437,7 +3461,10 @@ function WizardInternal() {
     useEffect(() => {
         const subscription = watch(() => {
             if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
-            autosaveTimeoutRef.current = setTimeout(() => { handleAutosave(); }, 1500);
+            // 4s de debounce corta writes em quem digita rápido / campos com
+            // muitas mudanças (onChange em cada letra). O dedup por snapshot
+            // também evita writes quando o form reidratou sem mudança real.
+            autosaveTimeoutRef.current = setTimeout(() => { handleAutosave(); }, 4000);
         });
         return () => {
             subscription.unsubscribe();
@@ -3481,11 +3508,14 @@ function WizardInternal() {
         // no Purchase (handlePaymentSuccess) com totalBRL real.
         const estimateValue = () => {
             const fd = getValues();
-            const base = fd.plan === 'basico' ? 19.90 : 24.90;
-            const voice = fd.audioRecording?.url ? 2.90 : 0;
-            const intro = fd.introType === 'love' ? 5.90 : 0;
-            const wordGame = (fd.enableWordGame && (fd.wordGameQuestions?.length ?? 0) > 0) ? 2.00 : 0;
-            return Number((base + voice + intro + wordGame).toFixed(2));
+            return computeTotalBRL({
+                plan: fd.plan,
+                qrCodeDesign: fd.qrCodeDesign,
+                enableWordGame: fd.enableWordGame,
+                wordGameQuestions: fd.wordGameQuestions,
+                introType: fd.introType,
+                audioRecording: fd.audioRecording,
+            });
         };
 
         // AddToCart ao sair da etapa de plano (independe do próximo step,

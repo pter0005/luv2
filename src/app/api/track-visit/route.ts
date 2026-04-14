@@ -2,11 +2,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  // Cap at 30 writes / IP / minute — a real visitor fires ~1 per page view.
+  const ip = getClientIp(request);
+  const { ok } = rateLimit(`track-visit:${ip}`, 30, 60_000);
+  if (!ok) return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 });
   try {
     const { deviceId, path } = await request.json();
-    if (!deviceId) return NextResponse.json({ ok: false });
+    if (!deviceId || typeof deviceId !== 'string' || deviceId.length > 100) return NextResponse.json({ ok: false });
     const db = getAdminFirestore();
     const today = new Date().toISOString().slice(0, 10);
     const visitorRef = db.collection('analytics').doc('daily').collection(today).doc(deviceId);

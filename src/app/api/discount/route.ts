@@ -2,12 +2,16 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 // GET /api/discount?code=xxx&email=xxx — valida o código
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { ok } = rateLimit(`discount-get:${ip}`, 20, 60_000);
+  if (!ok) return NextResponse.json({ valid: false, reason: 'rate_limited' }, { status: 429 });
   const code = request.nextUrl.searchParams.get('code');
   const email = request.nextUrl.searchParams.get('email');
-  if (!code) return NextResponse.json({ valid: false, reason: 'no_code' });
+  if (!code || typeof code !== 'string' || code.length > 40) return NextResponse.json({ valid: false, reason: 'no_code' });
 
   const db = getAdminFirestore();
   const snap = await db.collection('discount_codes').doc(code.toUpperCase()).get();

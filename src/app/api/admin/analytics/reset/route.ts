@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
+import { isAdminRequest } from '@/lib/admin-guard';
 
 // Apaga todos os docs de uma coleção em batches de 500
 async function nukeCollection(db: any, collectionRef: any): Promise<void> {
@@ -13,6 +14,9 @@ async function nukeCollection(db: any, collectionRef: any): Promise<void> {
 }
 
 export async function POST() {
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
   try {
     const db = getAdminFirestore();
 

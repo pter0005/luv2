@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { useCollection } from "@/firebase";
-import { collection, query, where } from 'firebase/firestore';
-import { useFirestore, useMemoFirebase } from '@/firebase';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 declare global {
@@ -22,110 +19,155 @@ const PLAN_PRICES: Record<string, number> = {
   basico: 14.90,
 };
 
+// Poll the server every 3 seconds — doesn't depend on client auth, works
+// even if the user opens this page on a different device than the wizard.
+const POLL_INTERVAL_MS = 3000;
+// Stop polling after 30 minutes. PIX can take several minutes to confirm
+// (user opens bank app, types, validates) + webhook + finalization. Real
+// users were losing their page when the old 90s/10min timeout fired before
+// their payment cleared, so be VERY generous before showing the fallback.
+const TIMEOUT_MS = 30 * 60 * 1000;
+
 function CreatingPageContent() {
     const searchParams = useSearchParams();
     const intentId = searchParams.get('intentId');
-    const firestore = useFirestore();
     const [isFinalized, setIsFinalized] = useState(false);
     const [pageId, setPageId] = useState<string | null>(null);
-    const pixelFired = useRef(false); // evita disparar duas vezes por re-render
+    const [plan, setPlan] = useState<string | null>(null);
+    const [fetchError, setFetchError] = useState(false);
+    const pixelFired = useRef(false);
     const [timedOut, setTimedOut] = useState(false);
 
-    const lovepagesQuery = useMemoFirebase(() => {
-        if (!firestore || !intentId) return null;
-        return query(collection(firestore, 'lovepages'), where('intentId', '==', intentId));
-    }, [firestore, intentId]);
-
-    const { data: finalizedPage, isLoading, error } = useCollection(lovepagesQuery);
-
+    // ─── POLLING ─────────────────────────────────────────────
+    // Hit our own API (admin SDK) instead of the firestore client, so a
+    // user who paid on mobile and opens this URL on desktop still sees
+    // their page. Server-side reads don't require the anon session.
     useEffect(() => {
-        if (finalizedPage && finalizedPage.length > 0 && !pixelFired.current) {
-            const page = finalizedPage[0];
-            pixelFired.current = true; // seta ANTES de qualquer pixel pra evitar disparos duplicados
-            setIsFinalized(true);
-            setPageId(page.id);
+        if (!intentId || isFinalized || timedOut) return;
 
-            // ── DEDUP GUARD ─────────────────────────────────────────
-            // Se o wizard já disparou Purchase pra este pageId, não dispara de novo.
-            // Meta também deduplicaria via eventID, mas sessionStorage evita fire desnecessário.
-            const dedupeKey = `purchase_fired_${page.id}`;
+        let cancelled = false;
+        let pollTimer: NodeJS.Timeout | null = null;
+        const startTime = Date.now();
+
+        const poll = async () => {
+            if (cancelled) return;
+            try {
+                const res = await fetch(`/api/payment-intent-status?intentId=${encodeURIComponent(intentId)}`, {
+                    cache: 'no-store',
+                });
+                if (cancelled) return;
+                if (res.ok) {
+                    const data = await res.json();
+                    setFetchError(false);
+                    if (data?.lovePageId) {
+                        setPageId(data.lovePageId);
+                        setPlan(data.plan || null);
+                        setIsFinalized(true);
+                        return;
+                    }
+                } else if (res.status === 404) {
+                    // Intent doesn't exist — bad link, show error eventually.
+                    setFetchError(true);
+                }
+            } catch {
+                // Network error — keep retrying silently, only surface if we never recover.
+            }
+
+            if (cancelled) return;
+            if (Date.now() - startTime >= TIMEOUT_MS) {
+                setTimedOut(true);
+                return;
+            }
+            pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+        };
+
+        poll();
+
+        return () => {
+            cancelled = true;
+            if (pollTimer) clearTimeout(pollTimer);
+        };
+    }, [intentId, isFinalized, timedOut]);
+
+    // ─── PIXEL FIRE ──────────────────────────────────────────
+    useEffect(() => {
+        if (pageId && !pixelFired.current) {
+            pixelFired.current = true;
+            const dedupeKey = `purchase_fired_${pageId}`;
             try {
                 if (sessionStorage.getItem(dedupeKey)) {
-                    console.log('[Pixel] Purchase já disparado pra', page.id, '— pulando.');
+                    console.log('[Pixel] Purchase já disparado pra', pageId, '— pulando.');
                     return;
                 }
                 sessionStorage.setItem(dedupeKey, '1');
             } catch (_) { /* sessionStorage bloqueado */ }
 
-            const plan = page.plan || 'avancado';
-            const value = PLAN_PRICES[plan] ?? 24.90;
+            const effectivePlan = plan || 'avancado';
+            const value = PLAN_PRICES[effectivePlan] ?? 24.90;
 
-            // ─── TIKTOK PIXEL ───────────────────────────────────────
             if (typeof window !== 'undefined' && window.ttq?.track) {
                 window.ttq.track('Purchase', {
                     value,
                     currency: 'BRL',
                     contents: [{
-                        content_id: plan,
+                        content_id: effectivePlan,
                         content_type: 'product',
-                        content_name: `MyCupid - Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
+                        content_name: `MyCupid - Plano ${effectivePlan.charAt(0).toUpperCase() + effectivePlan.slice(1)}`,
                         quantity: 1,
                         price: value,
                     }],
                 });
             }
 
-            // ─── META PIXEL ─────────────────────────────────────────
-            // eventID = pageId permite o Meta deduplicar com o CAPI server-side.
             const fireMeta = (retries = 5) => {
                 if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
                     window.fbq('track', 'Purchase', {
                         value,
                         currency: 'BRL',
-                        content_ids: [plan],
+                        content_ids: [effectivePlan],
                         content_type: 'product',
-                    }, { eventID: page.id });
+                    }, { eventID: pageId });
                 } else if (retries > 0) {
                     setTimeout(() => fireMeta(retries - 1), 500);
                 }
             };
             fireMeta();
         }
-    }, [finalizedPage]);
-    
-    // Timeout effect
-    useEffect(() => {
-        if (!isFinalized) {
-            const timer = setTimeout(() => {
-                if (!isFinalized) { // Double check inside timeout
-                    setTimedOut(true);
-                }
-            }, 90000); // 1.5 minutes
-            return () => clearTimeout(timer);
-        }
-    }, [isFinalized]);
+    }, [pageId, plan]);
 
-    // Handle Firestore query error (e.g., missing index)
-    if (error) {
+    if (!intentId) {
         return (
             <Alert variant="destructive" className="max-w-lg text-left">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Ocorreu um Erro</AlertTitle>
+                <AlertTitle>Link Inválido</AlertTitle>
                 <AlertDescription>
-                    <p>Não foi possível verificar o status da sua página. Isso pode acontecer se o banco de dados precisar de um momento para indexar as informações.</p>
-                    <p className="mt-4">
-                        Por favor, acesse a seção <strong>"Minhas Páginas"</strong> para ver sua criação. Se ela não aparecer em alguns minutos, entre em contato com nosso suporte.
-                    </p>
+                    <p>Não encontramos as informações da sua compra neste link.</p>
                     <Button asChild className="mt-6 w-full">
-                        <Link href="/minhas-paginas">
-                            Ir para Minhas Páginas
-                        </Link>
+                        <Link href="/minhas-paginas">Ir para Minhas Páginas</Link>
                     </Button>
                 </AlertDescription>
             </Alert>
         );
     }
-    
+
+    if (fetchError && !isFinalized) {
+        return (
+            <Alert variant="destructive" className="max-w-lg text-left">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Não encontramos sua compra</AlertTitle>
+                <AlertDescription>
+                    <p>Isso pode acontecer se o link estiver incorreto ou se o pagamento não foi registrado.</p>
+                    <p className="mt-4">
+                        Se você já pagou, acesse <strong>"Minhas Páginas"</strong>. Se nada aparecer em alguns minutos, entre em contato pelo WhatsApp.
+                    </p>
+                    <Button asChild className="mt-6 w-full">
+                        <Link href="/minhas-paginas">Ir para Minhas Páginas</Link>
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
     if (isFinalized && pageId) {
         return (
             <div className="flex flex-col items-center text-center gap-6 animate-in fade-in duration-500">

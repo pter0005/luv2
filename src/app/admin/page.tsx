@@ -1,8 +1,9 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { removeAdminSession } from './admin-auth-actions';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Gift, Bell, ImageOff, Link2, Tag, MessageCircle, ShoppingBag } from 'lucide-react';
+import { LogOut, ShieldCheck, Gift, Bell, ImageOff, Link2, Tag, MessageCircle, ShoppingBag, QrCode } from 'lucide-react';
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import AdminDashboard, {
   type DayData, type SourceRow, type RecentSale, type SaleRecord,
 } from './AdminDashboard';
@@ -244,8 +245,16 @@ async function getAllData() {
   };
 }
 
+// Cache for 5 min to avoid re-reading the whole lovepages collection on every
+// admin page hit. SaleNotification (RTDB) gives real-time feel for new sales.
+const getCachedDashboardData = unstable_cache(
+  getAllData,
+  ['admin-dashboard-v1'],
+  { revalidate: 300, tags: ['admin-dashboard'] },
+);
+
 export default async function AdminPage() {
-  const data = await getAllData();
+  const data = await getCachedDashboardData();
 
   return (
     <div className="min-h-screen pb-24 admin-mesh-bg">
@@ -312,6 +321,12 @@ export default async function AdminPage() {
               className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
               <Link href="/admin/fix-images">
                 <ImageOff className="h-3.5 w-3.5 text-orange-400" />Imagens
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm"
+              className="shrink-0 text-zinc-500 hover:text-white h-8 px-2 text-xs gap-1.5">
+              <Link href="/admin/qrcode">
+                <QrCode className="h-3.5 w-3.5 text-fuchsia-400" />QR Code
               </Link>
             </Button>
           </nav>
