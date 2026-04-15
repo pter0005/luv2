@@ -14,7 +14,6 @@ const TEMPLATES: Template[] = [
   { id: 'juntos', title: 'Juntos para Sempre', preview: '/qr-templates/juntos-sempre.png' },
   { id: 'gato', title: 'Te Amo Gatinho', preview: '/qr-templates/gato-te-amo.png' },
   { id: 'surpresa', title: 'Surpresa Pra Você', preview: '/qr-templates/surpresa-pra-voce.png' },
-  { id: 'qrcode-coelho', title: 'Feliz Páscoa', preview: '/qr-templates/qrcode-coelho .png' },
 ];
 
 function extractPageId(input: string): string {

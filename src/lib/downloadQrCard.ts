@@ -32,13 +32,6 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     qrSizePct: 0.485,
     transparent: true,
   },
-  'qrcode-coelho': {
-    bgUrl: '/qr-templates/qrcode-coelho%20.png',
-    qrColor: '#000000',
-    qrXPct: 0.292,
-    qrYPct: 0.393,
-    qrSizePct: 0.417,
-  },
 };
 
 function loadImg(src: string): Promise<HTMLImageElement> {

@@ -45,16 +45,6 @@ const QR_OPTIONS = [
     qrSizePct: 0.485,
     transparent: true,
   },
-  {
-    id: 'qrcode-coelho',
-    title: '🐰 Feliz Páscoa',
-    price: 3.90,
-    preview: '/qr-templates/qrcode-coelho .png',
-    qrColor: '#000000',
-    qrXPct: 0.292,
-    qrYPct: 0.393,
-    qrSizePct: 0.417,
-  },
 ];
 
 interface Props {
