@@ -2364,7 +2364,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
                     setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
-                    trackFunnelStep('pix_generated', steps.length + 1, steps.length);
+                    trackFunnelStep('pix_generated', 16, 15);
                     // Marca desconto como usado
                     if (discountCode) {
                         const email = user.email || confirmedGuestEmail;
