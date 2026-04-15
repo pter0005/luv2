@@ -88,10 +88,6 @@ const FloatingCard = React.memo(function FloatingCard({
   useFrame(({ camera }) => {
     if (!groupRef.current) return;
     groupRef.current.lookAt(camera.position);
-    // Dynamically set renderOrder based on distance to camera so closer
-    // cards always render on top of farther ones.
-    const dist = groupRef.current.position.distanceTo(camera.position);
-    groupRef.current.renderOrder = Math.round(1000 - dist);
   })
 
   // FIX ①: usa DATE_LOCALE (constante de módulo) em vez de "const fnsLocale = ptBR" local
@@ -120,7 +116,7 @@ const FloatingCard = React.memo(function FloatingCard({
 
       <Html
         transform
-        occlude={[occludeRef]}
+        occlude="blending"
         distanceFactor={8}
         position={[0, 0, 0.1]}
         zIndexRange={[100, 0]}
@@ -279,7 +275,7 @@ function Scene({
         1500 estrelas no desktop causava spike de geometria desnecessário porque
         estrelas além de ~800 não são percebidas individualmente pelo usuário.
       */}
-      <StaticStars count={isMobile ? 500 : 1200} />
+      <StaticStars count={isMobile ? 300 : 800} />
       <ambientLight intensity={1.5} />
       <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
