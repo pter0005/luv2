@@ -62,6 +62,11 @@ export function trackEvent(
 
 /* ── funnel-specific ──────────────────────────────────────────────────────── */
 
+// Session-level dedup: one write per step per page load. Back/next through
+// the same step only counts once; a fresh wizard visit counts again (that IS
+// a new funnel attempt).
+const reportedFunnelSteps = new Set<string>();
+
 export function trackFunnelStep(
   stepName: string,
   stepNumber: number,
@@ -74,6 +79,17 @@ export function trackFunnelStep(
     total_steps: totalSteps,
     ...extras,
   };
+
+  // Firestore aggregate — drives the admin funnel panel
+  if (typeof window !== 'undefined' && !reportedFunnelSteps.has(stepName)) {
+    reportedFunnelSteps.add(stepName);
+    fetch('/api/funnel-step', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step: stepName }),
+      keepalive: true,
+    }).catch(() => {});
+  }
 
   // GA4 custom event
   try {

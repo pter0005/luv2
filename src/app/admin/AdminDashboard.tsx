@@ -41,6 +41,9 @@ export type SaleRecord = {
 export type ErrorLog = {
   id: string; message: string; url: string; createdAt: string; resolved: boolean;
 };
+export type AttachRate = {
+  sample: number; intro: number; voice: number; wordGame: number; qr: number;
+};
 export type DashboardProps = {
   totalUsers: number;
   avancadoCount: number;
@@ -65,6 +68,9 @@ export type DashboardProps = {
   recentSales: RecentSale[];
   recentErrors: ErrorLog[];
   unresolvedErrorCount: number;
+  wizardFunnelToday: Record<string, number>;
+  attachRate: AttachRate;
+  salesHeatmap: number[][];
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -326,6 +332,145 @@ function Section({ title, sub, children, action, icon: Icon, accent = '#a855f7' 
         {action && <div className="shrink-0">{action}</div>}
       </div>
       <div className="p-5 sm:p-6">{children}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WIZARD FUNNEL
+// ─────────────────────────────────────────────────────────────────────────────
+const WIZARD_STEPS: { id: string; label: string }[] = [
+  { id: 'title', label: '1. Título' },
+  { id: 'message', label: '2. Mensagem' },
+  { id: 'specialDate', label: '3. Data especial' },
+  { id: 'gallery', label: '4. Galeria' },
+  { id: 'timeline', label: '5. Timeline' },
+  { id: 'music', label: '6. Música' },
+  { id: 'background', label: '7. Fundo' },
+  { id: 'intro', label: '8. Intro' },
+  { id: 'puzzle', label: '9. Quebra-cabeça' },
+  { id: 'memory', label: '10. Memória' },
+  { id: 'quiz', label: '11. Quiz' },
+  { id: 'word-game', label: '12. Palavra' },
+  { id: 'plan', label: '13. Plano' },
+  { id: 'voice', label: '14. Voz' },
+  { id: 'payment', label: '15. Pagamento' },
+  { id: 'pix_generated', label: '→ PIX gerado' },
+  { id: 'paid', label: '✓ Pago' },
+];
+
+function WizardFunnel({ data }: { data: Record<string, number> }) {
+  const first = data[WIZARD_STEPS[0].id] || 0;
+  if (first === 0) {
+    return <p className="text-sm text-zinc-500 text-center py-6">Nenhum visitante começou o formulário hoje ainda.</p>;
+  }
+  return (
+    <div className="space-y-1.5">
+      {WIZARD_STEPS.map(step => {
+        const count = data[step.id] || 0;
+        const pct = first > 0 ? (count / first) * 100 : 0;
+        const isTerminal = step.id === 'pix_generated' || step.id === 'paid';
+        return (
+          <div key={step.id} className="flex items-center gap-3 text-xs">
+            <span className="w-32 shrink-0 text-zinc-400 font-medium truncate">{step.label}</span>
+            <div className="flex-1 h-6 rounded-md overflow-hidden relative"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="h-full rounded-md transition-all"
+                style={{
+                  width: `${Math.min(100, pct)}%`,
+                  background: isTerminal
+                    ? 'linear-gradient(90deg, #34d399, #10b981)'
+                    : 'linear-gradient(90deg, #a855f7, #6366f1)',
+                }} />
+              <span className="absolute inset-0 flex items-center px-2 text-[11px] font-bold text-white tabular-nums">
+                {count} <span className="text-white/50 ml-1.5">({pct.toFixed(0)}%)</span>
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ATTACH RATE
+// ─────────────────────────────────────────────────────────────────────────────
+function AttachRateList({ rate }: { rate: AttachRate }) {
+  if (rate.sample === 0) {
+    return <p className="text-sm text-zinc-500 text-center py-6">Sem vendas ainda.</p>;
+  }
+  const items = [
+    { label: 'Intro animada', count: rate.intro, color: '#f472b6' },
+    { label: 'Mensagem de voz', count: rate.voice, color: '#a855f7' },
+    { label: 'Jogo da palavra', count: rate.wordGame, color: '#60a5fa' },
+    { label: 'QR personalizado', count: rate.qr, color: '#34d399' },
+  ];
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500">base: {rate.sample} vendas</p>
+      {items.map(it => {
+        const pct = (it.count / rate.sample) * 100;
+        return (
+          <div key={it.label}>
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-white/80">{it.label}</span>
+              <span className="font-bold tabular-nums" style={{ color: it.color }}>
+                {pct.toFixed(0)}% <span className="text-white/30">({it.count})</span>
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <div className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(100, pct)}%`, background: it.color }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SALES HEATMAP 7×24
+// ─────────────────────────────────────────────────────────────────────────────
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+function SalesHeatmap({ grid }: { grid: number[][] }) {
+  const max = grid.reduce((m, row) => Math.max(m, ...row), 0);
+  if (max === 0) {
+    return <p className="text-sm text-zinc-500 text-center py-6">Sem vendas nos últimos 30 dias.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-block min-w-full">
+        <div className="flex items-center gap-1 mb-1 pl-10">
+          {Array.from({ length: 24 }, (_, h) => (
+            <div key={h} className="w-5 text-center text-[9px] text-zinc-600 tabular-nums">
+              {h % 3 === 0 ? h : ''}
+            </div>
+          ))}
+        </div>
+        {grid.map((row, wd) => (
+          <div key={wd} className="flex items-center gap-1 mb-1">
+            <div className="w-9 text-[10px] text-zinc-500 font-semibold">{WEEKDAY_LABELS[wd]}</div>
+            {row.map((v, h) => {
+              const intensity = max > 0 ? v / max : 0;
+              const bg = v === 0
+                ? 'rgba(255,255,255,0.02)'
+                : `rgba(52,211,153,${0.15 + intensity * 0.75})`;
+              return (
+                <div key={h}
+                  className="w-5 h-5 rounded-sm flex items-center justify-center"
+                  style={{ background: bg, border: '1px solid rgba(255,255,255,0.03)' }}
+                  title={`${WEEKDAY_LABELS[wd]} ${h}h — ${v} venda${v === 1 ? '' : 's'}`}>
+                  {v > 0 && <span className="text-[8px] font-black text-white tabular-nums">{v}</span>}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        <p className="text-[10px] text-zinc-600 mt-2">pico: {max} venda{max === 1 ? '' : 's'}/hora</p>
+      </div>
     </div>
   );
 }
@@ -726,6 +871,7 @@ export default function AdminDashboard({
   totalVisitors, totalSalesCount, totalSoldCount, totalRevenue, overallConv,
   avgTicketBRL,
   chartData, sourceRows, recentSales,
+  wizardFunnelToday, attachRate, salesHeatmap,
 }: DashboardProps) {
   // Build sparkline snapshots (last 7 days) para cada KPI
   const last7 = chartData.slice(-7);
@@ -869,6 +1015,23 @@ export default function AdminDashboard({
           <PlanDonut avancado={avancadoCount} basico={basicoCount} />
         </Section>
       </div>
+
+      {/* ── WIZARD FUNNEL + ATTACH RATE ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <Section title="Funil do Wizard (hoje)" sub="Onde as pessoas caem no formulário" icon={BarChart3} accent="#a855f7">
+            <WizardFunnel data={wizardFunnelToday} />
+          </Section>
+        </div>
+        <Section title="Attach Rate" sub="% das vendas com cada add-on" icon={Sparkles} accent="#f472b6">
+          <AttachRateList rate={attachRate} />
+        </Section>
+      </div>
+
+      {/* ── SALES HEATMAP 7×24 ──────────────────────────────────────────── */}
+      <Section title="Heatmap de Vendas" sub="Dia da semana × hora (BRT, 30 dias)" icon={Activity} accent="#34d399">
+        <SalesHeatmap grid={salesHeatmap} />
+      </Section>
 
       {/* ── KPI GRID ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

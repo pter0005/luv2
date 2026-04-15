@@ -96,6 +96,13 @@ async function getAllData() {
   let totalPagesCount = 0;  // todas as páginas criadas (exceto admin)
   let totalSoldCount = 0;   // páginas vendidas (exceto gifts e admin)
 
+  // Add-on attach rate (paid non-gift docs)
+  let attachIntro = 0, attachVoice = 0, attachWordGame = 0, attachQr = 0;
+  let attachSample = 0;
+
+  // Heatmap 7×24 (BRT = UTC-3, sem DST desde 2019)
+  const salesHeatmap: number[][] = Array.from({ length: 7 }, () => new Array(24).fill(0));
+
   try {
     const snap = await db.collection('lovepages').orderBy('createdAt', 'desc').get();
     const filtered = snap.docs.filter(doc => {
@@ -129,6 +136,17 @@ async function getAllData() {
 
         if (d.plan === 'avancado') avancadoCount++;
         else if (d.plan === 'basico') basicoCount++;
+
+        // Attach rate
+        attachSample++;
+        if (d.introType === 'love') attachIntro++;
+        if (d.audioRecording?.url) attachVoice++;
+        if (d.enableWordGame && Array.isArray(d.wordGameQuestions) && d.wordGameQuestions.length > 0) attachWordGame++;
+        if (d.qrCodeDesign && d.qrCodeDesign !== 'classic') attachQr++;
+
+        // Heatmap weekday×hour in BR timezone (UTC-3)
+        const br = new Date(createdAtDate.getTime() - 3 * 60 * 60 * 1000);
+        salesHeatmap[br.getUTCDay()][br.getUTCHours()]++;
       }
 
       // Sales history table — últimas 100 para exibição
@@ -182,6 +200,16 @@ async function getAllData() {
           utmSource: src,
         });
       }
+    }
+  } catch (_) {}
+
+  // ── 4b. Wizard funnel (hoje) ──────────────────────────────────────────
+  let wizardFunnelToday: Record<string, number> = {};
+  try {
+    const funnelDoc = await db.collection('wizard_funnel').doc(today).get();
+    if (funnelDoc.exists) {
+      const d = funnelDoc.data();
+      wizardFunnelToday = (d?.steps || {}) as Record<string, number>;
     }
   } catch (_) {}
 
@@ -245,6 +273,15 @@ async function getAllData() {
     avgTicketBRL,
     chartData, sourceRows, recentSales,
     recentErrors, unresolvedErrorCount,
+    wizardFunnelToday,
+    attachRate: {
+      sample: attachSample,
+      intro: attachIntro,
+      voice: attachVoice,
+      wordGame: attachWordGame,
+      qr: attachQr,
+    },
+    salesHeatmap,
   };
 }
 
