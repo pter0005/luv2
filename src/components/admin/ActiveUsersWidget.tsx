@@ -4,10 +4,45 @@ import { useEffect, useState } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
 import { getApp } from 'firebase/app';
 import { motion } from 'framer-motion';
-import { Users, Wifi } from 'lucide-react';
+import { Users, Wifi, Pencil } from 'lucide-react';
 
-export function ActiveUsersWidget() {
+type Variant = 'online' | 'creating';
+
+const VARIANTS: Record<Variant, {
+  path: string;
+  label: string;
+  sub: string;
+  tint: string;
+  border: string;
+  dot: string;
+  pill: string;
+  Icon: typeof Users;
+}> = {
+  online: {
+    path: 'presence',
+    label: 'pessoas',
+    sub: 'no site agora',
+    tint: 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(16,185,129,0.08) 100%)',
+    border: '1px solid rgba(34,197,94,0.25)',
+    dot: 'bg-emerald-400',
+    pill: 'text-emerald-400',
+    Icon: Wifi,
+  },
+  creating: {
+    path: 'creating',
+    label: 'pessoas',
+    sub: 'criando uma página',
+    tint: 'linear-gradient(135deg, rgba(168,85,247,0.14) 0%, rgba(236,72,153,0.08) 100%)',
+    border: '1px solid rgba(168,85,247,0.28)',
+    dot: 'bg-purple-400',
+    pill: 'text-purple-300',
+    Icon: Pencil,
+  },
+};
+
+export function ActiveUsersWidget({ variant = 'online' }: { variant?: Variant }) {
   const [count, setCount] = useState<number | null>(null);
+  const v = VARIANTS[variant];
 
   useEffect(() => {
     let db: any;
@@ -18,32 +53,31 @@ export function ActiveUsersWidget() {
       return;
     }
 
-    const presenceRef = ref(db, 'presence');
+    const presenceRef = ref(db, v.path);
     const unsub = onValue(presenceRef, (snap) => {
+      // Top-level keys = unique visitorIds. Child keys (tabIds) are ignored,
+      // so 1 person with 5 tabs counts as 1.
       const n = snap.exists() ? Object.keys(snap.val()).length : 0;
       setCount(n);
     });
 
     return () => unsub();
-  }, []);
+  }, [v.path]);
 
   return (
     <div
       className="relative flex flex-col gap-3 p-5 rounded-2xl overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(16,185,129,0.08) 100%)',
-        border: '1px solid rgba(34,197,94,0.25)',
-      }}
+      style={{ background: v.tint, border: v.border }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${v.dot} opacity-75`} />
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${v.dot}`} />
           </span>
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Ao Vivo</span>
+          <span className={`text-xs font-bold uppercase tracking-widest ${v.pill}`}>Ao Vivo</span>
         </div>
-        <Wifi size={14} className="text-emerald-500/60" />
+        <v.Icon size={14} className="text-white/40" />
       </div>
 
       <div className="flex items-end gap-3">
@@ -61,8 +95,8 @@ export function ActiveUsersWidget() {
           </motion.span>
         )}
         <div className="flex flex-col pb-1">
-          <span className="text-sm font-semibold text-white/70">pessoas</span>
-          <span className="text-xs text-white/40">no site agora</span>
+          <span className="text-sm font-semibold text-white/70">{v.label}</span>
+          <span className="text-xs text-white/40">{v.sub}</span>
         </div>
       </div>
 

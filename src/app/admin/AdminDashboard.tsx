@@ -872,9 +872,11 @@ export default function AdminDashboard({
 
       {/* ── KPI GRID ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {/* Active users widget occupies 1 slot */}
         <div className="col-span-1">
-          <ActiveUsersWidget />
+          <ActiveUsersWidget variant="online" />
+        </div>
+        <div className="col-span-1">
+          <ActiveUsersWidget variant="creating" />
         </div>
         <KpiCard label="Total de Usuários" value={totalUsers} icon={Users} accent="#60a5fa"
           sub="cadastrados na plataforma" />

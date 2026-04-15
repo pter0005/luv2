@@ -53,6 +53,7 @@ import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
 import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { signInAnonymously } from 'firebase/auth';
+import { useCreatingPresence } from '@/hooks/usePresence';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { collection, query, where, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -3272,6 +3273,10 @@ function WizardInternal() {
             });
         }
     }, [isUserLoading, user, auth]);
+
+    // Mark this visitor as "creating a page" in RTDB presence (dedup by
+    // localStorage visitorId so 5 tabs from the same person count as 1).
+    useCreatingPresence(true, user?.email ?? null);
 
     // Detect gift token on arrival and show welcome popup
     useEffect(() => {
