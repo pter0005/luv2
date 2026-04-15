@@ -5,7 +5,7 @@ import { notifyAdmins } from '@/lib/notify-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
@@ -621,6 +621,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   }
   revalidatePath(`/p/${newPageId}`);
   revalidatePath('/minhas-paginas');
+  // Bust the cached admin dashboard snapshot so new sales show up within
+  // seconds instead of waiting up to 5 min for the unstable_cache revalidate.
+  revalidateTag('admin-dashboard');
 
   return { success: true, pageId: newPageId };
 }

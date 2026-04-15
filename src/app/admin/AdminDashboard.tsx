@@ -772,7 +772,21 @@ export default function AdminDashboard({
                 : 'Nenhum erro no site'}
             </h2>
           </div>
-          <span className="text-[10px] text-zinc-500 font-mono">monitoramento ativo</span>
+          <div className="flex items-center gap-2">
+            {unresolvedErrorCount > 0 && (
+              <button
+                className="text-[10px] text-zinc-500 hover:text-emerald-400 px-2 py-1 rounded border border-white/5 hover:border-emerald-500/30 transition-colors"
+                onClick={async () => {
+                  if (!confirm(`Marcar ${unresolvedErrorCount} erro(s) como resolvido(s)?`)) return;
+                  await fetch('/api/error-log/resolve-all', { method: 'POST' });
+                  window.location.reload();
+                }}
+              >
+                resolver todos
+              </button>
+            )}
+            <span className="text-[10px] text-zinc-500 font-mono">monitoramento ativo</span>
+          </div>
         </div>
         {unresolvedErrorCount > 0 && (
           <div className="p-4 space-y-2 max-h-48 overflow-y-auto">

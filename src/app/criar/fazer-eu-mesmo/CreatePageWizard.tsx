@@ -1855,7 +1855,11 @@ const PlanStep = React.memo(() => {
                         <h3 className="text-lg font-black text-white mb-1">Plano Básico</h3>
                         <p className="text-[11px] text-amber-300/70 mb-4 leading-snug">Surpresa impactante, mas com prazo.</p>
                         <div className="mb-5">
-                            <div className="flex items-baseline gap-1">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-[13px] text-white/35 line-through font-semibold">R$34,90</span>
+                                <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/25 rounded px-1 py-[1px]">-43%</span>
+                            </div>
+                            <div className="flex items-baseline gap-1 mt-0.5">
                                 <span className="text-3xl font-black text-white">R$19,90</span>
                             </div>
                             <p className="text-[10px] text-white/40 mt-0.5">pagamento único</p>
@@ -1915,8 +1919,8 @@ const PlanStep = React.memo(() => {
                         <p className="text-[11px] text-purple-300/80 mb-4 leading-snug">A mesma surpresa — sem nunca sumir.</p>
                         <div className="mb-5">
                             <div className="flex items-baseline gap-1.5">
-                                <span className="text-[13px] text-white/35 line-through font-semibold">R$29,90</span>
-                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 rounded px-1 py-[1px]">-17%</span>
+                                <span className="text-[13px] text-white/35 line-through font-semibold">R$49,90</span>
+                                <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 rounded px-1 py-[1px]">-50%</span>
                             </div>
                             <div className="flex items-baseline gap-1 mt-0.5">
                                 <span className="text-3xl font-black text-white">R$24,90</span>
