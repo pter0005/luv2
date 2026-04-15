@@ -151,17 +151,22 @@ async function getAllData() {
 
       // Sales history table — últimas 100 para exibição
       if (salesHistory.length < 100) {
+        const addOns: string[] = [];
+        if (d.introType === 'love') addOns.push('Intro +R$5,90');
+        if (d.audioRecording?.url) addOns.push('Voz +R$2,90');
+        if (d.enableWordGame && Array.isArray(d.wordGameQuestions) && d.wordGameQuestions.length > 0) addOns.push('Palavra +R$2,00');
+        if (d.qrCodeDesign && d.qrCodeDesign !== 'classic') addOns.push(`QR "${d.qrCodeDesign}" +R$3,90`);
+
         salesHistory.push({
           id: doc.id,
           plan: d.plan || 'gratis',
           price: isGift ? 0 : price,
           currency,
-          // Store as ISO string — unstable_cache serializes its return value
-          // and a Date object survives the round-trip as a string anyway,
-          // so be explicit to keep the type honest.
           createdAt: createdAtDate.toISOString(),
           ownerEmail: owner?.email || 'User deleted',
           isGift,
+          title: (d.title as string) || undefined,
+          addOns,
         });
       }
 

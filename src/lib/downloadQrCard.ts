@@ -50,7 +50,7 @@ const TEMPLATES: Record<string, TemplateConfig> = {
     chocolateBorder: true,
   },
   'qrcode-coelho': {
-    bgUrl: '/qr-templates/qrcode-coelho .png',
+    bgUrl: '/qr-templates/qrcode-coelho.png',
     qrColor: '#000000',
     qrX: 233,
     qrY: 393,
@@ -155,9 +155,20 @@ export async function downloadQrCard(
   // 6. Desenha QR
   ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
-  // 7. Download
-  const link = document.createElement('a');
-  link.download = filename;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+  // 7. Download — toBlob é mais confiável que toDataURL no mobile
+  await new Promise<void>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) { reject(new Error('Canvas toBlob falhou')); return; }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // iOS Safari ignora o click mas abre o blob URL — fallback: abre em nova aba
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      resolve();
+    }, 'image/png');
+  });
 }

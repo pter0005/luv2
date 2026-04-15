@@ -3115,6 +3115,7 @@ const SuccessStep = ({
     const pageUrl = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageId}` : `/p/${pageId}`;
     const [copied, setCopied] = useState(false);
     const { getValues } = useFormContext<PageData>();
+    const { toast } = useToast();
     const qrCodeDesign = getValues('qrCodeDesign');
     const { user } = useUser();
     const adminEmails = ADMIN_EMAILS;
@@ -3125,8 +3126,12 @@ const SuccessStep = ({
       setIsDownloading(true);
       try {
         await downloadQrCard(pageId, qrCodeDesign);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        // iOS Safari não suporta download programático — abre em nova aba como fallback
+        const dataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(`https://mycupid.com.br/p/${pageId}`)}`;
+        window.open(dataUrl, '_blank');
+        toast({ title: 'Salve a imagem', description: 'Toque e segure a imagem para salvar no seu dispositivo.' });
       } finally {
         setIsDownloading(false);
       }

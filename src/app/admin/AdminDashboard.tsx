@@ -37,6 +37,8 @@ export type RecentSale = {
 export type SaleRecord = {
   id: string; plan: string; price: number; currency: 'BRL' | 'USD';
   createdAt: string; ownerEmail: string; isGift?: boolean;
+  title?: string;
+  addOns?: string[];
 };
 export type ErrorLog = {
   id: string; message: string; url: string; createdAt: string; resolved: boolean;
@@ -860,6 +862,105 @@ function WeekdayHeatmap({ chartData }: { chartData: DayData[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SALE HISTORY ROW
+// ─────────────────────────────────────────────────────────────────────────────
+function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
+  const [open, setOpen] = useState(false);
+  const planColor = sale.plan === 'avancado'
+    ? { bg: 'rgba(168,85,247,0.12)', text: '#c084fc', border: 'rgba(168,85,247,0.25)' }
+    : sale.plan === 'basico'
+      ? { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' }
+      : { bg: 'rgba(255,255,255,0.06)', text: '#71717a', border: 'rgba(255,255,255,0.08)' };
+
+  return (
+    <>
+      <tr className="border-t transition-colors hover:bg-white/[0.02]"
+        style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <td className="px-6 py-3">
+          <p className="text-xs font-medium text-zinc-200">{sale.ownerEmail}</p>
+          {sale.title && <p className="text-[10px] text-zinc-500 truncate max-w-[180px]">"{sale.title}"</p>}
+          <p className="text-[10px] text-zinc-700 font-mono">#{sale.id.slice(0, 10)}</p>
+        </td>
+        <td className="px-6 py-3">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold capitalize"
+            style={{ background: planColor.bg, color: planColor.text, border: `1px solid ${planColor.border}` }}>
+            {sale.plan}
+          </span>
+        </td>
+        <td className="px-6 py-3">
+          {sale.isGift
+            ? <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)' }}>🎁 CRÉDITO</span>
+            : sale.price > 0
+              ? <span className="text-xs font-black text-emerald-400 font-mono">{sale.currency === 'BRL' ? brl(sale.price) : usd(sale.price)}</span>
+              : <span className="text-xs text-zinc-600">—</span>
+          }
+        </td>
+        <td className="px-6 py-3">
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+            <Calendar className="w-3 h-3" />
+            {fmtDate(new Date(sale.createdAt))}
+          </div>
+        </td>
+        <td className="px-6 py-3">
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => setOpen(v => !v)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors"
+              style={{
+                background: open ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.05)',
+                border: open ? '1px solid rgba(168,85,247,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                color: open ? '#c084fc' : '#71717a',
+              }}
+            >
+              <Zap className="w-3 h-3" />Detalhes
+            </button>
+            <Link href={`/admin/edit/${sale.id}`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Edit className="w-3 h-3" />Edit
+            </Link>
+            <Link href={`/p/${sale.id}`} target="_blank"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <ExternalLink className="w-3 h-3" />View
+            </Link>
+          </div>
+        </td>
+      </tr>
+      {open && (
+        <tr style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+          <td colSpan={5} className="px-6 pb-3">
+            <div className="rounded-xl px-4 py-3 text-xs space-y-2"
+              style={{ background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.15)' }}>
+              <p className="text-[10px] uppercase tracking-wider text-purple-400/60 font-bold">O que comprou</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  Plano {sale.plan === 'avancado' ? 'Avançado' : sale.plan === 'basico' ? 'Básico' : sale.plan}
+                  {' '}({sale.currency === 'BRL' ? `R$${sale.plan === 'avancado' ? '24,90' : '19,90'}` : sale.plan === 'avancado' ? 'US$19,90' : 'US$14,90'})
+                </span>
+                {sale.addOns && sale.addOns.length > 0
+                  ? sale.addOns.map(ao => (
+                    <span key={ao} className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{ background: 'rgba(236,72,153,0.12)', color: '#f9a8d4', border: '1px solid rgba(236,72,153,0.2)' }}>
+                      {ao}
+                    </span>
+                  ))
+                  : <span className="text-zinc-600 text-[10px]">Nenhum add-on</span>
+                }
+              </div>
+              {sale.title && (
+                <p className="text-zinc-400 text-[10px]">Título da página: <span className="text-white font-medium">"{sale.title}"</span></p>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard({
@@ -1261,59 +1362,9 @@ export default function AdminDashboard({
               </tr>
             </thead>
             <tbody>
-              {salesHistory.map((sale, i) => {
-                const planColor = sale.plan === 'avancado'
-                  ? { bg: 'rgba(168,85,247,0.12)', text: '#c084fc', border: 'rgba(168,85,247,0.25)' }
-                  : sale.plan === 'basico'
-                    ? { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' }
-                    : { bg: 'rgba(255,255,255,0.06)', text: '#71717a', border: 'rgba(255,255,255,0.08)' };
-                return (
-                  <tr key={sale.id}
-                    className="border-t transition-colors hover:bg-white/3"
-                    style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                    <td className="px-6 py-3">
-                      <p className="text-xs font-medium text-zinc-200">{sale.ownerEmail}</p>
-                      <p className="text-[10px] text-zinc-600 font-mono">#{sale.id.slice(0, 10)}</p>
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold capitalize"
-                        style={{ background: planColor.bg, color: planColor.text, border: `1px solid ${planColor.border}` }}>
-                        {sale.plan}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3">
-                      {sale.isGift
-                        ? <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)' }}>🎁 CRÉDITO</span>
-                        : sale.price > 0
-                          ? <span className="text-xs font-black text-emerald-400 font-mono">
-                              {sale.currency === 'BRL' ? brl(sale.price) : usd(sale.price)}
-                            </span>
-                          : <span className="text-xs text-zinc-600">—</span>
-                      }
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <Calendar className="w-3 h-3" />
-                        {fmtDate(new Date(sale.createdAt))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/admin/edit/${sale.id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          <Edit className="w-3 h-3" />Edit
-                        </Link>
-                        <Link href={`/p/${sale.id}`} target="_blank"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-zinc-400 hover:text-white transition-colors"
-                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          <ExternalLink className="w-3 h-3" />View
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {salesHistory.map((sale, i) => (
+                <SaleHistoryRow key={sale.id} sale={sale} />
+              ))}
               {salesHistory.length === 0 && (
                 <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-zinc-600">Nenhuma venda ainda.</td></tr>
               )}
