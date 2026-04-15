@@ -116,7 +116,7 @@ const FloatingCard = React.memo(function FloatingCard({
 
       <Html
         transform
-        occlude="blending"
+        occlude={[occludeRef]}
         distanceFactor={8}
         position={[0, 0, 0.1]}
         zIndexRange={[100, 0]}
