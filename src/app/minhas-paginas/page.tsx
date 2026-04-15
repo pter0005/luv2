@@ -2,7 +2,7 @@
 
 import { useUser, useCollection } from '@/firebase';
 import { useEffect, useState } from 'react';
-import { Loader2, Heart, PlusCircle, AlertTriangle, Copy, ExternalLink, CheckCircle } from 'lucide-react';
+import { Loader2, Heart, PlusCircle, AlertTriangle, Copy, ExternalLink, CheckCircle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { collection, query, where } from 'firebase/firestore';
@@ -56,6 +56,7 @@ export default function MinhasPaginasPage() {
   const firestore = useFirestore();
   const [selectedPage, setSelectedPage] = useState<any | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
 
   const pagesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -85,6 +86,20 @@ export default function MinhasPaginasPage() {
 
   const pageUrl = selectedPage ? `${window.location.origin}/p/${selectedPage.id}` : '';
   const isTicketQr = selectedPage?.qrCodeDesign === 'ticket';
+
+  const handleDownloadQr = async () => {
+    if (!selectedPage) return;
+    setIsDownloadingQr(true);
+    try {
+      const { downloadQrCard } = await import('@/lib/downloadQrCard');
+      await downloadQrCard(selectedPage.id, selectedPage.qrCodeDesign || 'classic', `qrcode-${selectedPage.id}.png`);
+    } catch {
+      const url = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(`https://mycupid.com.br/p/${selectedPage.id}`)}`;
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloadingQr(false);
+    }
+  };
 
   if (isUserLoading) {
     return (
@@ -172,13 +187,17 @@ export default function MinhasPaginasPage() {
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4 py-4">
                     <div className="p-4 bg-white rounded-lg border">
-                        <Image 
+                        <Image
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`}
                             alt="QR Code da Página"
                             width={200}
                             height={200}
                         />
                     </div>
+                    <Button onClick={handleDownloadQr} disabled={isDownloadingQr} variant="outline" className="w-full gap-2">
+                      {isDownloadingQr ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                      {isDownloadingQr ? 'Gerando...' : 'Baixar QR Code'}
+                    </Button>
                     <p className="text-xs text-muted-foreground text-center">
                         Escaneie o QR Code ou copie o link abaixo.
                     </p>

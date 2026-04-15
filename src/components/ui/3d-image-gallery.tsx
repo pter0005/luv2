@@ -86,7 +86,12 @@ const FloatingCard = React.memo(function FloatingCard({
   const occludeRef  = useRef<THREE.Mesh>(null)
 
   useFrame(({ camera }) => {
-    groupRef.current?.lookAt(camera.position)
+    if (!groupRef.current) return;
+    groupRef.current.lookAt(camera.position);
+    // Dynamically set renderOrder based on distance to camera so closer
+    // cards always render on top of farther ones.
+    const dist = groupRef.current.position.distanceTo(camera.position);
+    groupRef.current.renderOrder = Math.round(1000 - dist);
   })
 
   // FIX ①: usa DATE_LOCALE (constante de módulo) em vez de "const fnsLocale = ptBR" local
@@ -108,9 +113,9 @@ const FloatingCard = React.memo(function FloatingCard({
       position={[position.x, position.y, position.z]}
       scale={isMobile ? 1.125 : 1.44}
     >
-      <mesh ref={occludeRef} renderOrder={-1}>
+      <mesh ref={occludeRef}>
         <planeGeometry args={[planeW, planeH]} />
-        <meshBasicMaterial colorWrite={false} depthWrite={true} transparent={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial colorWrite={false} depthWrite={true} depthTest={true} transparent={false} side={THREE.DoubleSide} />
       </mesh>
 
       <Html
@@ -143,7 +148,12 @@ const FloatingCard = React.memo(function FloatingCard({
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col justify-end p-4">
-            <p className="text-white font-bold text-lg leading-tight line-clamp-3 drop-shadow-lg">{card.title}</p>
+            <p className="text-white font-bold text-lg leading-tight drop-shadow-lg" style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {card.title.length > 55 ? card.title.slice(0, 55) + '…' : card.title}
+            </p>
+            {card.title.length > 55 && (
+              <p className="text-white/40 text-[9px] mt-0.5">toque para ver tudo</p>
+            )}
             {dateObj && (
               <p className="text-purple-400 font-semibold text-xs tracking-wide mt-1">
                 {format(dateObj, "dd MMM yyyy", { locale: DATE_LOCALE })}
@@ -269,7 +279,7 @@ function Scene({
         1500 estrelas no desktop causava spike de geometria desnecessário porque
         estrelas além de ~800 não são percebidas individualmente pelo usuário.
       */}
-      <StaticStars count={isMobile ? 300 : 800} />
+      <StaticStars count={isMobile ? 500 : 1200} />
       <ambientLight intensity={1.5} />
       <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
@@ -343,7 +353,7 @@ function FullScreenCardView({ card, onClose }: { card: Card; onClose: () => void
           className="text-center text-white p-4 rounded-xl"
           style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)' }}
         >
-          <h2 className="text-xl font-bold">{card.title}</h2>
+          <h2 className="text-xl font-bold leading-snug">{card.title}</h2>
           {dateObj && (
             <p className="text-purple-400 font-semibold text-sm mt-1">
               {format(dateObj, "PPP", { locale: DATE_LOCALE })}

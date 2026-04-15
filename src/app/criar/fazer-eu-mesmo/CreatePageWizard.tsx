@@ -3215,36 +3215,21 @@ const SuccessStep = ({
                 Visualizar minha página
             </a>
 
-            {/* ── QR CODE COLAPSÁVEL ──────────────────────────── */}
-            <details className="w-full group">
-                <summary className="cursor-pointer list-none flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors py-2">
-                    <svg className="w-4 h-4 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6" />
-                    </svg>
-                    Ver QR Code para imprimir
-                </summary>
-                <div className="mt-4 flex flex-col items-center gap-3">
-                    <div className="p-4 bg-white rounded-2xl border shadow-xl">
-                        <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${pageUrl}`} alt="QR Code da Página" width={200} height={200} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Salve ou imprima para surpreender pessoalmente.</p>
-                </div>
-            </details>
-
-            {qrCodeDesign !== 'classic' && (
-              <div className="w-full p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900/20 to-pink-900/10 text-center space-y-3">
-                <p className="font-bold text-purple-200 text-sm">✨ Seu QR Code Personalizado está pronto!</p>
-                <p className="text-xs text-muted-foreground">Baixe e imprima para surpreender ainda mais.</p>
-                <button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 text-white font-bold transition-all"
-                >
-                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {isDownloading ? 'Gerando...' : 'Baixar QR Code Personalizado'}
-                </button>
-              </div>
-            )}
+            {/* ── QR CODE DOWNLOAD ──────────────────────────── */}
+            <div className="w-full p-5 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900/20 to-pink-900/10 text-center space-y-3">
+              <p className="font-bold text-purple-200 text-sm">
+                {qrCodeDesign !== 'classic' ? '✨ Seu QR Code Personalizado está pronto!' : '📲 QR Code da sua página'}
+              </p>
+              <p className="text-xs text-muted-foreground">Baixe, imprima ou envie para surpreender pessoalmente.</p>
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:brightness-110 text-white font-bold transition-all"
+              >
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {isDownloading ? 'Gerando...' : 'Baixar QR Code'}
+              </button>
+            </div>
         </div>
     );
 };
@@ -3500,6 +3485,7 @@ function WizardInternal() {
                 );
                 if (cancelled || !res.ok) return;
                 const data = await res.json();
+                if (cancelled) return; // payment may have succeeded while fetch was in-flight
                 if (data?.lovePageId) {
                     // Already paid + page exists → ship them to the page they bought.
                     localStorage.removeItem('amore-pages-autosave');
@@ -3509,6 +3495,7 @@ function WizardInternal() {
                     });
                     router.replace(`/p/${data.lovePageId}`);
                 } else if (data?.status === 'completed') {
+                    if (cancelled) return;
                     // status=completed without lovePageId is a webhook race —
                     // send them to /criando-pagina which will poll until it's ready.
                     router.replace(`/criando-pagina?intentId=${encodeURIComponent(intentId)}`);
