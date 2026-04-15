@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import QRCode from 'qrcode';
 import { downloadQrCard } from '@/lib/downloadQrCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,20 +25,6 @@ function extractPageId(input: string): string {
   return match ? match[1] : trimmed;
 }
 
-async function downloadClassicQr(pageId: string) {
-  const pageUrl = `https://mycupid.com.br/p/${pageId}`;
-  const dataUrl = await QRCode.toDataURL(pageUrl, {
-    width: 1000,
-    margin: 2,
-    color: { dark: '#000000', light: '#ffffff' },
-    errorCorrectionLevel: 'H',
-  });
-  const link = document.createElement('a');
-  link.download = `mycupid-qrcode-${pageId}.png`;
-  link.href = dataUrl;
-  link.click();
-}
-
 export default function QrCodeAdminClient() {
   const [rawInput, setRawInput] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('classic');
@@ -58,11 +43,7 @@ export default function QrCodeAdminClient() {
     }
     setIsDownloading(true);
     try {
-      if (selectedTemplate === 'classic') {
-        await downloadClassicQr(pageId);
-      } else {
-        await downloadQrCard(pageId, selectedTemplate, `mycupid-qrcode-${pageId}.png`);
-      }
+      await downloadQrCard(pageId, selectedTemplate, `mycupid-qrcode-${pageId}.png`);
     } catch (e: any) {
       setError(e?.message || 'Erro ao gerar QR Code.');
     } finally {

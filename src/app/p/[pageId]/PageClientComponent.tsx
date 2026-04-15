@@ -25,7 +25,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy, Download } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
@@ -197,6 +197,20 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const playerRef = useRef<{ play: () => void }>(null);
   const [musicStarted, setMusicStarted] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
+
+  const handleDownloadQr = async () => {
+    setIsDownloadingQr(true);
+    try {
+      const { downloadQrCard } = await import('@/lib/downloadQrCard');
+      await downloadQrCard(pageData.id, pageData.qrCodeDesign || 'classic', `qrcode-${pageData.id}.png`);
+    } catch {
+      const url = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(`https://mycupid.com.br/p/${pageData.id}`)}`;
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloadingQr(false);
+    }
+  };
 
   const handleShareLink = async () => {
     const url = typeof window !== 'undefined' ? `${window.location.origin}/p/${pageData.id}` : '';
@@ -490,6 +504,14 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                     >
                         {linkCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
                         {linkCopied ? 'Link copiado!' : 'Compartilhar esta página'}
+                    </button>
+                    <button
+                        onClick={handleDownloadQr}
+                        disabled={isDownloadingQr}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium text-zinc-500 hover:text-zinc-300 text-xs transition-colors disabled:opacity-60"
+                    >
+                        {isDownloadingQr ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                        {isDownloadingQr ? 'Gerando...' : 'Baixar QR Code'}
                     </button>
                     <a
                         href="https://mycupid.com.br/criar"
