@@ -291,12 +291,12 @@ async function getAllData() {
   };
 }
 
-// Cache for 5 min to avoid re-reading the whole lovepages collection on every
-// admin page hit. SaleNotification (RTDB) gives real-time feel for new sales.
+// Cache for 30s — short enough that new sales show up quickly.
+// SaleNotification (RTDB) fires router.refresh() on new sales for instant updates.
 const getCachedDashboardData = unstable_cache(
   getAllData,
   ['admin-dashboard-v1'],
-  { revalidate: 300, tags: ['admin-dashboard'] },
+  { revalidate: 30, tags: ['admin-dashboard'] },
 );
 
 export default async function AdminPage() {
