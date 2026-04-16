@@ -2094,7 +2094,7 @@ const PlanStep = React.memo(() => {
                         </div>
                         <div className="flex-1">
                             <p className="text-sm font-black text-white leading-tight">
-                                Por só <span className="text-purple-300">R$5 a mais</span>, sua página dura <span className="text-purple-300">pra sempre</span> 💜
+                                Por só <span className="text-purple-300">R$5 a mais</span>, sua página dura <span className="text-purple-300 whitespace-nowrap">pra sempre 💜</span>
                             </p>
                             <p className="text-[11px] text-white/50 mt-1 leading-snug">
                                 No Básico, depois de 25h a página some e ela não consegue rever esse momento. No Avançado fica online eternamente.
@@ -2827,7 +2827,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                         </div>
                         <div className="text-left">
                             <p className="text-sm font-black text-white leading-tight">
-                                Por apenas <span className="text-purple-300">R$5 a mais</span>, sua página dura para sempre 💜
+                                Por apenas <span className="text-purple-300">R$5 a mais</span>, sua página dura <span className="whitespace-nowrap">para sempre 💜</span>
                             </p>
                             <p className="text-xs text-white/45 mt-1 leading-relaxed">
                                 Com o Plano Básico a sua página some em 25h — e a pessoa amada não vai poder rever esse momento. No Avançado fica online pra sempre, como uma lembrança eterna.
