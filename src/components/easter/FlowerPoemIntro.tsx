@@ -34,14 +34,14 @@ const STAGE_W = 375;
 const STAGE_H = 812;
 
 const INITIAL_LAYERS: Layer[] = [
-  { name: "SACOLA", x: -241.9, y: 127.2, w: 1080, h: 1350, scale: 0.557, rotation: 0, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-bag.webp" },
-  { name: "filler1", x: -249.7, y: 91.6, w: 1080, h: 1350, scale: 0.348, rotation: -38.8, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-filler-1.webp" },
-  { name: "filler2", x: -3.6, y: 145.4, w: 1080, h: 1350, scale: 0.316, rotation: 48.4, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-filler-2.webp" },
-  { name: "orquidea", x: 12, y: 149.7, w: 1080, h: 1350, scale: 0.239, rotation: 10.5, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/orchid.webp" },
-  { name: "rosa", x: 123.3, y: 228.5, w: 1080, h: 1350, scale: 0.187, rotation: 27.7, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/rose.webp" },
-  { name: "violeta", x: -159, y: 182, w: 1080, h: 1350, scale: 0.21, rotation: -20.1, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/violet.webp" },
-  { name: "jasmim", x: -105.6, y: 145.9, w: 1080, h: 1350, scale: 0.28, rotation: 0, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/jasmin.webp" },
-  { name: "girassol", x: -193.2, y: 234.4, w: 1080, h: 1350, scale: 0.159, rotation: 20.8, opacity: 1, flipX: true, imageW: 400, imageH: 500, src: "/poema-assets/flowers/sunflower.webp" },
+  { name: "SACOLA", x: -241.9, y: 97.2, w: 1080, h: 1350, scale: 0.557, rotation: 0, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-bag.webp" },
+  { name: "filler1", x: -249.7, y: 61.6, w: 1080, h: 1350, scale: 0.348, rotation: -38.8, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-filler-1.webp" },
+  { name: "filler2", x: -3.6, y: 115.4, w: 1080, h: 1350, scale: 0.316, rotation: 48.4, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/bouquet-filler-2.webp" },
+  { name: "orquidea", x: 12, y: 119.7, w: 1080, h: 1350, scale: 0.239, rotation: 10.5, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/orchid.webp" },
+  { name: "rosa", x: 123.3, y: 198.5, w: 1080, h: 1350, scale: 0.187, rotation: 27.7, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/rose.webp" },
+  { name: "violeta", x: -159, y: 152, w: 1080, h: 1350, scale: 0.21, rotation: -20.1, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/violet.webp" },
+  { name: "jasmim", x: -105.6, y: 115.9, w: 1080, h: 1350, scale: 0.28, rotation: 0, opacity: 1, flipX: false, imageW: 400, imageH: 500, src: "/poema-assets/flowers/jasmin.webp" },
+  { name: "girassol", x: -193.2, y: 204.4, w: 1080, h: 1350, scale: 0.159, rotation: 20.8, opacity: 1, flipX: true, imageW: 400, imageH: 500, src: "/poema-assets/flowers/sunflower.webp" },
 ];
 
 const SCENES: Scene[] = [
@@ -364,7 +364,7 @@ function buildCSS() {
 .poema-text .word.em.f-violeta{background:linear-gradient(178deg,#f7e7ff 0%,#d8a6ff 26%,#9a4ff0 58%,#4a1090 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(255,170,100,.42))}
 .poema-text .word.em.f-girassol{background:linear-gradient(178deg,#fffadb 0%,#ffe558 24%,#ffb828 58%,#e06200 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(170,120,240,.42))}
 .poema-text .word.em.f-orquidea{background:linear-gradient(178deg,#ffe4f2 0%,#ff9ccf 26%,#e84ca3 58%,#7a1250 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(120,210,220,.42))}
-.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:.95;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:.22em .08em .08em;margin-top:0;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter}
+.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:1.1;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:.5em .08em .08em;margin-top:-.25em;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter}
 .poema-text .word.flower.in{transform:translateY(0)}
 .poema-text .word.flower.f-rosa{background:linear-gradient(178deg,#ffe4ea 0%,#ff8fa8 22%,#ff2550 52%,#c2002a 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(180,100,220,.42))}
 .poema-text .word.flower.f-jasmim{background:linear-gradient(178deg,#fffdf0 0%,#fff1c8 25%,#ffdf80 58%,#ffae30 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(220,130,200,.42))}
@@ -575,6 +575,15 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     // Uniform scale — container always has ~375:812 aspect ratio via parent
     const scale = (rect.width * dpr) / STAGE_W;
     a.ctx!.setTransform(scale, 0, 0, scale, 0, 0);
+    a.ctx!.imageSmoothingEnabled = true;
+    a.ctx!.imageSmoothingQuality = 'high';
+    // Resize background offscreen canvas to match DPR for crisp rendering
+    if (a.bgCanvas && a.bgCtx) {
+      a.bgCanvas.width = Math.round(STAGE_W * dpr);
+      a.bgCanvas.height = Math.round(STAGE_H * dpr);
+      a.bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      a.bgLastRender = -9999; // force re-render
+    }
   }, []);
 
   // ─── DRAW HELPERS ──────────────────────────────────────────────────
@@ -616,7 +625,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
   const drawBackground = useCallback((t: number) => {
     const a = A.current;
     if (!a.bgCanvas) return;
-    if (t - a.bgLastRender >= 66) { renderBgOffscreen(); a.bgLastRender = t; }
+    if (t - a.bgLastRender >= 25) { renderBgOffscreen(); a.bgLastRender = t; }
     a.ctx!.drawImage(a.bgCanvas, 0, 0, STAGE_W, STAGE_H);
   }, [renderBgOffscreen]);
 
@@ -1021,6 +1030,8 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
       const canvas = canvasRef.current;
       if (!canvas) return;
       a.ctx = canvas.getContext('2d', { alpha: true })!;
+      a.ctx.imageSmoothingEnabled = true;
+      a.ctx.imageSmoothingQuality = 'high';
 
       resizeCanvas();
       initBackground();
