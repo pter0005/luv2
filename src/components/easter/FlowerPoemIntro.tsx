@@ -395,29 +395,57 @@ function buildCSS() {
   .poema-text.finale .fMid .word{margin:0 .06em}
   .poema-text.finale .fHero{font-size:clamp(82px,25cqw,92px);padding:0 .12em;margin:.02em 0 .04em}
 }
-.poema-startBtn{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  padding:clamp(14px,4cqw,20px) clamp(28px,12cqw,46px) clamp(16px,4.4cqw,22px);
-  white-space:nowrap;
-  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 55%),linear-gradient(180deg,rgba(255,170,210,.22) 0%,rgba(190,110,200,.16) 45%,rgba(120,60,170,.18) 100%);
-  border:1px solid rgba(255,255,255,.42);color:#fff;
-  font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:clamp(16px,5.5cqw,22px);letter-spacing:.02em;
-  border-radius:999px;cursor:pointer;
-  -webkit-backdrop-filter:blur(22px) saturate(165%);backdrop-filter:blur(22px) saturate(165%);
-  box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 -1px 0 rgba(255,255,255,.12) inset,0 0 0 1px rgba(255,255,255,.08) inset,0 14px 44px rgba(180,60,160,.42),0 0 70px rgba(255,130,200,.35),0 0 160px rgba(200,100,220,.22);
-  text-shadow:0 1px 2px rgba(60,10,80,.55),0 0 18px rgba(255,200,230,.45);
-  transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,opacity .6s ease;
-  z-index:10;overflow:hidden;isolation:isolate;
+.poema-readyScreen{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;
+  opacity:0;animation:poemaReadyIn 1.4s cubic-bezier(.22,1,.36,1) .2s forwards;
 }
-.poema-startBtn::before{content:"";position:absolute;inset:0;border-radius:999px;pointer-events:none;background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.45) 40%,rgba(255,255,255,.12) 52%,transparent 65%);mix-blend-mode:screen;opacity:.85;animation:poemaGlassSweep 5.5s ease-in-out infinite}
-.poema-startBtn::after{content:"";position:absolute;left:8%;right:8%;bottom:0;height:40%;border-radius:50%;background:radial-gradient(ellipse at 50% 100%,rgba(255,120,200,.45) 0%,rgba(255,120,200,0) 70%);pointer-events:none;filter:blur(6px);opacity:.85}
-@keyframes poemaGlassSweep{0%,100%{transform:translateX(-20%)}50%{transform:translateX(20%)}}
-.poema-startBtn:active{transform:translate(-50%,-50%) scale(.98)}
-.poema-startBtn .heart{display:inline-block;margin-left:.42em;color:#ffc6df;text-shadow:0 0 12px rgba(255,180,220,.9)}
+@keyframes poemaReadyIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.poema-ringWrap{
+  position:relative;padding:2.5px;border-radius:999px;
+  animation:poemaBreathe 3.5s ease-in-out infinite;
+}
+.poema-ringWrap::before{
+  content:"";position:absolute;inset:-1px;border-radius:999px;
+  background:conic-gradient(from 0deg,rgba(255,120,200,0.05),rgba(200,100,255,0.55),rgba(255,190,230,0.8),rgba(180,80,255,0.55),rgba(255,120,200,0.05));
+  animation:poemaRingSpin 4s linear infinite;z-index:-1;
+  filter:blur(0.5px);
+}
+@keyframes poemaRingSpin{to{transform:rotate(360deg)}}
+@keyframes poemaBreathe{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px rgba(200,100,255,.22))}50%{transform:scale(1.025);filter:drop-shadow(0 0 28px rgba(200,100,255,.38))}}
+.poema-startBtn{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(3px,1.2cqw,7px);
+  padding:clamp(16px,4.8cqw,24px) clamp(34px,14cqw,58px) clamp(18px,5.2cqw,26px);
+  white-space:nowrap;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.18) 0%,rgba(255,255,255,0) 50%),linear-gradient(180deg,rgba(50,12,70,.88) 0%,rgba(28,6,45,.94) 100%);
+  border:none;color:#fff;border-radius:999px;cursor:pointer;
+  -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
+  box-shadow:0 1px 0 rgba(255,255,255,.30) inset,0 -1px 0 rgba(255,255,255,.06) inset;
+  overflow:hidden;isolation:isolate;transition:transform .25s ease;
+}
+.poema-startBtn::before{content:"";position:absolute;inset:0;border-radius:999px;pointer-events:none;background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.30) 38%,rgba(255,255,255,.06) 50%,transparent 63%);mix-blend-mode:screen;opacity:.75;animation:poemaGlassSweep 6s ease-in-out infinite}
+.poema-startBtn::after{content:"";position:absolute;left:15%;right:15%;bottom:-1px;height:42%;border-radius:50%;background:radial-gradient(ellipse at 50% 100%,rgba(255,120,200,.40) 0%,rgba(255,120,200,0) 70%);pointer-events:none;filter:blur(7px);opacity:.7}
+@keyframes poemaGlassSweep{0%,100%{transform:translateX(-28%)}50%{transform:translateX(28%)}}
+.poema-startBtn:active{transform:scale(.97)}
+.poema-btnLabel{
+  font-family:'Playfair Display',serif;font-style:italic;font-weight:400;
+  font-size:clamp(9px,2.8cqw,13px);letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(255,200,230,.55);
+}
+.poema-btnText{
+  font-family:'Playfair Display',serif;font-style:italic;font-weight:500;
+  font-size:clamp(17px,5.5cqw,23px);letter-spacing:.02em;
+  text-shadow:0 1px 2px rgba(60,10,80,.45),0 0 16px rgba(255,200,230,.30);
+}
+.poema-startBtn .heart{
+  display:inline-block;margin-left:.35em;color:#ffc6df;
+  text-shadow:0 0 10px rgba(255,180,220,.85);
+  animation:poemaHeartbeat 1.6s ease-in-out infinite;
+}
+@keyframes poemaHeartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.22)}24%{transform:scale(1)}38%{transform:scale(1.16)}50%{transform:scale(1)}}
 .poema-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.55);font-family:'Playfair Display',serif;font-style:italic;font-size:17px;z-index:100;background:#0a0510}
 .poema-loading::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;border:2px solid rgba(255,255,255,.2);border-top-color:#ff80c0;border-radius:50%;animation:poemaSpin 1s linear infinite}
 @keyframes poemaSpin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.poema-text .word{transition:opacity .4s ease;transform:none!important}.poema-startBtn{transition:opacity .4s ease}}
+@media (prefers-reduced-motion:reduce){.poema-text .word{transition:opacity .4s ease;transform:none!important}.poema-readyScreen{animation:none;opacity:1}.poema-ringWrap{animation:none}.poema-ringWrap::before{animation:none}.poema-startBtn .heart{animation:none}}
 `;
 }
 
@@ -1100,9 +1128,14 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
           <div ref={textRef} className="poema-text" />
 
           {phase === 'ready' && (
-            <button className="poema-startBtn" onClick={handleStart}>
-              revelar a surpresa<span className="heart">&#10084;</span>
-            </button>
+            <div className="poema-readyScreen">
+              <div className="poema-ringWrap">
+                <button className="poema-startBtn" onClick={handleStart}>
+                  <span className="poema-btnLabel">toque para</span>
+                  <span className="poema-btnText">revelar sua surpresa <span className="heart">&#10084;</span></span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

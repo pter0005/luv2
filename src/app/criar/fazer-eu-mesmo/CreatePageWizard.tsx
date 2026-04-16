@@ -999,13 +999,14 @@ const IntroStep = React.memo(() => {
                                     className={cn(
                                         "w-full relative rounded-2xl overflow-hidden p-5 text-left transition-all duration-300 border-2",
                                         isPoema
-                                            ? "border-purple-400 shadow-2xl shadow-purple-400/20"
+                                            ? "border-purple-400"
                                             : "border-white/10 hover:border-purple-400/40"
                                     )}
                                     style={{
                                         background: isPoema
                                             ? 'linear-gradient(135deg, rgba(60,10,80,0.95) 0%, rgba(30,5,50,0.95) 50%, rgba(60,10,80,0.95) 100%)'
                                             : 'rgba(255,255,255,0.03)',
+                                        ...(isPoema ? { boxShadow: '0 0 15px rgba(168,85,247,0.25), inset 0 1px 0 rgba(255,255,255,0.06)' } : {}),
                                     }}
                                 >
                                     {isPoema && (
@@ -1091,13 +1092,14 @@ const IntroStep = React.memo(() => {
                             className={cn(
                                 "w-full relative rounded-2xl overflow-hidden p-5 text-left transition-all duration-300 border-2",
                                 isLove
-                                    ? "border-pink-400 shadow-2xl shadow-pink-400/20"
+                                    ? "border-pink-400"
                                     : "border-white/10 hover:border-pink-400/40"
                             )}
                             style={{
                                 background: isLove
                                     ? 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)'
                                     : 'rgba(255,255,255,0.03)',
+                                ...(isLove ? { boxShadow: '0 0 15px rgba(236,72,153,0.25), inset 0 1px 0 rgba(255,255,255,0.06)' } : {}),
                             }}
                         >
                             {isLove && (
