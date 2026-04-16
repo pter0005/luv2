@@ -1028,7 +1028,6 @@ const IntroStep = React.memo(() => {
                                                     style={{ background: 'linear-gradient(135deg, #c084fc, #a855f7)', color: 'white' }}>
                                                     NOVO
                                                 </span>
-                                                <span className="ml-auto text-sm font-bold text-purple-300">+R$6,90</span>
                                             </div>
                                             <p className="text-[12px] mt-1.5 leading-snug text-white/50">
                                                 Poema animado com flores revelando &quot;você é o presente mais lindo que a vida me deu&quot;
@@ -1133,7 +1132,6 @@ const IntroStep = React.memo(() => {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <h3 className="text-base font-bold text-white">Coelhinho Kawaii</h3>
-                                        <span className="ml-auto text-sm font-bold text-pink-300">+R$5,90</span>
                                     </div>
                                     <p className="text-[12px] mt-1.5 leading-snug text-white/50">
                                         Intro interativa &quot;Você me ama?&quot; com 7 reações + celebração com corações + revelação cinematográfica da sua página
@@ -2121,9 +2119,9 @@ const stepComponents: React.ComponentType<any>[] = [
     SpecialDateStep,   // 2 - specialDate
     GalleryStep,       // 3 - gallery
     TimelineStep,      // 4 - timeline
-    MusicStep,         // 5 - music
-    BackgroundStep,    // 6 - background
-    IntroStep,         // 7 - intro
+    IntroStep,         // 5 - intro
+    MusicStep,         // 6 - music
+    BackgroundStep,    // 7 - background
     PuzzleStep,        // 8 - puzzle
     MemoryGameStep,    // 9 - memory
     QuizStep,          // 10 - quiz
@@ -3763,6 +3761,7 @@ function WizardInternal() {
     const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
     const showEasterPreview = currentStepId === 'intro' && formData.introType === 'love';
     const showPoemaPreview = currentStepId === 'intro' && formData.introType === 'poema';
+
 
     return (
         <FormProvider {...methods}>
