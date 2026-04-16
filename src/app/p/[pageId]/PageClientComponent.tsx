@@ -748,10 +748,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.8 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center"
+              className="fixed inset-0 z-[100]"
               style={{ background: '#0a0510' }}
             >
-              <div className="relative w-full h-full md:w-auto md:h-full md:aspect-[375/812] md:max-w-full overflow-hidden">
+              <div className="absolute inset-0 overflow-hidden">
                 <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} />
               </div>
             </motion.div>
