@@ -346,8 +346,8 @@ function computeLayerGlow(layerIdx: number, t: number) {
 function buildCSS() {
   const bodyFont = BODY_FONT;
   return `
-.poema-root{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
-.poema-wrap{position:relative;aspect-ratio:375/812;max-width:100vw;max-height:100vh;width:auto;height:100vh;transform-origin:center;box-shadow:0 0 120px rgba(120,40,180,.25);border-radius:4px;overflow:hidden;container-type:inline-size;container-name:stage}
+.poema-root{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
+.poema-wrap{position:relative;aspect-ratio:375/812;max-width:100%;max-height:100%;width:auto;height:100%;transform-origin:center;box-shadow:0 0 120px rgba(120,40,180,.25);border-radius:4px;overflow:hidden;container-type:inline-size;container-name:stage}
 .poema-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .poema-text{
   position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
@@ -414,7 +414,7 @@ function buildCSS() {
 @keyframes poemaGlassSweep{0%,100%{transform:translateX(-20%)}50%{transform:translateX(20%)}}
 .poema-startBtn:active{transform:translate(-50%,-50%) scale(.98)}
 .poema-startBtn .heart{display:inline-block;margin-left:.42em;color:#ffc6df;text-shadow:0 0 12px rgba(255,180,220,.9)}
-.poema-loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.55);font-family:'Playfair Display',serif;font-style:italic;font-size:17px;z-index:100;background:#0a0510}
+.poema-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.55);font-family:'Playfair Display',serif;font-style:italic;font-size:17px;z-index:100;background:#0a0510}
 .poema-loading::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;border:2px solid rgba(255,255,255,.2);border-top-color:#ff80c0;border-radius:50%;animation:poemaSpin 1s linear infinite}
 @keyframes poemaSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.poema-text .word{transition:opacity .4s ease;transform:none!important}.poema-startBtn{transition:opacity .4s ease}}
