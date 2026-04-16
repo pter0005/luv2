@@ -14,6 +14,7 @@ interface YoutubePlayerV2Props {
   coverImage?: string;
   volume?: number;
   autoplay?: boolean;
+  onMusicActive?: () => void;
 }
 
 const getYoutubeThumbnail = (url: string) => {
@@ -38,6 +39,7 @@ const YoutubePlayerV2 = React.forwardRef<any, YoutubePlayerV2Props>(({
   coverImage,
   volume = 0.6,
   autoplay = true,
+  onMusicActive,
 }, ref) => {
   const [mounted, setMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -50,6 +52,7 @@ const YoutubePlayerV2 = React.forwardRef<any, YoutubePlayerV2Props>(({
   const playerRef = useRef<ReactPlayer>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const autoplayAttempted = useRef(false);
+  const musicActiveRef = useRef(false);
 
   const thumbnailUrl = getYoutubeThumbnail(url);
   const cover = coverImage || thumbnailUrl || "https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000";
@@ -63,38 +66,57 @@ const YoutubePlayerV2 = React.forwardRef<any, YoutubePlayerV2Props>(({
     setIsPlaying(true);
   }, [isReady, autoplay]);
 
-  // Unmute on any first user interaction anywhere on the page.
+  // Notify parent when music is confirmed playing with sound.
   useEffect(() => {
-    if (!isMuted || !isPlaying) return;
-    const unlock = () => {
-      setIsMuted(false);
-      setBlocked(false);
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('touchstart', unlock);
+    if (isPlaying && !isMuted && !musicActiveRef.current) {
+      musicActiveRef.current = true;
+      onMusicActive?.();
+    }
+  }, [isPlaying, isMuted, onMusicActive]);
+
+  // Helper: call YouTube iframe API directly (sync, works within user gesture).
+  const forceYTPlay = useCallback(() => {
+    try {
+      const internal = (playerRef.current as any)?.getInternalPlayer?.();
+      if (!internal) return false;
+      if (internal.unMute) internal.unMute();
+      if (internal.setVolume) internal.setVolume((volume ?? 0.6) * 100);
+      if (internal.playVideo) internal.playVideo();
+      return true;
+    } catch { return false; }
+  }, [volume]);
+
+  // Unmute on ANY user interaction anywhere on the page.
+  // Calls YouTube API directly (synchronous within gesture) for iOS compatibility.
+  // Keeps retrying on each click until player is ready and unmuted.
+  useEffect(() => {
+    if (!isMuted) return;
+    if (!mounted) return;
+    const tryUnmute = () => {
+      const ok = forceYTPlay();
+      if (ok) {
+        setIsMuted(false);
+        setIsPlaying(true);
+        setBlocked(false);
+      }
+      // If !ok, player not loaded yet — listener stays, next click retries.
     };
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
-    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('pointerdown', tryUnmute);
+    window.addEventListener('touchstart', tryUnmute);
     return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('pointerdown', tryUnmute);
+      window.removeEventListener('touchstart', tryUnmute);
     };
-  }, [isMuted, isPlaying]);
+  }, [isMuted, mounted, forceYTPlay]);
 
   useImperativeHandle(ref, () => ({
     play: async () => {
       setIsMuted(false);
       setIsPlaying(true);
       setBlocked(false);
-      // Force a re-seek to kick the iframe on some browsers
-      try {
-        const p = playerRef.current;
-        if (p) p.seekTo(p.getCurrentTime?.() ?? 0, 'seconds');
-      } catch {}
+      forceYTPlay();
     }
-  }), []);
+  }), [forceYTPlay]);
 
   const toggle = useCallback(() => {
     setIsMuted(false);

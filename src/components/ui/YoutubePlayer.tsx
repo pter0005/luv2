@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle, useCallback } from "react";
 import ReactPlayer from "react-player/youtube";
 import { Play, Pause, Heart, Shuffle, SkipBack, SkipForward, Repeat } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -52,30 +52,37 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
     }
   }, []);
 
+  // Helper: call YouTube iframe API directly (sync, works within user gesture on iOS).
+  const forceYTPlay = useCallback(() => {
+    try {
+      const internal = (playerRef.current as any)?.getInternalPlayer?.();
+      if (!internal) return false;
+      if (internal.unMute) internal.unMute();
+      if (internal.setVolume) internal.setVolume((volume ?? 0.5) * 100);
+      if (internal.playVideo) internal.playVideo();
+      return true;
+    } catch { return false; }
+  }, [volume]);
+
   // Global unlock: once the user touches ANY part of the page, unmute.
-  // This is the key fix for "precisa clicar duas vezes" — the music is already
-  // playing muted, and the first page interaction (puzzle reveal, button click,
-  // scroll, anything) unmutes it automatically.
+  // Calls YouTube API directly (synchronous within gesture) for iOS compatibility.
+  // Keeps retrying on each click until player is loaded and unmuted.
   useEffect(() => {
     if (!isMuted) return;
-    const unlock = () => {
-      setIsMuted(false);
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('click', unlock);
+    const tryUnmute = () => {
+      const ok = forceYTPlay();
+      if (ok) {
+        setIsMuted(false);
+        setIsPlaying(true);
+      }
     };
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
-    window.addEventListener('touchstart', unlock, { once: true });
-    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('pointerdown', tryUnmute);
+    window.addEventListener('touchstart', tryUnmute);
     return () => {
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('touchstart', unlock);
-      window.removeEventListener('click', unlock);
+      window.removeEventListener('pointerdown', tryUnmute);
+      window.removeEventListener('touchstart', tryUnmute);
     };
-  }, [isMuted]);
+  }, [isMuted, forceYTPlay]);
 
   // If parent called play() before the player was ready, fire it now.
   useEffect(() => {
@@ -83,12 +90,9 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
       pendingPlayRef.current = false;
       setIsMuted(false);
       setIsPlaying(true);
-      try {
-        const p = playerRef.current;
-        if (p) p.seekTo(p.getCurrentTime?.() ?? 0, 'seconds');
-      } catch {}
+      forceYTPlay();
     }
-  }, [isReady]);
+  }, [isReady, forceYTPlay]);
 
   useImperativeHandle(ref, () => ({
     play: () => {
@@ -98,12 +102,9 @@ const YoutubePlayer = React.forwardRef<any, YoutubePlayerProps>(({
       }
       setIsMuted(false);
       setIsPlaying(true);
-      try {
-        const p = playerRef.current;
-        if (p) p.seekTo(p.getCurrentTime?.() ?? 0, 'seconds');
-      } catch {}
+      forceYTPlay();
     }
-  }), [isReady]);
+  }), [isReady, forceYTPlay]);
 
   const handlePlay = () => {
     setIsPlaying(true);

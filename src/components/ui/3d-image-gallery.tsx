@@ -82,12 +82,22 @@ const FloatingCard = React.memo(function FloatingCard({
   isMobile: boolean
   onClick: () => void
 }) {
-  const groupRef    = useRef<THREE.Group>(null)
-  const occludeRef  = useRef<THREE.Mesh>(null)
+  const groupRef   = useRef<THREE.Group>(null)
+  const cardRef    = useRef<HTMLDivElement>(null)
 
   useFrame(({ camera }) => {
     if (!groupRef.current) return;
     groupRef.current.lookAt(camera.position);
+
+    // Fade cards by distance — far cards become translucent so their edges
+    // don't visually compete with closer cards (HTML can't truly depth-sort).
+    if (cardRef.current) {
+      const dist = camera.position.distanceTo(groupRef.current.position);
+      const maxDist = isMobile ? 28 : 40;
+      const minDist = isMobile ? 4 : 6;
+      const t = Math.max(0, Math.min(1, (dist - minDist) / (maxDist - minDist)));
+      cardRef.current.style.opacity = String(1 - t * 0.82);
+    }
   })
 
   // FIX ①: usa DATE_LOCALE (constante de módulo) em vez de "const fnsLocale = ptBR" local
@@ -99,9 +109,7 @@ const FloatingCard = React.memo(function FloatingCard({
     return card.date instanceof Date ? card.date : null
   }, [card.date])
 
-  const cardW   = isMobile ? 140 : 220
-  const planeW  = (cardW / 100) * 1.26
-  const planeH  = planeW / (3 / 4)
+  const cardW = isMobile ? 140 : 220
 
   return (
     <group
@@ -109,20 +117,14 @@ const FloatingCard = React.memo(function FloatingCard({
       position={[position.x, position.y, position.z]}
       scale={isMobile ? 1.125 : 1.44}
     >
-      <mesh ref={occludeRef}>
-        <planeGeometry args={[planeW, planeH]} />
-        <meshBasicMaterial colorWrite={false} depthWrite={true} depthTest={true} transparent={false} side={THREE.DoubleSide} />
-      </mesh>
-
       <Html
         transform
-        occlude={true}
         distanceFactor={8}
-        position={[0, 0, 0.1]}
-        zIndexRange={[100, 0]}
-        style={{ pointerEvents: 'auto', cursor: 'pointer', transformStyle: 'preserve-3d' }}
+        zIndexRange={[16777271, 0]}
+        style={{ pointerEvents: 'auto', cursor: 'pointer' }}
       >
         <div
+          ref={cardRef}
           onClick={onClick}
           className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10 transition-transform duration-200 hover:scale-105"
           style={{ width: `${cardW}px`, aspectRatio: '3/4' }}

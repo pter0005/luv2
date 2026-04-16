@@ -301,7 +301,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const handleReveal = useCallback(() => {
     setShowExplosion(true);
     setPuzzleRevealed(true);
-    try { playerRef.current?.play(); setMusicStarted(true); } catch {}
+    try { playerRef.current?.play(); } catch {}
   }, []);
 
   useEffect(() => {
@@ -471,6 +471,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   songName={pageData.songName}
                   artistName={pageData.artistName}
                   volume={0.6}
+                  onMusicActive={() => setMusicStarted(true)}
                 />
              )}
 
@@ -483,11 +484,11 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
              {/* Fallback: se a música não tocou automaticamente após o puzzle */}
              {puzzleRevealed && !musicStarted && pageData.musicOption === 'youtube' && pageData.youtubeUrl && (
                 <button
-                  onClick={() => { playerRef.current?.play(); setMusicStarted(true); }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/80 text-sm hover:bg-white/20 transition-colors animate-pulse"
+                  onClick={() => { playerRef.current?.play(); }}
+                  className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-400/30 text-white text-sm font-semibold hover:from-pink-500/30 hover:to-fuchsia-500/30 transition-all animate-pulse shadow-lg shadow-pink-500/10"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                  Tocar música
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                  Toque para ativar a música
                 </button>
              )}
           </div>
@@ -682,7 +683,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <RealPuzzle
                             imageSrc={puzzleImageSrc}
                             onReveal={() => {
-                              try { playerRef.current?.play(); setMusicStarted(true); } catch {}
+                              try { playerRef.current?.play(); } catch {}
                               setIsPuzzleComplete(true);
                             }}
                         />
