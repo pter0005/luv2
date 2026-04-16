@@ -30,7 +30,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 type PushStatus = 'idle' | 'subscribing' | 'subscribed' | 'denied' | 'unsupported';
 
-export function SaleNotification() {
+export function SaleNotification({ onSale }: { onSale?: () => void } = {}) {
   const [sales, setSales] = useState<SaleEvent[]>([]);
   const [pushStatus, setPushStatus] = useState<PushStatus>('idle');
   const [showBanner, setShowBanner] = useState(false);
@@ -151,6 +151,7 @@ export function SaleNotification() {
 
       setSales(prev => [sale, ...prev].slice(0, 5));
       playCashSound();
+      onSale?.();
 
       if (Notification.permission === 'granted') {
         new Notification(`Nova venda! R$${sale.value.toFixed(2).replace('.', ',')}`, {
@@ -167,7 +168,7 @@ export function SaleNotification() {
     setTimeout(() => { initializedRef.current = true; }, 2000);
 
     return () => unsub();
-  }, [playCashSound]);
+  }, [playCashSound, onSale]);
 
   return (
     <>

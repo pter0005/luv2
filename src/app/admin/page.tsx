@@ -139,7 +139,7 @@ async function getAllData() {
 
         // Attach rate
         attachSample++;
-        if (d.introType === 'love') attachIntro++;
+        if (d.introType === 'love' || d.introType === 'poema') attachIntro++;
         if (d.audioRecording?.url) attachVoice++;
         if (d.enableWordGame && Array.isArray(d.wordGameQuestions) && d.wordGameQuestions.length > 0) attachWordGame++;
         if (d.qrCodeDesign && d.qrCodeDesign !== 'classic') attachQr++;
@@ -152,7 +152,8 @@ async function getAllData() {
       // Sales history table — últimas 100 para exibição
       if (salesHistory.length < 100) {
         const addOns: string[] = [];
-        if (d.introType === 'love') addOns.push('Intro +R$5,90');
+        if (d.introType === 'love') addOns.push('Intro Coelhinho +R$5,90');
+        if (d.introType === 'poema') addOns.push('Buquê Digital +R$6,90');
         if (d.audioRecording?.url) addOns.push('Voz +R$2,90');
         if (d.enableWordGame && Array.isArray(d.wordGameQuestions) && d.wordGameQuestions.length > 0) addOns.push('Palavra +R$2,00');
         if (d.qrCodeDesign && d.qrCodeDesign !== 'classic') addOns.push(`QR "${d.qrCodeDesign}" +R$3,90`);

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ComposedChart, Area, Bar, BarChart, LineChart, Line,
@@ -974,6 +975,18 @@ export default function AdminDashboard({
   chartData, sourceRows, recentSales,
   wizardFunnelToday, attachRate, salesHeatmap,
 }: DashboardProps) {
+  const router = useRouter();
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // When a sale comes in via RTDB, refresh server data after a short delay
+  // (debounce so multiple rapid sales don't hammer the server)
+  const handleSaleDetected = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => {
+      router.refresh();
+    }, 3000);
+  }, [router]);
+
   // Build sparkline snapshots (last 7 days) para cada KPI
   const last7 = chartData.slice(-7);
   const visitorsSpark = last7.map(d => ({ date: d.date, value: d.visitors }));
@@ -999,7 +1012,7 @@ export default function AdminDashboard({
 
   return (
     <div className="space-y-6">
-      <SaleNotification />
+      <SaleNotification onSale={handleSaleDetected} />
 
       {/* ── ERROR MONITORING ─────────────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden"

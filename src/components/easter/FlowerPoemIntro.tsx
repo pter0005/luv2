@@ -346,8 +346,8 @@ function computeLayerGlow(layerIdx: number, t: number) {
 function buildCSS() {
   const bodyFont = BODY_FONT;
   return `
-.poema-root{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
-.poema-wrap{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:inline-size;container-name:stage}
+.poema-root{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:clip;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
+.poema-wrap{position:absolute;inset:0;width:100%;height:100%;overflow:visible;container-type:inline-size;container-name:stage}
 .poema-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .poema-text{
   position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
@@ -364,7 +364,7 @@ function buildCSS() {
 .poema-text .word.em.f-violeta{background:linear-gradient(178deg,#f7e7ff 0%,#d8a6ff 26%,#9a4ff0 58%,#4a1090 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(255,170,100,.42))}
 .poema-text .word.em.f-girassol{background:linear-gradient(178deg,#fffadb 0%,#ffe558 24%,#ffb828 58%,#e06200 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(170,120,240,.42))}
 .poema-text .word.em.f-orquidea{background:linear-gradient(178deg,#ffe4f2 0%,#ff9ccf 26%,#e84ca3 58%,#7a1250 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(120,210,220,.42))}
-.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:1.1;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:.5em .08em .08em;margin-top:-.25em;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter}
+.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:1.8;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:0 .08em;margin-top:-.35em;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter}
 .poema-text .word.flower.in{transform:translateY(0)}
 .poema-text .word.flower.f-rosa{background:linear-gradient(178deg,#ffe4ea 0%,#ff8fa8 22%,#ff2550 52%,#c2002a 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(180,100,220,.42))}
 .poema-text .word.flower.f-jasmim{background:linear-gradient(178deg,#fffdf0 0%,#fff1c8 25%,#ffdf80 58%,#ffae30 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(220,130,200,.42))}
