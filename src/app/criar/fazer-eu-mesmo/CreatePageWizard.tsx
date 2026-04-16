@@ -164,6 +164,8 @@ const pageSchema = z.object({
   enableWordGame: z.boolean().default(false),
   wordGameQuestions: z.array(wordGameQuestionSchema).max(4, "Máximo de 4 palavras.").default([]),
   introType: z.string().optional(),
+  introGender: z.enum(['fem', 'mas']).default('fem').optional(),
+  introFont: z.string().default('cormorant').optional(),
   qrCodeDesign: z.string().default("classic"),
   utmSource: z.string().optional(),
   whatsappNumber: z.string().optional(),
@@ -959,34 +961,72 @@ BackgroundStep.displayName = 'BackgroundStep';
 // ─────────────────────────────────────────────
 const INTRO_PRICE = 5.90;
 
+const FONT_OPTIONS = [
+    { id: 'cormorant', label: 'Elegante', family: "'Cormorant Garamond', serif", style: 'italic' },
+    { id: 'playfair', label: 'Clássica', family: "'Playfair Display', serif", style: 'italic' },
+    { id: 'dancing', label: 'Cursiva', family: "'Dancing Script', cursive", style: 'normal' },
+];
+
 const IntroStep = React.memo(() => {
-    const { control, watch } = useFormContext<PageData>();
+    const { control, watch, setValue } = useFormContext<PageData>();
+    const { user } = useUser();
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
     const introType = watch('introType');
-    const enabled = introType === 'love';
+    const introGender = watch('introGender') || 'fem';
+    const introFont = watch('introFont') || 'cormorant';
+    const isLove = introType === 'love';
+    const isPoema = introType === 'poema';
+
+    // Load preview fonts for the font selector (only when poema sub-options are shown)
+    React.useEffect(() => {
+        if (!isPoema) return;
+        const fonts = [
+            'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap',
+            'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400&display=swap',
+            'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&display=swap',
+        ];
+        for (const href of fonts) {
+            if (!document.querySelector(`link[href="${href}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                document.head.appendChild(link);
+            }
+        }
+    }, [isPoema]);
+
+    const handleSelect = (type: string, fieldOnChange: (v: string | undefined) => void) => {
+        if (introType === type) {
+            fieldOnChange(undefined);
+        } else {
+            fieldOnChange(type);
+        }
+    };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <FormField
                 control={control}
                 name="introType"
                 render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="space-y-4">
+                        {/* Card 1: Coelhinho Kawaii */}
                         <button
                             type="button"
-                            onClick={() => field.onChange(field.value === 'love' ? undefined : 'love')}
+                            onClick={() => handleSelect('love', field.onChange)}
                             className={cn(
                                 "w-full relative rounded-2xl overflow-hidden p-5 text-left transition-all duration-300 border-2",
-                                enabled
+                                isLove
                                     ? "border-pink-400 shadow-2xl shadow-pink-400/20"
                                     : "border-white/10 hover:border-pink-400/40"
                             )}
                             style={{
-                                background: enabled
+                                background: isLove
                                     ? 'linear-gradient(135deg, rgba(45,17,82,0.95) 0%, rgba(26,10,46,0.95) 50%, rgba(45,17,82,0.95) 100%)'
                                     : 'rgba(255,255,255,0.03)',
                             }}
                         >
-                            {enabled && (
+                            {isLove && (
                                 <div className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
                                     style={{ background: 'linear-gradient(135deg, #5ee8b5, #3dd4a0)' }}>
                                     <svg width="12" height="12" viewBox="0 0 8 8" fill="none">
@@ -995,7 +1035,7 @@ const IntroStep = React.memo(() => {
                                 </div>
                             )}
                             <div className="flex items-center gap-4">
-                                <div className="shrink-0" style={{ animation: enabled ? 'bunnyBounce 2s ease-in-out infinite' : 'none' }}>
+                                <div className="shrink-0" style={{ animation: isLove ? 'bunnyBounce 2s ease-in-out infinite' : 'none' }}>
                                     <svg width="48" height="64" viewBox="0 0 120 160" fill="none">
                                         <ellipse cx="60" cy="120" rx="24" ry="18" fill="#fff" stroke="#cbaabb" strokeWidth="1.8"/>
                                         <circle cx="38" cy="118" r="6" fill="#fff" stroke="#cbaabb" strokeWidth="1.2"/>
@@ -1018,10 +1058,6 @@ const IntroStep = React.memo(() => {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <h3 className="text-base font-bold text-white">Coelhinho Kawaii</h3>
-                                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full"
-                                            style={{ background: 'linear-gradient(135deg, #ff8aab, #ff5e8a)', color: 'white' }}>
-                                            NOVO
-                                        </span>
                                     </div>
                                     <p className="text-[12px] mt-1.5 leading-snug text-white/50">
                                         Intro interativa &quot;Você me ama?&quot; com 7 reações + celebração com corações + revelação cinematográfica da sua página
@@ -1038,11 +1074,133 @@ const IntroStep = React.memo(() => {
                             </div>
                             <div className={cn(
                                 "w-full mt-4 p-2.5 text-center font-bold text-sm rounded-xl transition-all",
-                                enabled ? "bg-pink-500/20 text-pink-300" : "bg-white/5 text-white/40"
+                                isLove ? "bg-pink-500/20 text-pink-300" : "bg-white/5 text-white/40"
                             )}>
-                                {enabled ? 'Ativado!' : 'Toque para adicionar'}
+                                {isLove ? 'Ativado!' : 'Toque para adicionar'}
                             </div>
                         </button>
+
+                        {/* Card 2: Poema das Flores (admin-only) */}
+                        {isAdmin && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelect('poema', field.onChange)}
+                                    className={cn(
+                                        "w-full relative rounded-2xl overflow-hidden p-5 text-left transition-all duration-300 border-2",
+                                        isPoema
+                                            ? "border-purple-400 shadow-2xl shadow-purple-400/20"
+                                            : "border-white/10 hover:border-purple-400/40"
+                                    )}
+                                    style={{
+                                        background: isPoema
+                                            ? 'linear-gradient(135deg, rgba(60,10,80,0.95) 0%, rgba(30,5,50,0.95) 50%, rgba(60,10,80,0.95) 100%)'
+                                            : 'rgba(255,255,255,0.03)',
+                                    }}
+                                >
+                                    {isPoema && (
+                                        <div className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
+                                            style={{ background: 'linear-gradient(135deg, #5ee8b5, #3dd4a0)' }}>
+                                            <svg width="12" height="12" viewBox="0 0 8 8" fill="none">
+                                                <path d="M1.5 4L3.2 5.8L6.5 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-4">
+                                        <div className="shrink-0 text-4xl" style={{ animation: isPoema ? 'poemaFloat 3s ease-in-out infinite' : 'none' }}>
+                                            🌸
+                                        </div>
+                                        <style>{`@keyframes poemaFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-6px) rotate(5deg)}}`}</style>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <h3 className="text-base font-bold text-white">Poema das Flores</h3>
+                                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                                                    style={{ background: 'linear-gradient(135deg, #c084fc, #a855f7)', color: 'white' }}>
+                                                    NOVO
+                                                </span>
+                                            </div>
+                                            <p className="text-[12px] mt-1.5 leading-snug text-white/50">
+                                                Poema animado com flores revelando &quot;você é o presente mais lindo que a vida me deu&quot;
+                                            </p>
+                                            <ul className="mt-3 space-y-1.5">
+                                                {['Poema animado com 5 flores', 'Revelação dramática do bouquet', 'Versão masculina e feminina'].map((t, i) => (
+                                                    <li key={i} className="flex items-center gap-2 text-[11px] text-white/60">
+                                                        <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                                                        {t}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className={cn(
+                                        "w-full mt-4 p-2.5 text-center font-bold text-sm rounded-xl transition-all",
+                                        isPoema ? "bg-purple-500/20 text-purple-300" : "bg-white/5 text-white/40"
+                                    )}>
+                                        {isPoema ? 'Ativado!' : 'Toque para adicionar'}
+                                    </div>
+                                </button>
+
+                                {/* Sub-options when Poema is selected */}
+                                {isPoema && (
+                                    <div className="space-y-4 rounded-2xl p-4 border border-purple-500/20" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                        {/* Gender selector */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">De quem recebe</p>
+                                            <div className="flex gap-2">
+                                                {[
+                                                    { id: 'fem' as const, label: 'Para Ela', emoji: '💝' },
+                                                    { id: 'mas' as const, label: 'Para Ele', emoji: '💙' },
+                                                ].map(g => (
+                                                    <button
+                                                        key={g.id}
+                                                        type="button"
+                                                        onClick={() => setValue('introGender', g.id)}
+                                                        className={cn(
+                                                            "flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border",
+                                                            introGender === g.id
+                                                                ? "border-purple-400 bg-purple-500/20 text-purple-200"
+                                                                : "border-white/10 bg-white/5 text-white/40 hover:border-white/20"
+                                                        )}
+                                                    >
+                                                        {g.label} {g.emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-white/30">
+                                                {introGender === 'fem' ? 'Textos: "linda, doce, rara, única, especial"' : 'Textos: "lindo, doce, raro, único, especial"'}
+                                            </p>
+                                        </div>
+
+                                        {/* Font selector */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Fonte do poema</p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {FONT_OPTIONS.map(f => (
+                                                    <button
+                                                        key={f.id}
+                                                        type="button"
+                                                        onClick={() => setValue('introFont', f.id)}
+                                                        className={cn(
+                                                            "py-3 px-2 rounded-xl text-center transition-all border",
+                                                            introFont === f.id
+                                                                ? "border-purple-400 bg-purple-500/20"
+                                                                : "border-white/10 bg-white/5 hover:border-white/20"
+                                                        )}
+                                                    >
+                                                        <p className="text-white/90 text-sm" style={{ fontFamily: f.family, fontStyle: f.style }}>
+                                                            Você é tão linda
+                                                        </p>
+                                                        <p className={cn("text-[10px] mt-1", introFont === f.id ? "text-purple-300" : "text-white/30")}>
+                                                            {f.label}
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </FormItem>
                 )}
             />
@@ -3317,7 +3475,7 @@ function WizardInternal() {
         { id: "timeline",   title: 'Linha do Tempo 3D',         description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
         { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl"] },
         { id: "background", title: 'Animação de Fundo',         description: 'Escolha um efeito especial para o fundo.',        fields: ["backgroundAnimation", "heartColor"] },
-        { id: "intro",      title: 'Introdução do Site',        description: 'Adicione uma animação interativa antes da página abrir.',  fields: ["introType"] },
+        { id: "intro",      title: 'Introdução do Site',        description: 'Adicione uma animação interativa antes da página abrir.',  fields: ["introType", "introGender", "introFont"] },
         { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
         { id: "memory",     title: 'Jogo da Memória',           description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
         { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },

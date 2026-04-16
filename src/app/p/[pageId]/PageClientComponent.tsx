@@ -40,6 +40,7 @@ const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr
 const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), { ssr: false });
 const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
 const BunnyLoveIntro = dynamic(() => import('@/components/easter/BunnyLoveIntro'), { ssr: false });
+const FlowerPoemIntro = dynamic(() => import('@/components/easter/FlowerPoemIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('@/app/criar/fazer-eu-mesmo/CustomAudioPlayer'), { ssr: false });
 const MemoryGame = dynamic(() => import('@/components/memory-game/MemoryGame'), {
     ssr: false,
@@ -253,6 +254,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     return pageData.introType === 'love';
   }, [pageData.introType]);
 
+  const hasPoemaIntro = useMemo(() => {
+    return pageData.introType === 'poema';
+  }, [pageData.introType]);
+
   const hasMemoryGame = useMemo(() => {
     return !!(pageData.enableMemoryGame && pageData.memoryGameImages?.length > 0);
   }, [pageData.enableMemoryGame, pageData.memoryGameImages]);
@@ -300,10 +305,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle && !hasEasterIntro && !hasLoveIntro) {
+    if (!hasPuzzle && !hasEasterIntro && !hasLoveIntro && !hasPoemaIntro) {
       setPuzzleRevealed(true);
     }
-  }, [hasPuzzle, hasEasterIntro, hasLoveIntro]);
+  }, [hasPuzzle, hasEasterIntro, hasLoveIntro, hasPoemaIntro]);
 
   useEffect(() => {
     if (isPuzzleComplete) {
@@ -728,6 +733,22 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               className="fixed inset-0 z-[100]"
             >
               <BunnyLoveIntro onReveal={handleReveal} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </IntroErrorBoundary>
+
+      <IntroErrorBoundary onError={handleReveal}>
+        <AnimatePresence>
+          {!puzzleRevealed && hasPoemaIntro && (
+            <motion.div
+              key="poema-overlay-layer"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="fixed inset-0 z-[100]"
+            >
+              <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} fontFamily={(pageData as any).introFont || 'cormorant'} />
             </motion.div>
           )}
         </AnimatePresence>

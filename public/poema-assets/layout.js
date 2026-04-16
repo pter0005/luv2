@@ -1,0 +1,130 @@
+// Gerado por extract-assets.js — dados de layout dos 8 layers
+// NÃO editar manualmente. Pra regenerar, rode: node extract-assets.js
+window.POEMA_LAYOUT = {
+  "canvas": {
+    "width": 375,
+    "height": 812
+  },
+  "layers": [
+    {
+      "idx": 0,
+      "src": "flowers/bouquet-bag.webp",
+      "name": "SACOLA MUIÉ - Copia",
+      "x": -241.9,
+      "y": 127.2,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.557,
+      "rotation": 0,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 1,
+      "src": "flowers/bouquet-filler-1.webp",
+      "name": "2",
+      "x": -249.7,
+      "y": 91.6,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.348,
+      "rotation": -38.8,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 2,
+      "src": "flowers/bouquet-filler-2.webp",
+      "name": "2",
+      "x": -3.6,
+      "y": 145.4,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.316,
+      "rotation": 48.4,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 3,
+      "src": "flowers/orchid.webp",
+      "name": "orquidea",
+      "x": 12,
+      "y": 149.7,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.239,
+      "rotation": 10.5,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 4,
+      "src": "flowers/rose.webp",
+      "name": "é - Copia (2)",
+      "x": 123.3,
+      "y": 228.5,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.187,
+      "rotation": 27.7,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 5,
+      "src": "flowers/violet.webp",
+      "name": "VIOLETA",
+      "x": -159,
+      "y": 182,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.21,
+      "rotation": -20.1,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 6,
+      "src": "flowers/jasmin.webp",
+      "name": "Jasmim",
+      "x": -105.6,
+      "y": 145.9,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.28,
+      "rotation": 0,
+      "opacity": 1,
+      "flipX": false,
+      "imageW": 400,
+      "imageH": 500
+    },
+    {
+      "idx": 7,
+      "src": "flowers/sunflower.webp",
+      "name": "GIRASSOL",
+      "x": -193.2,
+      "y": 234.4,
+      "w": 1080,
+      "h": 1350,
+      "scale": 0.159,
+      "rotation": 20.8,
+      "opacity": 1,
+      "flipX": true,
+      "imageW": 400,
+      "imageH": 500
+    }
+  ]
+};
