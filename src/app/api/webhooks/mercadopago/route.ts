@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
                             paymentId: paymentId.toString(),
                             error: upgradeResult.error,
                         }).catch(() => {});
+                        // Return 500 so Mercado Pago retries the webhook later.
+                        // Returning 200 here would make MP stop retrying, and the
+                        // customer who paid would never get their upgrade.
+                        return NextResponse.json({ error: 'upgrade_failed' }, { status: 500 });
                     } else {
                         console.log(`[WEBHOOK_UPGRADE_SUCCESS] Page ${pageId} upgraded to permanente.`);
                     }
@@ -114,17 +118,18 @@ export async function POST(req: NextRequest) {
                 const finalizationResult = await finalizeLovePage(intentId, paymentId.toString());
 
                 if (!finalizationResult.success) {
-                    // Log the error but don't crash the webhook, as it might be a transient issue
-                    // or an idempotency case (already processed).
                     console.error(`[WEBHOOK_FINALIZE_ERROR] for intent ${intentId}:`, finalizationResult.error);
-                    // Push notify the admin: a paid PIX failed to materialize a
-                    // page. Without this, paid customers silently disappear and
-                    // we only find out when they complain.
                     logCriticalError('page_creation', `Webhook: finalize falhou após PIX aprovado`, {
                         intentId,
                         paymentId: paymentId.toString(),
                         error: finalizationResult.error,
                     }).catch(() => {});
+                    // CRITICAL: Return 500 so Mercado Pago retries the webhook.
+                    // Previously returned 200 here, which made MP stop retrying —
+                    // paid customers silently lost their page with no recovery.
+                    // finalizeLovePage() is idempotent (checks status === 'completed'),
+                    // so retries are safe.
+                    return NextResponse.json({ error: 'finalization_failed' }, { status: 500 });
                 } else {
                     console.log(`[WEBHOOK_SUCCESS] Page processed for intent ${intentId}. Page ID: ${finalizationResult.pageId}`);
                 }
@@ -132,7 +137,7 @@ export async function POST(req: NextRequest) {
                  console.log(`[WEBHOOK_INFO] Payment ${paymentId} not approved or no external reference. Status: ${paymentInfo.status}`);
             }
         }
-        
+
         return NextResponse.json({ success: true }, { status: 200 });
 
     } catch (error: any) {

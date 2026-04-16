@@ -1,9 +1,14 @@
 
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import PageClientComponentV1 from './PageClientComponentV1'; // Import V1
 import PageClientComponent from './PageClientComponent'; // This is now V2
 import { LoadingState, ErrorState } from './PageStates';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 // =================================================================
 // SERVER-SIDE LOGIC

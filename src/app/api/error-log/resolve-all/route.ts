@@ -4,16 +4,29 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 export async function POST(_req: NextRequest) {
   try {
     const db = getAdminFirestore();
-    const snap = await db.collection('error_logs').where('resolved', '==', false).get();
-    if (snap.empty) return NextResponse.json({ ok: true, count: 0 });
+    let totalResolved = 0;
 
-    const batch = db.batch();
-    snap.docs.forEach(doc => batch.update(doc.ref, { resolved: true }));
-    await batch.commit();
+    // Firestore batch limit is 500 — loop until all resolved
+    while (true) {
+      const snap = await db.collection('error_logs')
+        .where('resolved', '==', false)
+        .limit(450)
+        .get();
 
-    return NextResponse.json({ ok: true, count: snap.size });
+      if (snap.empty) break;
+
+      const batch = db.batch();
+      snap.docs.forEach(doc => batch.update(doc.ref, { resolved: true }));
+      await batch.commit();
+      totalResolved += snap.size;
+
+      // Safety: don't loop forever
+      if (totalResolved > 5000) break;
+    }
+
+    return NextResponse.json({ ok: true, count: totalResolved });
   } catch (error: any) {
     console.error('[error-log/resolve-all] Failed:', error);
-    return NextResponse.json({ error: 'failed' }, { status: 500 });
+    return NextResponse.json({ error: 'failed', message: error?.message }, { status: 500 });
   }
 }

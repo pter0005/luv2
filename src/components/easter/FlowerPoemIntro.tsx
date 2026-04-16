@@ -414,7 +414,7 @@ function buildCSS() {
 .poema-startBtn::before{content:"";position:absolute;inset:0;border-radius:999px;pointer-events:none;background:linear-gradient(115deg,transparent 22%,rgba(255,255,255,.38) 42%,rgba(255,255,255,.10) 52%,transparent 62%);mix-blend-mode:screen;opacity:.8;animation:poemaGlassSweep 5s ease-in-out infinite}
 @keyframes poemaGlassSweep{0%,100%{transform:translateX(-22%)}50%{transform:translateX(22%)}}
 .poema-startBtn:active{transform:translate(-50%,-50%) scale(.97)}
-.poema-startBtn .heart{display:inline;margin-left:.3em;color:#ffc6df;text-shadow:0 0 10px rgba(255,180,220,.8);vertical-align:baseline;line-height:1;font-style:normal;font-size:.9em}
+.poema-startBtn .heartSvg{display:inline-block;width:.85em;height:.85em;margin-left:.35em;vertical-align:-.08em;filter:drop-shadow(0 0 6px rgba(255,180,220,.8))}
 .poema-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:rgba(255,255,255,.55);font-family:'Playfair Display',serif;font-style:italic;font-size:17px;z-index:100;background:#0a0510}
 .poema-loading::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;border:2px solid rgba(255,255,255,.2);border-top-color:#ff80c0;border-radius:50%;animation:poemaSpin 1s linear infinite}
 @keyframes poemaSpin{to{transform:rotate(360deg)}}
@@ -911,81 +911,86 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
   const frameLoop = useCallback((now: number) => {
     const a = A.current;
     if (!a.started || a.cancelled) return;
-    const dt = a.lastFrame ? Math.min(50, now - a.lastFrame) : 16;
-    a.lastFrame = now;
-    let t = now - a.startTime;
-    if (t >= TOTAL_DURATION) {
-      t = TOTAL_DURATION;
-      if (!a.animationDone) {
-        a.animationDone = true;
-        setPhase('done');
+
+    try {
+      const dt = a.lastFrame ? Math.min(50, now - a.lastFrame) : 16;
+      a.lastFrame = now;
+      let t = now - a.startTime;
+      if (t >= TOTAL_DURATION) {
+        t = TOTAL_DURATION;
+        if (!a.animationDone) {
+          a.animationDone = true;
+          setPhase('done');
+        }
       }
-    }
 
-    const sInfo = resolveScene(t);
-    if (sInfo.index !== a.currentSceneIdx) {
-      a.currentSceneIdx = sInfo.index;
-      showText(a.currentSceneIdx);
-    }
-    if (a.textVisible && sInfo.index < SCENES.length - 1) {
-      const timeToEnd = sInfo.scene.duration - sInfo.sceneTime;
-      if (timeToEnd < 500) hideText();
-    }
-
-    updateBackground(dt);
-    updateParticles(dt);
-    updatePetals(dt);
-
-    if (Math.random() < 0.014) spawnPetal(true);
-    if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1800 && sInfo.sceneTime < 5500) {
-      if (Math.random() < 0.045) spawnPetal(true);
-    }
-    if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1250) {
-      const rate = Math.min(1, (sInfo.sceneTime - 1250) / 780);
-      if (Math.random() < 0.32 * rate) {
-        const idx = [1, 2, 3, 5, 6, 7][Math.floor(Math.random() * 6)];
-        const L = a.layers[idx];
-        const px = L.x + L.w * L.scale * (0.2 + Math.random() * 0.6);
-        const py = L.y + L.h * L.scale * (0.2 + Math.random() * 0.5);
-        const kind = Math.random() < 0.6 ? 'gold' : (Math.random() < 0.55 ? 'pink' : 'white');
-        spawnParticle(px, py, kind);
+      const sInfo = resolveScene(t);
+      if (sInfo.index !== a.currentSceneIdx) {
+        a.currentSceneIdx = sInfo.index;
+        showText(a.currentSceneIdx);
       }
-    }
-    const heroIdxSpawn = getCurrentHeroLayer(t);
-    if (heroIdxSpawn >= 0 && sInfo.sceneTime > 1000 && sInfo.sceneTime < 2150) {
-      if (Math.random() < 0.28) {
-        const cx = STAGE_W / 2, cy = STAGE_H * 0.62;
-        const ang = Math.random() * Math.PI * 2;
-        const rad = 95 + Math.random() * 75;
-        spawnParticle(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.9, Math.random() < 0.75 ? 'gold' : 'pink');
+      if (a.textVisible && sInfo.index < SCENES.length - 1) {
+        const timeToEnd = sInfo.scene.duration - sInfo.sceneTime;
+        if (timeToEnd < 500) hideText();
       }
-    }
-    if (Math.random() < 0.04) {
-      spawnParticle(Math.random() * STAGE_W, STAGE_H * 0.2 + Math.random() * STAGE_H * 0.75, 'white');
-    }
 
-    const ctx = a.ctx!;
-    ctx.clearRect(0, 0, STAGE_W, STAGE_H);
-    drawBackground(t);
-    const heroIdx = getCurrentHeroLayer(t);
-    drawHeroGlowRing(t, heroIdx);
-    drawPetalsBg();
-    drawParticlesBg();
-    drawBouquetFlourishes(t);
+      updateBackground(dt);
+      updateParticles(dt);
+      updatePetals(dt);
 
-    for (let i = 0; i < a.layers.length; i++) {
-      if (i === heroIdx) continue;
-      const res = computeLayerState(a.layers, i, t);
-      if (res) drawLayer(i, res.state, res.alpha, computeLayerGlow(i, t));
-    }
-    if (heroIdx >= 0) {
-      const res = computeLayerState(a.layers, heroIdx, t);
-      if (res) drawLayer(heroIdx, res.state, res.alpha, computeLayerGlow(heroIdx, t));
-    }
+      if (Math.random() < 0.014) spawnPetal(true);
+      if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1800 && sInfo.sceneTime < 5500) {
+        if (Math.random() < 0.045) spawnPetal(true);
+      }
+      if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1250) {
+        const rate = Math.min(1, (sInfo.sceneTime - 1250) / 780);
+        if (Math.random() < 0.32 * rate) {
+          const idx = [1, 2, 3, 5, 6, 7][Math.floor(Math.random() * 6)];
+          const L = a.layers[idx];
+          const px = L.x + L.w * L.scale * (0.2 + Math.random() * 0.6);
+          const py = L.y + L.h * L.scale * (0.2 + Math.random() * 0.5);
+          const kind = Math.random() < 0.6 ? 'gold' : (Math.random() < 0.55 ? 'pink' : 'white');
+          spawnParticle(px, py, kind);
+        }
+      }
+      const heroIdxSpawn = getCurrentHeroLayer(t);
+      if (heroIdxSpawn >= 0 && sInfo.sceneTime > 1000 && sInfo.sceneTime < 2150) {
+        if (Math.random() < 0.28) {
+          const cx = STAGE_W / 2, cy = STAGE_H * 0.62;
+          const ang = Math.random() * Math.PI * 2;
+          const rad = 95 + Math.random() * 75;
+          spawnParticle(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.9, Math.random() < 0.75 ? 'gold' : 'pink');
+        }
+      }
+      if (Math.random() < 0.04) {
+        spawnParticle(Math.random() * STAGE_W, STAGE_H * 0.2 + Math.random() * STAGE_H * 0.75, 'white');
+      }
 
-    drawLightBurst(t);
-    drawCinematicVignette(t);
-    drawGrain(t);
+      const ctx = a.ctx!;
+      ctx.clearRect(0, 0, STAGE_W, STAGE_H);
+      drawBackground(t);
+      const heroIdx = getCurrentHeroLayer(t);
+      drawHeroGlowRing(t, heroIdx);
+      drawPetalsBg();
+      drawParticlesBg();
+      drawBouquetFlourishes(t);
+
+      for (let i = 0; i < a.layers.length; i++) {
+        if (i === heroIdx) continue;
+        const res = computeLayerState(a.layers, i, t);
+        if (res) drawLayer(i, res.state, res.alpha, computeLayerGlow(i, t));
+      }
+      if (heroIdx >= 0) {
+        const res = computeLayerState(a.layers, heroIdx, t);
+        if (res) drawLayer(heroIdx, res.state, res.alpha, computeLayerGlow(heroIdx, t));
+      }
+
+      drawLightBurst(t);
+      drawCinematicVignette(t);
+      drawGrain(t);
+    } catch (err) {
+      console.error('[FlowerPoemIntro] frame error:', err);
+    }
 
     scheduleFrame(frameLoop);
   }, [showText, hideText, updateBackground, updateParticles, updatePetals, spawnPetal, spawnParticle, drawBackground, drawHeroGlowRing, drawPetalsBg, drawParticlesBg, drawBouquetFlourishes, drawLayer, drawLightBurst, drawCinematicVignette, drawGrain, scheduleFrame]);
@@ -1102,7 +1107,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
 
           {phase === 'ready' && (
             <button className="poema-startBtn" onClick={handleStart}>
-              Revelar Sua Surpresa<span className="heart">&#10084;</span>
+              Revelar Sua Surpresa<svg className="heartSvg" viewBox="0 0 24 24" fill="#ffc6df"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </button>
           )}
         </div>

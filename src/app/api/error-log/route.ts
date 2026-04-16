@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   // usage is a handful of errors per visit at worst; anything above this is
   // abuse or a runaway loop.
   const ip = getClientIp(req);
-  const { ok, retryAfter } = rateLimit(`error-log:${ip}`, 20, 60_000);
+  const { ok, retryAfter } = rateLimit(`error-log:${ip}`, 5, 60_000);
   if (!ok) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
   }

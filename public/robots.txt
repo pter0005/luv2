@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /p/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /criando-pagina/
+
+Sitemap: https://mycupid.com.br/sitemap.xml

@@ -260,7 +260,17 @@ export async function processPixPayment(
     // ── SERVER-TRUSTED PRICE ──
     // Recompute price from the saved intent data. Client-sent total is only
     // used for logging/mismatch detection, never trusted.
-    const validatedDiscount = await getValidatedDiscountAmount(db, discountCode, cleanEmail);
+    //
+    // Discount is idempotent per intent: if this intent already has an
+    // appliedDiscount from a previous (failed) PIX attempt, reuse that
+    // value instead of re-validating (the coupon was already consumed).
+    let validatedDiscount: number;
+    const existingDiscount = Number(intentData?.appliedDiscount);
+    if (isFinite(existingDiscount) && existingDiscount > 0) {
+      validatedDiscount = existingDiscount;
+    } else {
+      validatedDiscount = await getValidatedDiscountAmount(db, discountCode, cleanEmail);
+    }
     const serverAmount = computeTotalBRL({
       plan: intentData?.plan,
       qrCodeDesign: intentData?.qrCodeDesign,
@@ -270,6 +280,30 @@ export async function processPixPayment(
       audioRecording: intentData?.audioRecording,
       discountAmount: validatedDiscount,
     });
+
+    // ── MARK DISCOUNT AS USED SERVER-SIDE ──
+    // Must happen BEFORE PIX generation to prevent race condition where
+    // user refreshes and generates multiple PIX codes with the same coupon.
+    // Previously this was done client-side after PIX gen — easy to bypass.
+    // Idempotent: only marks if not already applied to this intent.
+    if (validatedDiscount > 0 && discountCode && !intentData?.appliedDiscount) {
+      try {
+        const normalized = discountCode.toUpperCase().trim();
+        const discountRef = db.collection('discount_codes').doc(normalized);
+        await discountRef.update({
+          usedCount: FieldValue.increment(1),
+          usedEmails: FieldValue.arrayUnion(cleanEmail),
+          lastUsedAt: Timestamp.now(),
+        });
+        // Save discount info on the intent for audit trail + retry idempotency
+        await db.collection('payment_intents').doc(intentId).update({
+          discountCode: normalized,
+          appliedDiscount: validatedDiscount,
+        });
+      } catch (e) {
+        console.warn('[PIX] Failed to mark discount as used (non-blocking):', e);
+      }
+    }
     const amount = Number(serverAmount.toFixed(2));
     if (!amount || amount < 1 || isNaN(amount)) {
       return { error: `Valor inválido: R$${amount}. Tente novamente.` };
@@ -581,10 +615,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const saleTitle = (finalData.title as string) || 'Sem título';
   const salePlan = finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
 
-  // Sanity check: every paid intent should have paidAmount saved by
+  // Sanity check: every PAID intent should have paidAmount saved by
   // processPixPayment. If it's missing, we're falling back to the plan base
   // price — log it so we can find and fix the broken code path.
-  if (!isFinite(rawPaid) || rawPaid <= 0) {
+  // Skip for free pages (gift/credit) where paidAmount is explicitly 0.
+  const isFreeFinalization = paymentId.startsWith('credit_') || paymentId.startsWith('gift_') || paymentId.startsWith('admin_');
+  if (!isFreeFinalization && (!isFinite(rawPaid) || rawPaid <= 0)) {
     logCriticalError('payment', 'Intent finalizado sem paidAmount, usando fallback', {
       intentId,
       paymentId,
@@ -686,7 +722,7 @@ export async function finalizeWithCredit(
   const intentSnap = await db.collection('payment_intents').doc(intentId).get();
   const originalPlan = intentSnap.data()?.plan;
   try {
-    const updateData: any = { plan: 'avancado', updatedAt: Timestamp.now() };
+    const updateData: any = { plan: 'avancado', paidAmount: 0, updatedAt: Timestamp.now() };
     if (originalPlan === 'pascoa') updateData.introType = 'love';
     await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {
@@ -735,7 +771,7 @@ export async function finalizeWithGiftToken(
   const intentSnap = await db.collection('payment_intents').doc(intentId).get();
   const originalPlan = intentSnap.data()?.plan;
   try {
-    const updateData: any = { plan: 'avancado', guestEmail: email, isGift: true, updatedAt: Timestamp.now() };
+    const updateData: any = { plan: 'avancado', guestEmail: email, isGift: true, paidAmount: 0, updatedAt: Timestamp.now() };
     if (originalPlan === 'pascoa') updateData.introType = 'love';
     await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {

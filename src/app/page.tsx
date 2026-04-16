@@ -44,6 +44,10 @@ const PlansSection = dynamic(() => import('@/components/layout/PlansSection'), {
   loading: () => <SectionSkeleton />,
   ssr: false,
 });
+const FAQSection = dynamic(() => import('@/components/layout/FAQSection'), {
+  loading: () => <SectionSkeleton />,
+  ssr: false,
+});
 
 // This wrapper component handles the fade-in animation as sections scroll into view.
 const AnimatedSection = ({ children, className, id }: { children: React.ReactNode, className?: string, id?: string }) => {
@@ -87,6 +91,10 @@ export default function Home() {
         <TestimonialsSection />
       </AnimatedSection>
       
+      <AnimatedSection id="faq" className="section-padding bg-transparent">
+        <FAQSection />
+      </AnimatedSection>
+
       <AnimatedSection id="planos" className="section-padding bg-transparent">
         <PlansSection />
       </AnimatedSection>

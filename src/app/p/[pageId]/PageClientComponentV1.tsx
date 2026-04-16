@@ -1,7 +1,7 @@
 // ================================================================
-// VERSÃO 1 — CONGELADA
+// VERSÃO 1 — CONGELADA (rendering logic)
 // Este arquivo serve as páginas criadas ANTES do versionamento.
-// NÃO MODIFICAR. Nunca.
+// NÃO MODIFICAR o layout/rendering. Overlays aditivos (ex: UpgradeModal) OK.
 // ================================================================
 
 'use client';
@@ -32,6 +32,7 @@ import NebulaBackground from '@/components/effects/NebulaBackground';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { Skeleton } from '@/components/ui/skeleton';
+import UpgradeModal from './UpgradeModal';
 
 // Imports Dinâmicos
 const YoutubePlayer = dynamic(() => import('@/components/ui/YoutubePlayer'), { ssr: false });
@@ -470,6 +471,11 @@ export default function PageClientComponentV1({ pageData }: { pageData: any }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* UPSELL — upgrade para permanente (adicionado para V1 pages) */}
+      {pageData.plan === 'basico' && pageData.expireAt && (
+        <UpgradeModal pageId={pageData.id} expireAt={pageData.expireAt} />
+      )}
     </div>
   );
 }

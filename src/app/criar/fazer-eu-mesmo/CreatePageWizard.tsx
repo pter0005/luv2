@@ -138,7 +138,7 @@ const pageSchema = z.object({
   userId: z.string().optional(),
   title: z.string().default("Seu Título Aqui"),
   titleColor: z.string().default("#FFFFFF"),
-  message: z.string().min(1, "A mensagem não pode estar vazia.").default(""),
+  message: z.string().min(1, "A mensagem não pode estar vazia.").max(2000, "A mensagem pode ter no máximo 2000 caracteres.").default(""),
   messageFontSize: z.string().default("text-base"),
   messageFormatting: z.array(z.string()).default([]),
   specialDate: z.date().optional(),
@@ -990,8 +990,7 @@ const IntroStep = React.memo(() => {
                 name="introType"
                 render={({ field }) => (
                     <FormItem className="space-y-4">
-                        {/* Card 1: Buquê Digital (admin-only) */}
-                        {isAdmin && (
+                        {/* Card 1: Buquê Digital */}
                             <>
                                 <button
                                     type="button"
@@ -1083,7 +1082,6 @@ const IntroStep = React.memo(() => {
                                     </div>
                                 )}
                             </>
-                        )}
 
                         {/* Card 2: Coelhinho Kawaii */}
                         <button
@@ -2318,12 +2316,12 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         // ou o polling bater várias vezes.
         const dedupeKey = `purchase_fired_${pageId}`;
         try {
-            if (sessionStorage.getItem(dedupeKey)) {
+            if (localStorage.getItem(dedupeKey)) {
                 console.log('[Pixel] Purchase já disparado pra', pageId, '— pulando.');
                 return;
             }
-            sessionStorage.setItem(dedupeKey, '1');
-        } catch (_) { /* sessionStorage bloqueado */ }
+            localStorage.setItem(dedupeKey, '1');
+        } catch (_) { /* localStorage bloqueado */ }
 
         trackFunnelStep('paid', 999, 999);
 
@@ -2477,14 +2475,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {
                     setPixData({ qrCode: paymentResult.qrCode, qrCodeBase64: paymentResult.qrCodeBase64, paymentId: paymentResult.paymentId });
                     trackFunnelStep('pix_generated', 16, 15);
-                    // Marca desconto como usado
+                    // Discount is now marked as used server-side inside
+                    // processPixPayment() — before PIX generation, not after.
+                    // Just clean up the localStorage flag on the client.
                     if (discountCode) {
-                        const email = user.email || confirmedGuestEmail;
-                        if (email) {
-                            fetch('/api/discount', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: discountCode, email }) })
-                                .then(() => { localStorage.removeItem('mycupid_discount_code'); })
-                                .catch(() => {});
-                        }
+                        localStorage.removeItem('mycupid_discount_code');
                     }
                 }
             } catch (err: any) {
