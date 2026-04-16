@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy, Download } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
+import NebulosaPoema from '@/components/effects/NebulosaPoema';
 import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import UpgradeModal from './UpgradeModal';
 import MysticFlowers from '@/components/effects/MysticFlowers';
@@ -377,6 +378,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {puzzleRevealed && pageData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={30} color={pageData.heartColor} />}
         {puzzleRevealed && pageData.backgroundAnimation === 'starry-sky' && <StarrySky />}
         {puzzleRevealed && pageData.backgroundAnimation === 'nebula' && <NebulaBackground />}
+        {puzzleRevealed && pageData.backgroundAnimation === 'nebulosa' && <NebulosaPoema />}
         {puzzleRevealed && pageData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
         {puzzleRevealed && pageData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
         {puzzleRevealed && pageData.backgroundAnimation === 'floating-dots' && <FloatingDots />}
@@ -748,7 +750,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               transition={{ duration: 0.8 }}
               className="fixed inset-0 z-[100]"
             >
-              <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} fontFamily={(pageData as any).introFont || 'cormorant'} />
+              <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} />
             </motion.div>
           )}
         </AnimatePresence>

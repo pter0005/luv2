@@ -2,6 +2,7 @@ export const PRICES = {
   basico: 19.90,
   avancado: 24.90,
   introLove: 5.90,
+  introPoema: 6.90,
   voice: 2.90,
   wordGame: 2.00,
   qrCustom: 3.90,
@@ -24,7 +25,7 @@ export function computeTotalBRL(input: PricingInput): number {
     input.enableWordGame && Array.isArray(input.wordGameQuestions) && input.wordGameQuestions.length > 0
       ? PRICES.wordGame
       : 0;
-  const intro = (input.introType === 'love' || input.introType === 'poema') ? PRICES.introLove : 0;
+  const intro = input.introType === 'love' ? PRICES.introLove : input.introType === 'poema' ? PRICES.introPoema : 0;
   const voice = input.audioRecording?.url ? PRICES.voice : 0;
   const rawDiscount = Number(input.discountAmount ?? 0);
   const discount = isFinite(rawDiscount) && rawDiscount > 0 ? rawDiscount : 0;

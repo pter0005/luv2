@@ -16,6 +16,7 @@ import FloatingDots from '@/components/effects/FloatingDots';
 import Countdown from './Countdown';
 import { AnimatePresence, motion } from 'framer-motion';
 import NebulaBackground from '@/components/effects/NebulaBackground';
+import NebulosaPoema from '@/components/effects/NebulosaPoema';
 import PurpleExplosion from '@/components/effects/PurpleExplosion'; // Importação do novo efeito
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { useFormContext } from 'react-hook-form';
@@ -29,6 +30,7 @@ const RealPuzzle = dynamic(() => import('@/components/puzzle/Puzzle'), {
 });
 const EasterEggIntro = dynamic(() => import('@/components/easter/EasterEggIntro'), { ssr: false });
 const BunnyLoveIntro = dynamic(() => import('@/components/easter/BunnyLoveIntro'), { ssr: false });
+const FlowerPoemIntro = dynamic(() => import('@/components/easter/FlowerPoemIntro'), { ssr: false });
 const CustomAudioPlayer = dynamic(() => import('./CustomAudioPlayer'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-20 rounded-lg" />,
@@ -45,6 +47,7 @@ type PreviewContentProps = {
     hasValidTimelineEvents: boolean;
     showPuzzlePreview: boolean;
     showEasterPreview: boolean;
+    showPoemaPreview: boolean;
     previewPuzzleRevealed: boolean;
     setPreviewPuzzleRevealed: (revealed: boolean) => void;
 };
@@ -80,6 +83,7 @@ export default function PreviewContent({
     hasValidTimelineEvents,
     showPuzzlePreview,
     showEasterPreview,
+    showPoemaPreview,
     previewPuzzleRevealed,
     setPreviewPuzzleRevealed,
 }: PreviewContentProps) {
@@ -115,6 +119,12 @@ export default function PreviewContent({
     }, [showEasterPreview, setPreviewPuzzleRevealed]);
 
     useEffect(() => {
+        if (showPoemaPreview) {
+            setPreviewPuzzleRevealed(false);
+        }
+    }, [showPoemaPreview, setPreviewPuzzleRevealed]);
+
+    useEffect(() => {
         if (isPreviewPuzzleComplete) {
             const timer = setTimeout(() => {
                 handlePreviewReveal();
@@ -140,7 +150,7 @@ export default function PreviewContent({
     const puzzleImageSrc = typeof formData.puzzleImage === 'string' 
       ? formData.puzzleImage 
       : formData.puzzleImage?.url;
-    const shouldBeBlurred = (showPuzzlePreview || showEasterPreview) && !previewPuzzleRevealed;
+    const shouldBeBlurred = (showPuzzlePreview || showEasterPreview || showPoemaPreview) && !previewPuzzleRevealed;
 
     const hasMemoryGame = useMemo(() => {
         return !!(formData.enableMemoryGame && formData.memoryGameImages?.length > 0);
@@ -180,6 +190,7 @@ export default function PreviewContent({
                         {isClient && formData.backgroundAnimation === 'falling-hearts' && <FallingHearts count={50} color={formData.heartColor} />}
                         {isClient && formData.backgroundAnimation === 'starry-sky' && <StarrySky />}
                         {isClient && formData.backgroundAnimation === 'nebula' && <NebulaBackground />}
+                        {isClient && formData.backgroundAnimation === 'nebulosa' && <NebulosaPoema />}
                         {isClient && formData.backgroundAnimation === 'mystic-flowers' && <MysticFlowers />}
                         {isClient && formData.backgroundAnimation === 'mystic-fog' && <><div className="mystic-fog-1"></div><div className="mystic-fog-2"></div></>}
                         {isClient && formData.backgroundAnimation === 'mystic-vortex' && <MysticVortex />}
@@ -347,6 +358,28 @@ export default function PreviewContent({
                                 setPreviewPuzzleRevealed(true);
                                 setTimeout(() => setShowExplosion(false), 2000);
                             }} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {showPoemaPreview && !previewPuzzleRevealed && (
+                        <motion.div
+                            key="preview-poema-screen"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 1.05, filter: "blur(20px)" }}
+                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                            className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden"
+                        >
+                            <FlowerPoemIntro
+                                onReveal={() => {
+                                    setShowExplosion(true);
+                                    setPreviewPuzzleRevealed(true);
+                                    setTimeout(() => setShowExplosion(false), 2000);
+                                }}
+                                gender={(formData as any).introGender || 'fem'}
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>

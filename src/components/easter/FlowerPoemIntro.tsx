@@ -25,7 +25,6 @@ interface FlourishAnchor { x: number; y: number; s: number; phase: number; }
 interface FlowerPoemIntroProps {
   onReveal: () => void;
   gender?: 'fem' | 'mas';
-  fontFamily?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -89,25 +88,15 @@ const easeOutQuart = (t: number) => 1 - Math.pow(1 - t, 4);
 // ═══════════════════════════════════════════════════════════════════════════
 // FONT LOADING
 // ═══════════════════════════════════════════════════════════════════════════
-function getBodyFont(fontFamily: string) {
-  switch (fontFamily) {
-    case 'playfair': return { family: "'Playfair Display', serif", style: 'italic', weight: '500' };
-    case 'dancing': return { family: "'Dancing Script', cursive", style: 'normal', weight: '400' };
-    default: return { family: "'Cormorant Garamond', serif", style: 'italic', weight: '500' };
-  }
-}
+const BODY_FONT = { family: "'Cormorant Garamond', serif", style: 'italic', weight: '500' };
 
-async function loadFonts(fontFamily: string): Promise<void> {
+async function loadFonts(): Promise<void> {
   const urls = [
     'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap',
     'https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap',
     'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap',
+    'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap',
   ];
-  if (fontFamily === 'cormorant' || !fontFamily) {
-    urls.push('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap');
-  } else if (fontFamily === 'dancing') {
-    urls.push('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400&display=swap');
-  }
   for (const href of urls) {
     if (!document.querySelector(`link[href="${href}"]`)) {
       const link = document.createElement('link');
@@ -354,16 +343,16 @@ function computeLayerGlow(layerIdx: number, t: number) {
 // ═══════════════════════════════════════════════════════════════════════════
 // CSS (scoped with .poema- prefix)
 // ═══════════════════════════════════════════════════════════════════════════
-function buildCSS(fontFamily: string) {
-  const bodyFont = getBodyFont(fontFamily);
+function buildCSS() {
+  const bodyFont = BODY_FONT;
   return `
 .poema-root{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
-.poema-wrap{position:relative;aspect-ratio:375/812;max-width:100vw;max-height:100vh;width:auto;height:100vh;transform-origin:center;box-shadow:0 0 120px rgba(120,40,180,.25);border-radius:4px;overflow:hidden}
+.poema-wrap{position:relative;aspect-ratio:375/812;max-width:100vw;max-height:100vh;width:auto;height:100vh;transform-origin:center;box-shadow:0 0 120px rgba(120,40,180,.25);border-radius:4px;overflow:hidden;container-type:inline-size;container-name:stage}
 .poema-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .poema-text{
   position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
   font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:${bodyFont.weight};
-  color:#fff;font-size:clamp(42px,11vw,68px);line-height:1.14;letter-spacing:.006em;
+  color:#fff;font-size:clamp(42px,11cqw,68px);line-height:1.14;letter-spacing:.006em;
   pointer-events:none;text-shadow:0 0 12px rgba(200,150,230,.45);opacity:1;z-index:5;will-change:transform,opacity;
 }
 .poema-text .word{display:inline-block;opacity:0;transform:translateY(-20px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);margin:0 .14em;will-change:transform,opacity}
@@ -384,34 +373,35 @@ function buildCSS(fontFamily: string) {
 .poema-text .word.flower.f-orquidea{background:linear-gradient(178deg,#ffdcee 0%,#ff8fc8 26%,#e13a9a 58%,#6e0a48 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(120,210,220,.42))}
 .poema-text.finale{left:1%;right:1%;top:2.8%;font-family:'Playfair Display',serif;font-style:italic;font-weight:500;color:#fff;text-align:center;letter-spacing:0;line-height:1;text-shadow:none;mix-blend-mode:normal;display:flex;flex-direction:column;align-items:center;gap:0}
 .poema-text.finale .fLine{display:block;line-height:1;width:100%}
-.poema-text.finale .orn{font-family:'Playfair Display',serif;font-style:normal;font-weight:400;font-size:clamp(16px,4vw,24px);color:rgba(255,220,180,.78);letter-spacing:.8em;padding-left:.8em;margin:.1em 0 .3em;text-shadow:0 0 8px rgba(200,150,230,.32)}
+.poema-text.finale .orn{font-family:'Playfair Display',serif;font-style:normal;font-weight:400;font-size:clamp(16px,4cqw,24px);color:rgba(255,220,180,.78);letter-spacing:.8em;padding-left:.8em;margin:.1em 0 .3em;text-shadow:0 0 8px rgba(200,150,230,.32)}
 .poema-text.finale .ornBot{margin:.3em 0 .05em}
-.poema-text.finale .fIntro{font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:400;font-size:clamp(32px,8vw,46px);letter-spacing:.025em;color:#fff;opacity:.94;text-shadow:0 0 11px rgba(180,130,220,.42);margin-bottom:.12em}
-.poema-text.finale .fMid{font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:500;font-size:clamp(38px,9.2vw,52px);letter-spacing:.018em;color:#fff;text-shadow:0 0 12px rgba(180,130,220,.45);margin:.08em 0}
-.poema-text.finale .fHero{font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:clamp(100px,24.5vw,156px);line-height:.86;letter-spacing:.002em;margin:.03em 0 .08em;padding:0 .14em;filter:drop-shadow(0 0 12px rgba(210,110,200,.5))}
+.poema-text.finale .fIntro{font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:400;font-size:clamp(32px,8cqw,46px);letter-spacing:.025em;color:#fff;opacity:.94;text-shadow:0 0 11px rgba(180,130,220,.42);margin-bottom:.12em}
+.poema-text.finale .fMid{font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:500;font-size:clamp(38px,9.2cqw,52px);letter-spacing:.018em;color:#fff;text-shadow:0 0 12px rgba(180,130,220,.45);margin:.08em 0}
+.poema-text.finale .fHero{font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:clamp(100px,24.5cqw,156px);line-height:.86;letter-spacing:.002em;margin:.03em 0 .08em;padding:0 .14em;filter:drop-shadow(0 0 12px rgba(210,110,200,.5))}
 .poema-text.finale .fHero .word{background:linear-gradient(178deg,#fff6df 0%,#ffe6a8 22%,#ffc25c 48%,#ff9dd4 78%,#ffc6e8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:0 .08em}
-.poema-text.finale .fOutro{font-family:'Pinyon Script',cursive;font-style:normal;font-weight:400;font-size:clamp(36px,8.8vw,54px);line-height:1.05;letter-spacing:.01em;color:#fff;text-shadow:0 0 10px rgba(255,170,110,.38);margin-top:.08em}
+.poema-text.finale .fOutro{font-family:'Pinyon Script',cursive;font-style:normal;font-weight:400;font-size:clamp(36px,8.8cqw,54px);line-height:1.05;letter-spacing:.01em;color:#fff;text-shadow:0 0 10px rgba(255,170,110,.38);margin-top:.08em}
 .poema-text.finale .word,.poema-text.finale .orn,.poema-text.finale .fLine{display:inline-block}
 .poema-text.finale .fLine{display:block}
 .poema-text.finale .orn.word,.poema-text.finale .fHero .word{margin:0}
-@media (max-width:374px){
-  .poema-text{top:2.4%;font-size:clamp(31px,9.6vw,34px)}
+@container stage (max-width:374px){
+  .poema-text{top:2.4%;font-size:clamp(31px,9.6cqw,34px)}
   .poema-text .word{margin:0 .08em}
   .poema-text .word.em{font-size:1.16em;letter-spacing:.008em}
   .poema-text.finale{top:.3%}
-  .poema-text.finale .orn{font-size:clamp(12px,3.4vw,16px);margin:.02em 0 .12em}
+  .poema-text.finale .orn{font-size:clamp(12px,3.4cqw,16px);margin:.02em 0 .12em}
   .poema-text.finale .ornBot{margin:.12em 0 .02em}
-  .poema-text.finale .fIntro{font-size:clamp(25px,7.8vw,28px);margin-bottom:.06em}
-  .poema-text.finale .fMid{font-size:clamp(27px,8.4vw,30px);letter-spacing:.01em;margin:.04em 0}
+  .poema-text.finale .fIntro{font-size:clamp(25px,7.8cqw,28px);margin-bottom:.06em}
+  .poema-text.finale .fMid{font-size:clamp(27px,8.4cqw,30px);letter-spacing:.01em;margin:.04em 0}
   .poema-text.finale .fMid .word{margin:0 .06em}
-  .poema-text.finale .fHero{font-size:clamp(82px,25vw,92px);padding:0 .12em;margin:.02em 0 .04em}
+  .poema-text.finale .fHero{font-size:clamp(82px,25cqw,92px);padding:0 .12em;margin:.02em 0 .04em}
 }
 .poema-startBtn{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  padding:20px 46px 22px;white-space:nowrap;
+  padding:clamp(14px,4cqw,20px) clamp(28px,12cqw,46px) clamp(16px,4.4cqw,22px);
+  white-space:nowrap;
   background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 55%),linear-gradient(180deg,rgba(255,170,210,.22) 0%,rgba(190,110,200,.16) 45%,rgba(120,60,170,.18) 100%);
   border:1px solid rgba(255,255,255,.42);color:#fff;
-  font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:22px;letter-spacing:.02em;
+  font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:clamp(16px,5.5cqw,22px);letter-spacing:.02em;
   border-radius:999px;cursor:pointer;
   -webkit-backdrop-filter:blur(22px) saturate(165%);backdrop-filter:blur(22px) saturate(165%);
   box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 -1px 0 rgba(255,255,255,.12) inset,0 0 0 1px rgba(255,255,255,.08) inset,0 14px 44px rgba(180,60,160,.42),0 0 70px rgba(255,130,200,.35),0 0 160px rgba(200,100,220,.22);
@@ -434,7 +424,7 @@ function buildCSS(fontFamily: string) {
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-export default function FlowerPoemIntro({ onReveal, gender = 'fem', fontFamily = 'cormorant' }: FlowerPoemIntroProps) {
+export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoemIntroProps) {
   const [phase, setPhase] = useState<'loading' | 'ready' | 'playing' | 'done'>('loading');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -1011,7 +1001,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem', fontFamily =
       const layers: Layer[] = JSON.parse(JSON.stringify(INITIAL_LAYERS));
       const [images] = await Promise.all([
         loadAllImages(layers),
-        loadFonts(fontFamily),
+        loadFonts(),
       ]);
       if (cancelled) return;
       computeBboxes(layers, images);
@@ -1090,7 +1080,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem', fontFamily =
   }, [clearTextTimers]);
 
   // ─── CSS INJECTION ─────────────────────────────────────────────────
-  const cssContent = buildCSS(fontFamily);
+  const cssContent = buildCSS();
 
   return (
     <>
@@ -1098,7 +1088,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem', fontFamily =
       <div className="poema-root">
         {phase === 'loading' && (
           <div className="poema-loading">
-            preparando sua surpresa...
+            carregando sua página...
           </div>
         )}
 
