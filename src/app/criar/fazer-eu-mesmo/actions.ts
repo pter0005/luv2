@@ -10,6 +10,7 @@ import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { logCriticalError } from '@/lib/log-critical-error';
 import { computeTotalBRL } from '@/lib/price';
+import { notifyAdmins } from '@/lib/notify-admin';
 
 // ─────────────────────────────────────────────
 // META CAPI
@@ -362,6 +363,14 @@ export async function processPixPayment(
             paidAmount: amount,
             updatedAt: Timestamp.now(),
           });
+          // Notify admin: PIX generated (non-blocking)
+          const title = (intentData?.title as string) || 'Sem título';
+          const plan = intentData?.plan === 'avancado' ? 'Avançado' : 'Básico';
+          notifyAdmins(
+            `🔔 PIX gerado — R$${amount.toFixed(2).replace('.', ',')}`,
+            `${title} — Plano ${plan} — aguardando pagamento`,
+            'https://mycupid.com.br/admin',
+          ).catch(() => {});
           return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
         }
 
@@ -640,6 +649,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   } catch (e) {
     console.warn('[RTDB] Failed to push sale notification:', e);
   }
+  // Push notification to admin devices (non-blocking)
+  notifyAdmins(
+    `💰 Nova venda! R$${saleValue.toFixed(2).replace('.', ',')}`,
+    `${saleTitle} — Plano ${salePlan}`,
+    `https://mycupid.com.br/admin`,
+  ).catch(() => {});
   revalidatePath(`/p/${newPageId}`);
   revalidatePath('/minhas-paginas');
   // Bust the cached admin dashboard snapshot so new sales show up within
