@@ -1,7 +1,6 @@
 'use server';
 
 import { getAdminFirestore, getAdminStorage, getAdminDatabase } from '@/lib/firebase/admin/config';
-import { notifyAdmins } from '@/lib/notify-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
@@ -249,7 +248,8 @@ export async function processPixPayment(
     if (rawWhatsapp.length < 10) {
       return { error: 'WhatsApp obrigatório. Preencha seu número com DDD antes de gerar o PIX.' };
     }
-    const cleanEmail = (intentData?.guestEmail || intentData?.userEmail || 'pagamento@mycupid.com.br').trim().toLowerCase();
+    const rawEmail = (intentData?.guestEmail || intentData?.userEmail || '').trim().toLowerCase();
+    const cleanEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : 'pagamento@mycupid.com.br';
     const rawName = intentData?.userName || 'Cliente MyCupid';
     const firstName = rawName.split(' ')[0];
     const lastName = rawName.split(' ').slice(1).join(' ') || 'Cliente';
@@ -328,12 +328,6 @@ export async function processPixPayment(
             paidAmount: amount,
             updatedAt: Timestamp.now(),
           });
-          // Notifica admin que um PIX foi gerado (ainda não pago)
-          notifyAdmins(
-            `PIX gerado · R$${amount.toFixed(2).replace('.', ',')}`,
-            `${intentData?.plan === 'avancado' ? 'Avançado' : 'Básico'} · ${cleanEmail}`,
-            'https://mycupid.com.br/admin/recuperar-pix',
-          ).catch(() => {});
           return { qrCode, qrCodeBase64, paymentId: paymentId.toString() };
         }
 
@@ -609,15 +603,6 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     });
   } catch (e) {
     console.warn('[RTDB] Failed to push sale notification:', e);
-  }
-  try {
-    await notifyAdmins(
-      `Nova venda! R$${saleValue.toFixed(2).replace('.', ',')}`,
-      `${saleTitle} — Plano ${salePlan}`,
-      'https://mycupid.com.br/admin',
-    );
-  } catch (e) {
-    console.warn('[Push] Failed to notify admins:', e);
   }
   revalidatePath(`/p/${newPageId}`);
   revalidatePath('/minhas-paginas');

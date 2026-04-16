@@ -1,6 +1,5 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
-import { notifyAdmins } from '@/lib/notify-admin';
 
 export async function logCriticalError(
   category: 'payment' | 'page_creation' | 'api',
@@ -19,12 +18,6 @@ export async function logCriticalError(
       createdAt: Timestamp.now(),
       resolved: false,
     });
-
-    await notifyAdmins(
-      category === 'payment' ? 'Erro no pagamento' : 'Erro crítico',
-      String(message).slice(0, 100),
-      'https://mycupid.com.br/admin',
-    ).catch(() => {});
   } catch (e) {
     console.error('[logCriticalError] failed to log:', e);
   }

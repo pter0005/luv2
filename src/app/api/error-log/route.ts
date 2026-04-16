@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
-import { notifyAdmins } from '@/lib/notify-admin';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -30,14 +29,6 @@ export async function POST(req: NextRequest) {
       resolved: false,
     });
 
-    // Notifica admin via push
-    try {
-      await notifyAdmins(
-        `Bug detectado no site`,
-        `${String(message).slice(0, 100)} — ${String(url || '').split('?')[0]}`,
-        'https://mycupid.com.br/admin/monitor',
-      );
-    } catch {}
 
     return NextResponse.json({ id: docRef.id });
   } catch (error: any) {
