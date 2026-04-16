@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+import { applyUpgrade } from '@/app/p/[pageId]/upgradeActions';
 import { logCriticalError } from '@/lib/log-critical-error';
 import crypto from 'crypto';
 
@@ -88,7 +89,27 @@ export async function POST(req: NextRequest) {
 
             if (paymentInfo && paymentInfo.status === 'approved' && paymentInfo.external_reference) {
                 const intentId = paymentInfo.external_reference;
-                
+
+                // Upgrade flow (R$9,99 plano permanente) uses a different path:
+                // it doesn't create a payment_intent doc — external_reference is
+                // `upgrade_${pageId}`, and we just need to flip the page's plan.
+                if (intentId.startsWith('upgrade_')) {
+                    const pageId = intentId.slice('upgrade_'.length);
+                    const upgradeResult = await applyUpgrade(pageId, paymentId.toString());
+                    if (!upgradeResult.success) {
+                        console.error(`[WEBHOOK_UPGRADE_ERROR] for page ${pageId}:`, upgradeResult.error);
+                        logCriticalError('page_creation', `Webhook: upgrade falhou após PIX aprovado`, {
+                            intentId,
+                            pageId,
+                            paymentId: paymentId.toString(),
+                            error: upgradeResult.error,
+                        }).catch(() => {});
+                    } else {
+                        console.log(`[WEBHOOK_UPGRADE_SUCCESS] Page ${pageId} upgraded to permanente.`);
+                    }
+                    return NextResponse.json({ success: true }, { status: 200 });
+                }
+
                 // Centralized Logic: Call the "brain" function to finalize the page
                 const finalizationResult = await finalizeLovePage(intentId, paymentId.toString());
 

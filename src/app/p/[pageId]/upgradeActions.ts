@@ -63,14 +63,38 @@ export async function verifyUpgradePayment(
 
     if (info.status !== 'approved') return { success: false };
 
+    return await applyUpgrade(pageId, paymentId);
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+// Shared upgrade-apply logic with idempotency. Called from both client-side
+// polling (verifyUpgradePayment) and the MP webhook. Safe to call multiple
+// times for the same pageId — if already upgraded, it no-ops.
+export async function applyUpgrade(
+  pageId: string,
+  paymentId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
     const db = getAdminFirestore();
-    await db.collection('lovepages').doc(pageId).update({
+    const ref = db.collection('lovepages').doc(pageId);
+    const snap = await ref.get();
+    if (!snap.exists) return { success: false, error: 'Página não encontrada.' };
+
+    const data = snap.data() || {};
+    // Idempotency: if already upgraded to permanente, skip the write so we
+    // don't overwrite upgradedAt on every webhook retry.
+    if (data.plan === 'avancado' && !data.expireAt) {
+      return { success: true };
+    }
+
+    await ref.update({
       plan: 'avancado',
       expireAt: FieldValue.delete(),
       upgradedAt: new Date(),
       upgradePaymentId: paymentId,
     });
-
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message };
