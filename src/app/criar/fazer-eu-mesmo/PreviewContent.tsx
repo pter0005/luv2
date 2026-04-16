@@ -370,16 +370,19 @@ export default function PreviewContent({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.05, filter: "blur(20px)" }}
                             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                            className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden"
+                            className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden flex items-center justify-center"
+                            style={{ background: '#0a0510' }}
                         >
-                            <FlowerPoemIntro
-                                onReveal={() => {
-                                    setShowExplosion(true);
-                                    setPreviewPuzzleRevealed(true);
-                                    setTimeout(() => setShowExplosion(false), 2000);
-                                }}
-                                gender={(formData as any).introGender || 'fem'}
-                            />
+                            <div className="relative h-full aspect-[375/812] max-w-full overflow-hidden">
+                                <FlowerPoemIntro
+                                    onReveal={() => {
+                                        setShowExplosion(true);
+                                        setPreviewPuzzleRevealed(true);
+                                        setTimeout(() => setShowExplosion(false), 2000);
+                                    }}
+                                    gender={(formData as any).introGender || 'fem'}
+                                />
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

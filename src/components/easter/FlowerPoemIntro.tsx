@@ -571,10 +571,9 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     a.effectiveDPR = dpr;
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
-    // Map logical STAGE_W×STAGE_H coordinates to actual container pixels
-    const sx = (rect.width * dpr) / STAGE_W;
-    const sy = (rect.height * dpr) / STAGE_H;
-    a.ctx!.setTransform(sx, 0, 0, sy, 0, 0);
+    // Uniform scale — container always has ~375:812 aspect ratio via parent
+    const scale = (rect.width * dpr) / STAGE_W;
+    a.ctx!.setTransform(scale, 0, 0, scale, 0, 0);
   }, []);
 
   // ─── DRAW HELPERS ──────────────────────────────────────────────────
