@@ -346,8 +346,8 @@ function computeLayerGlow(layerIdx: number, t: number) {
 function buildCSS() {
   const bodyFont = BODY_FONT;
   return `
-.poema-root{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
-.poema-wrap{position:relative;aspect-ratio:375/812;max-width:100%;max-height:100%;width:auto;height:100%;transform-origin:center;box-shadow:0 0 120px rgba(120,40,180,.25);border-radius:4px;overflow:hidden;container-type:inline-size;container-name:stage}
+.poema-root{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
+.poema-wrap{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:inline-size;container-name:stage}
 .poema-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .poema-text{
   position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
@@ -567,10 +567,14 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     if (!canvas || !wrap) return;
     const rect = wrap.getBoundingClientRect();
     const dprCap = a.isMobile ? 2 : 3;
-    a.effectiveDPR = clamp((window.devicePixelRatio || 1) * (rect.width / STAGE_W), 1, dprCap);
-    canvas.width = Math.round(STAGE_W * a.effectiveDPR);
-    canvas.height = Math.round(STAGE_H * a.effectiveDPR);
-    a.ctx!.setTransform(a.effectiveDPR, 0, 0, a.effectiveDPR, 0, 0);
+    const dpr = clamp(window.devicePixelRatio || 1, 1, dprCap);
+    a.effectiveDPR = dpr;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    // Map logical STAGE_W×STAGE_H coordinates to actual container pixels
+    const sx = (rect.width * dpr) / STAGE_W;
+    const sy = (rect.height * dpr) / STAGE_H;
+    a.ctx!.setTransform(sx, 0, 0, sy, 0, 0);
   }, []);
 
   // ─── DRAW HELPERS ──────────────────────────────────────────────────
