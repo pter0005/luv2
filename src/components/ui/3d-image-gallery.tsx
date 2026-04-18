@@ -216,7 +216,7 @@ const FloatingCard = React.memo(function FloatingCard({
       const maxDist = isMobile ? 28 : 40;
       const minDist = isMobile ? 4 : 6;
       const t       = Math.max(0, Math.min(1, (dist - minDist) / (maxDist - minDist)));
-      cardRef.current.style.opacity = String(1 - t * 0.82);
+      cardRef.current.style.opacity = String(1 - t * 0.12);
     }
   })
 
@@ -335,7 +335,7 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
   return (
     <>
       <color attach="background" args={['#020202']} />
-      <StaticStars count={isMobile ? 300 : 800} />
+      <StaticStars count={isMobile ? 40 : 180} />
       <ambientLight intensity={1.5} />
       <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
