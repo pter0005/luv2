@@ -346,16 +346,17 @@ function computeLayerGlow(layerIdx: number, t: number) {
 function buildCSS() {
   const bodyFont = BODY_FONT;
   return `
-.poema-root{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:clip;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
-.poema-wrap{position:absolute;inset:0;width:100%;height:100%;overflow:visible;container-type:inline-size;container-name:stage}
+.poema-root{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;z-index:0}
+.poema-wrap{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;container-type:inline-size;container-name:stage}
+.poema-stage{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .poema-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .poema-text{
-  position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
+  position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;overflow:visible;
   font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:${bodyFont.weight};
   color:#fff;font-size:clamp(42px,11cqw,68px);line-height:1.14;letter-spacing:.006em;
-  pointer-events:none;text-shadow:0 0 12px rgba(200,150,230,.45);opacity:1;z-index:5;will-change:transform,opacity;
+  pointer-events:none;text-shadow:0 0 12px rgba(200,150,230,.45);opacity:1;z-index:5;
 }
-.poema-text .word{display:inline-block;opacity:0;transform:translateY(-20px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);margin:0 .14em;will-change:transform,opacity}
+.poema-text .word{display:inline-block;opacity:0;transform:translateY(-20px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);margin:0 .14em}
 .poema-text .word.in{opacity:1;transform:translateY(0)}
 .poema-text.out .word{opacity:0!important;transform:translateY(18px)!important;transition:opacity .5s ease,transform .5s ease}
 .poema-text .word.em{font-family:${bodyFont.family};font-style:${bodyFont.style};font-weight:600;font-size:1.3em;letter-spacing:.01em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:0 .04em}
@@ -364,7 +365,7 @@ function buildCSS() {
 .poema-text .word.em.f-violeta{background:linear-gradient(178deg,#f7e7ff 0%,#d8a6ff 26%,#9a4ff0 58%,#4a1090 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(255,170,100,.42))}
 .poema-text .word.em.f-girassol{background:linear-gradient(178deg,#fffadb 0%,#ffe558 24%,#ffb828 58%,#e06200 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(170,120,240,.42))}
 .poema-text .word.em.f-orquidea{background:linear-gradient(178deg,#ffe4f2 0%,#ff9ccf 26%,#e84ca3 58%,#7a1250 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 7px rgba(120,210,220,.42))}
-.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:1.8;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:0 .08em;margin-top:-.35em;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter}
+.poema-text .word.flower{display:block;font-family:'Great Vibes',cursive;font-style:normal;font-weight:400;font-size:2.78em;line-height:2.1;letter-spacing:.005em;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;padding:.28em .14em .12em;margin-top:-.18em;transform:translateY(-20px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);will-change:transform,opacity,filter;overflow:visible}
 .poema-text .word.flower.in{transform:translateY(0)}
 .poema-text .word.flower.f-rosa{background:linear-gradient(178deg,#ffe4ea 0%,#ff8fa8 22%,#ff2550 52%,#c2002a 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(180,100,220,.42))}
 .poema-text .word.flower.f-jasmim{background:linear-gradient(178deg,#fffdf0 0%,#fff1c8 25%,#ffdf80 58%,#ffae30 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 9px rgba(220,130,200,.42))}
@@ -384,16 +385,17 @@ function buildCSS() {
 .poema-text.finale .fLine{display:block}
 .poema-text.finale .orn.word,.poema-text.finale .fHero .word{margin:0}
 @container stage (max-width:374px){
-  .poema-text{top:2.4%;font-size:clamp(31px,9.6cqw,34px)}
+  .poema-text{top:2.4%;font-size:clamp(30px,9.2cqw,34px)}
   .poema-text .word{margin:0 .08em}
-  .poema-text .word.em{font-size:1.16em;letter-spacing:.008em}
+  .poema-text .word.em{font-size:1.14em;letter-spacing:.008em}
+  .poema-text .word.flower{font-size:2.5em;padding:.24em .12em .1em;margin-top:-.14em}
   .poema-text.finale{top:.3%}
   .poema-text.finale .orn{font-size:clamp(12px,3.4cqw,16px);margin:.02em 0 .12em}
   .poema-text.finale .ornBot{margin:.12em 0 .02em}
-  .poema-text.finale .fIntro{font-size:clamp(25px,7.8cqw,28px);margin-bottom:.06em}
-  .poema-text.finale .fMid{font-size:clamp(27px,8.4cqw,30px);letter-spacing:.01em;margin:.04em 0}
+  .poema-text.finale .fIntro{font-size:clamp(24px,7.4cqw,28px);margin-bottom:.06em}
+  .poema-text.finale .fMid{font-size:clamp(26px,8cqw,30px);letter-spacing:.01em;margin:.04em 0}
   .poema-text.finale .fMid .word{margin:0 .06em}
-  .poema-text.finale .fHero{font-size:clamp(82px,25cqw,92px);padding:0 .12em;margin:.02em 0 .04em}
+  .poema-text.finale .fHero{font-size:clamp(78px,24cqw,92px);padding:0 .12em;margin:.02em 0 .04em}
 }
 .poema-startBtn{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -428,8 +430,9 @@ function buildCSS() {
 export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoemIntroProps) {
   const [phase, setPhase] = useState<'loading' | 'ready' | 'playing' | 'done'>('loading');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const textRef   = useRef<HTMLDivElement>(null);
+  const wrapRef   = useRef<HTMLDivElement>(null);
+  const stageRef  = useRef<HTMLDivElement>(null);
 
   // All mutable animation state lives here to avoid re-renders
   const A = useRef<{
@@ -463,6 +466,9 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     starCount: number;
     grainTickMod: number;
     flourishMax: number;
+    stageOffsetXCss: number;
+    stageOffsetYCss: number;
+    stageScaleCss: number;
   }>({
     layers: [], images: [], ctx: null,
     started: false, startTime: 0, lastFrame: 0, currentSceneIdx: -1,
@@ -473,6 +479,7 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     grainCanvas: null, grainPattern: null, grainTick: 0,
     effectiveDPR: 1, petalSprites: [], rafId: 0, cancelled: false,
     isMobile: false, maxPetals: 14, orbCount: 9, starCount: 75, grainTickMod: 3, flourishMax: 7,
+    stageOffsetXCss: 0, stageOffsetYCss: 0, stageScaleCss: 1,
   });
 
   // ─── DRAW FUNCTIONS (closures over A.current) ─────────────────────
@@ -567,22 +574,44 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
     const rect = wrap.getBoundingClientRect();
-    const dprCap = a.isMobile ? 2 : 3;
+    // Mobile: cap DPR at 1.5 to halve pixel count vs DPR=2 — big perf win
+    const dprCap = a.isMobile ? 1.5 : 2;
     const dpr = clamp(window.devicePixelRatio || 1, 1, dprCap);
     a.effectiveDPR = dpr;
-    canvas.width = Math.round(rect.width * dpr);
+    canvas.width  = Math.round(rect.width  * dpr);
     canvas.height = Math.round(rect.height * dpr);
-    // Uniform scale — container always has ~375:812 aspect ratio via parent
-    const scale = (rect.width * dpr) / STAGE_W;
-    a.ctx!.setTransform(scale, 0, 0, scale, 0, 0);
+
+    // "Contain" scale: fit the 375×812 stage inside the actual viewport
+    // without cropping. Handles short phones (iPhone SE, small Androids).
+    const wScale = (rect.width  * dpr) / STAGE_W;
+    const hScale = (rect.height * dpr) / STAGE_H;
+    const scale  = Math.min(wScale, hScale);
+    const offsetX = (rect.width  * dpr - STAGE_W * scale) / 2;
+    const offsetY = (rect.height * dpr - STAGE_H * scale) / 2;
+    a.ctx!.setTransform(scale, 0, 0, scale, offsetX, offsetY);
     a.ctx!.imageSmoothingEnabled = true;
     a.ctx!.imageSmoothingQuality = 'high';
-    // Resize background offscreen canvas to match DPR for crisp rendering
+
+    // Store CSS-pixel equivalents so the stage overlay div can match
+    a.stageOffsetXCss = offsetX / dpr;
+    a.stageOffsetYCss = offsetY / dpr;
+    a.stageScaleCss   = scale   / dpr;
+
+    // Sync the HTML text overlay div to the canvas drawable area
+    if (stageRef.current) {
+      const s = stageRef.current;
+      s.style.left   = `${a.stageOffsetXCss}px`;
+      s.style.top    = `${a.stageOffsetYCss}px`;
+      s.style.width  = `${STAGE_W * a.stageScaleCss}px`;
+      s.style.height = `${STAGE_H * a.stageScaleCss}px`;
+    }
+
+    // Resize background offscreen canvas
     if (a.bgCanvas && a.bgCtx) {
-      a.bgCanvas.width = Math.round(STAGE_W * dpr);
+      a.bgCanvas.width  = Math.round(STAGE_W * dpr);
       a.bgCanvas.height = Math.round(STAGE_H * dpr);
       a.bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      a.bgLastRender = -9999; // force re-render
+      a.bgLastRender = -9999;
     }
   }, []);
 
@@ -625,7 +654,8 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
   const drawBackground = useCallback((t: number) => {
     const a = A.current;
     if (!a.bgCanvas) return;
-    if (t - a.bgLastRender >= 25) { renderBgOffscreen(); a.bgLastRender = t; }
+    const bgInterval = a.isMobile ? 50 : 25;
+    if (t - a.bgLastRender >= bgInterval) { renderBgOffscreen(); a.bgLastRender = t; }
     a.ctx!.drawImage(a.bgCanvas, 0, 0, STAGE_W, STAGE_H);
   }, [renderBgOffscreen]);
 
@@ -947,13 +977,14 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
       updateParticles(dt);
       updatePetals(dt);
 
-      if (Math.random() < 0.014) spawnPetal(true);
+      const spawnScale = a.isMobile ? 0.35 : 1;
+      if (Math.random() < 0.014 * spawnScale) spawnPetal(true);
       if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1800 && sInfo.sceneTime < 5500) {
-        if (Math.random() < 0.045) spawnPetal(true);
+        if (Math.random() < 0.045 * spawnScale) spawnPetal(true);
       }
       if (sInfo.index === SCENES.length - 1 && sInfo.sceneTime > 1250) {
         const rate = Math.min(1, (sInfo.sceneTime - 1250) / 780);
-        if (Math.random() < 0.32 * rate) {
+        if (Math.random() < 0.32 * rate * spawnScale) {
           const idx = [1, 2, 3, 5, 6, 7][Math.floor(Math.random() * 6)];
           const L = a.layers[idx];
           const px = L.x + L.w * L.scale * (0.2 + Math.random() * 0.6);
@@ -964,14 +995,14 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
       }
       const heroIdxSpawn = getCurrentHeroLayer(t);
       if (heroIdxSpawn >= 0 && sInfo.sceneTime > 1000 && sInfo.sceneTime < 2150) {
-        if (Math.random() < 0.28) {
+        if (Math.random() < 0.28 * spawnScale) {
           const cx = STAGE_W / 2, cy = STAGE_H * 0.62;
           const ang = Math.random() * Math.PI * 2;
           const rad = 95 + Math.random() * 75;
           spawnParticle(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.9, Math.random() < 0.75 ? 'gold' : 'pink');
         }
       }
-      if (Math.random() < 0.04) {
+      if (Math.random() < 0.04 * spawnScale) {
         spawnParticle(Math.random() * STAGE_W, STAGE_H * 0.2 + Math.random() * STAGE_H * 0.75, 'white');
       }
 
@@ -1009,11 +1040,11 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
     let cancelled = false;
     const a = A.current;
     a.isMobile = (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) || (window.innerWidth < 640);
-    a.maxPetals = a.isMobile ? 10 : 14;
-    a.orbCount = a.isMobile ? 6 : 9;
-    a.starCount = a.isMobile ? 50 : 75;
-    a.grainTickMod = a.isMobile ? 4 : 3;
-    a.flourishMax = a.isMobile ? 5 : 7;
+    a.maxPetals    = a.isMobile ? 6  : 14;
+    a.orbCount     = a.isMobile ? 3  : 9;
+    a.starCount    = a.isMobile ? 30 : 75;
+    a.grainTickMod = a.isMobile ? 99 : 3;  // effectively skip grain on mobile
+    a.flourishMax  = a.isMobile ? 0  : 7;  // skip sparkles on mobile
 
     async function load() {
       const layers: Layer[] = JSON.parse(JSON.stringify(INITIAL_LAYERS));
@@ -1058,8 +1089,10 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
 
   // ─── RESIZE HANDLER ────────────────────────────────────────────────
   useEffect(() => {
-    const handler = () => { if (A.current.ctx) resizeCanvas(); };
-    window.addEventListener('resize', handler);
+    const handler = () => {
+      if (A.current.ctx) resizeCanvas();
+    };
+    window.addEventListener('resize', handler, { passive: true });
     return () => window.removeEventListener('resize', handler);
   }, [resizeCanvas]);
 
@@ -1114,7 +1147,9 @@ export default function FlowerPoemIntro({ onReveal, gender = 'fem' }: FlowerPoem
 
         <div ref={wrapRef} className="poema-wrap">
           <canvas ref={canvasRef} className="poema-canvas" />
-          <div ref={textRef} className="poema-text" />
+          <div ref={stageRef} className="poema-stage">
+            <div ref={textRef} className="poema-text" />
+          </div>
 
           {phase === 'ready' && (
             <button className="poema-startBtn" onClick={handleStart}>
