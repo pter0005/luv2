@@ -211,13 +211,6 @@ const FloatingCard = React.memo(function FloatingCard({
   useFrame(({ camera }) => {
     if (!groupRef.current) return;
     groupRef.current.lookAt(camera.position);
-    if (cardRef.current) {
-      const dist    = camera.position.distanceTo(groupRef.current.position);
-      const maxDist = isMobile ? 28 : 40;
-      const minDist = isMobile ? 4 : 6;
-      const t       = Math.max(0, Math.min(1, (dist - minDist) / (maxDist - minDist)));
-      cardRef.current.style.opacity = String(1 - t * 0.12);
-    }
   })
 
   const dateObj = useMemo(() => parseDateObj(card.date), [card.date])
@@ -322,6 +315,22 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean; setSelec
   )
 }
 
+function Nebula() {
+  const meshRef = useRef<THREE.Mesh>(null)
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.055 + 0.018 * Math.sin(clock.elapsedTime * 0.35)
+    }
+  })
+  return (
+    <mesh ref={meshRef} position={[0, 0, -6]}>
+      <sphereGeometry args={[16, 24, 24]} />
+      <meshBasicMaterial color="#6d28d9" transparent side={THREE.BackSide} depthWrite={false} />
+    </mesh>
+  )
+}
+
 function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCard: (card: Card) => void }) {
   const { camera } = useThree()
   useEffect(() => {
@@ -335,6 +344,7 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
   return (
     <>
       <color attach="background" args={['#020202']} />
+      <Nebula />
       <StaticStars count={isMobile ? 40 : 180} />
       <ambientLight intensity={1.5} />
       <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
