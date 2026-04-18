@@ -1,162 +1,305 @@
 "use client"
 
-import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext, useCallback } from "react"
+import React, { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, Html } from "@react-three/drei"
+import { OrbitControls, useTexture } from "@react-three/drei"
 import { X } from "lucide-react"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
 import { FullScreenCardView, type Card, parseDateObj } from "./timeline-mobile"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
-const DATE_LOCALE = ptBR
-
-const CardContext = createContext<{ cards: Card[] } | undefined>(undefined)
-function useCardContext() {
-  const ctx = useContext(CardContext)
-  if (!ctx) throw new Error("must be inside CardProvider")
-  return ctx
-}
-function CardProvider({ children, events }: { children: React.ReactNode; events: Card[] }) {
-  const value = useMemo(() => ({ cards: events }), [events])
-  return <CardContext.Provider value={value}>{children}</CardContext.Provider>
+/* ─── Helpers ────────────────────────────────────────────────────── */
+const easeOutBack = (t: number) => {
+  const c1 = 1.55, c3 = c1 + 1
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
 }
 
-/* ─── Floating card ─── */
-const FloatingCard = React.memo(function FloatingCard({
-  card,
-  position,
-  onClick,
-}: {
-  card: Card
-  position: { x: number; y: number; z: number }
-  onClick: () => void
-}) {
-  const groupRef = useRef<THREE.Group>(null)
-  const cardRef  = useRef<HTMLDivElement>(null)
-
-  useFrame(({ camera }) => {
-    if (!groupRef.current) return
-    groupRef.current.lookAt(camera.position)
-    if (cardRef.current) {
-      const dist = camera.position.distanceTo(groupRef.current.position)
-      const t    = Math.max(0, Math.min(1, (dist - 12) / (55 - 12)))
-      cardRef.current.style.opacity = String(1 - t * 0.2)
-    }
-  })
-
-  const dateObj = useMemo(() => parseDateObj(card.date), [card.date])
-
-  return (
-    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={1.44}>
-      <Html transform distanceFactor={8} zIndexRange={[16777271, 0]} style={{ pointerEvents: "auto", cursor: "pointer" }}>
-        <div
-          ref={cardRef}
-          onClick={onClick}
-          className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-200 hover:scale-105"
-          style={{ width: "220px", aspectRatio: "3/4" }}
-        >
-          <img
-            src={card.imageUrl}
-            alt={card.alt}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              const img = e.currentTarget
-              if (!img.dataset.retried) { img.dataset.retried = "1"; setTimeout(() => { img.src = card.imageUrl }, 2000) }
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent flex flex-col justify-end p-4">
-            <p className="text-white font-bold text-base leading-tight" style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-              {card.title.length > 55 ? card.title.slice(0, 55) + "…" : card.title}
-            </p>
-            {dateObj && (
-              <p className="text-purple-400 font-semibold text-xs tracking-wide mt-1">
-                {format(dateObj, "dd MMM yyyy", { locale: DATE_LOCALE })}
-              </p>
-            )}
-          </div>
-        </div>
-      </Html>
-    </group>
-  )
-})
-FloatingCard.displayName = "FloatingCard"
-
-/* ─── Stars ─── */
-function StaticStars() {
-  const attr = useMemo(() => {
-    const positions = new Float32Array(800 * 3)
-    const radius    = 80
-    for (let i = 0; i < 800; i++) {
-      const theta = 2 * Math.PI * Math.random()
-      const phi   = Math.acos(2 * Math.random() - 1)
-      positions.set([radius * Math.sin(phi) * Math.cos(theta), radius * Math.sin(phi) * Math.sin(theta), radius * Math.cos(phi)], i * 3)
-    }
-    return new THREE.BufferAttribute(positions, 3)
-  }, [])
-  return (
-    <points>
-      <bufferGeometry><bufferAttribute attach="attributes-position" {...attr} /></bufferGeometry>
-      <pointsMaterial size={0.2} color="white" transparent opacity={0.5} sizeAttenuation />
-    </points>
-  )
+function createRoundedPlane(w: number, h: number, r: number): THREE.ShapeGeometry {
+  const hw = w / 2, hh = h / 2
+  const s  = new THREE.Shape()
+  s.moveTo(-hw + r, -hh)
+  s.lineTo( hw - r, -hh)
+  s.quadraticCurveTo( hw, -hh,  hw, -hh + r)
+  s.lineTo( hw,  hh - r)
+  s.quadraticCurveTo( hw,  hh,  hw - r,  hh)
+  s.lineTo(-hw + r,  hh)
+  s.quadraticCurveTo(-hw,  hh, -hw,  hh - r)
+  s.lineTo(-hw, -hh + r)
+  s.quadraticCurveTo(-hw, -hh, -hw + r, -hh)
+  return new THREE.ShapeGeometry(s, 6)
 }
 
-/* ─── Galaxy ─── */
-function CardGalaxy({ setSelectedCard }: { setSelectedCard: (c: Card) => void }) {
-  const { cards } = useCardContext()
-  const cardPositions = useMemo(() => {
+// Gradient overlay texture — canvas only (no image, no CORS)
+function makeGradientTex(): THREE.CanvasTexture {
+  const cv = document.createElement("canvas")
+  cv.width = 4; cv.height = 256
+  const ctx = cv.getContext("2d")!
+  const g   = ctx.createLinearGradient(0, 0, 0, 256)
+  g.addColorStop(0.0,  "rgba(0,0,0,0)")
+  g.addColorStop(0.38, "rgba(0,0,0,0)")
+  g.addColorStop(1.0,  "rgba(0,0,0,0.92)")
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 4, 256)
+  const t = new THREE.CanvasTexture(cv)
+  t.needsUpdate = true
+  return t
+}
+
+// Shared gradient texture (created once per canvas mount)
+let _gradTex: THREE.CanvasTexture | null = null
+function getGradTex() {
+  if (!_gradTex) _gradTex = makeGradientTex()
+  return _gradTex
+}
+
+/* ─── Galaxy positions ───────────────────────────────────────────── */
+function useCardPositions(cards: Card[], isMobile: boolean) {
+  return useMemo(() => {
     const n = cards.length
     if (n === 0) return []
     if (n === 1) return [{ x: 0, y: 0, z: 0 }]
     const phi    = Math.PI * (3 - Math.sqrt(5))
-    const radius = 9.0 + Math.sqrt(n) * 0.8
+    const base   = isMobile ? 5.0 : 8.5
+    const radius = base + Math.sqrt(n) * 0.75
+    const yScale = isMobile ? 1.45 : 1.35
     return Array.from({ length: n }, (_, i) => {
       const y     = 1 - (i / (n - 1)) * 2
-      const r     = Math.sqrt(1 - y * y)
+      const r     = Math.sqrt(Math.max(0, 1 - y * y))
       const theta = phi * i
-      return { x: Math.cos(theta) * r * radius, y: y * radius * 1.4, z: Math.sin(theta) * r * radius }
+      return { x: Math.cos(theta) * r * radius, y: y * radius * yScale, z: Math.sin(theta) * r * radius }
     })
-  }, [cards])
+  }, [cards, isMobile])
+}
+
+/* ─── Single card (loaded) ───────────────────────────────────────── */
+const CARD_ASPECT = 3 / 4
+
+function CardMeshLoaded({
+  card, position, cardH, onClick, phase,
+}: {
+  card: Card; position: { x: number; y: number; z: number }
+  cardH: number; onClick: () => void; phase: number
+}) {
+  const groupRef  = useRef<THREE.Group>(null)
+  const imgMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const ovlMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const glwMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const entryT    = useRef(0)
+  const texture   = useTexture(card.imageUrl)
+
+  useEffect(() => {
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.minFilter  = THREE.LinearFilter
+    texture.magFilter  = THREE.LinearFilter
+    texture.generateMipmaps = false
+  }, [texture])
+
+  useFrame(({ camera, clock }) => {
+    const g = groupRef.current
+    if (!g) return
+
+    // Entry spring — pop in over ~0.4s
+    if (entryT.current < 1) {
+      entryT.current = Math.min(1, entryT.current + 0.028)
+      g.scale.setScalar(easeOutBack(entryT.current))
+    }
+
+    // Billboard
+    g.lookAt(camera.position)
+
+    // Distance opacity — very gentle fade for far cards
+    const dist    = camera.position.distanceTo(g.position)
+    const t       = Math.max(0, Math.min(1, (dist - 10) / 48))
+    const opacity = 1 - t * 0.25
+
+    if (imgMatRef.current) imgMatRef.current.opacity = opacity
+    if (ovlMatRef.current) ovlMatRef.current.opacity = opacity * 0.88
+
+    // Pulsing glow — each card breathes at its own phase
+    if (glwMatRef.current) {
+      const pulse = 0.10 + 0.06 * Math.sin(clock.elapsedTime * 1.4 + phase)
+      glwMatRef.current.opacity = opacity * pulse
+    }
+  })
+
+  const w       = cardH * CARD_ASPECT
+  const geoImg  = useMemo(() => createRoundedPlane(w,         cardH,         0.18), [w, cardH])
+  const geoOvl  = useMemo(() => createRoundedPlane(w,         cardH,         0.18), [w, cardH])
+  const geoGlow = useMemo(() => createRoundedPlane(w + 0.26,  cardH + 0.26,  0.22), [w, cardH])
+  const gradTex = useMemo(() => getGradTex(), [])
+
   return (
-    <group>
-      {cards.map((card, i) =>
-        cardPositions[i] ? (
-          <FloatingCard key={card.id} card={card} position={cardPositions[i]} onClick={() => setSelectedCard(card)} />
-        ) : null,
-      )}
+    <group ref={groupRef} position={[position.x, position.y, position.z]}>
+      {/* Glow border */}
+      <mesh geometry={geoGlow} renderOrder={0}>
+        <meshBasicMaterial ref={glwMatRef} color="#a855f7" transparent depthWrite={false} />
+      </mesh>
+      {/* Card image */}
+      <mesh geometry={geoImg} renderOrder={1} onClick={(e) => { e.stopPropagation(); onClick() }}>
+        <meshBasicMaterial ref={imgMatRef} map={texture} transparent depthWrite={false} />
+      </mesh>
+      {/* Gradient overlay */}
+      <mesh geometry={geoOvl} position={[0, 0, 0.005]} renderOrder={2} onClick={(e) => { e.stopPropagation(); onClick() }}>
+        <meshBasicMaterial ref={ovlMatRef} map={gradTex} transparent depthWrite={false} />
+      </mesh>
     </group>
   )
 }
 
-/* ─── Scene ─── */
-function Scene({ setSelectedCard }: { setSelectedCard: (c: Card) => void }) {
+/* Placeholder while loading */
+function CardMeshFallback({ position, cardH }: { position: { x: number; y: number; z: number }; cardH: number }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const matRef  = useRef<THREE.MeshBasicMaterial>(null)
+  const pulse   = useRef(Math.random() * Math.PI * 2)
+  useFrame(({ camera, clock }) => {
+    meshRef.current?.lookAt(camera.position)
+    if (matRef.current) matRef.current.opacity = 0.18 + 0.1 * Math.sin(clock.elapsedTime * 2 + pulse.current)
+  })
+  const geo = useMemo(() => createRoundedPlane(cardH * CARD_ASPECT, cardH, 0.18), [cardH])
+  return (
+    <mesh ref={meshRef} geometry={geo} position={[position.x, position.y, position.z]}>
+      <meshBasicMaterial ref={matRef} color="#2a1040" transparent depthWrite={false} />
+    </mesh>
+  )
+}
+
+function GalleryCard({ card, position, cardH, onClick, phase }: { card: Card; position: { x: number; y: number; z: number }; cardH: number; onClick: () => void; phase: number }) {
+  return (
+    <Suspense fallback={<CardMeshFallback position={position} cardH={cardH} />}>
+      <CardMeshLoaded card={card} position={position} cardH={cardH} onClick={onClick} phase={phase} />
+    </Suspense>
+  )
+}
+
+/* ─── Stars ─────────────────────────────────────────────────────── */
+function Stars({ count }: { count: number }) {
+  const { positions, colors, sizes } = useMemo(() => {
+    const positions = new Float32Array(count * 3)
+    const colors    = new Float32Array(count * 3)
+    const sizes     = new Float32Array(count)
+    const R = 85
+    for (let i = 0; i < count; i++) {
+      const theta = 2 * Math.PI * Math.random()
+      const phi   = Math.acos(2 * Math.random() - 1)
+      positions.set([R * Math.sin(phi) * Math.cos(theta), R * Math.sin(phi) * Math.sin(theta), R * Math.cos(phi)], i * 3)
+      // Mostly white, some slightly purple/blue
+      const tint = Math.random()
+      colors.set(tint > 0.85 ? [0.78, 0.62, 1.0] : tint > 0.7 ? [0.72, 0.82, 1.0] : [1, 1, 1], i * 3)
+      sizes[i] = 0.12 + Math.random() * 0.22
+    }
+    return { positions, colors, sizes }
+  }, [count])
+
+  const posAttr  = useMemo(() => new THREE.BufferAttribute(positions, 3), [positions])
+  const colAttr  = useMemo(() => new THREE.BufferAttribute(colors, 3),    [colors])
+  const sizeAttr = useMemo(() => new THREE.BufferAttribute(sizes, 1),     [sizes])
+
+  if (count === 0) return null
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" {...posAttr} />
+        <bufferAttribute attach="attributes-color"    {...colAttr} />
+        <bufferAttribute attach="attributes-size"     {...sizeAttr} />
+      </bufferGeometry>
+      <pointsMaterial vertexColors transparent opacity={0.55} sizeAttenuation size={0.18} />
+    </points>
+  )
+}
+
+/* ─── Nebula — soft center glow ─────────────────────────────────── */
+function Nebula() {
+  const meshRef = useRef<THREE.Mesh>(null)
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.045 + 0.015 * Math.sin(clock.elapsedTime * 0.4)
+    }
+  })
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[18, 16, 16]} />
+      <meshBasicMaterial color="#6d28d9" transparent side={THREE.BackSide} depthWrite={false} />
+    </mesh>
+  )
+}
+
+/* ─── Scene ─────────────────────────────────────────────────────── */
+function Scene({ cards, isMobile, onSelectCard }: { cards: Card[]; isMobile: boolean; onSelectCard: (c: Card) => void }) {
   const { camera } = useThree()
+  const positions  = useCardPositions(cards, isMobile)
+  const phases     = useMemo(() => cards.map(() => Math.random() * Math.PI * 2), [cards])
+
   useEffect(() => {
-    camera.position.set(0, 0, 28)
-    if (camera instanceof THREE.PerspectiveCamera) { camera.fov = 65; camera.updateProjectionMatrix() }
-  }, [camera])
+    camera.position.set(0, 0, isMobile ? 17 : 25)
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = isMobile ? 72 : 62
+      camera.updateProjectionMatrix()
+    }
+  }, [isMobile, camera])
+
+  const cardH = isMobile ? 2.5 : 3.2
+
   return (
     <>
-      <color attach="background" args={["#020202"]} />
-      <StaticStars />
-      <ambientLight intensity={1.5} />
-      <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
-      <CardGalaxy setSelectedCard={setSelectedCard} />
-      <OrbitControls makeDefault enableDamping dampingFactor={0.07} enablePan={false} minDistance={5} maxDistance={45} autoRotate autoRotateSpeed={0.3} />
+      <color attach="background" args={["#040208"]} />
+      <fog attach="fog" color="#040208" near={isMobile ? 20 : 28} far={isMobile ? 50 : 65} />
+      <Stars count={isMobile ? 180 : 650} />
+      <Nebula />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[0, 10, 5]} intensity={1.2} color="#c084fc" />
+      <pointLight position={[-10, -5, -5]} intensity={0.6} color="#818cf8" />
+
+      {cards.map((card, i) =>
+        positions[i] ? (
+          <GalleryCard
+            key={card.id}
+            card={card}
+            position={positions[i]}
+            cardH={cardH}
+            onClick={() => onSelectCard(card)}
+            phase={phases[i]}
+          />
+        ) : null,
+      )}
+
+      <OrbitControls
+        makeDefault
+        enableDamping
+        dampingFactor={isMobile ? 0.14 : 0.07}
+        enablePan={false}
+        enableZoom={!isMobile}
+        minDistance={isMobile ? 3 : 5}
+        maxDistance={isMobile ? 30 : 40}
+        autoRotate
+        autoRotateSpeed={isMobile ? 0.6 : 0.35}
+      />
     </>
   )
 }
 
-/* ─── Main ─── */
+/* ─── Mobile detection ───────────────────────────────────────────── */
+function useIsMobile() {
+  const [v, set] = useState(false)
+  useEffect(() => {
+    const check = () =>
+      set(window.innerWidth < 768 || (window.matchMedia?.("(hover: none) and (pointer: coarse)").matches ?? false))
+    check()
+    window.addEventListener("resize", check, { passive: true })
+    return () => window.removeEventListener("resize", check)
+  }, [])
+  return v
+}
+
+/* ─── Root ───────────────────────────────────────────────────────── */
 export default function DesktopGallery({ events, onClose }: { events: Card[]; onClose: () => void }) {
+  const isMobile                        = useIsMobile()
   const [mounted, setMounted]           = useState(false)
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
-  const handleSelectCard                = useCallback((card: Card) => setSelectedCard(card), [])
+  const handleSelect                    = useCallback((c: Card) => setSelectedCard(c), [])
 
   useEffect(() => {
     setMounted(true)
@@ -167,33 +310,41 @@ export default function DesktopGallery({ events, onClose }: { events: Card[]; on
   if (!mounted || events.length === 0) return null
 
   return createPortal(
-    <motion.div className="fixed inset-0 z-[99999] bg-[#020202]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <CardProvider events={events}>
-        <Canvas
-          dpr={[1, 1.5]}
-          performance={{ min: 0.5 }}
-          gl={{ antialias: false, powerPreference: "high-performance", stencil: false, depth: true }}
-        >
-          <Suspense fallback={null}>
-            <Scene setSelectedCard={handleSelectCard} />
-          </Suspense>
-        </Canvas>
+    <motion.div
+      className="fixed inset-0 z-[99999]"
+      style={{ background: "#040208" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <Canvas
+        dpr={isMobile ? [0.75, 1] : [1, 1.5]}
+        performance={{ min: 0.5 }}
+        gl={{ antialias: !isMobile, powerPreference: "high-performance", stencil: false, depth: true }}
+      >
+        <Scene cards={events} isMobile={isMobile} onSelectCard={handleSelect} />
+      </Canvas>
 
-        {/* Header */}
-        <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-start bg-gradient-to-b from-black/90 to-transparent pointer-events-none h-24">
-          <div className="text-white pointer-events-none pl-1">
-            <h1 className="text-lg font-bold drop-shadow-xl tracking-wide">Nossa Linha do Tempo</h1>
-            <p className="text-[10px] text-white/70">Arraste para girar · Scroll para zoom</p>
-          </div>
-          <button onClick={onClose} className="pointer-events-auto bg-white/10 hover:bg-white/20 active:bg-white/25 backdrop-blur-md text-white rounded-full p-3 shadow-lg active:scale-90 transition-all border border-white/10">
-            <X className="w-5 h-5" />
-          </button>
+      {/* Header */}
+      <div className="absolute top-0 left-0 w-full px-4 pt-4 pb-20 z-10 flex justify-between items-start bg-gradient-to-b from-black/75 to-transparent pointer-events-none">
+        <div className="text-white">
+          <h1 className="text-lg font-bold tracking-wide drop-shadow-xl">Nossa Linha do Tempo</h1>
+          <p className="text-[10px] text-white/50 mt-0.5">
+            {isMobile ? "Arraste para girar · Toque para ver" : "Arraste · Scroll para zoom · Clique para ver"}
+          </p>
         </div>
+        <button
+          onClick={onClose}
+          className="pointer-events-auto bg-white/10 hover:bg-white/20 active:bg-white/30 backdrop-blur-md text-white rounded-full p-3 active:scale-90 transition-all border border-white/10 touch-manipulation"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        <AnimatePresence>
-          {selectedCard && <FullScreenCardView card={selectedCard} onClose={() => setSelectedCard(null)} />}
-        </AnimatePresence>
-      </CardProvider>
+      <AnimatePresence>
+        {selectedCard && <FullScreenCardView card={selectedCard} onClose={() => setSelectedCard(null)} />}
+      </AnimatePresence>
     </motion.div>,
     document.body,
   )
