@@ -176,36 +176,27 @@ function GalleryCard({ card, position, cardH, onClick, phase }: { card: Card; po
 
 /* ─── Stars ─────────────────────────────────────────────────────── */
 function Stars({ count }: { count: number }) {
-  const { positions, colors, sizes } = useMemo(() => {
+  const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3)
     const colors    = new Float32Array(count * 3)
-    const sizes     = new Float32Array(count)
     const R = 85
     for (let i = 0; i < count; i++) {
       const theta = 2 * Math.PI * Math.random()
       const phi   = Math.acos(2 * Math.random() - 1)
       positions.set([R * Math.sin(phi) * Math.cos(theta), R * Math.sin(phi) * Math.sin(theta), R * Math.cos(phi)], i * 3)
-      // Mostly white, some slightly purple/blue
       const tint = Math.random()
       colors.set(tint > 0.85 ? [0.78, 0.62, 1.0] : tint > 0.7 ? [0.72, 0.82, 1.0] : [1, 1, 1], i * 3)
-      sizes[i] = 0.12 + Math.random() * 0.22
     }
-    return { positions, colors, sizes }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3))
+    geo.setAttribute("color",    new THREE.BufferAttribute(colors, 3))
+    return geo
   }, [count])
-
-  const posAttr  = useMemo(() => new THREE.BufferAttribute(positions, 3), [positions])
-  const colAttr  = useMemo(() => new THREE.BufferAttribute(colors, 3),    [colors])
-  const sizeAttr = useMemo(() => new THREE.BufferAttribute(sizes, 1),     [sizes])
 
   if (count === 0) return null
   return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" {...posAttr} />
-        <bufferAttribute attach="attributes-color"    {...colAttr} />
-        <bufferAttribute attach="attributes-size"     {...sizeAttr} />
-      </bufferGeometry>
-      <pointsMaterial vertexColors transparent opacity={0.55} sizeAttenuation size={0.18} />
+    <points geometry={geometry}>
+      <pointsMaterial vertexColors transparent opacity={0.6} sizeAttenuation size={0.18} depthWrite={false} />
     </points>
   )
 }
