@@ -29,7 +29,6 @@ import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquar
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import NebulosaPoema from '@/components/effects/NebulosaPoema';
-import PurpleExplosion from '@/components/effects/PurpleExplosion';
 import UpgradeModal from './UpgradeModal';
 import MysticFlowers from '@/components/effects/MysticFlowers';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -355,11 +354,12 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         {showExplosion && (
           <motion.div
             initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[999] pointer-events-none"
-          >
-            <PurpleExplosion onComplete={() => setShowExplosion(false)} />
-          </motion.div>
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            onAnimationComplete={() => setShowExplosion(false)}
+            className="fixed inset-0 z-[999] pointer-events-none bg-black"
+          />
         )}
       </AnimatePresence>
       

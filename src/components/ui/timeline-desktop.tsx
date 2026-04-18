@@ -1,9 +1,9 @@
 "use client"
 
-import React, { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react"
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import * as THREE from "three"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, useTexture } from "@react-three/drei"
+import { OrbitControls } from "@react-three/drei"
 import { X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
@@ -77,7 +77,7 @@ function useCardPositions(cards: Card[], isMobile: boolean) {
 /* ─── Single card (loaded) ───────────────────────────────────────── */
 const CARD_ASPECT = 3 / 4
 
-function CardMeshLoaded({
+function GalleryCard({
   card, position, cardH, onClick, phase,
 }: {
   card: Card; position: { x: number; y: number; z: number }
@@ -87,38 +87,56 @@ function CardMeshLoaded({
   const imgMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const ovlMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const glwMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const phMatRef  = useRef<THREE.MeshBasicMaterial>(null)
   const entryT    = useRef(0)
-  const texture   = useTexture(card.imageUrl)
+  const phasePulse = useRef(Math.random() * Math.PI * 2)
+
+  // Manual texture loading with error handling — bad URLs show placeholder instead of crashing
+  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+  const [failed,  setFailed]  = useState(false)
 
   useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.minFilter  = THREE.LinearFilter
-    texture.magFilter  = THREE.LinearFilter
-    texture.generateMipmaps = false
-  }, [texture])
+    let disposed = false
+    const loader = new THREE.TextureLoader()
+    loader.setCrossOrigin("anonymous")
+    loader.load(
+      card.imageUrl,
+      (tex) => {
+        if (disposed) { tex.dispose(); return }
+        tex.colorSpace      = THREE.SRGBColorSpace
+        tex.minFilter       = THREE.LinearFilter
+        tex.magFilter       = THREE.LinearFilter
+        tex.generateMipmaps = false
+        setTexture(tex)
+      },
+      undefined,
+      () => { if (!disposed) setFailed(true) },
+    )
+    return () => {
+      disposed = true
+      setTexture((t) => { t?.dispose(); return null })
+    }
+  }, [card.imageUrl])
 
   useFrame(({ camera, clock }) => {
     const g = groupRef.current
     if (!g) return
 
-    // Entry spring — pop in over ~0.4s
     if (entryT.current < 1) {
       entryT.current = Math.min(1, entryT.current + 0.028)
       g.scale.setScalar(easeOutBack(entryT.current))
     }
 
-    // Billboard
     g.lookAt(camera.position)
 
-    // Distance opacity — very gentle fade for far cards
     const dist    = camera.position.distanceTo(g.position)
     const t       = Math.max(0, Math.min(1, (dist - 10) / 48))
     const opacity = 1 - t * 0.25
 
     if (imgMatRef.current) imgMatRef.current.opacity = opacity
     if (ovlMatRef.current) ovlMatRef.current.opacity = opacity * 0.88
+    if (phMatRef.current)  phMatRef.current.opacity  = opacity * (0.22 + 0.1 * Math.sin(clock.elapsedTime * 2 + phasePulse.current))
 
-    // Pulsing glow — each card breathes at its own phase
     if (glwMatRef.current) {
       const pulse = 0.10 + 0.06 * Math.sin(clock.elapsedTime * 1.4 + phase)
       glwMatRef.current.opacity = opacity * pulse
@@ -130,6 +148,9 @@ function CardMeshLoaded({
   const geoOvl  = useMemo(() => createRoundedPlane(w,         cardH,         0.18), [w, cardH])
   const geoGlow = useMemo(() => createRoundedPlane(w + 0.26,  cardH + 0.26,  0.22), [w, cardH])
   const gradTex = useMemo(() => getGradTex(), [])
+  const onTap   = useCallback((e: any) => { e.stopPropagation(); onClick() }, [onClick])
+
+  const ready = texture && !failed
 
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]}>
@@ -137,40 +158,25 @@ function CardMeshLoaded({
       <mesh geometry={geoGlow} renderOrder={0}>
         <meshBasicMaterial ref={glwMatRef} color="#a855f7" transparent depthWrite={false} />
       </mesh>
-      {/* Card image */}
-      <mesh geometry={geoImg} renderOrder={1} onClick={(e) => { e.stopPropagation(); onClick() }}>
-        <meshBasicMaterial ref={imgMatRef} map={texture} transparent depthWrite={false} />
-      </mesh>
-      {/* Gradient overlay */}
-      <mesh geometry={geoOvl} position={[0, 0, 0.005]} renderOrder={2} onClick={(e) => { e.stopPropagation(); onClick() }}>
-        <meshBasicMaterial ref={ovlMatRef} map={gradTex} transparent depthWrite={false} />
-      </mesh>
+
+      {ready ? (
+        <>
+          {/* Card image */}
+          <mesh geometry={geoImg} renderOrder={1} onClick={onTap}>
+            <meshBasicMaterial ref={imgMatRef} map={texture!} transparent depthWrite={false} />
+          </mesh>
+          {/* Gradient overlay */}
+          <mesh geometry={geoOvl} position={[0, 0, 0.005]} renderOrder={2} onClick={onTap}>
+            <meshBasicMaterial ref={ovlMatRef} map={gradTex} transparent depthWrite={false} />
+          </mesh>
+        </>
+      ) : (
+        /* Placeholder — shown while loading OR if image failed */
+        <mesh geometry={geoImg} renderOrder={1} onClick={onTap}>
+          <meshBasicMaterial ref={phMatRef} color={failed ? "#2a1040" : "#1a0828"} transparent depthWrite={false} />
+        </mesh>
+      )}
     </group>
-  )
-}
-
-/* Placeholder while loading */
-function CardMeshFallback({ position, cardH }: { position: { x: number; y: number; z: number }; cardH: number }) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const matRef  = useRef<THREE.MeshBasicMaterial>(null)
-  const pulse   = useRef(Math.random() * Math.PI * 2)
-  useFrame(({ camera, clock }) => {
-    meshRef.current?.lookAt(camera.position)
-    if (matRef.current) matRef.current.opacity = 0.18 + 0.1 * Math.sin(clock.elapsedTime * 2 + pulse.current)
-  })
-  const geo = useMemo(() => createRoundedPlane(cardH * CARD_ASPECT, cardH, 0.18), [cardH])
-  return (
-    <mesh ref={meshRef} geometry={geo} position={[position.x, position.y, position.z]}>
-      <meshBasicMaterial ref={matRef} color="#2a1040" transparent depthWrite={false} />
-    </mesh>
-  )
-}
-
-function GalleryCard({ card, position, cardH, onClick, phase }: { card: Card; position: { x: number; y: number; z: number }; cardH: number; onClick: () => void; phase: number }) {
-  return (
-    <Suspense fallback={<CardMeshFallback position={position} cardH={cardH} />}>
-      <CardMeshLoaded card={card} position={position} cardH={cardH} onClick={onClick} phase={phase} />
-    </Suspense>
   )
 }
 
