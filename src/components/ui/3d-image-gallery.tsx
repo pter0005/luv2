@@ -320,13 +320,14 @@ function Nebula() {
   useFrame(({ clock }) => {
     if (meshRef.current) {
       ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.055 + 0.018 * Math.sin(clock.elapsedTime * 0.35)
+        0.18 + 0.05 * Math.sin(clock.elapsedTime * 0.3)
     }
   })
+  // Sphere placed far behind the cards so it reads as a distant purple glow in the scenery
   return (
-    <mesh ref={meshRef} position={[0, 0, -6]}>
-      <sphereGeometry args={[16, 24, 24]} />
-      <meshBasicMaterial color="#6d28d9" transparent side={THREE.BackSide} depthWrite={false} />
+    <mesh ref={meshRef} position={[0, 0, -55]}>
+      <sphereGeometry args={[10, 24, 24]} />
+      <meshBasicMaterial color="#6d28d9" transparent depthWrite={false} />
     </mesh>
   )
 }
@@ -388,12 +389,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   if (!mounted || events.length === 0) return null
 
-  // Mobile: grade 2D sem WebGL
-  if (isMobile) {
-    return <MobileTimeline events={events} onClose={onClose} />
-  }
-
-  // Desktop: galáxia 3D
+  // Same 3D galaxy on mobile + desktop; Scene adapts via isMobile
   return createPortal(
     <motion.div
       className="fixed inset-0 z-[99999] bg-[#020202]"
@@ -403,7 +399,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
-          dpr={[1, 1.5]}
+          dpr={isMobile ? [0.75, 1] : [1, 1.5]}
           performance={{ min: 0.5 }}
           gl={{
             antialias: false,
@@ -414,7 +410,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
           onCreated={() => setWebglFailed(false)}
         >
           <Suspense fallback={null}>
-            <Scene isMobile={false} setSelectedCard={handleSelectCard} />
+            <Scene isMobile={isMobile} setSelectedCard={handleSelectCard} />
           </Suspense>
         </Canvas>
 
