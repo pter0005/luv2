@@ -226,6 +226,28 @@ async function renderCardToCanvas(card: Card, w: number, h: number): Promise<HTM
   return canvas
 }
 
+let _glowTexture: THREE.CanvasTexture | null = null
+function getGlowTexture(): THREE.CanvasTexture {
+  if (_glowTexture) return _glowTexture
+  const size = 256
+  const c = document.createElement('canvas')
+  c.width = size; c.height = size
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2)
+  g.addColorStop(0, 'rgba(168,85,247,0.55)')
+  g.addColorStop(0.35, 'rgba(139,92,246,0.28)')
+  g.addColorStop(0.65, 'rgba(109,40,217,0.09)')
+  g.addColorStop(1, 'rgba(109,40,217,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, size, size)
+  _glowTexture = new THREE.CanvasTexture(c)
+  _glowTexture.colorSpace = THREE.SRGBColorSpace
+  _glowTexture.minFilter = THREE.LinearFilter
+  _glowTexture.magFilter = THREE.LinearFilter
+  _glowTexture.generateMipmaps = false
+  return _glowTexture
+}
+
 function useCardTexture(card: Card, w: number, h: number): THREE.Texture | null {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
 
@@ -340,7 +362,7 @@ const CardPlane = React.memo(function CardPlane({
       const t = Math.min(1, (performance.now() - readyAtRef.current) / 220)
       const eased = t * (2 - t) // easeOutQuad
       frontMatRef.current.opacity = eased
-      if (haloMatRef.current) haloMatRef.current.opacity = 0.15 * eased
+      if (haloMatRef.current) haloMatRef.current.opacity = 0.9 * eased
     } else if (haloMatRef.current) {
       haloMatRef.current.opacity = 0
     }
@@ -353,10 +375,18 @@ const CardPlane = React.memo(function CardPlane({
 
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]}>
-      {/* subtle purple halo behind */}
-      <mesh position={[0, 0, -0.02]} scale={[cardW * 1.15, cardH * 1.15, 1]}>
+      {/* soft purple glow behind — smoke/aura feel */}
+      <mesh position={[0, 0, -0.05]} scale={[cardW * 2.2, cardH * 1.9, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial ref={haloMatRef} color="#6d28d9" transparent opacity={0} depthWrite={false} />
+        <meshBasicMaterial
+          ref={haloMatRef}
+          map={getGlowTexture()}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
       </mesh>
       {/* card */}
       {texture && (
