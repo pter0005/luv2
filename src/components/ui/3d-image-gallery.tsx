@@ -56,6 +56,17 @@ function useIsMobile() {
 /* ─────────────────────────────────────────────────────────────────────────────
    CANVAS-TO-TEXTURE HELPERS
 ───────────────────────────────────────────────────────────────────────────── */
+function toSameOriginUrl(url: string, w: number): string {
+  if (typeof window === 'undefined') return url
+  try {
+    const u = new URL(url, window.location.origin)
+    if (u.origin === window.location.origin) return url
+    return `/_next/image?url=${encodeURIComponent(url)}&w=${w <= 384 ? 384 : 640}&q=75`
+  } catch {
+    return url
+  }
+}
+
 function loadImageOnce(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image()
@@ -74,7 +85,7 @@ async function loadImage(url: string, retries = 2): Promise<HTMLImageElement> {
       return await loadImageOnce(url)
     } catch (e) {
       lastErr = e
-      if (i < retries) await new Promise((r) => setTimeout(r, 600 * (i + 1)))
+      if (i < retries) await new Promise((r) => setTimeout(r, 300 * (i + 1)))
     }
   }
   throw lastErr
@@ -147,7 +158,8 @@ async function renderCardToCanvas(card: Card, w: number, h: number): Promise<HTM
 
   // image
   try {
-    const img = await loadImage(card.imageUrl)
+    const proxied = toSameOriginUrl(card.imageUrl, w)
+    const img = await loadImage(proxied)
     drawImageCover(ctx, img, 0, 0, w, h)
   } catch {
     // fallback gradient
@@ -325,7 +337,7 @@ const CardPlane = React.memo(function CardPlane({
     groupRef.current.lookAt(camera.position)
     // fade-in when texture becomes ready (400ms)
     if (readyAtRef.current !== null && frontMatRef.current) {
-      const t = Math.min(1, (performance.now() - readyAtRef.current) / 400)
+      const t = Math.min(1, (performance.now() - readyAtRef.current) / 220)
       const eased = t * (2 - t) // easeOutQuad
       frontMatRef.current.opacity = eased
       if (haloMatRef.current) haloMatRef.current.opacity = 0.15 * eased
@@ -414,22 +426,6 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean; setSelec
   )
 }
 
-function Nebula() {
-  const meshRef = useRef<THREE.Mesh>(null)
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      ;(meshRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.18 + 0.05 * Math.sin(clock.elapsedTime * 0.3)
-    }
-  })
-  return (
-    <mesh ref={meshRef} position={[0, 0, -55]}>
-      <sphereGeometry args={[10, 24, 24]} />
-      <meshBasicMaterial color="#6d28d9" transparent depthWrite={false} />
-    </mesh>
-  )
-}
-
 function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCard: (card: Card) => void }) {
   const { camera, invalidate } = useThree()
   useEffect(() => {
@@ -444,8 +440,7 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
   return (
     <>
       <color attach="background" args={['#020202']} />
-      <Nebula />
-      <StaticStars count={isMobile ? 80 : 180} />
+      <StaticStars count={isMobile ? 260 : 500} />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
       <OrbitControls
         makeDefault
