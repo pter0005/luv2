@@ -2108,26 +2108,111 @@ const PlanStep = React.memo(() => {
 PlanStep.displayName = "PlanStep";
 
 // ─────────────────────────────────────────────
-// FIX #1: stepComponents array — ERA ESTE QUE FALTAVA, CAUSA DO CRASH TOTAL
-// Deve mapear exatamente os índices dos steps definidos em WizardInternal
-// índice 0→TitleStep, 1→MessageStep, ..., 10→PlanStep
-// índice 11 (payment) é tratado separadamente no WizardInternal
+// LIVE PRICE BAR — sticker shock prevention.
+// Reads plan + add-ons from form state reactively, re-renders only when totals change.
+// Placement: right under the progress bar in the wizard frame — sticky on mobile.
+// ─────────────────────────────────────────────
+const LivePriceBar = React.memo(() => {
+    const { watch } = useFormContext<PageData>();
+    const plan = watch('plan');
+    const qrCodeDesign = watch('qrCodeDesign');
+    const enableWordGame = watch('enableWordGame');
+    const wordGameQuestions = watch('wordGameQuestions');
+    const introType = watch('introType');
+    const audioUrl = watch('audioRecording.url');
+
+    const total = computeTotalBRL({
+        plan,
+        qrCodeDesign,
+        enableWordGame,
+        wordGameQuestions: Array.isArray(wordGameQuestions) ? wordGameQuestions : [],
+        introType,
+        audioRecording: audioUrl ? { url: audioUrl } : null,
+    });
+
+    const base = plan === 'avancado' ? PRICES.avancado : PRICES.basico;
+    const extras = Number((total - base).toFixed(2));
+
+    return (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-3 py-2 text-xs">
+            <div className="flex flex-col leading-tight">
+                <span className="text-white/60 text-[10px] uppercase tracking-wide">seu presente</span>
+                <span className="text-white font-semibold">
+                    R$ {total.toFixed(2).replace('.', ',')}
+                </span>
+            </div>
+            {extras > 0 ? (
+                <span className="text-[10px] text-purple-200/80 font-sans">
+                    R$ {base.toFixed(2).replace('.', ',')} + R$ {extras.toFixed(2).replace('.', ',')} em extras
+                </span>
+            ) : (
+                <span className="text-[10px] text-white/50 font-sans">pagamento só no final 💳</span>
+            )}
+        </div>
+    );
+});
+LivePriceBar.displayName = 'LivePriceBar';
+
+// ─────────────────────────────────────────────
+// INTERACTIVE EXTRAS — combines Puzzle + Memory + Quiz + Word + Voice in one screen.
+// Each sub-feature keeps its own self-contained component (zero logic rewrite);
+// we just stack them with visual section dividers + small hero header.
+// Rationale: removes 4 "Continuar" clicks from the funnel without touching the
+// internal state machine of each feature. Safe refactor.
+// ─────────────────────────────────────────────
+const InteractiveExtrasStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
+    return (
+        <div className="space-y-10">
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                <p className="text-sm text-purple-200/90 leading-relaxed">
+                    Escolhe quais surpresas você quer adicionar. Cada uma é <strong>opcional</strong> —
+                    liga só as que fazem sentido. Quanto mais você adiciona, mais mágico fica 💫
+                </p>
+            </div>
+
+            <section className="pb-10 border-b border-white/10">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🧩 Quebra-cabeça</h3>
+                <PuzzleStep handleAutosave={handleAutosave} />
+            </section>
+
+            <section className="pb-10 border-b border-white/10">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">💝 Jogo da memória</h3>
+                <MemoryGameStep />
+            </section>
+
+            <section className="pb-10 border-b border-white/10">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🧠 Quiz do casal</h3>
+                <QuizStep />
+            </section>
+
+            <section className="pb-10 border-b border-white/10">
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">💘 Adivinhe a palavra</h3>
+                <WordGameStep />
+            </section>
+
+            <section>
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🎤 Mensagem de voz</h3>
+                <VoiceMessageStep />
+            </section>
+        </div>
+    );
+});
+InteractiveExtrasStep.displayName = 'InteractiveExtrasStep';
+
+// ─────────────────────────────────────────────
+// stepComponents array — index-aligned with the `steps` array below.
 // ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,         // 0 - title
-    MessageStep,       // 1 - message
-    SpecialDateStep,   // 2 - specialDate
-    GalleryStep,       // 3 - gallery
-    TimelineStep,      // 4 - timeline
-    IntroStep,         // 5 - intro
-    MusicStep,         // 6 - music
-    BackgroundStep,    // 7 - background
-    PuzzleStep,        // 8 - puzzle
-    MemoryGameStep,    // 9 - memory
-    QuizStep,          // 10 - quiz
-    WordGameStep,      // 11 - word game
-    PlanStep,          // 12 - plan
-    VoiceMessageStep,  // 13 - voice
+    TitleStep,              // 0 - title
+    MessageStep,            // 1 - message
+    SpecialDateStep,        // 2 - specialDate
+    GalleryStep,            // 3 - gallery
+    TimelineStep,           // 4 - timeline
+    IntroStep,              // 5 - intro
+    MusicStep,              // 6 - music
+    BackgroundStep,         // 7 - background
+    InteractiveExtrasStep,  // 8 - extras-interactive (merges puzzle/memory/quiz/word/voice)
+    PlanStep,               // 9 - plan
 ];
 
 // ─────────────────────────────────────────────
@@ -3425,18 +3510,14 @@ function WizardInternal() {
         { id: "title",      title: segCfg.titleStepTitle,       description: segCfg.titleStepDescription,    fields: ["title", "titleColor"] },
         { id: "message",    title: segCfg.messageStepTitle,     description: segCfg.messageStepDescription,  fields: ["message", "messageFontSize", "messageFormatting"] },
         { id: "specialDate",title: segCfg.dateStepTitle,        description: segCfg.dateStepDescription,     fields: ["specialDate", "countdownStyle", "countdownColor"] },
-        { id: "gallery",    title: 'Galeria de Fotos',          description: segCfg.galleryStepDescription,  fields: ["galleryImages", "galleryStyle"] },
-        { id: "timeline",   title: 'Linha do Tempo 3D',         description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
-        { id: "intro",      title: 'Introdução do Site',        description: 'Adicione uma animação interativa antes da página abrir.',  fields: ["introType", "introGender", "introFont"] },
-        { id: "music",      title: 'Música Dedicada',           description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl"] },
-        { id: "background", title: 'Animação de Fundo',         description: 'Escolha um efeito especial para o fundo.',        fields: ["backgroundAnimation", "heartColor"] },
-        { id: "puzzle",     title: 'Quebra-Cabeça Interativo',  description: segCfg.puzzleStepDescription,   fields: ["enablePuzzle", "puzzleImage"] },
-        { id: "memory",     title: 'Jogo da Memória',           description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
-        { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
-        { id: "word-game",  title: 'Adivinhe a Palavra 💘',     description: 'Crie palavras secretas para a pessoa amada descobrir letra por letra.',  fields: ["enableWordGame", "wordGameQuestions"] },
-        { id: "plan",       title: 'Escolha seu Plano',         description: 'Selecione o plano ideal para sua página.',        fields: ["plan"] },
-        { id: "voice",      title: 'Mensagem de Voz',           description: 'Grave sua voz pra deixar a surpresa ainda mais especial.',  fields: ["audioRecording"] },
-        { id: "payment",    title: 'Finalizar',                 description: 'Pague para gerar o link e QR Code.',              fields: ["payment", "qrCodeDesign"] },
+        { id: "gallery",    title: 'As fotos de vocês 📸',      description: segCfg.galleryStepDescription,  fields: ["galleryImages", "galleryStyle"] },
+        { id: "timeline",   title: 'Momentos que marcaram ✨',  description: segCfg.timelineStepDescription, fields: ["timelineEvents"] },
+        { id: "intro",      title: 'Uma abertura especial 💫',  description: 'Uma animação antes da surpresa aparecer — pra deixar a entrada inesquecível.',  fields: ["introType", "introGender", "introFont"] },
+        { id: "music",      title: 'A trilha de vocês 🎵',      description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl"] },
+        { id: "background", title: 'Atmosfera da página 🌸',    description: 'O efeito que vai rolar no fundo — corações, estrelas, pétalas.', fields: ["backgroundAnimation", "heartColor"] },
+        { id: "extras-interactive", title: 'Surpresas interativas 🎁', description: 'Toques especiais que a pessoa vai descobrir — liga só os que você quer. Todos opcionais.', fields: ["enablePuzzle", "puzzleImage", "enableMemoryGame", "memoryGameImages", "enableQuiz", "quizQuestions", "enableWordGame", "wordGameQuestions", "audioRecording"] },
+        { id: "plan",       title: 'Seu plano',                 description: 'Escolhe o que faz mais sentido — dá pra trocar depois.', fields: ["plan"] },
+        { id: "payment",    title: 'Pronto pra enviar 💌',      description: 'Última etapa — seu link e QR Code já vão tá prontos em segundos.', fields: ["payment", "qrCodeDesign"] },
     // eslint-disable-line react-hooks/exhaustive-deps
     ], [segmentKey]);
 
@@ -3636,10 +3717,10 @@ function WizardInternal() {
     const handleNext = async () => {
         const currentStepId = steps[currentStep].id;
 
-        if (currentStepId === 'puzzle') {
+        if (currentStepId === 'extras-interactive') {
             const currentData = getValues();
             if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
-                toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
+                toast({ variant: "destructive", title: 'Imagem do quebra-cabeça', description: 'Pra ativar o quebra-cabeça, envia uma imagem — ou desliga essa surpresa.' });
                 return;
             }
         } else {
@@ -3746,7 +3827,7 @@ function WizardInternal() {
         const Comp = stepComponents[currentStep];
         if (Comp) {
             const props: any = { isVisible: currentStepId === 'background' };
-            if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
+            if (currentStepId === 'extras-interactive') props.handleAutosave = handleAutosave;
             if (currentStepId === 'title') props.titlePlaceholder = segCfg.titlePlaceholder;
             if (currentStepId === 'message') props.messagePlaceholder = segCfg.messagePlaceholder;
             StepComponent = <Comp {...props} />;
@@ -3755,7 +3836,7 @@ function WizardInternal() {
         }
     }
 
-    const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+    const showPuzzlePreview = currentStepId === 'extras-interactive' && formData.enablePuzzle && !!formData.puzzleImage?.url;
     const showEasterPreview = currentStepId === 'intro' && formData.introType === 'love';
     const showPoemaPreview = currentStepId === 'intro' && formData.introType === 'poema';
 
@@ -3781,6 +3862,7 @@ function WizardInternal() {
                         <div className="flex-grow flex flex-col items-center gap-2 mx-4">
                             <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
                             <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
+                            <div className="w-full"><LivePriceBar /></div>
                         </div>
                         <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}>
                             {steps[currentStep]?.id === 'plan' ? <><span className="mr-1 text-sm">Ir para pagamento</span><ChevronRightIcon className="w-4 h-4" /></> : <ChevronRightIcon />}

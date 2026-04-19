@@ -27,14 +27,14 @@ export interface WizardSegmentConfig {
 export const WIZARD_SEGMENTS: Record<WizardSegmentKey, WizardSegmentConfig> = {
 
   namorade: {
-    titleStepTitle: 'Título da página',
-    titleStepDescription: 'O nome que aparece no topo da surpresa. Ex: "Para o amor da minha vida" ou só o nome da pessoa.',
+    titleStepTitle: 'Como vai chamar essa surpresa? 💜',
+    titleStepDescription: 'É o nome que aparece no topo da página. Pode ser "Para o amor da minha vida" ou só o nome dele(a).',
     titlePlaceholder: 'Ex: Para o amor da minha vida 💜',
-    messageStepTitle: 'Sua declaração de amor',
-    messageStepDescription: 'Escreva tudo que você sente. Esse texto vai aparecer em destaque na página.',
+    messageStepTitle: 'O que você quer dizer pra ele(a)? 💌',
+    messageStepDescription: 'Escreve tudo que tá no teu coração. Esse texto vai ficar em destaque na página.',
     messagePlaceholder: 'Desde o dia que te conheci, cada momento ao seu lado é...',
-    dateStepTitle: 'Data de vocês',
-    dateStepDescription: 'Quando o relacionamento de vocês começou? Vamos criar um contador de dias juntos.',
+    dateStepTitle: 'Quando começou tudo? 💕',
+    dateStepDescription: 'A data que marca o início de vocês. A gente cria um contador pra mostrar cada dia juntos.',
     galleryStepDescription: 'As melhores fotos de vocês juntos — aquelas que contam a história.',
     timelineStepDescription: 'Os momentos mais marcantes do relacionamento, em ordem cronológica.',
     musicStepDescription: 'A música que é de vocês, ou uma mensagem de voz só pra essa pessoa.',
