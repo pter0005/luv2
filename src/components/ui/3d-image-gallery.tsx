@@ -228,7 +228,7 @@ const FloatingCard = React.memo(function FloatingCard({
         <div
           ref={cardRef}
           onClick={onClick}
-          className="relative rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.8)] border border-white/10 transition-transform duration-200 hover:scale-105"
+          className={`relative rounded-2xl overflow-hidden border border-white/10 transition-transform duration-200 ${isMobile ? '' : 'shadow-[0_25px_60px_rgba(0,0,0,0.8)] hover:scale-105'}`}
           style={{ width: `${cardW}px`, aspectRatio: '3/4' }}
         >
           <img
@@ -357,13 +357,13 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
       <OrbitControls
         makeDefault
-        enableDamping
+        enableDamping={!isMobile}
         dampingFactor={0.07}
         enablePan={false}
         minDistance={5}
         maxDistance={45}
-        autoRotate={!isMobile}
-        autoRotateSpeed={0.3}
+        autoRotate
+        autoRotateSpeed={isMobile ? 0.22 : 0.3}
       />
     </>
   )
@@ -413,8 +413,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
-          frameloop={isMobile ? "demand" : "always"}
-          dpr={isMobile ? [0.75, 1] : [1, 1.5]}
+          dpr={isMobile ? [0.6, 0.9] : [1, 1.5]}
           performance={{ min: 0.5 }}
           gl={{
             antialias: false,
