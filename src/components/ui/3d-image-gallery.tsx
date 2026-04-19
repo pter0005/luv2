@@ -207,9 +207,15 @@ const FloatingCard = React.memo(function FloatingCard({
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const cardRef  = useRef<HTMLDivElement>(null)
+  const frameSkip = useRef(0)
 
   useFrame(({ camera }) => {
     if (!groupRef.current) return;
+    // Mobile: billboard only every 3rd frame — cuts CSS matrix3d updates by 66%
+    if (isMobile) {
+      frameSkip.current = (frameSkip.current + 1) % 3
+      if (frameSkip.current !== 0) return
+    }
     groupRef.current.lookAt(camera.position);
   })
 
@@ -333,24 +339,32 @@ function Nebula() {
 }
 
 function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCard: (card: Card) => void }) {
-  const { camera } = useThree()
+  const { camera, invalidate } = useThree()
   useEffect(() => {
     camera.position.set(0, 0, isMobile ? 22 : 32)
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = isMobile ? 75 : 55
       camera.updateProjectionMatrix()
     }
-  }, [isMobile, camera])
+    invalidate() // force a frame after camera setup (needed for frameloop="demand")
+  }, [isMobile, camera, invalidate])
 
   return (
     <>
       <color attach="background" args={['#020202']} />
-      <Nebula />
-      <StaticStars count={isMobile ? 40 : 180} />
-      <ambientLight intensity={1.5} />
-      <pointLight position={[15, 15, 15]} intensity={1} color="#7000ff" />
+      {!isMobile && <Nebula />}
+      {!isMobile && <StaticStars count={180} />}
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
-      <OrbitControls makeDefault enableDamping dampingFactor={0.07} enablePan={false} minDistance={5} maxDistance={45} autoRotate autoRotateSpeed={0.3} />
+      <OrbitControls
+        makeDefault
+        enableDamping
+        dampingFactor={0.07}
+        enablePan={false}
+        minDistance={5}
+        maxDistance={45}
+        autoRotate={!isMobile}
+        autoRotateSpeed={0.3}
+      />
     </>
   )
 }
@@ -399,6 +413,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
+          frameloop={isMobile ? "demand" : "always"}
           dpr={isMobile ? [0.75, 1] : [1, 1.5]}
           performance={{ min: 0.5 }}
           gl={{
