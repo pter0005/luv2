@@ -400,7 +400,7 @@ const CardPlane = React.memo(function CardPlane({
   return (
     <group ref={groupRef} position={[position.x, position.y, position.z]}>
       {/* soft purple glow behind — smoke/aura feel */}
-      <mesh position={[0, 0, -0.05]} scale={[cardW * 2.2, cardH * 1.9, 1]}>
+      <mesh position={[0, 0, -0.05]} scale={[cardW * (isMobile ? 1.7 : 2.2), cardH * (isMobile ? 1.55 : 1.9), 1]}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial
           ref={haloMatRef}
@@ -508,12 +508,12 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
       <OrbitControls
         makeDefault
         enableDamping
-        dampingFactor={0.07}
+        dampingFactor={0.05}
         enablePan={false}
         minDistance={5}
         maxDistance={45}
         autoRotate
-        autoRotateSpeed={isMobile ? 0.25 : 0.3}
+        autoRotateSpeed={isMobile ? 0.15 : 0.3}
       />
     </>
   )
@@ -564,7 +564,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
           dpr={isMobile ? [1, 1] : [1, 2]}
           performance={{ min: 0.5 }}
           gl={{
-            antialias: true,
+            antialias: !isMobile,
             powerPreference: 'high-performance',
             stencil: false,
             depth: true,
