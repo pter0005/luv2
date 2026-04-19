@@ -226,6 +226,28 @@ async function renderCardToCanvas(card: Card, w: number, h: number): Promise<HTM
   return canvas
 }
 
+let _starTexture: THREE.CanvasTexture | null = null
+function getStarTexture(): THREE.CanvasTexture {
+  if (_starTexture) return _starTexture
+  const size = 64
+  const c = document.createElement('canvas')
+  c.width = size; c.height = size
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.2, 'rgba(255,255,255,0.85)')
+  g.addColorStop(0.5, 'rgba(200,200,255,0.25)')
+  g.addColorStop(1, 'rgba(150,150,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, size, size)
+  _starTexture = new THREE.CanvasTexture(c)
+  _starTexture.colorSpace = THREE.SRGBColorSpace
+  _starTexture.minFilter = THREE.LinearFilter
+  _starTexture.magFilter = THREE.LinearFilter
+  _starTexture.generateMipmaps = false
+  return _starTexture
+}
+
 let _glowTexture: THREE.CanvasTexture | null = null
 function getGlowTexture(): THREE.CanvasTexture {
   if (_glowTexture) return _glowTexture
@@ -341,6 +363,7 @@ const CardPlane = React.memo(function CardPlane({
   const frontMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const readyAtRef = useRef<number | null>(null)
+  const fadeDoneRef = useRef(false)
   const texW = isMobile ? 256 : 384
   const texH = Math.round(texW * 4 / 3)
   const texture = useCardTexture(card, texW, texH)
@@ -356,15 +379,16 @@ const CardPlane = React.memo(function CardPlane({
 
   useFrame(({ camera }) => {
     if (!groupRef.current) return
-    groupRef.current.lookAt(camera.position)
-    // fade-in when texture becomes ready (400ms)
-    if (readyAtRef.current !== null && frontMatRef.current) {
+    // Billboard: copy camera rotation directly (≈10x cheaper than lookAt).
+    // Works because OrbitControls always points camera at origin; visually identical.
+    groupRef.current.quaternion.copy(camera.quaternion)
+    // fade-in when texture becomes ready — stops running once fade is complete
+    if (!fadeDoneRef.current && readyAtRef.current !== null && frontMatRef.current) {
       const t = Math.min(1, (performance.now() - readyAtRef.current) / 220)
-      const eased = t * (2 - t) // easeOutQuad
+      const eased = t * (2 - t)
       frontMatRef.current.opacity = eased
       if (haloMatRef.current) haloMatRef.current.opacity = 0.9 * eased
-    } else if (haloMatRef.current) {
-      haloMatRef.current.opacity = 0
+      if (t >= 1) fadeDoneRef.current = true
     }
   })
 
@@ -400,7 +424,7 @@ const CardPlane = React.memo(function CardPlane({
 })
 CardPlane.displayName = 'CardPlane'
 
-function StaticStars({ count = 180 }: { count?: number }) {
+function StaticStars({ count = 180, size = 0.6 }: { count?: number; size?: number }) {
   const attr = useMemo(() => {
     const positions = new Float32Array(count * 3)
     const radius = 80
@@ -421,7 +445,16 @@ function StaticStars({ count = 180 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" {...attr} />
       </bufferGeometry>
-      <pointsMaterial size={0.2} color="white" transparent opacity={0.5} sizeAttenuation />
+      <pointsMaterial
+        size={size}
+        map={getStarTexture()}
+        transparent
+        opacity={0.9}
+        depthWrite={false}
+        sizeAttenuation
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
+      />
     </points>
   )
 }
@@ -470,7 +503,7 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
   return (
     <>
       <color attach="background" args={['#020202']} />
-      <StaticStars count={isMobile ? 260 : 500} />
+      <StaticStars count={isMobile ? 220 : 500} size={isMobile ? 0.9 : 0.6} />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
       <OrbitControls
         makeDefault
@@ -528,7 +561,7 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
-          dpr={isMobile ? [1, 1.5] : [1, 2]}
+          dpr={isMobile ? [1, 1] : [1, 2]}
           performance={{ min: 0.5 }}
           gl={{
             antialias: true,
