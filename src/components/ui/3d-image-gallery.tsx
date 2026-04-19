@@ -2,9 +2,9 @@
 
 import React, { Suspense, useEffect, useMemo, useRef, useState, createContext, useContext, useCallback } from "react"
 import * as THREE from "three"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, Html } from "@react-three/drei"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber"
+import { OrbitControls } from "@react-three/drei"
+import { X } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { motion, AnimatePresence } from "framer-motion"
@@ -54,11 +54,198 @@ function useIsMobile() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   FULL SCREEN CARD VIEW (shared desktop + mobile)
+   CANVAS-TO-TEXTURE HELPERS
+───────────────────────────────────────────────────────────────────────────── */
+function loadImageOnce(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.decoding = 'async'
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+async function loadImage(url: string, retries = 2): Promise<HTMLImageElement> {
+  let lastErr: unknown
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await loadImageOnce(url)
+    } catch (e) {
+      lastErr = e
+      if (i < retries) await new Promise((r) => setTimeout(r, 600 * (i + 1)))
+    }
+  }
+  throw lastErr
+}
+
+function drawImageCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, dx: number, dy: number, dw: number, dh: number) {
+  const ir = img.naturalWidth / img.naturalHeight
+  const dr = dw / dh
+  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+  if (ir > dr) {
+    sw = img.naturalHeight * dr
+    sx = (img.naturalWidth - sw) / 2
+  } else {
+    sh = img.naturalWidth / dr
+    sy = (img.naturalHeight - sh) / 2
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(/\s+/)
+  const lines: string[] = []
+  let current = ''
+  for (const w of words) {
+    const test = current ? current + ' ' + w : w
+    if (ctx.measureText(test).width <= maxWidth) {
+      current = test
+    } else {
+      if (current) lines.push(current)
+      current = w
+      if (lines.length >= maxLines) break
+    }
+  }
+  if (current && lines.length < maxLines) lines.push(current)
+  if (lines.length === maxLines) {
+    let last = lines[maxLines - 1]
+    while (ctx.measureText(last + '…').width > maxWidth && last.length > 0) last = last.slice(0, -1)
+    if (words.join(' ').length > lines.join(' ').length) last = last.replace(/\s+\S*$/, '') + '…'
+    lines[maxLines - 1] = last
+  }
+  return lines
+}
+
+async function renderCardToCanvas(card: Card, w: number, h: number): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  const radius = Math.round(w * 0.07)
+
+  // rounded clip
+  ctx.save()
+  ctx.beginPath()
+  // @ts-ignore roundRect is available in modern browsers
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(0, 0, w, h, radius)
+  } else {
+    ctx.moveTo(radius, 0)
+    ctx.arcTo(w, 0, w, h, radius)
+    ctx.arcTo(w, h, 0, h, radius)
+    ctx.arcTo(0, h, 0, 0, radius)
+    ctx.arcTo(0, 0, w, 0, radius)
+  }
+  ctx.closePath()
+  ctx.clip()
+
+  // background fallback
+  ctx.fillStyle = '#1a0828'
+  ctx.fillRect(0, 0, w, h)
+
+  // image
+  try {
+    const img = await loadImage(card.imageUrl)
+    drawImageCover(ctx, img, 0, 0, w, h)
+  } catch {
+    // fallback gradient
+    const g = ctx.createLinearGradient(0, 0, 0, h)
+    g.addColorStop(0, '#2d1253')
+    g.addColorStop(1, '#0f0520')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, w, h)
+  }
+
+  // bottom gradient overlay
+  const gradStart = h * 0.3
+  const grad = ctx.createLinearGradient(0, gradStart, 0, h)
+  grad.addColorStop(0, 'rgba(0,0,0,0)')
+  grad.addColorStop(0.55, 'rgba(0,0,0,0.6)')
+  grad.addColorStop(1, 'rgba(0,0,0,0.92)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, gradStart, w, h - gradStart)
+
+  // title
+  const pad = Math.round(w * 0.075)
+  const titleSize = Math.round(w * 0.1)
+  const lineH = Math.round(titleSize * 1.1)
+  ctx.font = `bold ${titleSize}px -apple-system, "Segoe UI", Roboto, sans-serif`
+  ctx.fillStyle = '#ffffff'
+  ctx.textBaseline = 'alphabetic'
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'
+  ctx.shadowBlur = 6
+  const titleText = card.title.length > 80 ? card.title.slice(0, 80) + '…' : card.title
+  const lines = wrapText(ctx, titleText, w - pad * 2, 2)
+
+  const dateObj = parseDateObj(card.date)
+  const dateSize = Math.round(w * 0.055)
+  const dateGap = dateObj ? Math.round(dateSize * 1.6) : 0
+
+  const totalTextH = lines.length * lineH + dateGap
+  let y = h - pad - totalTextH + lineH * 0.85
+  for (const line of lines) {
+    ctx.fillText(line, pad, y)
+    y += lineH
+  }
+
+  // date
+  if (dateObj) {
+    ctx.shadowBlur = 4
+    ctx.fillStyle = '#c084fc'
+    ctx.font = `600 ${dateSize}px -apple-system, "Segoe UI", Roboto, sans-serif`
+    const dateText = format(dateObj, "dd MMM yyyy", { locale: DATE_LOCALE })
+    ctx.fillText(dateText, pad, h - pad)
+  }
+
+  // border
+  ctx.shadowBlur = 0
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+  ctx.lineWidth = 2
+  // @ts-ignore
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath()
+    ctx.roundRect(1, 1, w - 2, h - 2, radius - 1)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+  return canvas
+}
+
+function useCardTexture(card: Card, w: number, h: number): THREE.Texture | null {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let tex: THREE.CanvasTexture | null = null
+
+    renderCardToCanvas(card, w, h).then((canvas) => {
+      if (cancelled) return
+      tex = new THREE.CanvasTexture(canvas)
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.minFilter = THREE.LinearFilter
+      tex.magFilter = THREE.LinearFilter
+      tex.generateMipmaps = false
+      tex.anisotropy = 2
+      setTexture(tex)
+    }).catch(() => { /* swallow */ })
+
+    return () => {
+      cancelled = true
+      if (tex) tex.dispose()
+    }
+  }, [card.id, card.imageUrl, card.title, w, h])
+
+  return texture
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FULL SCREEN CARD VIEW
 ───────────────────────────────────────────────────────────────────────────── */
 function FullScreenCardView({ card, onClose }: { card: Card; onClose: () => void }) {
   const dateObj = useMemo(() => parseDateObj(card.date), [card.date])
-
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
@@ -103,98 +290,9 @@ function FullScreenCardView({ card, onClose }: { card: Card; onClose: () => void
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   MOBILE TIMELINE — grade 2D simples, sem WebGL
-   Substitui a galáxia 3D no mobile para eliminar lag e tela em branco.
+   3D — textured plane card (WebGL, no DOM)
 ───────────────────────────────────────────────────────────────────────────── */
-function MobileTimeline({ events, onClose }: { events: Card[]; onClose: () => void }) {
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
-
-  if (!mounted) return null
-
-  return createPortal(
-    <motion.div
-      className="fixed inset-0 z-[99999] bg-[#020202] flex flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 bg-gradient-to-b from-black/90 to-transparent shrink-0">
-        <div className="text-white pl-1">
-          <h1 className="text-lg font-bold drop-shadow-xl tracking-wide">Nossa Linha do Tempo</h1>
-          <p className="text-[10px] text-white/70">Toque para ver detalhes</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="bg-white/10 active:bg-white/25 backdrop-blur-md text-white rounded-full p-3 shadow-lg active:scale-90 transition-all touch-manipulation border border-white/10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Grid */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-3 pb-8">
-        <div className="grid grid-cols-2 gap-2.5">
-          {events.map((card, i) => {
-            const dateObj = parseDateObj(card.date)
-            return (
-              <motion.button
-                key={card.id}
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: Math.min(i * 0.055, 0.6), duration: 0.35, ease: [0.22,1,0.36,1] }}
-                onClick={() => setSelectedCard(card)}
-                className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/[0.08] active:scale-95 transition-transform duration-150 touch-manipulation"
-                style={{ aspectRatio: '3/4', background: '#111' }}
-              >
-                <img
-                  src={card.imageUrl}
-                  alt={card.alt}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-                {/* gradient overlay */}
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 40%, transparent 70%)' }} />
-                {/* heart shimmer top-right */}
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-[10px]">✦</div>
-                <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                  <p className="text-white font-semibold text-[11px] leading-snug line-clamp-2 drop-shadow-md">
-                    {card.title}
-                  </p>
-                  {dateObj && (
-                    <p className="text-purple-300 font-medium text-[9px] tracking-wider mt-0.5 uppercase">
-                      {format(dateObj, "dd MMM yyyy", { locale: DATE_LOCALE })}
-                    </p>
-                  )}
-                </div>
-              </motion.button>
-            )
-          })}
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {selectedCard && (
-          <FullScreenCardView card={selectedCard} onClose={() => setSelectedCard(null)} />
-        )}
-      </AnimatePresence>
-    </motion.div>,
-    document.body
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   3D DESKTOP — galáxia WebGL (mantida para desktop)
-───────────────────────────────────────────────────────────────────────────── */
-const FloatingCard = React.memo(function FloatingCard({
+const CardPlane = React.memo(function CardPlane({
   card,
   position,
   isMobile,
@@ -206,72 +304,67 @@ const FloatingCard = React.memo(function FloatingCard({
   onClick: () => void
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const cardRef  = useRef<HTMLDivElement>(null)
-  const frameSkip = useRef(0)
+  const frontMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const readyAtRef = useRef<number | null>(null)
+  const texW = isMobile ? 256 : 384
+  const texH = Math.round(texW * 4 / 3)
+  const texture = useCardTexture(card, texW, texH)
+
+  const cardH = isMobile ? 2.8 : 3.6
+  const cardW = cardH * 0.75
+
+  useEffect(() => {
+    if (texture && readyAtRef.current === null) {
+      readyAtRef.current = performance.now()
+    }
+  }, [texture])
 
   useFrame(({ camera }) => {
-    if (!groupRef.current) return;
-    // Mobile: billboard only every 3rd frame — cuts CSS matrix3d updates by 66%
-    if (isMobile) {
-      frameSkip.current = (frameSkip.current + 1) % 3
-      if (frameSkip.current !== 0) return
+    if (!groupRef.current) return
+    groupRef.current.lookAt(camera.position)
+    // fade-in when texture becomes ready (400ms)
+    if (readyAtRef.current !== null && frontMatRef.current) {
+      const t = Math.min(1, (performance.now() - readyAtRef.current) / 400)
+      const eased = t * (2 - t) // easeOutQuad
+      frontMatRef.current.opacity = eased
+      if (haloMatRef.current) haloMatRef.current.opacity = 0.15 * eased
+    } else if (haloMatRef.current) {
+      haloMatRef.current.opacity = 0
     }
-    groupRef.current.lookAt(camera.position);
   })
 
-  const dateObj = useMemo(() => parseDateObj(card.date), [card.date])
-  const cardW   = isMobile ? 140 : 220
+  const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation()
+    onClick()
+  }, [onClick])
 
   return (
-    <group ref={groupRef} position={[position.x, position.y, position.z]} scale={isMobile ? 1.125 : 1.44}>
-      <Html transform distanceFactor={8} zIndexRange={[16777271, 0]} style={{ pointerEvents: 'auto', cursor: 'pointer' }}>
-        <div
-          ref={cardRef}
-          onClick={onClick}
-          className={`relative rounded-2xl overflow-hidden border border-white/10 transition-transform duration-200 ${isMobile ? '' : 'shadow-[0_25px_60px_rgba(0,0,0,0.8)] hover:scale-105'}`}
-          style={{ width: `${cardW}px`, aspectRatio: '3/4' }}
-        >
-          <img
-            src={card.imageUrl}
-            alt={card.alt}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              const img = e.currentTarget
-              if (!img.dataset.retried) {
-                img.dataset.retried = '1'
-                setTimeout(() => { img.src = card.imageUrl }, 2000)
-              }
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex flex-col justify-end p-4">
-            <p className="text-white font-bold text-lg leading-tight drop-shadow-lg" style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              {card.title.length > 55 ? card.title.slice(0, 55) + '…' : card.title}
-            </p>
-            {card.title.length > 55 && (
-              <p className="text-white/40 text-[9px] mt-0.5">toque para ver tudo</p>
-            )}
-            {dateObj && (
-              <p className="text-purple-400 font-semibold text-xs tracking-wide mt-1">
-                {format(dateObj, "dd MMM yyyy", { locale: DATE_LOCALE })}
-              </p>
-            )}
-          </div>
-        </div>
-      </Html>
+    <group ref={groupRef} position={[position.x, position.y, position.z]}>
+      {/* subtle purple halo behind */}
+      <mesh position={[0, 0, -0.02]} scale={[cardW * 1.15, cardH * 1.15, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial ref={haloMatRef} color="#6d28d9" transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {/* card */}
+      {texture && (
+        <mesh onClick={handleClick}>
+          <planeGeometry args={[cardW, cardH]} />
+          <meshBasicMaterial ref={frontMatRef} map={texture} transparent opacity={0} toneMapped={false} />
+        </mesh>
+      )}
     </group>
   )
 })
-FloatingCard.displayName = 'FloatingCard'
+CardPlane.displayName = 'CardPlane'
 
-function StaticStars({ count = 500 }: { count?: number }) {
+function StaticStars({ count = 180 }: { count?: number }) {
   const attr = useMemo(() => {
     const positions = new Float32Array(count * 3)
-    const radius    = 80
+    const radius = 80
     for (let i = 0; i < count; i++) {
       const theta = 2 * Math.PI * Math.random()
-      const phi   = Math.acos(2 * Math.random() - 1)
+      const phi = Math.acos(2 * Math.random() - 1)
       positions.set([
         radius * Math.sin(phi) * Math.cos(theta),
         radius * Math.sin(phi) * Math.sin(theta),
@@ -298,13 +391,13 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean; setSelec
     const n = cards.length
     if (n === 0) return []
     if (n === 1) return [{ x: 0, y: 0, z: 0 }]
-    const phi        = Math.PI * (3 - Math.sqrt(5))
+    const phi = Math.PI * (3 - Math.sqrt(5))
     const baseRadius = isMobile ? 6.7 : 11.2
-    const radius     = baseRadius + Math.sqrt(n) * 0.5
-    const yFactor    = isMobile ? 1.6 : 1.2
+    const radius = baseRadius + Math.sqrt(n) * 0.5
+    const yFactor = isMobile ? 1.6 : 1.2
     return Array.from({ length: n }, (_, i) => {
-      const y     = 1 - (i / (n - 1)) * 2
-      const r     = Math.sqrt(1 - y * y)
+      const y = 1 - (i / (n - 1)) * 2
+      const r = Math.sqrt(1 - y * y)
       const theta = phi * i
       return { x: Math.cos(theta) * r * radius, y: y * radius * yFactor, z: Math.sin(theta) * r * radius }
     })
@@ -314,7 +407,7 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean; setSelec
     <group>
       {cards.map((card, i) =>
         cardPositions[i] ? (
-          <FloatingCard key={card.id} card={card} position={cardPositions[i]} isMobile={isMobile} onClick={() => setSelectedCard(card)} />
+          <CardPlane key={card.id} card={card} position={cardPositions[i]} isMobile={isMobile} onClick={() => setSelectedCard(card)} />
         ) : null
       )}
     </group>
@@ -329,7 +422,6 @@ function Nebula() {
         0.18 + 0.05 * Math.sin(clock.elapsedTime * 0.3)
     }
   })
-  // Sphere placed far behind the cards so it reads as a distant purple glow in the scenery
   return (
     <mesh ref={meshRef} position={[0, 0, -55]}>
       <sphereGeometry args={[10, 24, 24]} />
@@ -346,24 +438,24 @@ function Scene({ isMobile, setSelectedCard }: { isMobile: boolean; setSelectedCa
       camera.fov = isMobile ? 75 : 55
       camera.updateProjectionMatrix()
     }
-    invalidate() // force a frame after camera setup (needed for frameloop="demand")
+    invalidate()
   }, [isMobile, camera, invalidate])
 
   return (
     <>
       <color attach="background" args={['#020202']} />
-      {!isMobile && <Nebula />}
-      {!isMobile && <StaticStars count={180} />}
+      <Nebula />
+      <StaticStars count={isMobile ? 80 : 180} />
       <CardGalaxy isMobile={isMobile} setSelectedCard={setSelectedCard} />
       <OrbitControls
         makeDefault
-        enableDamping={!isMobile}
+        enableDamping
         dampingFactor={0.07}
         enablePan={false}
         minDistance={5}
         maxDistance={45}
         autoRotate
-        autoRotateSpeed={isMobile ? 0.22 : 0.3}
+        autoRotateSpeed={isMobile ? 0.25 : 0.3}
       />
     </>
   )
@@ -388,10 +480,9 @@ const TimelineUI = ({ onClose }: { onClose: () => void }) => (
    MAIN WRAPPER
 ───────────────────────────────────────────────────────────────────────────── */
 export default function StellarCardGallerySingle({ events, onClose }: { events: Card[]; onClose: () => void }) {
-  const isMobile                          = useIsMobile()
-  const [mounted, setMounted]             = useState(false)
-  const [selectedCard, setSelectedCard]   = useState<Card | null>(null)
-  const [webglFailed, setWebglFailed]     = useState(false)
+  const isMobile = useIsMobile()
+  const [mounted, setMounted] = useState(false)
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null)
 
   const handleSelectCard = useCallback((card: Card) => setSelectedCard(card), [])
 
@@ -403,7 +494,6 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
 
   if (!mounted || events.length === 0) return null
 
-  // Same 3D galaxy on mobile + desktop; Scene adapts via isMobile
   return createPortal(
     <motion.div
       className="fixed inset-0 z-[99999] bg-[#020202]"
@@ -413,15 +503,14 @@ export default function StellarCardGallerySingle({ events, onClose }: { events: 
     >
       <CardProvider events={events}>
         <Canvas
-          dpr={isMobile ? [0.6, 0.9] : [1, 1.5]}
+          dpr={isMobile ? [1, 1.5] : [1, 2]}
           performance={{ min: 0.5 }}
           gl={{
-            antialias: false,
+            antialias: true,
             powerPreference: 'high-performance',
             stencil: false,
             depth: true,
           }}
-          onCreated={() => setWebglFailed(false)}
         >
           <Suspense fallback={null}>
             <Scene isMobile={isMobile} setSelectedCard={handleSelectCard} />
