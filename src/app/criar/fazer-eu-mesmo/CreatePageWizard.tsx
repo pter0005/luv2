@@ -2108,52 +2108,6 @@ const PlanStep = React.memo(() => {
 PlanStep.displayName = "PlanStep";
 
 // ─────────────────────────────────────────────
-// LIVE PRICE BAR — sticker shock prevention.
-// Reads plan + add-ons from form state reactively, re-renders only when totals change.
-// Placement: right under the progress bar in the wizard frame — sticky on mobile.
-// ─────────────────────────────────────────────
-const LivePriceBar = React.memo(() => {
-    const { watch } = useFormContext<PageData>();
-    const plan = watch('plan');
-    const qrCodeDesign = watch('qrCodeDesign');
-    const enableWordGame = watch('enableWordGame');
-    const wordGameQuestions = watch('wordGameQuestions');
-    const introType = watch('introType');
-    const audioUrl = watch('audioRecording.url');
-
-    const total = computeTotalBRL({
-        plan,
-        qrCodeDesign,
-        enableWordGame,
-        wordGameQuestions: Array.isArray(wordGameQuestions) ? wordGameQuestions : [],
-        introType,
-        audioRecording: audioUrl ? { url: audioUrl } : null,
-    });
-
-    const base = plan === 'avancado' ? PRICES.avancado : PRICES.basico;
-    const extras = Number((total - base).toFixed(2));
-
-    return (
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-3 py-2 text-xs">
-            <div className="flex flex-col leading-tight">
-                <span className="text-white/60 text-[10px] uppercase tracking-wide">seu presente</span>
-                <span className="text-white font-semibold">
-                    R$ {total.toFixed(2).replace('.', ',')}
-                </span>
-            </div>
-            {extras > 0 ? (
-                <span className="text-[10px] text-purple-200/80 font-sans">
-                    R$ {base.toFixed(2).replace('.', ',')} + R$ {extras.toFixed(2).replace('.', ',')} em extras
-                </span>
-            ) : (
-                <span className="text-[10px] text-white/50 font-sans">pagamento só no final 💳</span>
-            )}
-        </div>
-    );
-});
-LivePriceBar.displayName = 'LivePriceBar';
-
-// ─────────────────────────────────────────────
 // stepComponents array — index-aligned com o array `steps` abaixo.
 // ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
@@ -3824,7 +3778,6 @@ function WizardInternal() {
                         <div className="flex-grow flex flex-col items-center gap-2 mx-4">
                             <span className="text-xs text-muted-foreground font-sans">Passo {currentStep + 1} de {steps.length}</span>
                             <Progress value={((currentStep + 1) / steps.length) * 100} className="w-full" />
-                            <div className="w-full"><LivePriceBar /></div>
                         </div>
                         <Button type="button" onClick={handleNext} disabled={currentStep === steps.length - 1}>
                             {steps[currentStep]?.id === 'plan' ? <><span className="mr-1 text-sm">Ir para pagamento</span><ChevronRightIcon className="w-4 h-4" /></> : <ChevronRightIcon />}
