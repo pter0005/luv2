@@ -244,8 +244,8 @@ function Inner() {
         </div>
 
         {/* Layout: mobile single, desktop split */}
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10 lg:max-w-6xl lg:mx-auto lg:px-6">
-          <div className="max-w-md mx-auto w-full px-4 pt-8 pb-36 lg:mx-0 lg:px-0 lg:pt-14 lg:pb-28">
+        <div className="lg:grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:gap-16 lg:max-w-[1200px] lg:mx-auto lg:px-8">
+          <div className="max-w-md mx-auto w-full px-4 pt-8 pb-36 lg:mx-0 lg:max-w-none lg:px-0 lg:pt-16 lg:pb-28">
             {/* Cupido + balão */}
             <motion.div
               key={`cupid-${currentStep}`}
@@ -302,7 +302,7 @@ function Inner() {
               type="button"
               size="lg"
               onClick={handleBack}
-              className="flex-1 h-12 bg-white/[0.04] hover:bg-white/[0.08] text-white/80 ring-1 ring-white/10 backdrop-blur border-0 font-medium"
+              className="flex-1 h-12 bg-transparent hover:bg-white/[0.06] text-white/70 hover:text-white/90 ring-1 ring-white/10 border-0 font-medium transition"
             >
               Voltar
             </Button>
@@ -312,11 +312,9 @@ function Inner() {
               onClick={handleNext}
               disabled={isLast}
               className={cn(
-                'flex-[2] h-12 font-semibold text-white transition active:scale-[0.98] border-0',
-                'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500',
-                'shadow-[0_10px_36px_-10px_rgba(236,72,153,0.6)]',
-                'hover:shadow-[0_14px_42px_-10px_rgba(236,72,153,0.75)]',
-                isLast && 'opacity-60'
+                'flex-[2] h-12 font-semibold text-black transition active:scale-[0.98] border-0',
+                'bg-white hover:bg-white/90',
+                isLast && 'opacity-40 cursor-not-allowed'
               )}
             >
               {isLast ? 'Último passo' : 'Continuar'}

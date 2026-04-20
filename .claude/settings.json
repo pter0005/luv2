@@ -22,7 +22,8 @@
       "Bash(nix-shell -p ffmpeg --run 'ffprobe -v error -show_entries stream=pix_fmt -of default=noprint_wrappers=1 /home/user/studio/public/chat-assets/cupid-idle.webm && echo \"---\" && ffprobe -v error -show_entries stream=pix_fmt -of default=noprint_wrappers=1 /home/user/studio/public/chat-assets/cupid-asking.webm')",
       "Bash(nix-shell -p ffmpeg --run 'ffmpeg -y -i /home/user/studio/public/chat-assets/cupid-idle.mp4 -vf \"colorkey=0x000000:0.12:0.08,format=yuva420p,scale=400:400\" -c:v libvpx-vp9 -pix_fmt yuva420p -auto-alt-ref 0 -metadata:s:v:0 alpha_mode=1 -b:v 0 -crf 40 -an /tmp/test-alpha.webm 2>&1 | tail -2 && ffprobe -v error -show_entries stream=pix_fmt -of default=noprint_wrappers=1 /tmp/test-alpha.webm')",
       "Bash(nix-shell -p ffmpeg --run 'ffprobe -v error -show_streams /tmp/test-alpha.webm 2>&1 | grep -E \"codec_name|pix_fmt|side_data|alpha\" | head -20')",
-      "Bash(nix-shell -p ffmpeg --run 'ffmpeg -y -i /home/user/studio/public/chat-assets/cupid-idle.mp4 -vf \"colorkey=0x000000:0.12:0.08,format=yuva420p,scale=400:400\" -c:v libvpx -pix_fmt yuva420p -b:v 600k -metadata:s:v:0 alpha_mode=1 -an /tmp/test-vp8.webm 2>&1 | tail -2 && ffprobe -v error -show_entries stream=pix_fmt,codec_name -of default=noprint_wrappers=1 /tmp/test-vp8.webm && ls -la /tmp/test-vp8.webm')"
+      "Bash(nix-shell -p ffmpeg --run 'ffmpeg -y -i /home/user/studio/public/chat-assets/cupid-idle.mp4 -vf \"colorkey=0x000000:0.12:0.08,format=yuva420p,scale=400:400\" -c:v libvpx -pix_fmt yuva420p -b:v 600k -metadata:s:v:0 alpha_mode=1 -an /tmp/test-vp8.webm 2>&1 | tail -2 && ffprobe -v error -show_entries stream=pix_fmt,codec_name -of default=noprint_wrappers=1 /tmp/test-vp8.webm && ls -la /tmp/test-vp8.webm')",
+      "Bash(echo \"exit=$?\")"
     ]
   }
 }

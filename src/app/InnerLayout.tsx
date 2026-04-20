@@ -31,23 +31,25 @@ export default function InnerLayout({ children }: { children: React.ReactNode })
   useVisitorTracking(user?.email);
   const isLovePage = pathname.startsWith('/p/');
   const isAdminPage = pathname.startsWith('/admin');
+  const isChatPage = pathname.startsWith('/chat');
 
-  const showAppHeader = !isLovePage && !isAdminPage;
+  const showAppHeader = !isLovePage && !isAdminPage && !isChatPage;
+  const showFooter = !isLovePage && !isChatPage;
 
   return (
     <div className="relative w-full min-h-screen">
       <PresenceTracker userEmail={user?.email} />
-      <MemoizedBackground />
-      
+      {!isChatPage && <MemoizedBackground />}
+
       <div className="relative z-10 flex flex-col min-h-screen">
         <div className="sticky top-0 z-50">
             {showAppHeader && <DiscountBanner />}
             {showAppHeader && <Header />}
         </div>
         <main className={cn("flex-grow")}>{children}</main>
-        <Footer />
+        {showFooter && <Footer />}
       </div>
-      <CreditPopup />
+      {!isChatPage && <CreditPopup />}
       {showAppHeader && <ExitIntentPopup />}
       {showAppHeader && <PushNotificationPrompt />}
     </div>
