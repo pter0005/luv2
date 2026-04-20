@@ -6,7 +6,7 @@ import { jwtVerify } from 'jose';
 // Rotas que precisam de login
 const protectedRoutes = ['/minhas-paginas'];
 // Rotas de admin
-const adminRoutes = ['/admin'];
+const adminRoutes = ['/admin', '/chat'];
 // Rotas que usuário logado não deve acessar
 const authRoutes = ['/login'];
 
