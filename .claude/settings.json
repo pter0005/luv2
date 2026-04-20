@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git reset *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(command -v nix-shell nix apt npm bunx)",
+      "Read(//etc/**)",
+      "Bash(nix-shell -p ffmpeg --run \"ffmpeg -version 2>&1 | head -2\")",
+      "Bash(nix-shell -p ffmpeg --run \"ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,duration,bit_rate -show_entries format=duration,size,bit_rate -of default=noprint_wrappers=0 '0420.mov' 2>&1; echo '===SECOND==='; ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,duration,bit_rate -show_entries format=duration,size,bit_rate -of default=noprint_wrappers=0 '0420\\(1\\).mov' 2>&1\")",
+      "Bash(nix-shell -p ffmpeg --run \"ffmpeg -y -i '0420.mov' -vf 'crop=ih:ih,scale=540:540,fps=30' -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -movflags +faststart -an cupid-idle.mp4 2>&1 | tail -8\")",
+      "Bash(nix-shell -p ffmpeg --run \"ffmpeg -y -i '0420\\(1\\).mov' -vf 'crop=ih:ih,scale=540:540,fps=30' -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -movflags +faststart -an cupid-asking.mp4 2>&1 | tail -4\")"
+    ]
+  }
+}
