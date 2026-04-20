@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useFormContext, Controller } from 'react-hook-form';
+import React, { useMemo } from 'react';
+import { useFormContext, useWatch, Controller } from 'react-hook-form';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { computeTotalBRL } from '@/lib/price';
@@ -10,14 +10,16 @@ import type { PageData } from '@/lib/wizard-schema';
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function PlanField() {
-  const { control, watch } = useFormContext<PageData>();
-  const values = watch();
-  const total = computeTotalBRL({
-    plan: values.plan as any,
-    introType: values.introType,
-    audioRecording: values.audioRecording as any,
-    musicOption: values.musicOption,
-  } as any);
+  const { control } = useFormContext<PageData>();
+  const [plan, introType, audioRecording, musicOption] = useWatch({
+    control,
+    name: ['plan', 'introType', 'audioRecording', 'musicOption'] as const,
+  }) as [PageData['plan'], PageData['introType'], PageData['audioRecording'], PageData['musicOption']];
+
+  const total = useMemo(
+    () => computeTotalBRL({ plan, introType, audioRecording, musicOption } as any),
+    [plan, introType, audioRecording, musicOption]
+  );
 
   return (
     <div className="space-y-3">

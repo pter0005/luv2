@@ -2,9 +2,21 @@
 
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
-import PreviewContent from '@/app/criar/fazer-eu-mesmo/PreviewContent';
+import { Loader2, X } from 'lucide-react';
+
+const PreviewContent = dynamic(
+  () => import('@/app/criar/fazer-eu-mesmo/PreviewContent'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full text-white/70">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    ),
+  }
+);
 
 interface PreviewModalProps {
   open: boolean;

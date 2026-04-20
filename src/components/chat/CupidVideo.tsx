@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export type CupidVariant = 'idle' | 'asking';
@@ -17,14 +17,38 @@ const SIZE_MAP = {
   lg: 'w-36 h-36 md:w-44 md:h-44',
 };
 
-const SRC_MAP: Record<CupidVariant, string> = {
-  idle: '/chat-assets/cupid-idle.mp4',
-  asking: '/chat-assets/cupid-asking.mp4',
-};
+const SRC_IDLE = '/chat-assets/cupid-idle.mp4';
+const SRC_ASKING = '/chat-assets/cupid-asking.mp4';
 
 export default function CupidVideo({ className, size = 'md', variant = 'idle' }: CupidVideoProps) {
   const [failed, setFailed] = useState(false);
-  const src = SRC_MAP[variant];
+  const idleRef = useRef<HTMLVideoElement | null>(null);
+  const askingRef = useRef<HTMLVideoElement | null>(null);
+
+  // Keep only the active variant playing to save CPU/battery; the other stays paused + hidden.
+  useEffect(() => {
+    const active = variant === 'idle' ? idleRef.current : askingRef.current;
+    const inactive = variant === 'idle' ? askingRef.current : idleRef.current;
+    inactive?.pause();
+    if (active) { active.currentTime = 0; active.play().catch(() => {}); }
+  }, [variant]);
+
+  if (failed) {
+    return (
+      <div
+        className={cn(
+          'relative shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/15 to-rose-500/20',
+          'ring-1 ring-white/50 shadow-[0_8px_32px_rgba(168,85,247,0.25)]',
+          SIZE_MAP[size],
+          className
+        )}
+      >
+        <div className="w-full h-full flex items-center justify-center text-4xl">
+          <span role="img" aria-label="Cupido">🏹</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -35,23 +59,34 @@ export default function CupidVideo({ className, size = 'md', variant = 'idle' }:
         className
       )}
     >
-      {!failed ? (
-        <video
-          key={src}
-          className="w-full h-full object-cover"
-          src={src}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-4xl">
-          <span role="img" aria-label="Cupido">🏹</span>
-        </div>
-      )}
+      <video
+        ref={idleRef}
+        className={cn(
+          'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+          variant === 'idle' ? 'opacity-100' : 'opacity-0'
+        )}
+        src={SRC_IDLE}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        onError={() => setFailed(true)}
+      />
+      <video
+        ref={askingRef}
+        className={cn(
+          'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+          variant === 'asking' ? 'opacity-100' : 'opacity-0'
+        )}
+        src={SRC_ASKING}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,14 +14,30 @@ import { CHAT_STEP_ORDER, getCupidLine, type ChatStepKey } from '@/lib/chat-scri
 import { WIZARD_SEGMENTS, type WizardSegmentKey } from '@/lib/wizard-segment-config';
 import CupidVideo from '@/components/chat/CupidVideo';
 import ChatBubble from '@/components/chat/ChatBubble';
-import StepField, { getFieldsForStep } from '@/components/chat/StepField';
+import StepField, { getFieldsForStep, getPrefetchForStep } from '@/components/chat/StepField';
 import PreviewButton from '@/components/chat/PreviewButton';
 import PreviewModal from '@/components/chat/PreviewModal';
 
 const STORAGE_KEY = 'chat-wizard-draft-v1';
 const STEP_KEY_STORAGE = 'chat-wizard-step-v1';
+const PERSIST_DEBOUNCE_MS = 600;
 
-export default function ChatWizardClient() {
+// Campos que contêm blob URLs / File-like que não sobrevivem ao reload e gastam quota
+// localStorage. Uploads persistem em Firebase; Stripped aqui pra não serializar lixo.
+const NON_PERSISTABLE_KEYS: (keyof PageData)[] = [
+  'galleryImages',
+  'timelineEvents',
+  'memoryGameImages',
+  'audioRecording',
+];
+
+function stripNonPersistable(values: PageData): Partial<PageData> {
+  const clone: any = { ...values };
+  for (const k of NON_PERSISTABLE_KEYS) delete clone[k];
+  return clone;
+}
+
+function Inner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -32,7 +48,8 @@ export default function ChatWizardClient() {
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
+    reValidateMode: 'onBlur',
     defaultValues: chatDefaultValues as PageData,
     shouldUnregister: false,
   });
@@ -47,12 +64,6 @@ export default function ChatWizardClient() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.specialDate) parsed.specialDate = new Date(parsed.specialDate);
-        if (Array.isArray(parsed.timelineEvents)) {
-          parsed.timelineEvents = parsed.timelineEvents.map((ev: any) => ({
-            ...ev,
-            date: ev?.date ? new Date(ev.date) : undefined,
-          }));
-        }
         methods.reset({ ...(chatDefaultValues as PageData), ...parsed });
       }
       const savedStep = localStorage.getItem(STEP_KEY_STORAGE) as ChatStepKey | null;
@@ -66,14 +77,23 @@ export default function ChatWizardClient() {
     }
   }, [methods]);
 
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!hydrated) return;
     const sub = methods.watch((values) => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
-      } catch { /* quota */ }
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+      persistTimer.current = setTimeout(() => {
+        try {
+          const slim = stripNonPersistable(values as PageData);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
+        } catch { /* quota */ }
+      }, PERSIST_DEBOUNCE_MS);
     });
-    return () => sub.unsubscribe();
+    return () => {
+      sub.unsubscribe();
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+    };
   }, [methods, hydrated]);
 
   useEffect(() => {
@@ -88,6 +108,18 @@ export default function ChatWizardClient() {
   const isLast = stepIndex === totalSteps - 1;
 
   const cupidText = getCupidLine(segment, currentStep);
+  const cupidVariant = currentStep === 'title' || currentStep === 'payment' ? 'idle' : 'asking';
+
+  useEffect(() => {
+    const next = CHAT_STEP_ORDER[stepIndex + 1];
+    if (!next) return;
+    const idle = (window as any).requestIdleCallback || ((cb: () => void) => setTimeout(cb, 300));
+    const handle = idle(() => { getPrefetchForStep(next)().catch(() => {}); });
+    return () => {
+      const cancel = (window as any).cancelIdleCallback || clearTimeout;
+      cancel(handle);
+    };
+  }, [stepIndex]);
 
   const handleBack = useCallback(() => {
     if (isFirst) {
@@ -135,7 +167,7 @@ export default function ChatWizardClient() {
           </div>
         </div>
 
-        <div className="max-w-md mx-auto px-4 pt-6 pb-32">
+        <div className="max-w-md mx-auto px-4 pt-6 pb-36">
           <motion.div
             key={`cupid-${currentStep}`}
             initial={{ opacity: 0, y: 6 }}
@@ -143,7 +175,7 @@ export default function ChatWizardClient() {
             transition={{ duration: 0.3 }}
             className="flex items-start gap-3 mb-6"
           >
-            <CupidVideo size="md" variant={currentStep === 'title' || currentStep === 'payment' ? 'idle' : 'asking'} />
+            <CupidVideo size="md" variant={cupidVariant} />
             <ChatBubble text={cupidText} />
           </motion.div>
 
@@ -164,7 +196,10 @@ export default function ChatWizardClient() {
 
         <PreviewButton onClick={() => setPreviewOpen(true)} visible={showPreviewButton} />
 
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-t border-purple-100">
+        <div
+          className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-t border-purple-100"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
           <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
             <Button
               type="button"
@@ -194,5 +229,13 @@ export default function ChatWizardClient() {
         <PreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} />
       </div>
     </FormProvider>
+  );
+}
+
+export default function ChatWizardClient() {
+  return (
+    <Suspense fallback={null}>
+      <Inner />
+    </Suspense>
   );
 }

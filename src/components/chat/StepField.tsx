@@ -1,25 +1,37 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
+import { Loader2 } from 'lucide-react';
 import type { ChatStepKey } from '@/lib/chat-script';
-import TitleField from './fields/TitleField';
-import MessageField from './fields/MessageField';
-import DateField from './fields/DateField';
-import GalleryField from './fields/GalleryField';
-import TimelineField from './fields/TimelineField';
-import IntroField from './fields/IntroField';
-import MusicField from './fields/MusicField';
-import VoiceField from './fields/VoiceField';
-import BackgroundField from './fields/BackgroundField';
-import ExtrasField from './fields/ExtrasField';
-import PlanField from './fields/PlanField';
-import PaymentField from './fields/PaymentField';
 
 interface StepFieldProps {
   step: ChatStepKey;
   titlePlaceholder?: string;
   messagePlaceholder?: string;
 }
+
+const Skeleton = () => (
+  <div className="flex items-center justify-center py-8 text-muted-foreground">
+    <Loader2 className="w-5 h-5 animate-spin" />
+  </div>
+);
+
+const lazyField = <P,>(loader: () => Promise<{ default: React.ComponentType<P> }>) =>
+  dynamic(loader, { ssr: false, loading: Skeleton });
+
+const TitleField = lazyField<{ placeholder?: string }>(() => import('./fields/TitleField'));
+const MessageField = lazyField<{ placeholder?: string }>(() => import('./fields/MessageField'));
+const DateField = lazyField<{}>(() => import('./fields/DateField'));
+const GalleryField = lazyField<{}>(() => import('./fields/GalleryField'));
+const TimelineField = lazyField<{}>(() => import('./fields/TimelineField'));
+const IntroField = lazyField<{}>(() => import('./fields/IntroField'));
+const MusicField = lazyField<{}>(() => import('./fields/MusicField'));
+const VoiceField = lazyField<{}>(() => import('./fields/VoiceField'));
+const BackgroundField = lazyField<{}>(() => import('./fields/BackgroundField'));
+const ExtrasField = lazyField<{}>(() => import('./fields/ExtrasField'));
+const PlanField = lazyField<{}>(() => import('./fields/PlanField'));
+const PaymentField = lazyField<{}>(() => import('./fields/PaymentField'));
 
 export default function StepField({ step, titlePlaceholder, messagePlaceholder }: StepFieldProps) {
   switch (step) {
@@ -80,5 +92,23 @@ export function getFieldsForStep(step: ChatStepKey): (keyof import('@/lib/wizard
       return ['payment'];
     default:
       return [];
+  }
+}
+
+export function getPrefetchForStep(step: ChatStepKey): () => Promise<unknown> {
+  switch (step) {
+    case 'title': return () => import('./fields/TitleField');
+    case 'message': return () => import('./fields/MessageField');
+    case 'specialDate': return () => import('./fields/DateField');
+    case 'gallery': return () => import('./fields/GalleryField');
+    case 'timeline': return () => import('./fields/TimelineField');
+    case 'intro': return () => import('./fields/IntroField');
+    case 'music': return () => import('./fields/MusicField');
+    case 'voice': return () => import('./fields/VoiceField');
+    case 'background': return () => import('./fields/BackgroundField');
+    case 'extras': return () => import('./fields/ExtrasField');
+    case 'plan': return () => import('./fields/PlanField');
+    case 'payment': return () => import('./fields/PaymentField');
+    default: return () => Promise.resolve();
   }
 }
