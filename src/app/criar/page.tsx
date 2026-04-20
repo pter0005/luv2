@@ -22,6 +22,7 @@ export default function CriarPage() {
 
   const [liveCount, setLiveCount] = useState(0);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // ── Fake live counter — random between 6 and 23 ──
   useEffect(() => {
@@ -33,12 +34,26 @@ export default function CriarPage() {
     return () => window.clearInterval(id);
   }, []);
 
+  // ── Admin check — se for admin, CTAs mandam pro /chat ──
+  useEffect(() => {
+    fetch('/api/admin/check', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(!!d?.admin))
+      .catch(() => {});
+  }, []);
+
   const go = (segment: string) => {
     if (loadingKey) return;
     setLoadingKey(segment);
-    const q = segment && segment !== 'outro' ? `&segment=${segment}` : '';
+    const seg = segment && segment !== 'outro' ? segment : '';
     setTimeout(() => {
-      router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${q}`);
+      if (isAdmin) {
+        const q = seg ? `?segment=${seg}` : '';
+        router.push(`/chat${q}`);
+      } else {
+        const q = seg ? `&segment=${seg}` : '';
+        router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${q}`);
+      }
     }, 350);
   };
 
