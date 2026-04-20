@@ -62,7 +62,14 @@ function Inner() {
     shouldUnregister: false,
   });
 
-  const [currentStep, setCurrentStep] = useState<ChatStepKey>('recipient');
+  const [currentStep, setCurrentStep] = useState<ChatStepKey>(() => {
+    // Se já veio segmento na URL, pula o step de escolher destinatário
+    if (segmentParam && segmentParam in WIZARD_SEGMENTS) {
+      const next = CHAT_STEP_ORDER[CHAT_STEP_ORDER.indexOf('recipient') + 1];
+      return next ?? 'recipient';
+    }
+    return 'recipient';
+  });
   const [direction, setDirection] = useState<1 | -1>(1);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -162,9 +169,16 @@ function Inner() {
       router.back();
       return;
     }
+    // Se veio com segmento pré-escolhido pela URL e está no step logo após recipient,
+    // voltar significa ir pro picker em /criar em vez de mostrar o step recipient de novo.
+    const prevStep = CHAT_STEP_ORDER[stepIndex - 1];
+    if (segmentParam && prevStep === 'recipient') {
+      router.push('/criar');
+      return;
+    }
     setDirection(-1);
-    setCurrentStep(CHAT_STEP_ORDER[stepIndex - 1]);
-  }, [isFirst, stepIndex, router]);
+    setCurrentStep(prevStep);
+  }, [isFirst, stepIndex, router, segmentParam]);
 
   const handleNext = useCallback(async () => {
     const fields = getFieldsForStep(currentStep);
@@ -211,13 +225,61 @@ function Inner() {
               'radial-gradient(ellipse 90% 60% at 50% -20%, hsl(275 60% 14%), transparent 70%), linear-gradient(180deg, hsl(275 50% 4%) 0%, hsl(280 40% 3%) 100%)',
           }}
         />
-        {/* Um único blob suave pra dar vida sem poluir */}
+        {/* Blobs ambientais — roxo (topo-esquerda), rosa (direita), violeta (baixo) */}
         <motion.div
           aria-hidden
-          className="pointer-events-none absolute -z-10 w-[620px] h-[620px] rounded-full blur-3xl opacity-25"
-          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent 65%)' }}
-          animate={{ x: ['-15%', '10%', '-15%'], y: ['-5%', '8%', '-5%'] }}
+          className="pointer-events-none absolute -z-10 -top-24 -left-24 w-[620px] h-[620px] rounded-full blur-3xl opacity-30"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.55), transparent 65%)' }}
+          animate={{ x: ['-5%', '10%', '-5%'], y: ['-5%', '8%', '-5%'] }}
           transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -z-10 top-40 -right-32 w-[480px] h-[480px] rounded-full blur-3xl opacity-25"
+          style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.45), transparent 65%)' }}
+          animate={{ x: ['0%', '-8%', '0%'], y: ['0%', '10%', '0%'] }}
+          transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -z-10 bottom-[-10%] left-[10%] w-[520px] h-[520px] rounded-full blur-3xl opacity-20"
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.5), transparent 65%)' }}
+          animate={{ x: ['0%', '12%', '0%'], y: ['0%', '-6%', '0%'] }}
+          transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
+        />
+
+        {/* Sparkles sutis — pontinhos brilhando */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          {[
+            { top: '12%', left: '8%', delay: 0, duration: 3.2 },
+            { top: '22%', left: '82%', delay: 1.1, duration: 2.8 },
+            { top: '45%', left: '18%', delay: 2.3, duration: 3.6 },
+            { top: '58%', left: '72%', delay: 0.6, duration: 3.0 },
+            { top: '78%', left: '28%', delay: 1.8, duration: 2.6 },
+            { top: '88%', left: '88%', delay: 2.6, duration: 3.4 },
+          ].map((s, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-white"
+              style={{
+                top: s.top,
+                left: s.left,
+                boxShadow: '0 0 8px rgba(255,255,255,0.85), 0 0 16px rgba(168,85,247,0.5)',
+              }}
+              animate={{ opacity: [0, 1, 0], scale: [0.6, 1.2, 0.6] }}
+              transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+
+        {/* Noise grain — textura fina pra tirar o "chapado" */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 opacity-[0.035] mix-blend-overlay"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+          }}
         />
 
         {/* Top bar minimalista */}
