@@ -26,21 +26,42 @@
      (box-shadow / border-radius) which looks weird nested inside another app.
      Stage keeps its 375/812 aspect — outer #app gradient fills the rest so
      landscape / odd iframe ratios read as intentional letterbox, not "cortada". */
-  body.embed #app{background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%);overflow:hidden}
-  /* Cover fill via transform:scale(): mantém o stage no seu tamanho natural
-     (375×812) mas escala o conjunto inteiro — canvas + textOverlay + botão —
-     como uma unidade, pra cobrir o iframe todo. Sem letterbox, sem borda,
-     sem reposicionar overlay. getBoundingClientRect() reporta o rect pós-
-     transform, então o resizeCanvas já pega a DPR correta automaticamente. */
+  /* ── Embed layout (senior pass) ─────────────────────────────────────────
+     Decisão: CONTAIN, não cover. Cover cortaria as flores em containers fora
+     do aspect 375/812 (desktop preview, etc.) — destruiria a composição
+     artística. Contain preserva 100% da arte; o letterbox "desaparece" porque:
+       1. Pintamos #app com a MESMA cor do vignette externo do canvas (#050208)
+          → não há seam visível entre a barra e a borda pintada do canvas.
+       2. O canvas já aplica vignette radial escurecendo 65% nas bordas
+          (linha 1316), então o letterbox só estende essa escuridão.
+     Engenharia:
+       - flex-center no #app evita transform:translate(-%) que usa tamanho
+         pré-escala e quebra alinhamento.
+       - transform:scale(min()) = contain; origin:center mantém travado.
+       - will-change/contain:strict promove camada GPU e isola reflow.
+       - backface-visibility oculta blur de subpixel em navegadores WebKit.
+     ─────────────────────────────────────────────────────────────────────── */
+  body.embed #app{
+    background:#050208;
+    overflow:hidden;
+    contain:strict;
+    touch-action:manipulation;
+  }
   body.embed #stageWrap{
     box-shadow:none;border-radius:0;
     aspect-ratio:auto;
     width:375px;height:812px;max-width:none;max-height:none;
-    position:absolute;top:50%;left:50%;
-    transform:translate(-50%,-50%) scale(max(calc(100vw / 375),calc(100vh / 812)));
+    position:relative;top:auto;left:auto;
+    flex:0 0 auto;
+    transform:scale(min(calc(100vw / 375),calc(100vh / 812)));
     transform-origin:center center;
+    will-change:transform;
+    backface-visibility:hidden;
     overflow:hidden;
+    contain:layout paint style;
   }
+  body.embed #stage,
+  body.embed #textOverlay{backface-visibility:hidden}
   body.embed #loading{background:transparent}
   /* ── Scene text (non-finale) ── */
   #textOverlay{
@@ -1660,12 +1681,27 @@ window.__poema = {
   }
 };
 
-window.addEventListener('resize', resizeCanvas);
-// ResizeObserver — picks up iframe container size changes that don't fire
-// a window resize (e.g. parent layout shifts, preview panel toggles).
+// Resize pipeline: RAF-debounced so rapid resize events (iframe layout
+// thrash, mobile orientation flip, keyboard in/out) only trigger one actual
+// canvas re-sizing per frame. Observes both window AND visualViewport
+// (important on iOS where the browser chrome collapse fires vv.resize but
+// not window.resize).
+let __resizePending = false;
+function __scheduleResize() {
+  if (__resizePending) return;
+  __resizePending = true;
+  requestAnimationFrame(() => { __resizePending = false; resizeCanvas(); });
+}
+window.addEventListener('resize', __scheduleResize, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', __scheduleResize, { passive: true });
+}
+// ResizeObserver on body picks up container-driven size changes (e.g. parent
+// app toggles a preview panel that resizes the iframe without firing a
+// window resize event).
 try {
-  const __ro = new ResizeObserver(() => resizeCanvas());
-  __ro.observe(document.getElementById('stageWrap'));
+  const __ro = new ResizeObserver(__scheduleResize);
+  __ro.observe(document.documentElement);
 } catch (e) { /* older browser — window resize is enough */ }
 
 // ═══ SECTION 17: INIT ═══
