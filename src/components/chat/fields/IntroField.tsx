@@ -3,30 +3,59 @@
 import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Heart, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
 
-const OPTIONS = [
+type IntroValue = PageData['introType'];
+
+interface IntroOption {
+  value: IntroValue;
+  emoji: string;
+  label: string;
+  desc: string;
+  badge?: { kind: 'favorito' | 'amado'; text: string };
+}
+
+const OPTIONS: IntroOption[] = [
   {
     value: undefined,
     emoji: '✨',
     label: 'Sem abertura',
-    desc: 'Página abre direto',
+    desc: 'A página abre direto no conteúdo',
   },
   {
     value: 'love',
     emoji: '🐰',
     label: 'Coelhinho Kawaii',
-    desc: 'Uma animação fofinha pra começar',
+    desc: 'Animação fofinha pra começar com graça',
+    badge: { kind: 'amado', text: 'Mais amado' },
   },
   {
     value: 'poema',
-    emoji: '🌸',
-    label: 'Poema das Flores',
-    desc: 'Abertura cinematográfica com flores',
+    emoji: '💐',
+    label: 'Buquê Digital',
+    desc: 'Abertura cinematográfica com flores pra ela(e)',
+    badge: { kind: 'favorito', text: 'Favorito' },
   },
-] as const;
+];
+
+function Badge({ kind, text }: { kind: 'favorito' | 'amado'; text: string }) {
+  if (kind === 'favorito') {
+    return (
+      <span className="absolute -top-2 right-3 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-md bg-gradient-to-r from-amber-400 to-orange-500 ring-1 ring-white/40">
+        <Star className="w-3 h-3 fill-white" />
+        {text}
+      </span>
+    );
+  }
+  return (
+    <span className="absolute -top-2 right-3 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-md bg-gradient-to-r from-pink-500 to-fuchsia-500 ring-1 ring-white/40">
+      <Heart className="w-3 h-3 fill-white" />
+      {text}
+    </span>
+  );
+}
 
 export default function IntroField() {
   const { control, watch } = useFormContext<PageData>();
@@ -38,7 +67,7 @@ export default function IntroField() {
         control={control}
         name="introType"
         render={({ field }) => (
-          <div className="space-y-2">
+          <div className="space-y-3 pt-2">
             {OPTIONS.map((opt) => {
               const selected = field.value === opt.value;
               return (
@@ -47,12 +76,13 @@ export default function IntroField() {
                   type="button"
                   onClick={() => field.onChange(opt.value)}
                   className={cn(
-                    'w-full flex items-center gap-3 rounded-xl p-3 text-left transition',
+                    'relative w-full flex items-center gap-3 rounded-xl p-3 text-left transition',
                     selected
-                      ? 'bg-purple-50 ring-2 ring-purple-400'
+                      ? 'bg-purple-50 ring-2 ring-purple-400 shadow-sm'
                       : 'bg-white ring-1 ring-border hover:ring-purple-200'
                   )}
                 >
+                  {opt.badge && <Badge kind={opt.badge.kind} text={opt.badge.text} />}
                   <div className="text-2xl shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-muted">
                     {opt.emoji}
                   </div>
@@ -77,6 +107,9 @@ export default function IntroField() {
             className="overflow-hidden"
           >
             <div className="pt-3 space-y-3">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Pra quem é o buquê?
+              </p>
               <Controller
                 control={control}
                 name="introGender"

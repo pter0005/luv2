@@ -1,24 +1,22 @@
-"use client";
+import { redirect } from 'next/navigation';
+import { isAdminRequest } from '@/lib/admin-guard';
+import DoItYourselfView from './DoItYourselfView';
 
-import CreatePageWizard from './CreatePageWizard';
+interface PageProps {
+  searchParams?: Record<string, string | string[] | undefined>;
+}
 
-export default function DoItYourselfPage() {
-  return (
-    <div className="flex-grow flex flex-col">
-      <div className="container pt-8 md:pt-12 text-center">
-          <h1 className="text-4xl font-semibold text-foreground">
-            Crie uma página de amor <br />
-            <span className="text-4xl md:text-6xl font-bold mt-1 leading-none gradient-text">
-              Totalmente Personalizada
-            </span>
-          </h1>
-          <p className="text-muted-foreground text-lg mt-4">
-            Use o assistente passo a passo para montar cada detalhe.
-          </p>
-      </div>
-      <div className="flex-grow">
-        <CreatePageWizard />
-      </div>
-    </div>
-  );
+export const dynamic = 'force-dynamic';
+
+export default async function DoItYourselfPage({ searchParams }: PageProps) {
+  // Admins são transparentemente roteados pro wizard conversacional.
+  // Preservamos `segment` pra manter contexto (namorade/mae/etc.).
+  const isAdmin = await isAdminRequest();
+  if (isAdmin) {
+    const segment = typeof searchParams?.segment === 'string' ? searchParams!.segment : undefined;
+    const target = segment ? `/chat?segment=${encodeURIComponent(segment)}` : '/chat';
+    redirect(target);
+  }
+
+  return <DoItYourselfView />;
 }
