@@ -51,19 +51,21 @@ export default function ExtrasField() {
               <div
                 className={cn(
                   'rounded-xl p-3 transition',
-                  enabled ? 'bg-purple-50 ring-2 ring-purple-300' : 'bg-white ring-1 ring-border'
+                  enabled
+                    ? 'bg-purple-500/15 ring-2 ring-purple-400 shadow-[0_8px_24px_-10px_rgba(168,85,247,0.6)]'
+                    : 'bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.08]'
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     'w-10 h-10 shrink-0 rounded-full flex items-center justify-center',
-                    enabled ? 'bg-purple-500 text-white' : 'bg-muted text-muted-foreground'
+                    enabled ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white' : 'bg-white/[0.08] text-white/60 ring-1 ring-white/10'
                   )}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm">{label}</div>
-                    <div className="text-xs text-muted-foreground">{desc}</div>
+                    <div className="font-semibold text-sm text-white">{label}</div>
+                    <div className="text-xs text-white/60">{desc}</div>
                   </div>
                   <Switch checked={!!field.value} onCheckedChange={field.onChange} />
                 </div>
@@ -73,7 +75,7 @@ export default function ExtrasField() {
         );
       })}
 
-      <p className="text-xs text-center text-muted-foreground pt-1">
+      <p className="text-xs text-center text-white/50 pt-1">
         Tudo opcional — liga só o que você quiser. Dá pra configurar os detalhes depois.
       </p>
     </div>

@@ -61,7 +61,7 @@ export default function GalleryField() {
           {fields.map((f, i) => {
             const url = (f as any).url as string;
             return (
-              <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+              <div key={f.id} className="relative aspect-square rounded-lg overflow-hidden bg-white/[0.05] ring-1 ring-white/10">
                 <Image src={url} alt="" fill className="object-cover" sizes="160px" />
                 <button
                   type="button"
@@ -89,8 +89,7 @@ export default function GalleryField() {
       {fields.length < MAX_GALLERY_IMAGES && (
         <Button
           type="button"
-          variant="outline"
-          className="w-full h-16 border-dashed"
+          className="w-full h-16 bg-white/[0.03] hover:bg-white/[0.08] text-white ring-1 ring-dashed ring-white/20 backdrop-blur"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >

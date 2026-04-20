@@ -65,9 +65,9 @@ export default function TimelineField() {
       {fields.map((f, i) => {
         const img = (f as any).image;
         return (
-          <div key={f.id} className="flex gap-2 bg-muted/30 rounded-lg p-2">
+          <div key={f.id} className="flex gap-2 bg-white/[0.04] ring-1 ring-white/10 rounded-lg p-2">
             {img?.url && (
-              <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-muted">
+              <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-white/[0.05]">
                 <Image src={img.url} alt="" fill className="object-cover" sizes="80px" />
               </div>
             )}
@@ -110,7 +110,7 @@ export default function TimelineField() {
             <button
               type="button"
               onClick={() => remove(i)}
-              className="self-start text-muted-foreground hover:text-destructive p-1"
+              className="self-start text-white/60 hover:text-red-400 p-1"
               aria-label="Remover"
             >
               <X className="w-4 h-4" />
@@ -124,8 +124,7 @@ export default function TimelineField() {
       {fields.length < MAX_TIMELINE_IMAGES && (
         <Button
           type="button"
-          variant="outline"
-          className="w-full h-14 border-dashed"
+          className="w-full h-14 bg-white/[0.03] hover:bg-white/[0.08] text-white ring-1 ring-dashed ring-white/20 backdrop-blur"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >

@@ -20,6 +20,7 @@ import { useConfetti } from '@/components/chat/useConfetti';
 import StepField, { getFieldsForStep, getPrefetchForStep } from '@/components/chat/StepField';
 import PreviewButton from '@/components/chat/PreviewButton';
 import PreviewModal from '@/components/chat/PreviewModal';
+import DesktopPreviewPane from '@/components/chat/DesktopPreviewPane';
 
 const STORAGE_KEY = 'chat-wizard-draft-v1';
 const STEP_KEY_STORAGE = 'chat-wizard-step-v1';
@@ -190,97 +191,126 @@ function Inner() {
 
   return (
     <FormProvider {...methods}>
-      <div className="relative min-h-screen overflow-hidden">
-        {/* Background animado — gradiente sutilmente deslocando */}
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-purple-50 via-white to-pink-50" />
+      <div className="relative min-h-screen overflow-hidden text-white">
+        {/* Fundo: preto/roxo profundo + blobs animados */}
+        <div
+          className="pointer-events-none absolute inset-0 -z-20"
+          style={{
+            background:
+              'radial-gradient(ellipse 80% 50% at 50% -10%, hsl(275 80% 18%), transparent 60%), linear-gradient(180deg, hsl(275 80% 4%) 0%, hsl(275 60% 6%) 60%, hsl(320 60% 8%) 100%)',
+          }}
+        />
         <motion.div
           aria-hidden
-          className="pointer-events-none absolute -z-10 w-[700px] h-[700px] rounded-full blur-3xl opacity-30"
-          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.35), transparent 60%)' }}
-          animate={{ x: ['-20%', '20%', '-20%'], y: ['-10%', '10%', '-10%'] }}
+          className="pointer-events-none absolute -z-10 w-[700px] h-[700px] rounded-full blur-3xl opacity-40"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.55), transparent 60%)' }}
+          animate={{ x: ['-25%', '20%', '-25%'], y: ['-10%', '10%', '-10%'] }}
           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           aria-hidden
-          className="pointer-events-none absolute -z-10 right-0 bottom-0 w-[500px] h-[500px] rounded-full blur-3xl opacity-25"
-          style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.3), transparent 60%)' }}
-          animate={{ x: ['10%', '-10%', '10%'], y: ['10%', '-10%', '10%'] }}
+          className="pointer-events-none absolute -z-10 right-0 bottom-0 w-[520px] h-[520px] rounded-full blur-3xl opacity-35"
+          style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.5), transparent 60%)' }}
+          animate={{ x: ['15%', '-15%', '15%'], y: ['10%', '-10%', '10%'] }}
           transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Grain sutil pra dar textura */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 opacity-[0.06] mix-blend-overlay"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E\")",
+          }}
         />
 
         {/* Top bar */}
-        <div className="sticky top-0 z-30 bg-white/75 backdrop-blur-md border-b border-purple-100/60">
-          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="sticky top-0 z-30 bg-black/40 backdrop-blur-xl border-b border-white/[0.08]">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3 lg:max-w-none lg:px-6">
             <button
               type="button"
               onClick={handleBack}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-50 text-purple-700 hover:bg-purple-100 active:scale-95 transition"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.06] text-white/90 ring-1 ring-white/10 hover:bg-white/[0.12] active:scale-95 transition"
               aria-label="Voltar"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1">
+            <div className="flex-1 max-w-xl">
               <ChatProgress current={stepIndex} total={totalSteps} />
             </div>
             <div className="flex items-center gap-2">
               <AutosaveBadge pulseKey={saveTick} />
-              <div className="text-[11px] font-semibold text-purple-700 tabular-nums whitespace-nowrap">
+              <div className="text-[11px] font-semibold text-white/70 tabular-nums whitespace-nowrap">
                 {stepLabel}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="max-w-md mx-auto px-4 pt-6 pb-36">
-          <motion.div
-            key={`cupid-${currentStep}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-start gap-3 mb-6"
-          >
+        {/* Layout mobile: coluna única. Desktop (lg+): split com preview à direita. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8 lg:max-w-7xl lg:mx-auto lg:px-6">
+          {/* Coluna esquerda — chat */}
+          <div className="max-w-md mx-auto w-full px-4 pt-6 pb-36 lg:mx-0 lg:px-0 lg:pt-10 lg:pb-28">
             <motion.div
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+              key={`cupid-${currentStep}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex items-start gap-3 mb-6"
             >
-              <CupidVideo size="md" variant={cupidVariant} />
+              <motion.div
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <CupidVideo size="md" variant={cupidVariant} />
+              </motion.div>
+              <ChatBubble text={cupidText} />
             </motion.div>
-            <ChatBubble text={cupidText} />
-          </motion.div>
 
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`field-${currentStep}`}
-              initial={{ opacity: 0, x: direction > 0 ? 32 : -32 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction > 0 ? -32 : 32 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-              className="rounded-2xl bg-white ring-1 ring-purple-100 shadow-sm p-4"
-            >
-              <StepField
-                step={currentStep}
-                titlePlaceholder={titlePlaceholder}
-                messagePlaceholder={messagePlaceholder}
-              />
-            </motion.div>
-          </AnimatePresence>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`field-${currentStep}`}
+                initial={{ opacity: 0, x: direction > 0 ? 32 : -32 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction > 0 ? -32 : 32 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                className={cn(
+                  'relative rounded-2xl p-4',
+                  'bg-gradient-to-br from-white/[0.06] to-white/[0.03] backdrop-blur-md',
+                  'ring-1 ring-white/10 shadow-[0_20px_60px_-20px_rgba(168,85,247,0.45)]'
+                )}
+              >
+                <StepField
+                  step={currentStep}
+                  titlePlaceholder={titlePlaceholder}
+                  messagePlaceholder={messagePlaceholder}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Coluna direita — preview ao vivo (só desktop) */}
+          <div className="hidden lg:block pt-10 pb-10">
+            <DesktopPreviewPane />
+          </div>
         </div>
 
-        <PreviewButton onClick={() => { haptic('tap'); setPreviewOpen(true); }} visible={showPreviewButton} />
+        {/* Botão flutuante pra preview — só no mobile (no desktop já tem o pane) */}
+        <div className="lg:hidden">
+          <PreviewButton onClick={() => { haptic('tap'); setPreviewOpen(true); }} visible={showPreviewButton} />
+        </div>
 
         {/* Sticky bottom bar */}
         <div
-          className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-t border-purple-100"
+          className="fixed bottom-0 left-0 right-0 z-30 bg-black/60 backdrop-blur-xl border-t border-white/[0.08]"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3 lg:max-w-7xl lg:px-6">
             <Button
               type="button"
-              variant="outline"
               size="lg"
               onClick={handleBack}
-              className="flex-1 h-12"
+              className="flex-1 h-12 bg-white/[0.06] hover:bg-white/[0.12] text-white ring-1 ring-white/15 backdrop-blur"
             >
               Voltar
             </Button>
@@ -290,7 +320,11 @@ function Inner() {
               onClick={handleNext}
               disabled={isLast}
               className={cn(
-                'flex-[2] h-12 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold shadow-[0_10px_30px_-10px_rgba(168,85,247,0.6)] active:scale-[0.98] transition',
+                'flex-[2] h-12 font-bold text-white transition active:scale-[0.98]',
+                'bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500',
+                'shadow-[0_10px_40px_-10px_rgba(236,72,153,0.7)]',
+                'hover:shadow-[0_14px_46px_-10px_rgba(236,72,153,0.85)]',
+                'border-0',
                 isLast && 'opacity-60'
               )}
             >

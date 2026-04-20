@@ -78,19 +78,19 @@ export default function IntroField() {
                   className={cn(
                     'relative w-full flex items-center gap-3 rounded-xl p-3 text-left transition',
                     selected
-                      ? 'bg-purple-50 ring-2 ring-purple-400 shadow-sm'
-                      : 'bg-white ring-1 ring-border hover:ring-purple-200'
+                      ? 'bg-purple-500/15 ring-2 ring-purple-400 shadow-[0_8px_28px_-8px_rgba(168,85,247,0.6)]'
+                      : 'bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.08] hover:ring-purple-400/40'
                   )}
                 >
                   {opt.badge && <Badge kind={opt.badge.kind} text={opt.badge.text} />}
-                  <div className="text-2xl shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-muted">
+                  <div className="text-2xl shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
                     {opt.emoji}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm">{opt.label}</div>
-                    <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                    <div className="font-semibold text-sm text-white">{opt.label}</div>
+                    <div className="text-xs text-white/60">{opt.desc}</div>
                   </div>
-                  {selected && <Check className="w-5 h-5 text-purple-500 shrink-0" />}
+                  {selected && <Check className="w-5 h-5 text-purple-300 shrink-0" />}
                 </button>
               );
             })}
@@ -107,7 +107,7 @@ export default function IntroField() {
             className="overflow-hidden"
           >
             <div className="pt-3 space-y-3">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">
                 Pra quem é o buquê?
               </p>
               <Controller
@@ -120,7 +120,7 @@ export default function IntroField() {
                       onClick={() => field.onChange('fem')}
                       className={cn(
                         'flex-1 h-10 rounded-full text-sm font-medium transition',
-                        field.value === 'fem' ? 'bg-pink-100 ring-2 ring-pink-400' : 'bg-muted hover:bg-muted/70'
+                        field.value === 'fem' ? 'bg-pink-500/20 ring-2 ring-pink-400 text-white' : 'bg-white/[0.05] ring-1 ring-white/10 text-white/80 hover:bg-white/[0.1]'
                       )}
                     >
                       Para Ela 💝
@@ -130,7 +130,7 @@ export default function IntroField() {
                       onClick={() => field.onChange('mas')}
                       className={cn(
                         'flex-1 h-10 rounded-full text-sm font-medium transition',
-                        field.value === 'mas' ? 'bg-blue-100 ring-2 ring-blue-400' : 'bg-muted hover:bg-muted/70'
+                        field.value === 'mas' ? 'bg-blue-500/25 ring-2 ring-blue-400 text-white' : 'bg-white/[0.05] ring-1 ring-white/10 text-white/80 hover:bg-white/[0.1]'
                       )}
                     >
                       Para Ele 💙

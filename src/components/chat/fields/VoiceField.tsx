@@ -107,17 +107,17 @@ export default function VoiceField() {
 
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl border-2 border-pink-400/50 bg-gradient-to-br from-pink-50 via-fuchsia-50 to-rose-50 p-4">
+      <div className="relative overflow-hidden rounded-2xl ring-2 ring-pink-400/50 bg-gradient-to-br from-pink-500/15 via-fuchsia-500/10 to-rose-500/10 p-4 shadow-[0_12px_40px_-12px_rgba(236,72,153,0.55)]">
         <div className="flex items-start gap-2 mb-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-fuchsia-500 flex items-center justify-center shadow-md shadow-pink-400/40 shrink-0">
             <Mic className="w-4 h-4 text-white" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
-              <Gem className="w-3 h-3 text-fuchsia-600" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-700">Feature especial</span>
+              <Gem className="w-3 h-3 text-fuchsia-300" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">Feature especial</span>
             </div>
-            <p className="text-xs text-foreground/80 leading-snug">
+            <p className="text-xs text-white/80 leading-snug">
               Imagina a cara dela(e) ao <em>ouvir sua voz</em> dizendo o que sente 🥹 até 60s.
             </p>
           </div>
@@ -141,13 +141,13 @@ export default function VoiceField() {
 
         {status === 'recording' && (
           <div className="space-y-2">
-            <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/30">
+            <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/15 ring-1 ring-red-500/40">
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
               </span>
-              <span className="font-mono text-lg font-bold tabular-nums">{mmss}</span>
-              <span className="text-[10px] uppercase tracking-wider text-red-600">Gravando</span>
+              <span className="font-mono text-lg font-bold tabular-nums text-white">{mmss}</span>
+              <span className="text-[10px] uppercase tracking-wider text-red-300">Gravando</span>
             </div>
             <Button type="button" onClick={stop} variant="destructive" size="sm" className="w-full">
               <StopCircle className="mr-1.5 h-4 w-4" /> Parar
@@ -156,18 +156,18 @@ export default function VoiceField() {
         )}
 
         {status === 'uploading' && (
-          <div className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white/60">
-            <Loader2 className="h-4 w-4 animate-spin text-pink-500" />
-            <span className="text-xs font-medium">Salvando…</span>
+          <div className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white/[0.06] ring-1 ring-white/10">
+            <Loader2 className="h-4 w-4 animate-spin text-pink-300" />
+            <span className="text-xs font-medium text-white">Salvando…</span>
           </div>
         )}
 
         {status === 'recorded' && audioRecording?.url && (
           <div className="space-y-2">
-            <div className="rounded-xl bg-white/80 border border-pink-300/40 p-3">
+            <div className="rounded-xl bg-white/[0.06] ring-1 ring-pink-400/30 p-3 backdrop-blur">
               <div className="flex items-center gap-1.5 mb-2">
-                <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                <span className="text-xs font-semibold text-green-700">Mensagem gravada</span>
+                <CheckCircle className="h-3.5 w-3.5 text-green-400" />
+                <span className="text-xs font-semibold text-green-300">Mensagem gravada</span>
               </div>
               <audio src={audioRecording.url} controls className="w-full h-8" />
             </div>
@@ -183,7 +183,7 @@ export default function VoiceField() {
         )}
       </div>
 
-      <p className="text-xs text-center text-muted-foreground">Opcional — pode pular tranquilo</p>
+      <p className="text-xs text-center text-white/50">Opcional — pode pular tranquilo</p>
     </div>
   );
 }

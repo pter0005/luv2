@@ -36,7 +36,7 @@ export default function AutosaveBadge({ pulseKey, className }: AutosaveBadgeProp
           transition={{ duration: 0.2 }}
           className={className}
         >
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-purple-600/80">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-purple-200/80">
             {state === 'saving' ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />

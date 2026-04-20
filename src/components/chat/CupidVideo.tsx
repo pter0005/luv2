@@ -20,12 +20,19 @@ const SIZE_MAP = {
 const SRC_IDLE = '/chat-assets/cupid-idle.mp4';
 const SRC_ASKING = '/chat-assets/cupid-asking.mp4';
 
+/**
+ * Vídeo tem fundo preto sólido. Sobre o tema escuro do site usamos
+ * `mix-blend-mode: screen` — pixel preto vira transparente (screen(0,x)=x),
+ * pixels claros do personagem passam quase intactos. Sem re-encode.
+ *
+ * O halo atrás fica FORA do stacking context afetado pelo blend
+ * (via `isolation: isolate` no wrapper interno), então o glow continua sólido.
+ */
 export default function CupidVideo({ className, size = 'md', variant = 'idle' }: CupidVideoProps) {
   const [failed, setFailed] = useState(false);
   const idleRef = useRef<HTMLVideoElement | null>(null);
   const askingRef = useRef<HTMLVideoElement | null>(null);
 
-  // Keep only the active variant playing to save CPU/battery; the other stays paused + hidden.
   useEffect(() => {
     const active = variant === 'idle' ? idleRef.current : askingRef.current;
     const inactive = variant === 'idle' ? askingRef.current : idleRef.current;
@@ -35,58 +42,51 @@ export default function CupidVideo({ className, size = 'md', variant = 'idle' }:
 
   if (failed) {
     return (
-      <div
-        className={cn(
-          'relative shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/15 to-rose-500/20',
-          'ring-1 ring-white/50 shadow-[0_8px_32px_rgba(168,85,247,0.25)]',
-          SIZE_MAP[size],
-          className
-        )}
-      >
-        <div className="w-full h-full flex items-center justify-center text-4xl">
-          <span role="img" aria-label="Cupido">🏹</span>
-        </div>
+      <div className={cn('relative shrink-0 flex items-center justify-center text-5xl', SIZE_MAP[size], className)}>
+        <span role="img" aria-label="Cupido">🏹</span>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn(
-        'relative shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 via-pink-500/15 to-rose-500/20',
-        'ring-1 ring-white/50 shadow-[0_8px_32px_rgba(168,85,247,0.25)]',
-        SIZE_MAP[size],
-        className
-      )}
-    >
-      <video
-        ref={idleRef}
-        className={cn(
-          'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
-          variant === 'idle' ? 'opacity-100' : 'opacity-0'
-        )}
-        src={SRC_IDLE}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        onError={() => setFailed(true)}
+    <div className={cn('relative shrink-0', SIZE_MAP[size], className)}>
+      {/* Halo roxo atrás — renderizado SEM blend */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-full blur-2xl opacity-70"
+        style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.55), rgba(236,72,153,0.25) 55%, transparent 72%)' }}
       />
-      <video
-        ref={askingRef}
-        className={cn(
-          'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
-          variant === 'asking' ? 'opacity-100' : 'opacity-0'
-        )}
-        src={SRC_ASKING}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        onError={() => setFailed(true)}
-      />
+      {/* Container dos vídeos com mix-blend — o halo acima fica fora porque o blend só afeta o backdrop DENTRO deste stacking context */}
+      <div className="relative w-full h-full" style={{ mixBlendMode: 'screen' }}>
+        <video
+          ref={idleRef}
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain transition-opacity duration-300',
+            variant === 'idle' ? 'opacity-100' : 'opacity-0'
+          )}
+          src={SRC_IDLE}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          onError={() => setFailed(true)}
+        />
+        <video
+          ref={askingRef}
+          className={cn(
+            'absolute inset-0 w-full h-full object-contain transition-opacity duration-300',
+            variant === 'asking' ? 'opacity-100' : 'opacity-0'
+          )}
+          src={SRC_ASKING}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          onError={() => setFailed(true)}
+        />
+      </div>
     </div>
   );
 }

@@ -87,15 +87,17 @@ export default function ChatBubble({
         exit={{ opacity: 0, y: -4, scale: 0.98 }}
         transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
         className={cn(
-          'relative flex-1 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-purple-100',
-          'text-[15px] leading-snug text-foreground min-h-[44px]',
+          'relative flex-1 rounded-2xl px-4 py-3 min-h-[44px]',
+          'bg-gradient-to-br from-white/[0.08] to-white/[0.04] backdrop-blur-md',
+          'ring-1 ring-white/15 shadow-[0_8px_32px_rgba(168,85,247,0.18)]',
+          'text-[15px] leading-snug text-white/90',
           className
         )}
         aria-live="polite"
       >
         <span
           aria-hidden
-          className="absolute -left-2 top-5 h-4 w-4 rotate-45 bg-white ring-1 ring-purple-100"
+          className="absolute -left-[7px] top-5 h-3.5 w-3.5 rotate-45 bg-white/[0.06] backdrop-blur-md ring-1 ring-white/15"
           style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }}
         />
         {phase === 'typing' ? (

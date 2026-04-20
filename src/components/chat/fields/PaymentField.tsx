@@ -10,12 +10,12 @@ export default function PaymentField() {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 p-4">
+      <div className="rounded-xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 ring-1 ring-purple-400/40 p-4 backdrop-blur">
         <div className="flex items-center gap-2 mb-2">
-          <CreditCard className="w-4 h-4 text-purple-500" />
-          <span className="text-sm font-semibold">Finalizar no checkout</span>
+          <CreditCard className="w-4 h-4 text-purple-300" />
+          <span className="text-sm font-semibold text-white">Finalizar no checkout</span>
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+        <p className="text-xs text-white/70 leading-relaxed">
           Seu rascunho está salvo. Vamos continuar no fluxo de pagamento completo com Pix, cartão e checkout seguro.
         </p>
       </div>
@@ -30,7 +30,7 @@ export default function PaymentField() {
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
 
-      <p className="text-xs text-center text-muted-foreground">
+      <p className="text-xs text-center text-white/50">
         Você pode revisar tudo na próxima tela antes de pagar
       </p>
     </div>

@@ -35,7 +35,7 @@ export default function BackgroundField() {
                   onClick={() => field.onChange(opt.value)}
                   className={cn(
                     'relative aspect-[4/3] rounded-xl overflow-hidden transition ring-2',
-                    selected ? 'ring-purple-500' : 'ring-transparent hover:ring-purple-200'
+                    selected ? 'ring-purple-400 shadow-[0_8px_24px_-8px_rgba(168,85,247,0.7)]' : 'ring-white/10 hover:ring-purple-400/50'
                   )}
                 >
                   <div className={cn('absolute inset-0', opt.preview)} />
@@ -59,8 +59,8 @@ export default function BackgroundField() {
           control={control}
           name="heartColor"
           render={({ field }) => (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
-              <label htmlFor="heart-color" className="text-sm font-medium">Cor dos corações</label>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.05] ring-1 ring-white/10">
+              <label htmlFor="heart-color" className="text-sm font-medium text-white">Cor dos corações</label>
               <input
                 id="heart-color"
                 type="color"

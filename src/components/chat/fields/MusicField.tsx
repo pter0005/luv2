@@ -20,8 +20,8 @@ export default function MusicField() {
             name="youtubeUrl"
             render={({ field }) => (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Music className="w-4 h-4 text-purple-500" />
+                <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <Music className="w-4 h-4 text-purple-300" />
                   Link do YouTube
                 </div>
                 <Input
@@ -38,7 +38,7 @@ export default function MusicField() {
             type="button"
             variant="ghost"
             size="sm"
-            className="w-full text-muted-foreground"
+            className="w-full text-white/60 hover:text-white hover:bg-white/[0.06]"
             onClick={() => { setValue('musicOption', 'none'); setValue('youtubeUrl', ''); }}
           >
             <SkipForward className="w-4 h-4 mr-1" /> Pular, não quero música
@@ -48,14 +48,13 @@ export default function MusicField() {
         <>
           <Button
             type="button"
-            variant="outline"
-            className="w-full h-14"
+            className="w-full h-14 bg-white/[0.05] hover:bg-white/[0.1] text-white ring-1 ring-white/10 backdrop-blur"
             onClick={() => setValue('musicOption', 'youtube')}
           >
-            <Music className="w-4 h-4 mr-2 text-purple-500" />
+            <Music className="w-4 h-4 mr-2 text-purple-300" />
             Colar link do YouTube
           </Button>
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs text-center text-white/50">
             Se quiser, você pode pular e deixar sem música também
           </p>
         </>
