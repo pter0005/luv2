@@ -4,11 +4,15 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import type { ChatStepKey } from '@/lib/chat-script';
+import type { WizardSegmentKey } from '@/lib/wizard-segment-config';
+import RecipientField from './fields/RecipientField';
 
 interface StepFieldProps {
   step: ChatStepKey;
   titlePlaceholder?: string;
   messagePlaceholder?: string;
+  recipientValue?: WizardSegmentKey;
+  onRecipientChange?: (v: WizardSegmentKey) => void;
 }
 
 const Skeleton = () => (
@@ -33,8 +37,15 @@ const ExtrasField = lazyField<{}>(() => import('./fields/ExtrasField'));
 const PlanField = lazyField<{}>(() => import('./fields/PlanField'));
 const PaymentField = lazyField<{}>(() => import('./fields/PaymentField'));
 
-export default function StepField({ step, titlePlaceholder, messagePlaceholder }: StepFieldProps) {
+export default function StepField({ step, titlePlaceholder, messagePlaceholder, recipientValue, onRecipientChange }: StepFieldProps) {
   switch (step) {
+    case 'recipient':
+      return (
+        <RecipientField
+          value={recipientValue ?? 'namorade'}
+          onChange={(v) => onRecipientChange?.(v)}
+        />
+      );
     case 'title':
       return <TitleField placeholder={titlePlaceholder} />;
     case 'message':
@@ -66,6 +77,8 @@ export default function StepField({ step, titlePlaceholder, messagePlaceholder }
 
 export function getFieldsForStep(step: ChatStepKey): (keyof import('@/lib/wizard-schema').PageData)[] {
   switch (step) {
+    case 'recipient':
+      return [];
     case 'title':
       return ['title'];
     case 'message':

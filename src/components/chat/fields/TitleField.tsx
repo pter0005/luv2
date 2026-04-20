@@ -2,30 +2,38 @@
 
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
 
 interface TitleFieldProps {
   placeholder?: string;
 }
 
-export default function TitleField({ placeholder = 'Ex: Para o amor da minha vida 💜' }: TitleFieldProps) {
+export default function TitleField({ placeholder = 'Ex: Para o amor da minha vida' }: TitleFieldProps) {
   const { register, watch, formState: { errors } } = useFormContext<PageData>();
   const value = watch('title');
   const err = errors.title?.message;
 
   return (
     <div className="space-y-2">
-      <Input
-        {...register('title')}
-        placeholder={placeholder}
-        autoFocus
-        maxLength={60}
-        className="h-12 text-base"
-      />
-      <div className="flex justify-between text-xs text-muted-foreground px-1">
-        <span className="text-destructive">{err}</span>
-        <span>{(value?.length ?? 0)}/60</span>
+      <div className="relative">
+        <input
+          {...register('title')}
+          placeholder={placeholder}
+          autoFocus
+          maxLength={60}
+          className={cn(
+            'w-full h-14 px-4 rounded-xl text-[15px] text-white placeholder:text-white/35',
+            'bg-white/[0.04] ring-1 ring-white/10 backdrop-blur',
+            'focus:bg-white/[0.06] focus:ring-2 focus:ring-pink-500/50 focus:outline-none',
+            'transition-all',
+            err && 'ring-red-500/60 focus:ring-red-500/70'
+          )}
+        />
+      </div>
+      <div className="flex justify-between items-center text-[11px] px-1 min-h-[14px]">
+        <span className="text-red-400/90">{err}</span>
+        <span className="text-white/40 tabular-nums">{(value?.length ?? 0)}/60</span>
       </div>
     </div>
   );

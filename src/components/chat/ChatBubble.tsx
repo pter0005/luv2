@@ -7,24 +7,33 @@ import { cn } from '@/lib/utils';
 interface ChatBubbleProps {
   text: string;
   className?: string;
-  /** ms per character. Set to 0 to render instantly. */
+  /** ms por caractere. 0 = instantâneo. */
   charInterval?: number;
-  /** ms of "typing..." indicator before text starts revealing. */
+  /** ms mostrando "..." antes do texto começar a aparecer. */
   typingDelay?: number;
 }
 
-function Dots() {
+/** Três bolinhas pulsando estilo iMessage. */
+function TypingDots() {
   return (
-    <div className="flex items-center gap-1 py-1">
+    <div className="flex items-center gap-1.5 py-1.5 px-0.5">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="block w-1.5 h-1.5 rounded-full bg-purple-400"
-          animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }}
+          className="block w-2 h-2 rounded-full"
+          style={{
+            background:
+              'linear-gradient(135deg, rgb(216, 180, 254), rgb(249, 168, 212))',
+          }}
+          animate={{
+            opacity: [0.35, 1, 0.35],
+            scale: [0.8, 1.15, 0.8],
+            y: [0, -3, 0],
+          }}
           transition={{
-            duration: 0.9,
+            duration: 1.1,
             repeat: Infinity,
-            delay: i * 0.15,
+            delay: i * 0.18,
             ease: 'easeInOut',
           }}
         />
@@ -36,8 +45,8 @@ function Dots() {
 export default function ChatBubble({
   text,
   className,
-  charInterval = 22,
-  typingDelay = 450,
+  charInterval = 28,
+  typingDelay = 600,
 }: ChatBubbleProps) {
   const [phase, setPhase] = useState<'typing' | 'revealing' | 'done'>('typing');
   const [revealed, setRevealed] = useState('');
@@ -48,9 +57,9 @@ export default function ChatBubble({
     setRevealed('');
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    // Respeita reduced-motion: mostra tudo direto
-    const prefersReduced = typeof window !== 'undefined'
-      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReduced || charInterval <= 0) {
       setPhase('done');
@@ -65,7 +74,10 @@ export default function ChatBubble({
         i++;
         setRevealed(text.slice(0, i));
         if (i < text.length) {
-          timerRef.current = setTimeout(step, charInterval);
+          // Pequena pausa extra em pontuação pra parecer mais natural
+          const lastChar = text[i - 1];
+          const extra = /[.,!?:;—–]/.test(lastChar) ? 140 : 0;
+          timerRef.current = setTimeout(step, charInterval + extra);
         } else {
           setPhase('done');
         }
@@ -82,35 +94,49 @@ export default function ChatBubble({
     <AnimatePresence mode="wait">
       <motion.div
         key={text}
-        initial={{ opacity: 0, y: 6, scale: 0.98 }}
+        initial={{ opacity: 0, y: 8, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -4, scale: 0.98 }}
-        transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+        exit={{ opacity: 0, y: -4, scale: 0.96 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
         className={cn(
-          'relative flex-1 rounded-2xl px-4 py-3 min-h-[44px]',
-          'bg-gradient-to-br from-white/[0.08] to-white/[0.04] backdrop-blur-md',
-          'ring-1 ring-white/15 shadow-[0_8px_32px_rgba(168,85,247,0.18)]',
-          'text-[15px] leading-snug text-white/90',
+          'relative flex-1 min-h-[52px] px-5 py-3.5',
+          'rounded-[22px] rounded-tl-md',
+          'bg-gradient-to-br from-white/[0.1] via-white/[0.06] to-white/[0.04]',
+          'backdrop-blur-xl ring-1 ring-white/15',
+          'shadow-[0_10px_40px_-12px_rgba(168,85,247,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]',
+          'text-[15px] leading-[1.45] text-white/95',
           className
         )}
         aria-live="polite"
       >
+        {/* Tail apontando pro Cupido (esquerda) */}
         <span
           aria-hidden
-          className="absolute -left-[7px] top-5 h-3.5 w-3.5 rotate-45 bg-white/[0.06] backdrop-blur-md ring-1 ring-white/15"
-          style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }}
+          className="absolute -left-1.5 top-4 w-4 h-4 rotate-45"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04))',
+            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            borderBottom: '1px solid rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(12px)',
+          }}
         />
+
         {phase === 'typing' ? (
-          <Dots />
+          <TypingDots />
         ) : (
           <span>
             {revealed}
             {phase === 'revealing' && (
               <motion.span
                 aria-hidden
-                className="inline-block w-[2px] h-[1em] -mb-[2px] ml-[1px] bg-purple-400 align-middle"
-                animate={{ opacity: [1, 0, 1] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
+                className="inline-block w-[2px] h-[1.1em] -mb-[2px] ml-[2px] align-middle rounded-full"
+                style={{
+                  background:
+                    'linear-gradient(180deg, rgb(216, 180, 254), rgb(249, 168, 212))',
+                }}
+                animate={{ opacity: [1, 0.2, 1] }}
+                transition={{ duration: 0.7, repeat: Infinity, ease: 'easeInOut' }}
               />
             )}
           </span>
