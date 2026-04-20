@@ -244,8 +244,8 @@ function Inner() {
         </div>
 
         {/* Layout: mobile single, desktop split */}
-        <div className="lg:grid lg:grid-cols-[minmax(0,480px)_minmax(0,1fr)] lg:gap-16 lg:max-w-[1200px] lg:mx-auto lg:px-8">
-          <div className="max-w-md mx-auto w-full px-4 pt-8 pb-36 lg:mx-0 lg:max-w-none lg:px-0 lg:pt-16 lg:pb-28">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10 lg:max-w-6xl lg:mx-auto lg:px-6">
+          <div className="max-w-md mx-auto w-full px-4 pt-8 pb-36 lg:mx-0 lg:px-0 lg:pt-14 lg:pb-28">
             {/* Cupido + balão */}
             <motion.div
               key={`cupid-${currentStep}`}
