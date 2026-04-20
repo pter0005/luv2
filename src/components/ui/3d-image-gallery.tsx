@@ -368,7 +368,7 @@ const CardPlane = React.memo(function CardPlane({
   const texH = Math.round(texW * 4 / 3)
   const texture = useCardTexture(card, texW, texH)
 
-  const cardH = isMobile ? 2.8 : 3.6
+  const cardH = isMobile ? 3.4 : 4.2
   const cardW = cardH * 0.75
 
   useEffect(() => {
@@ -467,9 +467,9 @@ function CardGalaxy({ isMobile, setSelectedCard }: { isMobile: boolean; setSelec
     if (n === 0) return []
     if (n === 1) return [{ x: 0, y: 0, z: 0 }]
     const phi = Math.PI * (3 - Math.sqrt(5))
-    const baseRadius = isMobile ? 6.7 : 11.2
-    const radius = baseRadius + Math.sqrt(n) * 0.5
-    const yFactor = isMobile ? 1.6 : 1.2
+    const baseRadius = isMobile ? 5.6 : 9.4
+    const radius = baseRadius + Math.sqrt(n) * 0.42
+    const yFactor = isMobile ? 1.5 : 1.15
     return Array.from({ length: n }, (_, i) => {
       const y = 1 - (i / (n - 1)) * 2
       const r = Math.sqrt(1 - y * y)
