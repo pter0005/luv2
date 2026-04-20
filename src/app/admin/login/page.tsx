@@ -1,5 +1,7 @@
 'use client';
 import { useFormState, useFormStatus } from 'react-dom';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { createAdminSession } from '../admin-auth-actions';
 import { ShieldCheck } from 'lucide-react';
 
@@ -16,8 +18,10 @@ function SubmitButton() {
   );
 }
 
-export default function AdminLoginPage() {
+function LoginForm() {
   const [state, action] = useFormState(createAdminSession, { error: '' });
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next') || '';
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-8 space-y-6">
@@ -26,8 +30,14 @@ export default function AdminLoginPage() {
             <ShieldCheck className="w-7 h-7 text-primary" />
           </div>
           <h1 className="text-xl font-bold">Admin</h1>
+          {next === '/chat' && (
+            <p className="text-[11px] text-muted-foreground text-center">
+              login pra testar o <span className="font-semibold text-primary">/chat</span>
+            </p>
+          )}
         </div>
         <form action={action} className="space-y-4">
+          <input type="hidden" name="next" value={next} />
           <input
             name="username"
             type="text"
@@ -47,5 +57,13 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -13,9 +13,17 @@ function safeCompare(a: string, b: string): boolean {
   } catch { return false; }
 }
 
+function safeNext(raw: string | null | undefined): string {
+  if (!raw) return '/admin';
+  if (typeof raw !== 'string') return '/admin';
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('..')) return '/admin';
+  return raw;
+}
+
 export async function createAdminSession(prevState: { error: string }, data: FormData) {
   const username = data.get('username') as string;
   const password = data.get('password') as string;
+  const next = safeNext(data.get('next') as string | null);
   const ADMIN_USER = process.env.ADMIN_USER;
   const ADMIN_PASS = process.env.ADMIN_PASS;
   const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
@@ -28,7 +36,7 @@ export async function createAdminSession(prevState: { error: string }, data: For
       .setExpirationTime('8h')
       .sign(secret);
     cookies().set('session_admin', token, { httpOnly: true, secure: true, maxAge: 60 * 60 * 8, path: '/', sameSite: 'lax' });
-    redirect('/admin');
+    redirect(next);
   }
   return { error: 'Invalid credentials.' };
 }

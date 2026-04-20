@@ -375,6 +375,12 @@ export default async function AdminPage() {
                 <QrCode className="h-3.5 w-3.5 text-fuchsia-400" />QR Code
               </Link>
             </Button>
+            <Button asChild variant="ghost" size="sm"
+              className="shrink-0 text-pink-300 hover:text-pink-200 h-8 px-2 text-xs gap-1.5 ring-1 ring-pink-500/30 bg-pink-500/5">
+              <Link href="/chat">
+                <MessageCircle className="h-3.5 w-3.5" />/chat <span className="text-[9px] opacity-60">beta</span>
+              </Link>
+            </Button>
           </nav>
 
           {/* Right: logout only on mobile */}

@@ -30,8 +30,10 @@ export async function middleware(request: NextRequest) {
   const isTryingToAccessAdminLogin = pathname === '/admin/login';
 
   if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin) {
+    const loginUrl = new URL('/admin/login', request.url);
+    loginUrl.searchParams.set('next', pathname);
     if (!adminSession) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+      return NextResponse.redirect(loginUrl);
     }
     try {
       if (!process.env.ADMIN_JWT_SECRET) throw new Error('JWT Secret not configured');
@@ -40,7 +42,6 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error("Admin session verification failed:", error);
       // If token is invalid, redirect to login and clear the bad cookie.
-      const loginUrl = new URL('/admin/login', request.url);
       const response = NextResponse.redirect(loginUrl);
       response.cookies.delete('session_admin'); // Correct way to delete a cookie
       return response;
