@@ -86,11 +86,20 @@ function Inner() {
       }
       const savedStep = localStorage.getItem(STEP_KEY_STORAGE) as ChatStepKey | null;
       if (savedStep && CHAT_STEP_ORDER.includes(savedStep)) {
-        setCurrentStep(savedStep);
+        // Se veio ?segment= na URL, nunca volta pro step recipient (já foi escolhido)
+        if (segmentParam && savedStep === 'recipient') {
+          const next = CHAT_STEP_ORDER[CHAT_STEP_ORDER.indexOf('recipient') + 1];
+          if (next) setCurrentStep(next);
+        } else {
+          setCurrentStep(savedStep);
+        }
       }
-      const savedSegment = localStorage.getItem(SEGMENT_STORAGE) as WizardSegmentKey | null;
-      if (savedSegment && savedSegment in WIZARD_SEGMENTS) {
-        setSegment(savedSegment);
+      // Segment da URL tem prioridade sobre o do localStorage
+      if (!segmentParam) {
+        const savedSegment = localStorage.getItem(SEGMENT_STORAGE) as WizardSegmentKey | null;
+        if (savedSegment && savedSegment in WIZARD_SEGMENTS) {
+          setSegment(savedSegment);
+        }
       }
     } catch {
       /* ignore */
