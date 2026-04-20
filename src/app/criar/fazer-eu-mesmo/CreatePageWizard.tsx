@@ -2154,65 +2154,23 @@ const LivePriceBar = React.memo(() => {
 LivePriceBar.displayName = 'LivePriceBar';
 
 // ─────────────────────────────────────────────
-// INTERACTIVE EXTRAS — combines Puzzle + Memory + Quiz + Word + Voice in one screen.
-// Each sub-feature keeps its own self-contained component (zero logic rewrite);
-// we just stack them with visual section dividers + small hero header.
-// Rationale: removes 4 "Continuar" clicks from the funnel without touching the
-// internal state machine of each feature. Safe refactor.
-// ─────────────────────────────────────────────
-const InteractiveExtrasStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
-    return (
-        <div className="space-y-10">
-            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                <p className="text-sm text-purple-200/90 leading-relaxed">
-                    Escolhe quais surpresas você quer adicionar. Cada uma é <strong>opcional</strong> —
-                    liga só as que fazem sentido. Quanto mais você adiciona, mais mágico fica 💫
-                </p>
-            </div>
-
-            <section className="pb-10 border-b border-white/10">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🧩 Quebra-cabeça</h3>
-                <PuzzleStep handleAutosave={handleAutosave} />
-            </section>
-
-            <section className="pb-10 border-b border-white/10">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">💝 Jogo da memória</h3>
-                <MemoryGameStep />
-            </section>
-
-            <section className="pb-10 border-b border-white/10">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🧠 Quiz do casal</h3>
-                <QuizStep />
-            </section>
-
-            <section className="pb-10 border-b border-white/10">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">💘 Adivinhe a palavra</h3>
-                <WordGameStep />
-            </section>
-
-            <section>
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">🎤 Mensagem de voz</h3>
-                <VoiceMessageStep />
-            </section>
-        </div>
-    );
-});
-InteractiveExtrasStep.displayName = 'InteractiveExtrasStep';
-
-// ─────────────────────────────────────────────
-// stepComponents array — index-aligned with the `steps` array below.
+// stepComponents array — index-aligned com o array `steps` abaixo.
 // ─────────────────────────────────────────────
 const stepComponents: React.ComponentType<any>[] = [
-    TitleStep,              // 0 - title
-    MessageStep,            // 1 - message
-    SpecialDateStep,        // 2 - specialDate
-    GalleryStep,            // 3 - gallery
-    TimelineStep,           // 4 - timeline
-    IntroStep,              // 5 - intro
-    MusicStep,              // 6 - music
-    BackgroundStep,         // 7 - background
-    InteractiveExtrasStep,  // 8 - extras-interactive (merges puzzle/memory/quiz/word/voice)
-    PlanStep,               // 9 - plan
+    TitleStep,         // 0 - title
+    MessageStep,       // 1 - message
+    SpecialDateStep,   // 2 - specialDate
+    GalleryStep,       // 3 - gallery
+    TimelineStep,      // 4 - timeline
+    IntroStep,         // 5 - intro
+    MusicStep,         // 6 - music
+    BackgroundStep,    // 7 - background
+    PuzzleStep,        // 8 - puzzle
+    MemoryGameStep,    // 9 - memory
+    QuizStep,          // 10 - quiz
+    WordGameStep,      // 11 - word game
+    PlanStep,          // 12 - plan
+    VoiceMessageStep,  // 13 - voice
 ];
 
 // ─────────────────────────────────────────────
@@ -3515,8 +3473,12 @@ function WizardInternal() {
         { id: "intro",      title: 'Uma abertura especial 💫',  description: 'Uma animação antes da surpresa aparecer — pra deixar a entrada inesquecível.',  fields: ["introType", "introGender", "introFont"] },
         { id: "music",      title: 'A trilha de vocês 🎵',      description: segCfg.musicStepDescription,    fields: ["musicOption", "youtubeUrl"] },
         { id: "background", title: 'Atmosfera da página 🌸',    description: 'O efeito que vai rolar no fundo — corações, estrelas, pétalas.', fields: ["backgroundAnimation", "heartColor"] },
-        { id: "extras-interactive", title: 'Surpresas interativas 🎁', description: 'Toques especiais que a pessoa vai descobrir — liga só os que você quer. Todos opcionais.', fields: ["enablePuzzle", "puzzleImage", "enableMemoryGame", "memoryGameImages", "enableQuiz", "quizQuestions", "enableWordGame", "wordGameQuestions", "audioRecording"] },
+        { id: "puzzle",     title: 'Um desafio antes da surpresa 🧩', description: segCfg.puzzleStepDescription, fields: ["enablePuzzle", "puzzleImage"] },
+        { id: "memory",     title: 'Jogo da memória 💝',        description: segCfg.memoryStepDescription,   fields: ["enableMemoryGame", "memoryGameImages"] },
+        { id: "quiz",       title: segCfg.quizStepTitle,        description: segCfg.quizStepDescription,     fields: ["enableQuiz", "quizQuestions"] },
+        { id: "word-game",  title: 'Adivinhe a palavra 💘',     description: 'Palavras secretas pra pessoa descobrir letra por letra.',  fields: ["enableWordGame", "wordGameQuestions"] },
         { id: "plan",       title: 'Seu plano',                 description: 'Escolhe o que faz mais sentido — dá pra trocar depois.', fields: ["plan"] },
+        { id: "voice",      title: 'Grave sua voz 🎤',          description: 'Uma mensagem de voz sua vai emocionar ainda mais. Opcional — dá pra pular.',  fields: ["audioRecording"] },
         { id: "payment",    title: 'Pronto pra enviar 💌',      description: 'Última etapa — seu link e QR Code já vão tá prontos em segundos.', fields: ["payment", "qrCodeDesign"] },
     // eslint-disable-line react-hooks/exhaustive-deps
     ], [segmentKey]);
@@ -3717,10 +3679,10 @@ function WizardInternal() {
     const handleNext = async () => {
         const currentStepId = steps[currentStep].id;
 
-        if (currentStepId === 'extras-interactive') {
+        if (currentStepId === 'puzzle') {
             const currentData = getValues();
             if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
-                toast({ variant: "destructive", title: 'Imagem do quebra-cabeça', description: 'Pra ativar o quebra-cabeça, envia uma imagem — ou desliga essa surpresa.' });
+                toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
                 return;
             }
         } else {
@@ -3827,7 +3789,7 @@ function WizardInternal() {
         const Comp = stepComponents[currentStep];
         if (Comp) {
             const props: any = { isVisible: currentStepId === 'background' };
-            if (currentStepId === 'extras-interactive') props.handleAutosave = handleAutosave;
+            if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
             if (currentStepId === 'title') props.titlePlaceholder = segCfg.titlePlaceholder;
             if (currentStepId === 'message') props.messagePlaceholder = segCfg.messagePlaceholder;
             StepComponent = <Comp {...props} />;
@@ -3836,7 +3798,7 @@ function WizardInternal() {
         }
     }
 
-    const showPuzzlePreview = currentStepId === 'extras-interactive' && formData.enablePuzzle && !!formData.puzzleImage?.url;
+    const showPuzzlePreview = currentStepId === 'puzzle' && formData.enablePuzzle && !!formData.puzzleImage?.url;
     const showEasterPreview = currentStepId === 'intro' && formData.introType === 'love';
     const showPoemaPreview = currentStepId === 'intro' && formData.introType === 'poema';
 

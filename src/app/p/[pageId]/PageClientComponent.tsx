@@ -753,7 +753,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               style={{ background: '#0a0510' }}
             >
               <div className="absolute inset-0 overflow-hidden">
-                <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} />
+                <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} fontFamily={(pageData as any).introFont || 'cormorant'} />
               </div>
             </motion.div>
           )}

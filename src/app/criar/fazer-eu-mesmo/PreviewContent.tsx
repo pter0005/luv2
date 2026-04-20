@@ -373,7 +373,7 @@ export default function PreviewContent({
                             className="absolute inset-0 z-50 rounded-[2rem] overflow-hidden flex items-center justify-center"
                             style={{ background: '#0a0510' }}
                         >
-                            <div className="relative h-full aspect-[375/812] max-w-full overflow-hidden">
+                            <div className="relative w-full h-full overflow-hidden">
                                 <FlowerPoemIntro
                                     onReveal={() => {
                                         setShowExplosion(true);
@@ -381,6 +381,7 @@ export default function PreviewContent({
                                         setTimeout(() => setShowExplosion(false), 2000);
                                     }}
                                     gender={(formData as any).introGender || 'fem'}
+                                    fontFamily={(formData as any).introFont || 'cormorant'}
                                 />
                             </div>
                         </motion.div>

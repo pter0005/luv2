@@ -22,6 +22,13 @@
   body.font-dancing #textOverlay .word.em{font-family:'Dancing Script',cursive;font-style:normal}
   /* ── Embed mode: hide gender toggle + replay button when embedded in parent app ── */
   body.embed #genderBtn,body.embed #replayBtn{display:none!important}
+  /* Embed layout: fill parent iframe cleanly, strip the standalone chrome
+     (box-shadow / border-radius) which looks weird nested inside another app.
+     Stage keeps its 375/812 aspect — outer #app gradient fills the rest so
+     landscape / odd iframe ratios read as intentional letterbox, not "cortada". */
+  body.embed #app{background:radial-gradient(ellipse at 50% 45%,#1a0a22 0%,#0a0510 55%,#050008 100%)}
+  body.embed #stageWrap{box-shadow:none;border-radius:0;height:100%;width:auto;max-width:100%;max-height:100%}
+  body.embed #loading{background:transparent}
   /* ── Scene text (non-finale) ── */
   #textOverlay{
     position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
@@ -1637,6 +1644,12 @@ window.__poema = {
 };
 
 window.addEventListener('resize', resizeCanvas);
+// ResizeObserver — picks up iframe container size changes that don't fire
+// a window resize (e.g. parent layout shifts, preview panel toggles).
+try {
+  const __ro = new ResizeObserver(() => resizeCanvas());
+  __ro.observe(document.getElementById('stageWrap'));
+} catch (e) { /* older browser — window resize is enough */ }
 
 // ═══ SECTION 17: INIT ═══
 resizeCanvas();
