@@ -1,7 +1,6 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import { createAdminSession } from '../admin-auth-actions';
 import { ShieldCheck } from 'lucide-react';
 
@@ -18,10 +17,20 @@ function SubmitButton() {
   );
 }
 
-function LoginForm() {
+export default function AdminLoginPage() {
   const [state, action] = useFormState(createAdminSession, { error: '' });
-  const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '';
+  const [next, setNext] = useState('');
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('next') || '';
+      if (raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('..')) {
+        setNext(raw);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-8 space-y-6">
@@ -57,13 +66,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function AdminLoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
   );
 }
