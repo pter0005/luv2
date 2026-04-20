@@ -17,6 +17,5 @@ yarn-error.log*
 # Misc
 .DS_Store
 
-# Heavy local-only media (keep locally; host externally for prod)
+# Heavy local-only media originals (ship compressed .mp4 instead)
 public/chat-assets/*.mov
-public/chat-assets/*.mp4

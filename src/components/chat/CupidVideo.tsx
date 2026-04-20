@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 
+export type CupidVariant = 'idle' | 'asking';
+
 interface CupidVideoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  variant?: CupidVariant;
 }
 
 const SIZE_MAP = {
@@ -14,8 +17,14 @@ const SIZE_MAP = {
   lg: 'w-36 h-36 md:w-44 md:h-44',
 };
 
-export default function CupidVideo({ className, size = 'md' }: CupidVideoProps) {
+const SRC_MAP: Record<CupidVariant, string> = {
+  idle: '/chat-assets/cupid-idle.mp4',
+  asking: '/chat-assets/cupid-asking.mp4',
+};
+
+export default function CupidVideo({ className, size = 'md', variant = 'idle' }: CupidVideoProps) {
   const [failed, setFailed] = useState(false);
+  const src = SRC_MAP[variant];
 
   return (
     <div
@@ -28,17 +37,16 @@ export default function CupidVideo({ className, size = 'md' }: CupidVideoProps) 
     >
       {!failed ? (
         <video
+          key={src}
           className="w-full h-full object-cover"
+          src={src}
           autoPlay
           loop
           muted
           playsInline
           preload="metadata"
           onError={() => setFailed(true)}
-        >
-          <source src="/chat-assets/0420.mov" type="video/mp4" />
-          <source src="/chat-assets/0420(1).mov" type="video/mp4" />
-        </video>
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-4xl">
           <span role="img" aria-label="Cupido">🏹</span>

@@ -143,7 +143,7 @@ export default function ChatWizardClient() {
             transition={{ duration: 0.3 }}
             className="flex items-start gap-3 mb-6"
           >
-            <CupidVideo size="md" />
+            <CupidVideo size="md" variant={currentStep === 'title' || currentStep === 'payment' ? 'idle' : 'asking'} />
             <ChatBubble text={cupidText} />
           </motion.div>
 
