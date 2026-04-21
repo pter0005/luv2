@@ -78,34 +78,45 @@ export default function ChatBubble({
   }, [text, charInterval, typingDelay]);
 
   return (
-    <div
-      key={text}
-      className={cn(
-        'relative flex-1 min-h-[52px] px-5 py-3.5 rounded-[22px] rounded-tl-md',
-        'bg-white/[0.06] ring-1 ring-white/12',
-        'text-[15px] leading-[1.45] text-white/95',
-        'animate-in fade-in slide-in-from-bottom-2 duration-200',
-        className
-      )}
-      aria-live="polite"
-    >
-      {/* Tail apontando pro Cupido */}
-      <span
-        aria-hidden
-        className="absolute -left-1.5 top-4 w-3 h-3 rotate-45 bg-white/[0.06] ring-1 ring-white/12 rounded-[3px]"
-        style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }}
-      />
-
-      {phase === 'typing' ? (
-        <TypingDots />
-      ) : (
-        <span>
-          {revealed}
-          {phase === 'revealing' && (
-            <span className="inline-block w-[2px] h-[1em] ml-[2px] align-middle bg-white/70 animate-pulse" />
-          )}
+    <div className="relative flex-1 min-w-0">
+      {/* Label "cupido" — hierarquia sutil */}
+      <div className="flex items-center gap-1.5 mb-1.5 pl-1">
+        <span className="text-[9.5px] font-bold uppercase tracking-[0.22em] text-white/40">
+          cupido
         </span>
-      )}
+        <span className="inline-block w-1 h-1 rounded-full bg-fuchsia-400/60 animate-pulse" />
+      </div>
+
+      <div
+        key={text}
+        className={cn(
+          'relative min-h-[56px] px-5 py-4 rounded-[24px]',
+          'bg-gradient-to-b from-white/[0.09] to-white/[0.03]',
+          'ring-1 ring-white/15',
+          'shadow-[0_8px_28px_-12px_rgba(236,72,153,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)]',
+          // Tipografia: serif italic com caráter
+          'font-serif italic',
+          'text-[17px] leading-[1.5] text-white',
+          'animate-in fade-in slide-in-from-bottom-1 duration-300',
+          className
+        )}
+        style={{
+          fontFamily:
+            'var(--font-instrument-serif), "Fraunces", ui-serif, Georgia, "Times New Roman", serif',
+        }}
+        aria-live="polite"
+      >
+        {phase === 'typing' ? (
+          <TypingDots />
+        ) : (
+          <span>
+            {revealed}
+            {phase === 'revealing' && (
+              <span className="inline-block w-[2px] h-[1em] ml-[2px] align-middle bg-fuchsia-300/80 animate-pulse" />
+            )}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

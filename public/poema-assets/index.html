@@ -58,7 +58,7 @@
     left:calc(var(--stage-x,0px) + var(--stage-w,100%) * 0.035);
     right:auto;
     width:calc(var(--stage-w,100%) * 0.93);
-    top:calc(var(--stage-y,0px) + var(--stage-h,100%) * 0.048);
+    top:calc(var(--stage-y,0px) + var(--stage-h,100%) * 0.022);
     /* Scale typography with the stage frame so it matches the flower art */
     font-size:clamp(32px,calc(var(--stage-w,100%) * 0.1133),68px);
     backface-visibility:hidden;
@@ -82,7 +82,7 @@
   body.embed #loading{background:transparent}
   /* ── Scene text (non-finale) ── */
   #textOverlay{
-    position:absolute;left:3.5%;right:3.5%;top:4.8%;text-align:center;
+    position:absolute;left:3.5%;right:3.5%;top:2.2%;text-align:center;
     font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;
     /* Bumped floor/vw/cap for easier legibility — measured 140px slack to the
        flower top at 375×812, so this ~17-20% growth still leaves ~90px gap. */
@@ -150,8 +150,10 @@
     color:transparent;-webkit-text-fill-color:transparent;
     /* padding-top generoso — o "J" de "jasmim" em Great Vibes tem ascendente
        ornamental que extrapola a cap-height em ~40%. .30em do próprio span
-       (que já é 2.78em do body) reserva espaço suficiente pra não cortar. */
-    padding:.30em .08em .08em;margin-top:0;
+       (que já é 2.78em do body) reserva espaço suficiente pra não cortar.
+       padding-left maior (.35em) pra comportar o swash ornamental esquerdo
+       do J — antes cortava em "jasmim". */
+    padding:.30em .08em .08em .35em;margin-top:0;
     overflow:visible;
     transform:translateY(-20px);
     transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);

@@ -1,6 +1,6 @@
 import './globals.css';
 import 'swiper/css';
-import { Poppins, Playfair_Display, Dancing_Script } from 'next/font/google';
+import { Poppins, Playfair_Display, Dancing_Script, Instrument_Serif } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
@@ -29,6 +29,14 @@ const dancingScript = Dancing_Script({
   display: 'swap',
   weight: '700',
   variable: '--font-dancing-script',
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument-serif',
 });
 
 const headerLogoUrl = 'https://i.imgur.com/InmbjFb.png';
@@ -168,7 +176,8 @@ export default function RootLayout({
           'font-body antialiased overflow-x-hidden bg-background min-h-screen',
           poppins.variable,
           playfairDisplay.variable,
-          dancingScript.variable
+          dancingScript.variable,
+          instrumentSerif.variable
         )}
       >
         <FirebaseClientProvider>
