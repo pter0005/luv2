@@ -121,11 +121,6 @@ export default function PaymentField() {
   }, [user?.email, emailInput]);
   const phone = whatsappNumber || '';
 
-  // Não-admin não tem opção de cartão — força pix
-  useEffect(() => {
-    if (!isAdmin && method === 'card') setMethod('pix');
-  }, [isAdmin, method]);
-
   // Garantir que o rascunho exista
   useEffect(() => {
     if (!user || intentId) return;
@@ -499,47 +494,42 @@ export default function PaymentField() {
             )}
           </button>
 
-          {/* CARTÃO (MP) — só admin por enquanto */}
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setMethod('card')}
-              className={cn(
-                'relative flex items-center gap-3 p-4 rounded-2xl transition text-left ring-2 overflow-hidden',
-                method === 'card'
-                  ? 'bg-gradient-to-br from-purple-500/20 via-fuchsia-500/10 to-pink-500/10 ring-purple-400 shadow-[0_10px_30px_-10px_rgba(168,85,247,0.55)]'
-                  : 'bg-white/[0.03] ring-white/10 hover:bg-white/[0.06] hover:ring-purple-400/40'
-              )}
-            >
-              <div className="absolute top-1.5 right-1.5 text-[8.5px] px-1.5 py-0.5 rounded-full bg-amber-400/25 text-amber-200 font-bold uppercase tracking-wider ring-1 ring-amber-400/30">
-                admin
+          {/* CARTÃO (MP) */}
+          <button
+            type="button"
+            onClick={() => setMethod('card')}
+            className={cn(
+              'relative flex items-center gap-3 p-4 rounded-2xl transition text-left ring-2 overflow-hidden',
+              method === 'card'
+                ? 'bg-gradient-to-br from-purple-500/20 via-fuchsia-500/10 to-pink-500/10 ring-purple-400 shadow-[0_10px_30px_-10px_rgba(168,85,247,0.55)]'
+                : 'bg-white/[0.03] ring-white/10 hover:bg-white/[0.06] hover:ring-purple-400/40'
+            )}
+          >
+            <div className={cn(
+              'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition',
+              method === 'card'
+                ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md'
+                : 'bg-white/[0.05] text-white/60 ring-1 ring-white/10'
+            )}>
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[15px] font-bold text-white">Cartão</span>
+                <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 font-bold uppercase tracking-wider">
+                  crédito / débito
+                </span>
               </div>
-              <div className={cn(
-                'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition',
-                method === 'card'
-                  ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-md'
-                  : 'bg-white/[0.05] text-white/60 ring-1 ring-white/10'
-              )}>
-                <CreditCard className="w-5 h-5" />
+              <div className="text-[12px] text-white/60 mt-0.5">
+                Crédito ou débito
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[15px] font-bold text-white">Cartão</span>
-                  <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 font-bold uppercase tracking-wider">
-                    crédito / débito
-                  </span>
-                </div>
-                <div className="text-[12px] text-white/60 mt-0.5">
-                  Crédito ou débito
-                </div>
+            </div>
+            {method === 'card' && (
+              <div className="w-5 h-5 rounded-full bg-purple-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-3 h-3 text-purple-900" />
               </div>
-              {method === 'card' && (
-                <div className="w-5 h-5 rounded-full bg-purple-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-3 h-3 text-purple-900" />
-                </div>
-              )}
-            </button>
-          )}
+            )}
+          </button>
         </div>
       </div>
 

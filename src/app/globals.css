@@ -52,6 +52,14 @@
   * {
     @apply border-border;
   }
+  html, body {
+    /* No celular, qualquer elemento que passe do viewport deixava a pessoa
+       arrastar pra lado e travava o feeling do chat. Trava o X mas mantém
+       o scroll vertical livre. */
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    max-width: 100vw;
+  }
   body {
     @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;

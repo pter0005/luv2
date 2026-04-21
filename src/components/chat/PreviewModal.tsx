@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, Sparkles, X } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 import type { PageData } from '@/lib/wizard-schema';
 
@@ -25,26 +25,46 @@ interface PreviewModalProps {
   onClose: () => void;
 }
 
+// Guarda na sessão que a intro já foi vista — evita forçar a pessoa a montar
+// o quebra-cabeça toda vez que ela clica em "ver como está ficando".
+const INTRO_SEEN_KEY = 'chat-preview-intro-seen-v1';
+
 export default function PreviewModal({ open, onClose }: PreviewModalProps) {
   const { watch } = useFormContext<PageData>();
   const [isClient, setIsClient] = React.useState(false);
-  // Começa não revelado — assim a intro dispara assim que o modal abrir.
-  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = React.useState(false);
+  // previewPuzzleRevealed=true significa "pular a intro, mostrar a página final".
+  // Começamos true e só setamos false se for a primeira vez nessa sessão.
+  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = React.useState(true);
 
   const introType = watch('introType');
   const enablePuzzle = watch('enablePuzzle' as any);
   const puzzleImage = watch('puzzleImage' as any);
 
-  // Deriva os flags de intro a partir do form: se a pessoa escolheu love/poema
-  // ou ativou o puzzle com imagem, a prévia abre JÁ na tela da abertura.
   const showEasterPreview = introType === 'love';
   const showPoemaPreview = introType === 'poema';
   const showPuzzlePreview = !!enablePuzzle && !!(puzzleImage && (typeof puzzleImage === 'string' ? puzzleImage : puzzleImage.url));
+  const hasAnyIntro = showEasterPreview || showPoemaPreview || showPuzzlePreview;
 
-  // Toda vez que o modal abrir, reseta o estado da intro pra dar replay.
+  // Ao abrir: se a pessoa nunca viu a intro nessa sessão e tem intro configurada,
+  // dispara. Caso contrário, vai direto pra página final — mas com botão de replay.
   useEffect(() => {
-    if (open) setPreviewPuzzleRevealed(false);
-  }, [open]);
+    if (!open) return;
+    let seen = false;
+    try { seen = sessionStorage.getItem(INTRO_SEEN_KEY) === '1'; } catch {}
+    setPreviewPuzzleRevealed(seen || !hasAnyIntro);
+  }, [open, hasAnyIntro]);
+
+  // Quando a intro é revelada (finalizada), marca como vista.
+  useEffect(() => {
+    if (previewPuzzleRevealed && hasAnyIntro) {
+      try { sessionStorage.setItem(INTRO_SEEN_KEY, '1'); } catch {}
+    }
+  }, [previewPuzzleRevealed, hasAnyIntro]);
+
+  const replayIntro = React.useCallback(() => {
+    try { sessionStorage.removeItem(INTRO_SEEN_KEY); } catch {}
+    setPreviewPuzzleRevealed(false);
+  }, []);
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -61,6 +81,10 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
   }, [open, onClose]);
 
   if (!open || typeof window === 'undefined') return null;
+
+  // Só mostra o botão "ver intro" quando a página final tá visível E existe intro
+  // — não faz sentido oferecer replay se não tem o que replayar.
+  const showReplayButton = hasAnyIntro && previewPuzzleRevealed;
 
   return createPortal(
     <motion.div
@@ -89,6 +113,17 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
         <div className="absolute top-3 left-3 z-50 px-3 py-1 rounded-full bg-black/70 text-white text-[10px] uppercase tracking-widest ring-1 ring-white/20">
           Prévia
         </div>
+
+        {showReplayButton && (
+          <button
+            type="button"
+            onClick={replayIntro}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[11.5px] font-semibold shadow-lg ring-1 ring-white/20 active:scale-[0.97] transition"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Ver intro de novo
+          </button>
+        )}
 
         <div className="w-full h-full">
           <PreviewContent

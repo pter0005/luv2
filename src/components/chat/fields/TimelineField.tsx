@@ -53,12 +53,13 @@ export default function TimelineField() {
 
     // Processa em paralelo limitado pra não saturar rede — mas os append()
     // acontecem sequencialmente depois, pra não dar race no useFieldArray.
-    const CONCURRENCY = 3;
+    const CONCURRENCY = 6;
     const uploadOne = async (file: File) => {
       try {
         let toUpload: File | Blob = file;
         try {
-          toUpload = await compressImage(file, 1400, 0.82);
+          // Timeline é miniatura de 80x80 na lista — 1100px basta.
+          toUpload = await compressImage(file, 1100, 0.76);
         } catch (err) {
           console.warn('[timeline] compressImage falhou, enviando original', err);
         }

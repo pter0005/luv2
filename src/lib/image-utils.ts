@@ -35,56 +35,71 @@ export const base64ToBlob = (base64: string): Blob => {
 };
 
 
-// Helper to compress and resize an image file
-export const compressImage = (file: File, maxWidthOrHeight = 1280, quality = 0.75): Promise<File> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target?.result as string;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+// Helper to compress and resize an image file.
+//
+// Estratégia de velocidade:
+// 1. createImageBitmap() decodifica nativo (GPU quando possível) — muito mais
+//    rápido que new Image + data URL, que passa pela string base64.
+// 2. OffscreenCanvas + convertToBlob quando disponível (Chrome/Android) —
+//    não bloqueia o main thread.
+// 3. SEMPRE sai JPEG — mesmo PNG/HEIC/WebP vira JPEG. PNG é 3-5x maior e não
+//    precisamos de transparência em fotos de galeria.
+// 4. Se a foto já é menor que o limite, não redimensiona — só re-comprime.
+export const compressImage = async (
+  file: File,
+  maxWidthOrHeight = 1280,
+  quality = 0.75
+): Promise<File> => {
+  // Usa createImageBitmap — nativo, sem passar por data URL.
+  const bitmap = await createImageBitmap(file);
 
-                if (!ctx) {
-                    return reject(new Error('Could not get canvas context'));
-                }
+  const { width: srcW, height: srcH } = bitmap;
+  let width = srcW;
+  let height = srcH;
+  if (width > height && width > maxWidthOrHeight) {
+    height = Math.round((height * maxWidthOrHeight) / width);
+    width = maxWidthOrHeight;
+  } else if (height >= width && height > maxWidthOrHeight) {
+    width = Math.round((width * maxWidthOrHeight) / height);
+    height = maxWidthOrHeight;
+  }
 
-                let { width, height } = img;
+  // Preferir OffscreenCanvas.convertToBlob — sem bloquear main thread.
+  if (typeof OffscreenCanvas !== 'undefined') {
+    try {
+      const off = new OffscreenCanvas(width, height);
+      const ctx = off.getContext('2d');
+      if (!ctx) throw new Error('No 2d context');
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close?.();
+      const blob = await (off as any).convertToBlob({ type: 'image/jpeg', quality });
+      const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+      return new File([blob], name, { type: 'image/jpeg' });
+    } catch {
+      // Cai pro fallback
+    }
+  }
 
-                // Adjust dimensions while maintaining aspect ratio
-                if (width > height) {
-                    if (width > maxWidthOrHeight) {
-                        height = Math.round((height * maxWidthOrHeight) / width);
-                        width = maxWidthOrHeight;
-                    }
-                } else {
-                    if (height > maxWidthOrHeight) {
-                        width = Math.round((width * maxWidthOrHeight) / height);
-                        height = maxWidthOrHeight;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const mimeType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
-                canvas.toBlob(
-                    (blob) => {
-                        if (blob) {
-                            resolve(new File([blob], file.name, { type: mimeType }));
-                        } else {
-                            reject(new Error('Canvas to Blob conversion failed.'));
-                        }
-                    },
-                    mimeType,
-                    quality
-                );
-            };
-            img.onerror = (error) => reject(error);
-        };
-        reader.onerror = (error) => reject(error);
-    });
+  // Fallback: canvas normal no DOM (Safari não tem OffscreenCanvas.convertToBlob em todas versões).
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    bitmap.close?.();
+    throw new Error('Could not get canvas context');
+  }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close?.();
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return reject(new Error('Canvas to Blob conversion failed.'));
+        const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], name, { type: 'image/jpeg' }));
+      },
+      'image/jpeg',
+      quality
+    );
+  });
 };

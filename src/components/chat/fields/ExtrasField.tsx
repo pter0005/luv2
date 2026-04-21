@@ -190,7 +190,8 @@ function MemorySubForm() {
         try {
           let toUpload: File | Blob = file;
           try {
-            toUpload = await compressImage(file, 1000, 0.82);
+            // Cartas do jogo da memória são bem pequenas no render — 900px sobra.
+            toUpload = await compressImage(file, 900, 0.76);
           } catch (err) {
             console.warn('[memory] compressImage falhou, enviando original', err);
           }

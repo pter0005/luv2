@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { useFormContext, useFieldArray } from 'react-hook-form';
+import { useFormContext, useFieldArray, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { Camera, ImagePlus, Loader2, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,8 +77,9 @@ export default function GalleryField() {
     }));
     setPending((prev) => [...prev, ...batch]);
 
-    // Upload em paralelo (limitado por batch pra não saturar rede do celular)
-    const CONCURRENCY = 3;
+    // Upload em paralelo — 6 simultâneos é o sweet spot: Firebase aguenta,
+    // rede 4G também, e o compressImage agora é rápido porque usa bitmap nativo.
+    const CONCURRENCY = 6;
     let failed = 0;
 
     // Upload um arquivo e RETORNA o resultado — não mexe no form aqui.
@@ -91,7 +92,8 @@ export default function GalleryField() {
         // TIFF, etc), manda o arquivo original pra não travar o upload.
         let toUpload: File | Blob = file;
         try {
-          toUpload = await compressImage(file, 1600, 0.82);
+          // 1400px + 0.78 é visualmente idêntico a 1600+0.82 mas ~30% menor no fio
+          toUpload = await compressImage(file, 1400, 0.78);
         } catch (err) {
           console.warn('[gallery] compressImage falhou, enviando original', err);
         }
@@ -314,6 +316,113 @@ export default function GalleryField() {
           )}
         </div>
       )}
+
+      {fields.length >= 2 && (
+        <div className="pt-3 space-y-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/55 px-0.5">
+            Modo de exibição
+          </div>
+          <GalleryStylePicker />
+        </div>
+      )}
     </div>
+  );
+}
+
+// ───────────────────────────────────────────────────
+// Picker dos modos de carrossel — 4 cards visuais
+// ───────────────────────────────────────────────────
+const GALLERY_STYLES: { value: string; label: string; desc: string; preview: React.ReactNode }[] = [
+  {
+    value: 'Coverflow',
+    label: 'Coverflow',
+    desc: 'clássico — foto central maior',
+    preview: (
+      <svg viewBox="0 0 60 32" className="w-full h-full">
+        <rect x="4" y="8" width="14" height="16" rx="2" fill="currentColor" opacity="0.25" transform="skewY(-10 11 16)" />
+        <rect x="22" y="4" width="16" height="24" rx="2.5" fill="currentColor" opacity="0.9" />
+        <rect x="42" y="8" width="14" height="16" rx="2" fill="currentColor" opacity="0.25" transform="skewY(10 49 16)" />
+      </svg>
+    ),
+  },
+  {
+    value: 'Cards',
+    label: 'Cards',
+    desc: 'cartas empilhadas',
+    preview: (
+      <svg viewBox="0 0 60 32" className="w-full h-full">
+        <rect x="22" y="8" width="16" height="20" rx="2" fill="currentColor" opacity="0.25" />
+        <rect x="20" y="6" width="16" height="20" rx="2" fill="currentColor" opacity="0.5" />
+        <rect x="18" y="4" width="16" height="20" rx="2" fill="currentColor" opacity="0.9" />
+      </svg>
+    ),
+  },
+  {
+    value: 'Flip',
+    label: 'Flip',
+    desc: 'foto vira no ar',
+    preview: (
+      <svg viewBox="0 0 60 32" className="w-full h-full">
+        <rect x="20" y="6" width="20" height="20" rx="2" fill="currentColor" opacity="0.9" transform="skewX(-14 30 16)" />
+        <line x1="30" y1="4" x2="30" y2="28" stroke="currentColor" strokeWidth="0.8" opacity="0.5" strokeDasharray="2 2" />
+      </svg>
+    ),
+  },
+  {
+    value: 'Cube',
+    label: 'Cube',
+    desc: 'rotação 3D tipo cubo',
+    preview: (
+      <svg viewBox="0 0 60 32" className="w-full h-full">
+        <polygon points="22,8 38,4 38,28 22,24" fill="currentColor" opacity="0.9" />
+        <polygon points="38,4 44,8 44,24 38,28" fill="currentColor" opacity="0.45" />
+        <polygon points="22,8 38,4 44,8 28,12" fill="currentColor" opacity="0.2" />
+      </svg>
+    ),
+  },
+];
+
+function GalleryStylePicker() {
+  const { control } = useFormContext<PageData>();
+  return (
+    <Controller
+      control={control}
+      name={'galleryStyle' as any}
+      render={({ field }) => (
+        <div className="grid grid-cols-2 gap-2">
+          {GALLERY_STYLES.map((s) => {
+            const selected = field.value === s.value;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => field.onChange(s.value)}
+                className={cn(
+                  'flex items-center gap-2.5 rounded-xl p-2.5 text-left transition active:scale-[0.98]',
+                  selected
+                    ? 'bg-gradient-to-br from-pink-500/25 to-purple-500/15 ring-2 ring-pink-400/60 shadow-[0_6px_20px_-8px_rgba(236,72,153,0.5)]'
+                    : 'bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.07] hover:ring-white/20'
+                )}
+              >
+                <div
+                  className={cn(
+                    'w-12 h-7 shrink-0 rounded-md flex items-center justify-center',
+                    selected ? 'text-pink-200' : 'text-white/70'
+                  )}
+                >
+                  {s.preview}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className={cn('text-[12px] font-semibold leading-tight', selected ? 'text-white' : 'text-white/85')}>
+                    {s.label}
+                  </div>
+                  <div className="text-[10px] text-white/45 leading-tight mt-0.5">{s.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    />
   );
 }
