@@ -16,6 +16,9 @@ import {
   Zap,
   AlertCircle,
   Sparkles,
+  Download,
+  Share2,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
@@ -31,6 +34,9 @@ import {
 import { createMercadoPagoCardSession, dryRunMercadoPagoCardSession, type MpDryRunReport } from '@/app/chat/mp-card-action';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
 import { MercadoPagoLogo } from '@/components/chat/fields/MercadoPagoBadge';
+import QrCodeSelector from '@/app/criar/fazer-eu-mesmo/QrCodeSelector';
+import { downloadQrCard } from '@/lib/downloadQrCard';
+import { useToast } from '@/hooks/use-toast';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -53,23 +59,26 @@ function formatPhoneBR(raw: string) {
 export default function PaymentField() {
   const router = useRouter();
   const { user } = useUser();
+  const { toast } = useToast();
   const { control, getValues, setValue } = useFormContext<PageData>();
 
-  const [plan, introType, audioRecording, musicOption, intentId, whatsappNumber] = useWatch({
+  const [plan, introType, audioRecording, musicOption, intentId, whatsappNumber, qrCodeDesign, title] = useWatch({
     control,
-    name: ['plan', 'introType', 'audioRecording', 'musicOption', 'intentId', 'whatsappNumber'] as const,
+    name: ['plan', 'introType', 'audioRecording', 'musicOption', 'intentId', 'whatsappNumber', 'qrCodeDesign', 'title'] as const,
   }) as [
     PageData['plan'],
     PageData['introType'],
     PageData['audioRecording'],
     PageData['musicOption'],
     PageData['intentId'],
-    PageData['whatsappNumber']
+    PageData['whatsappNumber'],
+    PageData['qrCodeDesign'],
+    PageData['title']
   ];
 
   const total = useMemo(
-    () => computeTotalBRL({ plan, introType, audioRecording, musicOption } as any),
-    [plan, introType, audioRecording, musicOption]
+    () => computeTotalBRL({ plan, introType, audioRecording, musicOption, qrCodeDesign } as any),
+    [plan, introType, audioRecording, musicOption, qrCodeDesign]
   );
 
   // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
@@ -84,8 +93,11 @@ export default function PaymentField() {
     if (introType === 'love') items.push({ label: 'Abertura especial (coelho)', value: PRICES.introLove });
     if (introType === 'poema') items.push({ label: 'Abertura especial (poema)', value: PRICES.introPoema });
     if (audioRecording?.url) items.push({ label: 'Mensagem de voz gravada', value: PRICES.voice });
+    if (qrCodeDesign && qrCodeDesign !== 'classic') {
+      items.push({ label: 'QR Code personalizado', value: PRICES.qrCustom });
+    }
     return items;
-  }, [plan, introType, audioRecording]);
+  }, [plan, introType, audioRecording, qrCodeDesign]);
 
   const [method, setMethod] = useState<Method>('pix');
   const [isProcessing, startTransition] = useTransition();
@@ -343,14 +355,39 @@ export default function PaymentField() {
     } catch { /* ignore */ }
   }, [pixData]);
 
-  // Estado "pago" — mostra celebração + botão pra ver
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
+  const handleDownloadQr = useCallback(async () => {
+    if (!paid) return;
+    setIsDownloadingQr(true);
+    try {
+      await downloadQrCard(paid.pageId, qrCodeDesign || 'classic', `mycupid-qrcode-${paid.pageId}.png`);
+    } catch (e) {
+      console.error('[qr] download failed', e);
+      toast({ variant: 'destructive', title: 'Não consegui baixar', description: 'Tenta de novo, ou salva a imagem pressionando e segurando.' });
+    } finally {
+      setIsDownloadingQr(false);
+    }
+  }, [paid, qrCodeDesign, toast]);
+
+  const handleShareWhatsapp = useCallback(() => {
+    if (!paid) return;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mycupid.com.br';
+    const pageUrl = `${origin}/p/${paid.pageId}`;
+    const msg = title
+      ? `Fiz algo especial pra você 💌\n\n${title}\n\n${pageUrl}`
+      : `Fiz algo especial pra você 💌\n\n${pageUrl}`;
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  }, [paid, title]);
+
+  // Estado "pago" — mostra celebração + ações reais (ver página, whatsapp, QR)
   if (paid) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="space-y-4"
+        className="space-y-3"
       >
         <div className="rounded-2xl p-6 text-center bg-gradient-to-br from-emerald-500/15 via-green-500/10 to-emerald-500/5 ring-1 ring-emerald-400/40">
           <motion.div
@@ -361,17 +398,58 @@ export default function PaymentField() {
           >
             <CheckCircle2 className="w-8 h-8 text-white" />
           </motion.div>
-          <h3 className="text-lg font-bold text-white mb-1">Prontinho! Sua página tá no ar 💌</h3>
+          <h3 className="text-lg font-bold text-white mb-1">Sua página tá pronta 💌</h3>
           <p className="text-sm text-white/70">
-            Mandamos o link pro WhatsApp. Bora abrir pra ver?
+            O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.
           </p>
         </div>
+
         <button
           type="button"
           onClick={() => router.push(`/p/${paid.pageId}`)}
-          className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98]"
+          className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98] flex items-center justify-center gap-2"
         >
+          <ExternalLink className="w-4 h-4" />
           Ver minha página
+        </button>
+
+        {/* WhatsApp share — botão principal, bem destacado */}
+        <button
+          type="button"
+          onClick={handleShareWhatsapp}
+          className="w-full h-14 rounded-xl font-bold text-white text-[15px] transition active:scale-[0.98] flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#25D366] to-[#1ebe57] hover:brightness-110 shadow-[0_10px_30px_-10px_rgba(37,211,102,0.7)]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          Compartilhar minha página no WhatsApp
+        </button>
+
+        {/* QR download */}
+        <button
+          type="button"
+          onClick={handleDownloadQr}
+          disabled={isDownloadingQr}
+          className="w-full h-12 rounded-xl font-semibold text-white/90 transition active:scale-[0.98] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500 hover:to-pink-500 ring-1 ring-white/10 disabled:opacity-60"
+        >
+          {isDownloadingQr ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Gerando QR...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              {qrCodeDesign && qrCodeDesign !== 'classic' ? 'Baixar QR personalizado' : 'Baixar QR Code'}
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push('/criar')}
+          className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10 text-white/70 hover:text-white text-[13.5px] font-medium transition"
+        >
+          Criar uma nova página
         </button>
       </motion.div>
     );
@@ -421,6 +499,17 @@ export default function PaymentField() {
           <div className="text-2xl font-bold text-white tabular-nums">{BRL.format(total)}</div>
         </div>
       </div>
+
+      {/* QR Code templates — só aparece antes de gerar o pagamento */}
+      {!pixData && (
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-purple-500/10 via-fuchsia-500/5 to-pink-500/10 ring-1 ring-purple-400/25">
+          <QrCodeSelector
+            value={qrCodeDesign || 'classic'}
+            onChange={(id) => setValue('qrCodeDesign', id, { shouldDirty: true })}
+            onPriceChange={() => { /* total já recalcula via watch */ }}
+          />
+        </div>
+      )}
 
       {/* Contato — email + whatsapp (obrigatórios) */}
       <div className="space-y-3 rounded-xl p-4 bg-white/[0.03] ring-1 ring-white/10">
