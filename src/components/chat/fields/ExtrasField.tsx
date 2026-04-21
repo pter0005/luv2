@@ -309,13 +309,32 @@ function WordGameSubForm() {
   );
 }
 
+function PreviewHint({ k }: { k: ExtraConfig['key'] }) {
+  const MAP: Record<ExtraConfig['key'], { emoji: string; hint: string }> = {
+    enablePuzzle: { emoji: '🧩', hint: 'Ele(a) monta as peças pra revelar sua foto surpresa' },
+    enableMemoryGame: { emoji: '🎴', hint: 'Pares de cartas com fotos de vocês — vira cartas pra achar os pares' },
+    enableQuiz: { emoji: '❓', hint: 'Perguntas que só quem conhece você de verdade responde' },
+    enableWordGame: { emoji: '🔤', hint: 'Palavras-chave da relação pra adivinhar letra por letra' },
+  };
+  const { emoji, hint } = MAP[k];
+  return (
+    <div className="mb-2 rounded-lg px-2.5 py-2 bg-purple-500/10 ring-1 ring-purple-400/25 flex items-start gap-2">
+      <span className="text-base leading-none shrink-0">{emoji}</span>
+      <p className="text-[11.5px] text-purple-100/85 leading-snug">{hint}</p>
+    </div>
+  );
+}
+
 function SubForm({ k }: { k: ExtraConfig['key'] }) {
-  switch (k) {
-    case 'enablePuzzle': return <PuzzleSubForm />;
-    case 'enableMemoryGame': return <MemorySubForm />;
-    case 'enableQuiz': return <QuizSubForm />;
-    case 'enableWordGame': return <WordGameSubForm />;
-  }
+  return (
+    <>
+      <PreviewHint k={k} />
+      {k === 'enablePuzzle' && <PuzzleSubForm />}
+      {k === 'enableMemoryGame' && <MemorySubForm />}
+      {k === 'enableQuiz' && <QuizSubForm />}
+      {k === 'enableWordGame' && <WordGameSubForm />}
+    </>
+  );
 }
 
 export default function ExtrasField() {
@@ -394,9 +413,6 @@ export default function ExtrasField() {
         );
       })}
 
-      <p className="text-[11.5px] text-center text-white/45 pt-1">
-        Tudo opcional. Liga só o que você curtir — dá pra configurar depois também.
-      </p>
     </div>
   );
 }

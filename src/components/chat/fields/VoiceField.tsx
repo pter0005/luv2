@@ -183,7 +183,6 @@ export default function VoiceField() {
         )}
       </div>
 
-      <p className="text-xs text-center text-white/50">Opcional — pode pular tranquilo</p>
     </div>
   );
 }

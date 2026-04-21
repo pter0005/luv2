@@ -9,6 +9,8 @@ import { jwtVerify } from 'jose';
  * Defaults to false on any error so leaks fail closed.
  */
 export async function isAdminRequest(): Promise<boolean> {
+  // Em dev, todo mundo é admin — facilita iterar no /chat sem login.
+  if (process.env.NODE_ENV !== 'production') return true;
   try {
     const secret = process.env.ADMIN_JWT_SECRET;
     if (!secret) return false;

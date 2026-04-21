@@ -29,7 +29,10 @@ export async function middleware(request: NextRequest) {
   const isTryingToAccessAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
   const isTryingToAccessAdminLogin = pathname === '/admin/login';
 
-  if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin) {
+  // Em dev, pula toda a verificação de admin — ambiente é sempre admin.
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  if (isTryingToAccessAdminRoute && !isTryingToAccessAdminLogin && !isDev) {
     const loginUrl = new URL('/admin/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     if (!adminSession) {

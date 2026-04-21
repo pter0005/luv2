@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChevronRight, Heart, MessageCircleHeart, Sparkles, Users } from 'lucide-react';
-import { useUser } from '@/firebase/provider';
 
 type ChipOpt = { key: string; emoji: string; label: string };
 const CHIPS: ChipOpt[] = [
@@ -18,11 +17,11 @@ const CHIPS: ChipOpt[] = [
 
 export default function CriarPage() {
   const router = useRouter();
-  const { isUserLoading } = useUser();
 
   const [liveCount, setLiveCount] = useState(0);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Em dev, assume admin imediatamente — o /api/admin/check confirma depois.
+  const [isAdmin, setIsAdmin] = useState(process.env.NODE_ENV !== 'production');
 
   // ── Fake live counter — random between 6 and 23 ──
   useEffect(() => {
@@ -46,25 +45,14 @@ export default function CriarPage() {
     if (loadingKey) return;
     setLoadingKey(segment);
     const seg = segment && segment !== 'outro' ? segment : '';
-    setTimeout(() => {
-      if (isAdmin) {
-        const q = seg ? `?segment=${seg}` : '';
-        router.push(`/chat${q}`);
-      } else {
-        const q = seg ? `&segment=${seg}` : '';
-        router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${q}`);
-      }
-    }, 350);
+    if (isAdmin) {
+      const q = seg ? `?segment=${seg}` : '';
+      router.push(`/chat${q}`);
+    } else {
+      const q = seg ? `&segment=${seg}` : '';
+      router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${q}`);
+    }
   };
-
-  // Evita flash enquanto a auth carrega
-  if (isUserLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-purple-400 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center px-4 py-6 sm:py-10 relative overflow-hidden">
