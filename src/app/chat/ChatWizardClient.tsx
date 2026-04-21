@@ -62,14 +62,7 @@ function Inner() {
     shouldUnregister: false,
   });
 
-  const [currentStep, setCurrentStep] = useState<ChatStepKey>(() => {
-    // Se já veio segmento na URL, pula o step de escolher destinatário
-    if (segmentParam && segmentParam in WIZARD_SEGMENTS) {
-      const next = CHAT_STEP_ORDER[CHAT_STEP_ORDER.indexOf('recipient') + 1];
-      return next ?? 'recipient';
-    }
-    return 'recipient';
-  });
+  const [currentStep, setCurrentStep] = useState<ChatStepKey>(CHAT_STEP_ORDER[0]);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -86,13 +79,7 @@ function Inner() {
       }
       const savedStep = localStorage.getItem(STEP_KEY_STORAGE) as ChatStepKey | null;
       if (savedStep && CHAT_STEP_ORDER.includes(savedStep)) {
-        // Se veio ?segment= na URL, nunca volta pro step recipient (já foi escolhido)
-        if (segmentParam && savedStep === 'recipient') {
-          const next = CHAT_STEP_ORDER[CHAT_STEP_ORDER.indexOf('recipient') + 1];
-          if (next) setCurrentStep(next);
-        } else {
-          setCurrentStep(savedStep);
-        }
+        setCurrentStep(savedStep);
       }
       // Segment da URL tem prioridade sobre o do localStorage
       if (!segmentParam) {
@@ -145,9 +132,7 @@ function Inner() {
 
   const cupidText = getCupidLine(segment, currentStep);
   const cupidVariant =
-    currentStep === 'recipient' || currentStep === 'title' || currentStep === 'payment'
-      ? 'idle'
-      : 'asking';
+    currentStep === 'title' || currentStep === 'payment' ? 'idle' : 'asking';
 
   useEffect(() => {
     const next = CHAT_STEP_ORDER[stepIndex + 1];
@@ -175,19 +160,13 @@ function Inner() {
   const handleBack = useCallback(() => {
     haptic('tap');
     if (isFirst) {
-      router.back();
-      return;
-    }
-    // Se veio com segmento pré-escolhido pela URL e está no step logo após recipient,
-    // voltar significa ir pro picker em /criar em vez de mostrar o step recipient de novo.
-    const prevStep = CHAT_STEP_ORDER[stepIndex - 1];
-    if (segmentParam && prevStep === 'recipient') {
+      // Primeiro step do chat: voltar significa ir pro picker de segmento
       router.push('/criar');
       return;
     }
     setDirection(-1);
-    setCurrentStep(prevStep);
-  }, [isFirst, stepIndex, router, segmentParam]);
+    setCurrentStep(CHAT_STEP_ORDER[stepIndex - 1]);
+  }, [isFirst, stepIndex, router]);
 
   const handleNext = useCallback(async () => {
     const fields = getFieldsForStep(currentStep);
@@ -291,25 +270,25 @@ function Inner() {
           }}
         />
 
-        {/* Top bar minimalista */}
+        {/* Top bar: botão voltar (esq) · progress centralizado · autosave (dir) */}
         <div className="sticky top-0 z-30 bg-black/50 backdrop-blur-xl border-b border-white/[0.06]">
-          <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3 lg:max-w-none lg:px-6">
+          <div className="relative max-w-4xl mx-auto px-4 py-3.5 flex items-center lg:px-6">
             <button
               type="button"
               onClick={handleBack}
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.05] text-white/80 ring-1 ring-white/10 hover:bg-white/[0.1] active:scale-95 transition"
+              className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center bg-white/[0.05] text-white/80 ring-1 ring-white/10 hover:bg-white/[0.1] active:scale-95 transition"
               aria-label="Voltar"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div className="flex-1 max-w-xl">
-              <ChatProgress current={stepIndex} total={totalSteps} />
-            </div>
-            <div className="flex items-center gap-2">
-              <AutosaveBadge pulseKey={saveTick} />
-              <div className="text-[11px] font-medium text-white/50 tabular-nums whitespace-nowrap">
+            <div className="flex-1 mx-4 flex flex-col items-center gap-1.5">
+              <ChatProgress current={stepIndex} total={totalSteps} className="max-w-[280px]" />
+              <div className="text-[10.5px] font-medium text-white/45 tabular-nums tracking-wide">
                 {stepLabel}
               </div>
+            </div>
+            <div className="shrink-0 w-9 flex justify-end">
+              <AutosaveBadge pulseKey={saveTick} />
             </div>
           </div>
         </div>
@@ -347,8 +326,6 @@ function Inner() {
                   step={currentStep}
                   titlePlaceholder={titlePlaceholder}
                   messagePlaceholder={messagePlaceholder}
-                  recipientValue={segment}
-                  onRecipientChange={setSegment}
                 />
               </motion.div>
             </AnimatePresence>

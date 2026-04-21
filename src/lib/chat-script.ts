@@ -1,7 +1,6 @@
 import type { WizardSegmentKey } from './wizard-segment-config';
 
 export type ChatStepKey =
-  | 'recipient'
   | 'title'
   | 'message'
   | 'specialDate'
@@ -16,7 +15,6 @@ export type ChatStepKey =
   | 'payment';
 
 export const CHAT_STEP_ORDER: ChatStepKey[] = [
-  'recipient',
   'title',
   'message',
   'specialDate',
@@ -36,7 +34,6 @@ type SegmentLines = Record<ChatStepKey, string>;
 // Tom de amigo próximo: acolhedor, com emoção verdadeira — sem floreio.
 // Frases curtas, portuguÊs correto (acentos + maiúscula no início), no máximo 1 emoji.
 const NAMORADE_LINES: SegmentLines = {
-  recipient: 'Então, pra quem vai ser essa surpresa?',
   title: 'Demais! Como você quer chamar essa página?',
   message: 'Agora o coração — o que você quer dizer pra ela(e)?',
   specialDate: 'Tem uma data que começou tudo? Me conta.',
@@ -52,7 +49,6 @@ const NAMORADE_LINES: SegmentLines = {
 };
 
 const MAE_LINES: SegmentLines = {
-  recipient: 'Que bonito! Pra quem é essa homenagem?',
   title: 'Lindo! Que nome você quer dar pra essa página?',
   message: 'Agora diz pra ela, com suas palavras, o que você sente.',
   specialDate: 'Tem uma data que marca muito vocês duas?',
@@ -68,7 +64,6 @@ const MAE_LINES: SegmentLines = {
 };
 
 const ESPOUSE_LINES: SegmentLines = {
-  recipient: 'Então, pra quem vai esse presente?',
   title: 'Demais! Que nome você quer dar?',
   message: 'Agora o coração — o que você quer dizer pra ele(a)?',
   specialDate: 'Quando começou a história de vocês?',
@@ -84,7 +79,6 @@ const ESPOUSE_LINES: SegmentLines = {
 };
 
 const AMIGE_LINES: SegmentLines = {
-  recipient: 'Pra quem é essa homenagem?',
   title: 'Que legal! Como você quer chamar?',
   message: 'Agora, o que você quer dizer pra essa pessoa?',
   specialDate: 'Quando vocês se conheceram?',
@@ -100,7 +94,6 @@ const AMIGE_LINES: SegmentLines = {
 };
 
 const PAI_LINES: SegmentLines = {
-  recipient: 'Que bonito! Pra quem é essa homenagem?',
   title: 'Lindo! Que nome você quer dar?',
   message: 'Agora diz pra ele o que você sente, com suas palavras.',
   specialDate: 'Tem uma data que marca vocês dois?',
@@ -116,7 +109,6 @@ const PAI_LINES: SegmentLines = {
 };
 
 const AVO_LINES: SegmentLines = {
-  recipient: 'Que coisa linda! Pra quem é?',
   title: 'Lindo! Que nome você quer dar?',
   message: 'Agora diz pra ele(a), do seu jeitinho, o que você sente.',
   specialDate: 'Tem uma data que vocês guardam?',
@@ -132,7 +124,6 @@ const AVO_LINES: SegmentLines = {
 };
 
 const FILHO_LINES: SegmentLines = {
-  recipient: 'Que fofo! Pra quem é a surpresa?',
   title: 'Demais! Como você quer chamar?',
   message: 'Agora diz pra ele(a), com o coração.',
   specialDate: 'Tem uma data especial?',
