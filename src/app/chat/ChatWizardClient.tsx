@@ -213,60 +213,16 @@ function Inner() {
               'radial-gradient(ellipse 90% 60% at 50% -20%, hsl(275 60% 14%), transparent 70%), linear-gradient(180deg, hsl(275 50% 4%) 0%, hsl(280 40% 3%) 100%)',
           }}
         />
-        {/* Blobs ambientais — roxo (topo-esquerda), rosa (direita), violeta (baixo) */}
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -z-10 -top-24 -left-24 w-[620px] h-[620px] rounded-full blur-3xl opacity-30"
-          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.55), transparent 65%)' }}
-          animate={{ x: ['-5%', '10%', '-5%'], y: ['-5%', '8%', '-5%'] }}
-          transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -z-10 top-40 -right-32 w-[480px] h-[480px] rounded-full blur-3xl opacity-25"
-          style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.45), transparent 65%)' }}
-          animate={{ x: ['0%', '-8%', '0%'], y: ['0%', '10%', '0%'] }}
-          transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -z-10 bottom-[-10%] left-[10%] w-[520px] h-[520px] rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.5), transparent 65%)' }}
-          animate={{ x: ['0%', '12%', '0%'], y: ['0%', '-6%', '0%'] }}
-          transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Sparkles sutis — pontinhos brilhando */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          {[
-            { top: '12%', left: '8%', delay: 0, duration: 3.2 },
-            { top: '22%', left: '82%', delay: 1.1, duration: 2.8 },
-            { top: '45%', left: '18%', delay: 2.3, duration: 3.6 },
-            { top: '58%', left: '72%', delay: 0.6, duration: 3.0 },
-            { top: '78%', left: '28%', delay: 1.8, duration: 2.6 },
-            { top: '88%', left: '88%', delay: 2.6, duration: 3.4 },
-          ].map((s, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 rounded-full bg-white"
-              style={{
-                top: s.top,
-                left: s.left,
-                boxShadow: '0 0 8px rgba(255,255,255,0.85), 0 0 16px rgba(168,85,247,0.5)',
-              }}
-              animate={{ opacity: [0, 1, 0], scale: [0.6, 1.2, 0.6] }}
-              transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          ))}
-        </div>
-
-        {/* Noise grain — textura fina pra tirar o "chapado" */}
+        {/* Brilhos ambientais estáticos — sem animação, zero overhead */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 opacity-[0.035] mix-blend-overlay"
+          className="pointer-events-none absolute inset-0 -z-10"
           style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+            background: `
+              radial-gradient(600px 600px at 10% 0%, rgba(168,85,247,0.18), transparent 60%),
+              radial-gradient(500px 500px at 95% 35%, rgba(236,72,153,0.14), transparent 60%),
+              radial-gradient(550px 550px at 20% 100%, rgba(139,92,246,0.14), transparent 60%)
+            `,
           }}
         />
 
@@ -296,22 +252,11 @@ function Inner() {
         {/* Layout: mobile single, desktop split */}
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10 lg:max-w-6xl lg:mx-auto lg:px-6">
           <div className="max-w-md mx-auto w-full px-4 pt-8 pb-36 lg:mx-0 lg:px-0 lg:pt-14 lg:pb-28">
-            {/* Cupido + balão */}
-            <motion.div
-              key={`cupid-${currentStep}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="flex items-start gap-3 mb-8"
-            >
-              <motion.div
-                animate={{ y: [0, -3, 0] }}
-                transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <CupidVideo size="md" variant={cupidVariant} />
-              </motion.div>
+            {/* Cupido + balão — sem motion infinito, só o typing do bubble */}
+            <div className="flex items-start gap-3 mb-8">
+              <CupidVideo size="md" variant={cupidVariant} />
               <ChatBubble text={cupidText} />
-            </motion.div>
+            </div>
 
             {/* Campo do step — sem card/wrapper visual, deixa respirar */}
             <AnimatePresence mode="wait" initial={false}>
