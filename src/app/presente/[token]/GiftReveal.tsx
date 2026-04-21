@@ -13,7 +13,7 @@ export default function GiftReveal({ token, credits }: { token: string; credits:
     setStarting(true);
     localStorage.setItem('mycupid_gift_token', token);
     setTimeout(() => {
-      router.push('/criar/fazer-eu-mesmo?plan=avancado&new=true');
+      router.push('/chat?plan=avancado&new=true');
     }, 500);
   };
 

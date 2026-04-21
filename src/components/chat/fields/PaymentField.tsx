@@ -30,6 +30,7 @@ import {
   processPixPayment,
   verifyPaymentWithMercadoPago,
   adminFinalizePage,
+  finalizeWithGiftToken,
 } from '@/app/criar/fazer-eu-mesmo/actions';
 import { createMercadoPagoCardSession, dryRunMercadoPagoCardSession, type MpDryRunReport } from '@/app/chat/mp-card-action';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
@@ -116,7 +117,10 @@ export default function PaymentField() {
     } catch { /* storage disabled */ }
   }, [intentId]);
   const [pixTimeLeft, setPixTimeLeft] = useState(0);
+  const [pixExpired, setPixExpired] = useState(false);
   const [paid, setPaid] = useState<{ pageId: string } | null>(null);
+  const [giftToken, setGiftToken] = useState<string | null>(null);
+  const [isRedeemingGift, startRedeemGift] = useTransition();
   const [isAdminAction, startAdminAction] = useTransition();
   const [isDryRun, startDryRun] = useTransition();
   const [dryRunReport, setDryRunReport] = useState<MpDryRunReport | null>(null);
@@ -132,6 +136,13 @@ export default function PaymentField() {
     if (user?.email && !emailInput) setEmailInput(user.email);
   }, [user?.email, emailInput]);
   const phone = whatsappNumber || '';
+
+  // Validação de contato — usada pra desabilitar botões de pagamento
+  const isContactValid = useMemo(() => {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim());
+    const phoneOk = phone.replace(/\D/g, '').length >= 10;
+    return emailOk && phoneOk;
+  }, [emailInput, phone]);
 
   // Garantir que o rascunho exista
   useEffect(() => {
@@ -180,36 +191,87 @@ export default function PaymentField() {
     return () => { cancelled = true; };
   }, [intentId, paid, lookupChecked]);
 
-  // Countdown Pix
+  // Lê gift token do localStorage (vindo de /presente/[token])
   useEffect(() => {
-    if (!pixData) return;
+    try {
+      const stored = localStorage.getItem('mycupid_gift_token');
+      if (stored) setGiftToken(stored);
+    } catch { /* storage disabled */ }
+  }, []);
+
+  // Countdown Pix + marca como expirado quando zera
+  useEffect(() => {
+    if (!pixData) { setPixExpired(false); setPixTimeLeft(0); return; }
     const tick = () => {
       const elapsed = Date.now() - pixData.createdAt;
       const remaining = Math.max(0, 15 * 60 * 1000 - elapsed);
       setPixTimeLeft(Math.ceil(remaining / 1000));
+      if (remaining <= 0) setPixExpired(true);
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [pixData]);
 
-  // Polling
+  // Polling — se MP retornar cancelled/rejected, marca como expirado pra mostrar CTA
   useEffect(() => {
-    if (!pixData || !intentId || paid) return;
+    if (!pixData || !intentId || paid || pixExpired) return;
     pollRef.current = setInterval(async () => {
       try {
         const res = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
         if (res.status === 'approved') {
           if (pollRef.current) clearInterval(pollRef.current);
           setPaid({ pageId: res.pageId });
-        } else if (res.status === 'error') {
+        } else if (res.status === 'cancelled' || res.status === 'rejected') {
           if (pollRef.current) clearInterval(pollRef.current);
-          setError(res.error || 'Erro ao verificar pagamento');
+          setPixExpired(true);
+        } else if (res.status === 'error') {
+          // Não bloqueia — retry silencioso. Só marca erro visível se for persistente.
+          console.warn('[pix] verify transient error:', res.error);
         }
       } catch { /* retry */ }
     }, 3000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [pixData, intentId, paid]);
+  }, [pixData, intentId, paid, pixExpired]);
+
+  const handleGenerateNewPix = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setPixData(null);
+    setPixExpired(false);
+    setError(null);
+  }, [setPixData]);
+
+  const handleRedeemGift = useCallback(() => {
+    setError(null);
+    if (!user || !giftToken) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+      setError('Preenche um email válido pra continuar.');
+      return;
+    }
+    const cleanEmail = emailInput.trim().toLowerCase();
+    startRedeemGift(async () => {
+      try {
+        const data = getValues();
+        const whatsappDigits = phone.replace(/\D/g, '');
+        const saveRes = await createOrUpdatePaymentIntent({
+          ...data,
+          userId: user.uid,
+          plan: 'avancado',
+          whatsappNumber: whatsappDigits,
+          guestEmail: cleanEmail,
+        });
+        if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
+        setValue('intentId', saveRes.intentId, { shouldDirty: false });
+        const res = await finalizeWithGiftToken(saveRes.intentId, user.uid, giftToken, cleanEmail);
+        if (!res.success) { setError(res.error || 'Erro ao resgatar presente.'); return; }
+        try { localStorage.removeItem('mycupid_gift_token'); } catch {}
+        setGiftToken(null);
+        setPaid({ pageId: res.pageId });
+      } catch (e: any) {
+        setError(e?.message || 'Erro ao resgatar presente.');
+      }
+    });
+  }, [user, giftToken, emailInput, phone, getValues, setValue]);
 
   const handlePix = useCallback(() => {
     setError(null);
@@ -520,27 +582,89 @@ export default function PaymentField() {
           <label className="text-[11px] text-white/55 font-medium">Email</label>
           <input
             type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
+            onChange={(e) => {
+              // Remove caracteres invisíveis/zero-width que usuários às vezes colam
+              // e quebram validação do MP silenciosamente.
+              const cleaned = e.target.value.normalize('NFKC').replace(/[​-‏⁠﻿]/g, '');
+              setEmailInput(cleaned);
+            }}
             placeholder="seu@email.com"
-            className="w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 ring-white/10 focus:bg-white/[0.06] focus:ring-2 focus:ring-pink-500/40 focus:outline-none transition"
+            className={cn(
+              'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition',
+              emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())
+                ? 'ring-red-400/50 focus:ring-red-400/60'
+                : 'ring-white/10 focus:ring-pink-500/40'
+            )}
           />
+          {emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim()) && (
+            <p className="text-[11px] text-red-300/90 px-0.5">Confere o email — parece que tá faltando algo.</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] text-white/55 font-medium">WhatsApp</label>
           <input
             type="tel"
             inputMode="numeric"
+            autoComplete="tel"
             value={formatPhoneBR(phone)}
             onChange={(e) => setValue('whatsappNumber', e.target.value.replace(/\D/g, ''), { shouldDirty: true })}
             placeholder="(11) 99999-9999"
-            className="w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 ring-white/10 focus:bg-white/[0.06] focus:ring-2 focus:ring-pink-500/40 focus:outline-none transition tabular-nums"
+            className={cn(
+              'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition tabular-nums',
+              phone && phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < 10
+                ? 'ring-red-400/50 focus:ring-red-400/60'
+                : 'ring-white/10 focus:ring-pink-500/40'
+            )}
           />
           <p className="text-[11px] text-white/45 px-0.5">Mandamos o link da página assim que o pagamento cair.</p>
         </div>
       </div>
 
-      {/* Como pagar — destaque visual forte */}
+      {/* Gift token — se tem presente pendente, oferece resgate gratuito em vez de cobrar */}
+      {giftToken && !pixData && (
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-purple-500/15 via-fuchsia-500/10 to-pink-500/10 ring-1 ring-purple-400/40 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 ring-1 ring-purple-400/40 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-purple-300" />
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-white leading-tight">Você tem um presente 🎁</p>
+              <p className="text-[11.5px] text-white/55 mt-0.5">Plano Avançado liberado, sem pagar nada.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleRedeemGift}
+            disabled={isRedeemingGift}
+            className={cn(
+              'w-full h-12 rounded-xl font-bold text-white transition flex items-center justify-center gap-2',
+              'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',
+              'shadow-[0_10px_30px_-10px_rgba(168,85,247,0.6)] active:scale-[0.98]',
+              'disabled:opacity-60 disabled:cursor-not-allowed'
+            )}
+          >
+            {isRedeemingGift ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Finalizando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" /> Resgatar meu presente grátis
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Como pagar — destaque visual forte (some se tem gift pendente) */}
+      {!giftToken && (
+      <>
       <div>
         <div className="flex items-center gap-2 mb-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
           <span>Como pagar</span>
@@ -638,7 +762,7 @@ export default function PaymentField() {
                 <button
                   type="button"
                   onClick={handlePix}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !isContactValid}
                   className={cn(
                     'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                     'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
@@ -649,6 +773,10 @@ export default function PaymentField() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" /> Gerando QR...
+                    </>
+                  ) : !isContactValid ? (
+                    <>
+                      <AlertCircle className="w-5 h-5" /> Preenche email + WhatsApp
                     </>
                   ) : (
                     <>
@@ -665,6 +793,33 @@ export default function PaymentField() {
                   </div>
                 </div>
               </div>
+            ) : pixExpired ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-2xl p-5 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-500/5 ring-1 ring-amber-400/40 space-y-3 text-center"
+              >
+                <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/20 ring-1 ring-amber-400/40 flex items-center justify-center">
+                  <AlertCircle className="w-7 h-7 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white mb-1">Seu PIX expirou</h3>
+                  <p className="text-[13px] text-white/70 leading-relaxed">
+                    PIX tem validade de 15 minutos. Não se preocupa — é só gerar um novo agora.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateNewPix}
+                  className={cn(
+                    'w-full h-12 rounded-xl font-bold text-white transition flex items-center justify-center gap-2',
+                    'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
+                    'shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)] active:scale-[0.98]'
+                  )}
+                >
+                  <Zap className="w-4 h-4" /> Gerar novo PIX
+                </button>
+              </motion.div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -742,7 +897,7 @@ export default function PaymentField() {
             <button
               type="button"
               onClick={handleCard}
-              disabled={isProcessing}
+              disabled={isProcessing || !isContactValid}
               className={cn(
                 'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',
@@ -753,6 +908,10 @@ export default function PaymentField() {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" /> Abrindo checkout...
+                </>
+              ) : !isContactValid ? (
+                <>
+                  <AlertCircle className="w-5 h-5" /> Preenche email + WhatsApp
                 </>
               ) : (
                 <>
@@ -874,6 +1033,8 @@ export default function PaymentField() {
           </motion.div>
         )}
       </AnimatePresence>
+      </>
+      )}
 
       {/* Admin shortcut */}
       {isAdmin && (

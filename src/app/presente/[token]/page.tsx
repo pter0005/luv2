@@ -18,7 +18,7 @@ export default async function GiftPage({ params }: { params: { token: string } }
   } catch (_) {}
 
   if (!isValid) {
-    redirect('/criar/fazer-eu-mesmo?plan=avancado&new=true');
+    redirect('/chat?plan=avancado&new=true');
   }
 
   return <GiftReveal token={params.token} credits={credits} />;

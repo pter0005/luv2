@@ -2466,7 +2466,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     return;
                 }
                 setValue('intentId', saveResult.intentId);
-                const paymentResult = await processPixPayment(saveResult.intentId, totalBRL, discountCode);
+                // Passa contato explícito pra evitar race/estado stale do intent — processPixPayment
+                // exige email válido e não tem fallback silencioso.
+                const payerEmail = (confirmedGuestEmail || user.email || '').trim().toLowerCase();
+                const paymentResult = await processPixPayment(
+                    saveResult.intentId,
+                    totalBRL,
+                    discountCode,
+                    { whatsapp: whatsappNumber.replace(/\D/g, ''), email: payerEmail },
+                );
                 if (paymentResult.error) {
                     setError({ message: paymentResult.error, details: paymentResult.details || {} });
                 } else if (paymentResult.qrCode && paymentResult.qrCodeBase64 && paymentResult.paymentId) {

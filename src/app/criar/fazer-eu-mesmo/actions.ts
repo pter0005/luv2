@@ -248,10 +248,16 @@ export async function processPixPayment(
     const intentData = intentDoc.data();
     // Prioriza contato passado na chamada — evita race condition onde o
     // merge-save ainda não visível nesta leitura do Firestore.
+    // sanitizeEmail: lower, trim, remove chars invisíveis/zero-width/BOM que usuários
+    // às vezes colam junto (quebra validação do MP silenciosamente).
+    const sanitizeEmail = (v: string) =>
+      v.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\s]/g, '').toLowerCase();
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
     const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
-    const contactEmail = (contact?.email || '').trim().toLowerCase();
+    const contactEmail = sanitizeEmail(contact?.email || '');
     const docWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '');
-    const docEmail = (intentData?.guestEmail || intentData?.userEmail || '').trim().toLowerCase();
+    const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '');
 
     const rawWhatsapp = contactWhatsapp.length >= 10 ? contactWhatsapp : docWhatsapp;
     if (rawWhatsapp.length < 10) {
@@ -263,8 +269,14 @@ export async function processPixPayment(
       });
       return { error: 'WhatsApp obrigatório. Preencha seu número com DDD antes de gerar o PIX.' };
     }
-    const rawEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) ? contactEmail : docEmail;
-    const cleanEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : 'pagamento@mycupid.com.br';
+    // Email é obrigatório pro MP. NÃO usar fallback — MP rejeita emails genéricos
+    // e fica dando "payer.email must be a valid email" sem a pessoa entender por quê.
+    const rawEmail = EMAIL_RE.test(contactEmail) ? contactEmail : docEmail;
+    if (!EMAIL_RE.test(rawEmail)) {
+      console.log('[PIX DEBUG] email inválido', { intentId, contactEmail, docEmail });
+      return { error: 'Email obrigatório. Preenche um email válido antes de gerar o PIX.' };
+    }
+    const cleanEmail = rawEmail;
 
     // Se o contact veio diferente do doc, persiste pra próximas leituras
     if (contactWhatsapp.length >= 10 && contactWhatsapp !== docWhatsapp) {
