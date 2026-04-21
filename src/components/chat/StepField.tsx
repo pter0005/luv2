@@ -20,6 +20,7 @@ const Skeleton = () => (
 const lazyField = <P,>(loader: () => Promise<{ default: React.ComponentType<P> }>) =>
   dynamic(loader, { ssr: false, loading: Skeleton });
 
+const RecipientNameField = lazyField<{ placeholder?: string }>(() => import('./fields/RecipientNameField'));
 const TitleField = lazyField<{ placeholder?: string }>(() => import('./fields/TitleField'));
 const MessageField = lazyField<{ placeholder?: string }>(() => import('./fields/MessageField'));
 const DateField = lazyField<{}>(() => import('./fields/DateField'));
@@ -35,6 +36,8 @@ const PaymentField = lazyField<{}>(() => import('./fields/PaymentField'));
 
 export default function StepField({ step, titlePlaceholder, messagePlaceholder }: StepFieldProps) {
   switch (step) {
+    case 'recipient':
+      return <RecipientNameField />;
     case 'title':
       return <TitleField placeholder={titlePlaceholder} />;
     case 'message':
@@ -66,12 +69,14 @@ export default function StepField({ step, titlePlaceholder, messagePlaceholder }
 
 export function getFieldsForStep(step: ChatStepKey): (keyof import('@/lib/wizard-schema').PageData)[] {
   switch (step) {
+    case 'recipient':
+      return ['recipientName'];
     case 'title':
       return ['title'];
     case 'message':
       return ['message'];
     case 'specialDate':
-      return ['specialDate'];
+      return ['specialDate', 'countdownStyle', 'countdownColor'];
     case 'gallery':
       return ['galleryImages'];
     case 'timeline':
@@ -97,6 +102,7 @@ export function getFieldsForStep(step: ChatStepKey): (keyof import('@/lib/wizard
 
 export function getPrefetchForStep(step: ChatStepKey): () => Promise<unknown> {
   switch (step) {
+    case 'recipient': return () => import('./fields/RecipientNameField');
     case 'title': return () => import('./fields/TitleField');
     case 'message': return () => import('./fields/MessageField');
     case 'specialDate': return () => import('./fields/DateField');

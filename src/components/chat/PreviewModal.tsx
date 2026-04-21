@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Loader2, X } from 'lucide-react';
+import { useFormContext } from 'react-hook-form';
+import type { PageData } from '@/lib/wizard-schema';
 
 const PreviewContent = dynamic(
   () => import('@/app/criar/fazer-eu-mesmo/PreviewContent'),
@@ -24,8 +26,25 @@ interface PreviewModalProps {
 }
 
 export default function PreviewModal({ open, onClose }: PreviewModalProps) {
+  const { watch } = useFormContext<PageData>();
   const [isClient, setIsClient] = React.useState(false);
-  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = React.useState(true);
+  // Começa não revelado — assim a intro dispara assim que o modal abrir.
+  const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = React.useState(false);
+
+  const introType = watch('introType');
+  const enablePuzzle = watch('enablePuzzle' as any);
+  const puzzleImage = watch('puzzleImage' as any);
+
+  // Deriva os flags de intro a partir do form: se a pessoa escolheu love/poema
+  // ou ativou o puzzle com imagem, a prévia abre JÁ na tela da abertura.
+  const showEasterPreview = introType === 'love';
+  const showPoemaPreview = introType === 'poema';
+  const showPuzzlePreview = !!enablePuzzle && !!(puzzleImage && (typeof puzzleImage === 'string' ? puzzleImage : puzzleImage.url));
+
+  // Toda vez que o modal abrir, reseta o estado da intro pra dar replay.
+  useEffect(() => {
+    if (open) setPreviewPuzzleRevealed(false);
+  }, [open]);
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -71,14 +90,15 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
           Prévia
         </div>
 
-        <div className="w-full h-full overflow-y-auto">
+        <div className="w-full h-full">
           <PreviewContent
+            bare
             isClient={isClient}
             onShowTimeline={() => { /* disabled in preview */ }}
             hasValidTimelineEvents={false}
-            showPuzzlePreview={false}
-            showEasterPreview={false}
-            showPoemaPreview={false}
+            showPuzzlePreview={showPuzzlePreview}
+            showEasterPreview={showEasterPreview}
+            showPoemaPreview={showPoemaPreview}
             previewPuzzleRevealed={previewPuzzleRevealed}
             setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
           />

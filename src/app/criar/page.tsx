@@ -20,8 +20,6 @@ export default function CriarPage() {
 
   const [liveCount, setLiveCount] = useState(0);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  // Em dev, assume admin imediatamente — o /api/admin/check confirma depois.
-  const [isAdmin, setIsAdmin] = useState(process.env.NODE_ENV !== 'production');
 
   // ── Fake live counter — random between 6 and 23 ──
   useEffect(() => {
@@ -33,25 +31,12 @@ export default function CriarPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  // ── Admin check — se for admin, CTAs mandam pro /chat ──
-  useEffect(() => {
-    fetch('/api/admin/check', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(!!d?.admin))
-      .catch(() => {});
-  }, []);
-
   const go = (segment: string) => {
     if (loadingKey) return;
     setLoadingKey(segment);
     const seg = segment && segment !== 'outro' ? segment : '';
-    if (isAdmin) {
-      const q = seg ? `?segment=${seg}` : '';
-      router.push(`/chat${q}`);
-    } else {
-      const q = seg ? `&segment=${seg}` : '';
-      router.push(`/criar/fazer-eu-mesmo?plan=avancado&new=true${q}`);
-    }
+    const q = seg ? `?segment=${seg}` : '';
+    router.push(`/chat${q}`);
   };
 
   return (

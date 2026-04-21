@@ -117,7 +117,7 @@
   .heart {
     position: absolute;
     top: -10%;
-    opacity: 1; /* Make hearts fully visible */
+    opacity: 1;
   }
 
   .heart-fall {
@@ -125,7 +125,16 @@
     animation-timing-function: linear;
     animation-iteration-count: infinite;
   }
-  
+
+  .heart-rain {
+    position: absolute;
+    top: 0;
+    animation-name: heart-rain;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
   .heart-rise {
     animation-name: rise;
     animation-timing-function: linear;
@@ -136,6 +145,23 @@
   @keyframes fall {
     to {
       transform: translateY(110vh) rotate(360deg);
+    }
+  }
+
+  @keyframes heart-rain {
+    0% {
+      transform: translate3d(0, -20vh, 0) rotate(var(--heart-rot, 0deg));
+      opacity: 0;
+    }
+    8% {
+      opacity: var(--heart-opacity, 0.7);
+    }
+    92% {
+      opacity: var(--heart-opacity, 0.7);
+    }
+    100% {
+      transform: translate3d(0, 110vh, 0) rotate(calc(var(--heart-rot, 0deg) + 360deg));
+      opacity: 0;
     }
   }
 

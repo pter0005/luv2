@@ -40,10 +40,11 @@ export default function DesktopPreviewPane() {
           className="absolute top-2 left-1/2 -translate-x-1/2 z-30 w-24 h-5 rounded-full bg-black/90 ring-1 ring-white/10"
         />
         <div
-          className="absolute inset-0 overflow-y-auto [&::-webkit-scrollbar]:hidden"
+          className="absolute inset-0 [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <PreviewContent
+            bare
             isClient={isClient}
             onShowTimeline={() => { /* noop na prévia */ }}
             hasValidTimelineEvents={false}

@@ -9,6 +9,7 @@ import {
   Copy,
   CreditCard,
   Loader2,
+  Lock,
   QrCode,
   CheckCircle2,
   ShieldCheck,
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
-import { computeTotalBRL } from '@/lib/price';
+import { computeTotalBRL, PRICES } from '@/lib/price';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import type { PageData } from '@/lib/wizard-schema';
 import {
@@ -28,6 +29,8 @@ import {
   adminFinalizePage,
 } from '@/app/criar/fazer-eu-mesmo/actions';
 import { createMercadoPagoCardSession, dryRunMercadoPagoCardSession, type MpDryRunReport } from '@/app/chat/mp-card-action';
+import { lookupIntentStatus } from '@/app/chat/lookup-intent';
+import { MercadoPagoLogo } from '@/components/chat/fields/MercadoPagoBadge';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -69,11 +72,37 @@ export default function PaymentField() {
     [plan, introType, audioRecording, musicOption]
   );
 
+  // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
+  const lineItems = useMemo(() => {
+    const items: { label: string; value: number; hint?: string }[] = [];
+    const base = plan === 'avancado' ? PRICES.avancado : PRICES.basico;
+    items.push({
+      label: plan === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
+      value: base,
+      hint: plan === 'avancado' ? 'jogos + voz + intros + música' : 'página + fotos + contador',
+    });
+    if (introType === 'love') items.push({ label: 'Abertura especial (coelho)', value: PRICES.introLove });
+    if (introType === 'poema') items.push({ label: 'Abertura especial (poema)', value: PRICES.introPoema });
+    if (audioRecording?.url) items.push({ label: 'Mensagem de voz gravada', value: PRICES.voice });
+    return items;
+  }, [plan, introType, audioRecording]);
+
   const [method, setMethod] = useState<Method>('pix');
   const [isProcessing, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [pixData, setPixData] = useState<PixState | null>(null);
+  const PIX_STORAGE_KEY = 'chat-pix-pending-v1';
+  const [pixData, _setPixData] = useState<PixState | null>(null);
+  const setPixData = useCallback((v: PixState | null) => {
+    _setPixData(v);
+    try {
+      if (v && intentId) {
+        localStorage.setItem(PIX_STORAGE_KEY, JSON.stringify({ ...v, intentId }));
+      } else {
+        localStorage.removeItem(PIX_STORAGE_KEY);
+      }
+    } catch { /* storage disabled */ }
+  }, [intentId]);
   const [pixTimeLeft, setPixTimeLeft] = useState(0);
   const [paid, setPaid] = useState<{ pageId: string } | null>(null);
   const [isAdminAction, startAdminAction] = useTransition();
@@ -105,6 +134,44 @@ export default function PaymentField() {
       if (res.success) setValue('intentId', res.intentId, { shouldDirty: false });
     });
   }, [user, intentId, getValues, setValue]);
+
+  // Restaura QR do PIX se a pessoa recarregou/voltou antes de pagar
+  useEffect(() => {
+    if (pixData || !intentId) return;
+    try {
+      const raw = localStorage.getItem(PIX_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved?.intentId !== intentId) { localStorage.removeItem(PIX_STORAGE_KEY); return; }
+      const elapsed = Date.now() - saved.createdAt;
+      if (elapsed > 15 * 60 * 1000) { localStorage.removeItem(PIX_STORAGE_KEY); return; }
+      _setPixData({
+        qrCode: saved.qrCode,
+        qrCodeBase64: saved.qrCodeBase64,
+        paymentId: saved.paymentId,
+        createdAt: saved.createdAt,
+      });
+    } catch { /* ignore */ }
+  }, [intentId, pixData]);
+
+  // Recuperação após reload / volta do checkout externo:
+  // se o intent já tá "completed" (webhook processou), mostra direto o estado pago.
+  // Evita o cliente precisar pedir o link por WhatsApp caso feche a aba.
+  const [lookupChecked, setLookupChecked] = useState(false);
+  useEffect(() => {
+    if (!intentId || paid || lookupChecked) return;
+    let cancelled = false;
+    (async () => {
+      const res = await lookupIntentStatus(intentId);
+      if (cancelled) return;
+      setLookupChecked(true);
+      if (res.exists && res.status === 'completed' && res.pageId) {
+        setPaid({ pageId: res.pageId });
+        try { localStorage.removeItem(PIX_STORAGE_KEY); } catch {}
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [intentId, paid, lookupChecked]);
 
   // Countdown Pix
   useEffect(() => {
@@ -299,9 +366,9 @@ export default function PaymentField() {
           >
             <CheckCircle2 className="w-8 h-8 text-white" />
           </motion.div>
-          <h3 className="text-lg font-bold text-white mb-1">prontinho! sua página tá no ar 💌</h3>
+          <h3 className="text-lg font-bold text-white mb-1">Prontinho! Sua página tá no ar 💌</h3>
           <p className="text-sm text-white/70">
-            mandamos o link pro whatsapp. bora abrir pra ver?
+            Mandamos o link pro WhatsApp. Bora abrir pra ver?
           </p>
         </div>
         <button
@@ -309,7 +376,7 @@ export default function PaymentField() {
           onClick={() => router.push(`/p/${paid.pageId}`)}
           className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98]"
         >
-          ver minha página
+          Ver minha página
         </button>
       </motion.div>
     );
@@ -317,7 +384,7 @@ export default function PaymentField() {
 
   return (
     <div className="space-y-4">
-      {/* Resumo do pedido — card dark elegante */}
+      {/* Resumo do pedido — card dark elegante com breakdown */}
       <div
         className="rounded-2xl p-5 ring-1 ring-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] backdrop-blur"
         style={{
@@ -328,27 +395,42 @@ export default function PaymentField() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-white/50">
             <Sparkles className="w-3 h-3" />
-            <span>pedido</span>
+            <span>Seu pedido</span>
           </div>
-          <span className="text-[11px] text-white/45">pagamento único</span>
+          <span className="text-[11px] text-white/45">Pagamento único</span>
         </div>
-        <div className="flex items-baseline justify-between">
-          <div>
-            <div className="text-white/90 font-semibold text-sm capitalize">
-              plano {plan === 'avancado' ? 'avançado' : 'básico'}
+
+        {/* Breakdown linha por linha */}
+        <div className="space-y-2 mb-3">
+          {lineItems.map((item, i) => (
+            <div key={i} className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] text-white/90 font-medium leading-tight">{item.label}</div>
+                {item.hint && (
+                  <div className="text-[11px] text-white/45 mt-0.5">{item.hint}</div>
+                )}
+              </div>
+              <div className="text-[13px] text-white/85 font-semibold tabular-nums shrink-0">
+                {BRL.format(item.value)}
+              </div>
             </div>
-            <div className="text-[12px] text-white/50 mt-0.5">acesso vitalício · sem mensalidade</div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div className="pt-3 border-t border-white/10 flex items-baseline justify-between">
+          <div>
+            <div className="text-[10.5px] uppercase tracking-[0.18em] text-white/55 font-semibold">Total</div>
+            <div className="text-[11px] text-white/50 mt-0.5">Acesso vitalício · sem mensalidade</div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-white tabular-nums">{BRL.format(total)}</div>
-          </div>
+          <div className="text-2xl font-bold text-white tabular-nums">{BRL.format(total)}</div>
         </div>
       </div>
 
       {/* Contato — email + whatsapp (obrigatórios) */}
       <div className="space-y-3 rounded-xl p-4 bg-white/[0.03] ring-1 ring-white/10">
         <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
-          <span>seus dados de contato</span>
+          <span>Seus dados de contato</span>
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] text-white/55 font-medium">Email</label>
@@ -377,10 +459,10 @@ export default function PaymentField() {
       {/* Como pagar — destaque visual forte */}
       <div>
         <div className="flex items-center gap-2 mb-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
-          <span>como pagar</span>
+          <span>Como pagar</span>
         </div>
         <div className="grid grid-cols-1 gap-2.5">
-          {/* PIX */}
+          {/* PIX — checkout transparente (QR gerado aqui mesmo) */}
           <button
             type="button"
             onClick={() => setMethod('pix')}
@@ -400,13 +482,15 @@ export default function PaymentField() {
               <QrCode className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[15px] font-bold text-white">PIX</span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 font-bold uppercase tracking-wider">
                   instantâneo
                 </span>
               </div>
-              <div className="text-[12px] text-white/60 mt-0.5">Aprovado em segundos · sem taxas</div>
+              <div className="text-[12px] text-white/60 mt-0.5">
+                Aprovado em segundos · sem taxas
+              </div>
             </div>
             {method === 'pix' && (
               <div className="w-5 h-5 rounded-full bg-emerald-400 flex items-center justify-center shrink-0">
@@ -442,10 +526,12 @@ export default function PaymentField() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-[15px] font-bold text-white">Cartão</span>
                   <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 font-bold uppercase tracking-wider">
-                    até 12x
+                    crédito / débito
                   </span>
                 </div>
-                <div className="text-[12px] text-white/60 mt-0.5">Crédito ou débito · via Mercado Pago</div>
+                <div className="text-[12px] text-white/60 mt-0.5">
+                  Crédito ou débito
+                </div>
               </div>
               {method === 'card' && (
                 <div className="w-5 h-5 rounded-full bg-purple-400 flex items-center justify-center shrink-0">
@@ -469,27 +555,37 @@ export default function PaymentField() {
             className="space-y-3"
           >
             {!pixData ? (
-              <button
-                type="button"
-                onClick={handlePix}
-                disabled={isProcessing}
-                className={cn(
-                  'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
-                  'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
-                  'shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)]',
-                  'disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]'
-                )}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> gerando qr...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-5 h-5" /> gerar pix de {BRL.format(total)}
-                  </>
-                )}
-              </button>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={handlePix}
+                  disabled={isProcessing}
+                  className={cn(
+                    'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
+                    'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
+                    'shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)]',
+                    'disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]'
+                  )}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Gerando QR...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" /> Gerar PIX de {BRL.format(total)}
+                    </>
+                  )}
+                </button>
+                <div className="mt-1 flex items-center justify-center gap-3 px-4 py-2.5">
+                  <MercadoPagoLogo className="h-12" />
+                  <span className="h-10 w-px bg-white/10" />
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.5} />
+                    <span className="text-[11.5px] font-semibold text-white/80">Pagamento seguro</span>
+                  </div>
+                </div>
+              </div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -499,10 +595,10 @@ export default function PaymentField() {
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 text-emerald-300 font-medium">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    aguardando pagamento
+                    Aguardando pagamento
                   </div>
                   <span className="text-white/50 tabular-nums">
-                    expira em {String(Math.floor(pixTimeLeft / 60)).padStart(2, '0')}:
+                    Expira em {String(Math.floor(pixTimeLeft / 60)).padStart(2, '0')}:
                     {String(pixTimeLeft % 60).padStart(2, '0')}
                   </span>
                 </div>
@@ -530,19 +626,28 @@ export default function PaymentField() {
                 >
                   {copied ? (
                     <>
-                      <CheckCircle2 className="w-4 h-4" /> copiado!
+                      <CheckCircle2 className="w-4 h-4" /> Copiado!
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" /> copiar pix copia-e-cola
+                      <Copy className="w-4 h-4" /> Copiar PIX copia-e-cola
                     </>
                   )}
                 </button>
 
                 <p className="text-[11px] text-center text-white/50 leading-relaxed">
-                  abre seu app do banco, escolhe pix copia-e-cola e cola o código. <br />
-                  a gente confirma automaticamente em segundos.
+                  Abre seu app do banco, escolhe PIX copia-e-cola e cola o código. <br />
+                  A gente confirma automaticamente em segundos.
                 </p>
+
+                <div className="flex items-center justify-center gap-3 pt-3 border-t border-white/10">
+                  <MercadoPagoLogo className="h-12" />
+                  <span className="h-10 w-px bg-white/10" />
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.5} />
+                    <span className="text-[11.5px] font-semibold text-white/80">Pagamento seguro</span>
+                  </div>
+                </div>
               </motion.div>
             )}
           </motion.div>
@@ -568,24 +673,34 @@ export default function PaymentField() {
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> abrindo checkout...
+                  <Loader2 className="w-5 h-5 animate-spin" /> Abrindo checkout...
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-5 h-5" /> pagar {BRL.format(total)} no cartão
+                  <CreditCard className="w-5 h-5" /> Pagar {BRL.format(total)} no cartão
                 </>
               )}
             </button>
-            <p className="text-[11px] text-center text-white/45">
-              checkout seguro via mercado pago · visa, master, elo, amex
-            </p>
+            <div className="mt-1 flex flex-col items-center justify-center gap-2 px-4 py-2.5">
+              <div className="flex items-center gap-3">
+                <MercadoPagoLogo className="h-12" />
+                <span className="h-10 w-px bg-white/10" />
+                <div className="flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.5} />
+                  <span className="text-[11.5px] font-semibold text-white/80">Pagamento seguro</span>
+                </div>
+              </div>
+              <p className="text-[10.5px] text-center text-white/40">
+                Visa · Master · Elo · Amex · Hipercard
+              </p>
+            </div>
 
             {/* Admin: dry-run REAL no MP — cria preference e mostra o resultado */}
             {isAdmin && (
               <div className="mt-3 rounded-xl p-3 bg-amber-500/10 ring-1 ring-amber-400/30 space-y-2">
                 <div className="flex items-center gap-2 text-[11px] text-amber-100/80">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-                  <span className="font-semibold uppercase tracking-wider text-[9.5px]">modo admin — dry-run mp</span>
+                  <span className="font-semibold uppercase tracking-wider text-[9.5px]">Modo admin — dry-run MP</span>
                 </div>
                 <button
                   type="button"
@@ -599,11 +714,11 @@ export default function PaymentField() {
                 >
                   {isDryRun ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> testando MP...
+                      <Loader2 className="w-4 h-4 animate-spin" /> Testando MP...
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4" /> testar MP (dry-run real)
+                      <Zap className="w-4 h-4" /> Testar MP (dry-run real)
                     </>
                   )}
                 </button>
@@ -663,7 +778,7 @@ export default function PaymentField() {
                           rel="noopener"
                           className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-400/20 hover:bg-emerald-400/30 font-semibold transition"
                         >
-                          abrir checkout ↗
+                          Abrir checkout ↗
                         </a>
                       </div>
                     )}
@@ -686,7 +801,7 @@ export default function PaymentField() {
         <div className="rounded-xl p-3 bg-amber-500/10 ring-1 ring-amber-400/30 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-amber-300" />
-            <span className="text-[12px] text-amber-100/90 font-medium">admin</span>
+            <span className="text-[12px] text-amber-100/90 font-medium">Admin</span>
           </div>
           <button
             type="button"
@@ -694,7 +809,7 @@ export default function PaymentField() {
             disabled={!intentId || isAdminAction}
             className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-100 disabled:opacity-50 transition"
           >
-            {isAdminAction ? 'finalizando...' : 'finalizar sem pagar'}
+            {isAdminAction ? 'Finalizando...' : 'Finalizar sem pagar'}
           </button>
         </div>
       )}
@@ -714,12 +829,12 @@ export default function PaymentField() {
       <div className="flex items-center justify-center gap-4 pt-2 text-[11px] text-white/40">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>pagamento seguro</span>
+          <span>Pagamento seguro</span>
         </div>
         <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
         <div className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5" />
-          <span>entrega imediata</span>
+          <span>Entrega imediata</span>
         </div>
       </div>
     </div>

@@ -68,7 +68,7 @@ export default function IntroField() {
         control={control}
         name="introType"
         render={({ field }) => (
-          <div className="space-y-3 pt-2">
+          <div className="space-y-4 pt-4">
             {OPTIONS.map((opt) => {
               const selected = field.value === opt.value;
               const isHighlight = !!opt.highlight;
@@ -78,7 +78,7 @@ export default function IntroField() {
                   type="button"
                   onClick={() => field.onChange(opt.value)}
                   className={cn(
-                    'relative w-full flex items-center gap-3 rounded-xl p-3 text-left transition overflow-hidden',
+                    'relative w-full flex items-center gap-3 rounded-xl p-3 text-left transition',
                     isHighlight && !selected &&
                       'bg-gradient-to-br from-pink-500/15 via-fuchsia-500/10 to-purple-500/15 ring-2 ring-pink-400/60 shadow-[0_8px_28px_-8px_rgba(236,72,153,0.55)]',
                     isHighlight && selected &&

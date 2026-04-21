@@ -46,6 +46,8 @@ export const pageSchema = z.object({
   userId: z.string().optional(),
   title: z.string().default("Seu Título Aqui"),
   titleColor: z.string().default("#FFFFFF"),
+  recipientName: z.string().max(40, "Até 40 caracteres.").optional(),
+  relationshipStart: z.string().optional(),
   message: z.string().min(1, "A mensagem não pode estar vazia.").max(2000, "A mensagem pode ter no máximo 2000 caracteres.").default(""),
   messageFontSize: z.string().default("text-base"),
   messageFormatting: z.array(z.string()).default([]),

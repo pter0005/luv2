@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
+import { lookupIntentStatus } from '@/app/chat/lookup-intent';
 import { pageSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
 import { CHAT_STEP_ORDER, getCupidLine, type ChatStepKey } from '@/lib/chat-script';
 import { WIZARD_SEGMENTS, type WizardSegmentKey } from '@/lib/wizard-segment-config';
@@ -40,7 +41,7 @@ function stripNonPersistable(values: PageData): Partial<PageData> {
   return clone;
 }
 
-const ENTER_TO_CONTINUE_STEPS: Set<ChatStepKey> = new Set(['title']);
+const ENTER_TO_CONTINUE_STEPS: Set<ChatStepKey> = new Set(['recipient', 'title']);
 
 function Inner() {
   const router = useRouter();
@@ -67,6 +68,7 @@ function Inner() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [saveTick, setSaveTick] = useState(0);
+  const [alreadyPaid, setAlreadyPaid] = useState<{ pageId: string } | null>(null);
   const milestonesFiredRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
@@ -120,6 +122,24 @@ function Inner() {
     try { localStorage.setItem(STEP_KEY_STORAGE, currentStep); } catch { /* ignore */ }
   }, [currentStep, hydrated]);
 
+  // Após hidratar, se já existe um intentId finalizado (pagou e voltou / deu F5),
+  // mostra a tela "sua página tá pronta" com o link — evita que a pessoa
+  // precise pedir pelo WhatsApp se fechar a aba.
+  useEffect(() => {
+    if (!hydrated || alreadyPaid) return;
+    const intentId = methods.getValues('intentId');
+    if (!intentId) return;
+    let cancelled = false;
+    (async () => {
+      const res = await lookupIntentStatus(intentId);
+      if (cancelled) return;
+      if (res.exists && res.status === 'completed' && res.pageId) {
+        setAlreadyPaid({ pageId: res.pageId });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hydrated, alreadyPaid, methods]);
+
   useEffect(() => {
     if (!hydrated) return;
     try { localStorage.setItem(SEGMENT_STORAGE, segment); } catch { /* ignore */ }
@@ -130,9 +150,22 @@ function Inner() {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
 
-  const cupidText = getCupidLine(segment, currentStep);
-  const cupidVariant =
-    currentStep === 'title' || currentStep === 'payment' ? 'idle' : 'asking';
+  // Nome da pessoa: snapshot ao entrar no step, não reativo ao typing — evita re-trigger
+  // da animação de "digitando" do Cupido a cada caractere que o usuário digita.
+  const cupidText = useMemo(() => {
+    const recipientName = methods.getValues('recipientName');
+    return getCupidLine(segment, currentStep, { recipientName });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segment, currentStep]);
+
+  // Alterna entre asking e idle ~4 vezes ao longo do fluxo pra ficar dinâmico.
+  // Começa em 'asking' (pede o nome), alterna em blocos.
+  const cupidVariant: 'idle' | 'asking' = useMemo(() => {
+    // Steps onde o Cupido está "perguntando" (asking) vs "ouvindo" (idle)
+    const askingSteps: ChatStepKey[] = ['recipient', 'message', 'gallery', 'voice', 'extras'];
+    if (currentStep === 'payment') return 'idle';
+    return askingSteps.includes(currentStep) ? 'asking' : 'idle';
+  }, [currentStep]);
 
   useEffect(() => {
     const next = CHAT_STEP_ORDER[stepIndex + 1];
@@ -202,6 +235,65 @@ function Inner() {
   const messagePlaceholder = segmentConfig.messagePlaceholder;
   const stepLabel = useMemo(() => `${stepIndex + 1}/${totalSteps}`, [stepIndex, totalSteps]);
 
+  // Atalho: se o backend confirmou que a compra dessa sessão já foi paga,
+  // pula o wizard inteiro e entrega a página pronta. Blindagem caso a pessoa
+  // dê F5 depois de pagar, volte do checkout do MP, ou abra em outra aba.
+  if (alreadyPaid) {
+    return (
+      <div className="relative min-h-screen overflow-hidden text-white flex items-center justify-center p-6">
+        <div
+          className="pointer-events-none absolute inset-0 -z-20"
+          style={{
+            background:
+              'radial-gradient(ellipse 90% 60% at 50% -20%, hsl(275 60% 14%), transparent 70%), linear-gradient(180deg, hsl(275 50% 4%) 0%, hsl(280 40% 3%) 100%)',
+          }}
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="max-w-md w-full rounded-3xl p-7 text-center bg-gradient-to-br from-emerald-500/15 via-green-500/10 to-emerald-500/5 ring-1 ring-emerald-400/40 backdrop-blur"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.15, type: 'spring', stiffness: 220, damping: 18 }}
+            className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center mb-4 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.6)]"
+          >
+            <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          </motion.div>
+          <h1 className="text-xl font-bold text-white mb-1">Sua página tá pronta 💌</h1>
+          <p className="text-sm text-white/70 mb-5">
+            O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.
+          </p>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => router.push(`/p/${alreadyPaid.pageId}`)}
+              className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98]"
+            >
+              Ver minha página
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.removeItem(STORAGE_KEY);
+                  localStorage.removeItem(STEP_KEY_STORAGE);
+                  localStorage.removeItem(SEGMENT_STORAGE);
+                } catch {}
+                window.location.reload();
+              }}
+              className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/70 text-[13px] font-medium ring-1 ring-white/10 transition"
+            >
+              Criar uma nova página
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       <div className="relative min-h-screen overflow-hidden text-white">
@@ -258,7 +350,8 @@ function Inner() {
               <ChatBubble text={cupidText} />
             </div>
 
-            {/* Campo do step — sem card/wrapper visual, deixa respirar */}
+            {/* Campo do step — sem card/wrapper visual, deixa respirar.
+                padding-bottom reserva espaço pro PreviewButton flutuante (fixed bottom-24) não cortar conteúdo. */}
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={`field-${currentStep}`}
@@ -266,6 +359,7 @@ function Inner() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: direction > 0 ? -24 : 24 }}
                 transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
+                className="pb-24 lg:pb-0"
               >
                 <StepField
                   step={currentStep}

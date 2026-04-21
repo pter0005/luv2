@@ -50,6 +50,8 @@ type PreviewContentProps = {
     showPoemaPreview: boolean;
     previewPuzzleRevealed: boolean;
     setPreviewPuzzleRevealed: (revealed: boolean) => void;
+    /** Quando true, remove o frame de celular (usado quando o caller já tem um). */
+    bare?: boolean;
 };
 
 const MemoizedSwiper = React.memo(({ galleryImages, galleryStyle }: { galleryImages: any[], galleryStyle: string }) => {
@@ -86,6 +88,7 @@ export default function PreviewContent({
     showPoemaPreview,
     previewPuzzleRevealed,
     setPreviewPuzzleRevealed,
+    bare = false,
 }: PreviewContentProps) {
     const { watch } = useFormContext<PageData>();
     const formData = watch();
@@ -161,9 +164,14 @@ export default function PreviewContent({
     const hasWordGame = useMemo(() => !!(formData.enableWordGame && formData.wordGameQuestions?.length > 0), [formData.enableWordGame, formData.wordGameQuestions]);
 
     return (
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div className={cn(
+            "relative w-full h-full flex items-center justify-center",
+            bare && "min-h-0"
+        )}>
             <div className={cn(
-                "relative w-full max-w-lg h-[85vh] bg-zinc-800 rounded-[2.5rem] p-3 border-[6px] border-zinc-700 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
+                bare
+                    ? "relative w-full h-full flex flex-col overflow-hidden bg-background"
+                    : "relative w-full max-w-lg h-[85vh] bg-zinc-800 rounded-[2.5rem] p-3 border-[6px] border-zinc-700 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
             )}>
                  {/* CAMADA DE EFEITOS ESPECIAIS (ACIMA DE TUDO) */}
                  <AnimatePresence>
@@ -178,8 +186,11 @@ export default function PreviewContent({
                     )}
                  </AnimatePresence>
 
-                 <motion.div 
-                    className="relative z-10 w-full flex-grow flex flex-col rounded-[2rem] overflow-hidden bg-background"
+                 <motion.div
+                    className={cn(
+                        "relative z-10 w-full flex-grow flex flex-col overflow-hidden bg-background",
+                        bare ? "rounded-none" : "rounded-[2rem]"
+                    )}
                     animate={{
                         filter: shouldBeBlurred ? 'blur(15px) brightness(0.7)' : 'blur(0px) brightness(1)',
                     }}
@@ -205,9 +216,11 @@ export default function PreviewContent({
                         )}
                     </div>
                     
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-6 bg-zinc-900 rounded-b-xl z-20 flex items-center justify-center">
-                        <div className="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
-                    </div>
+                    {!bare && (
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-6 bg-zinc-900 rounded-b-xl z-20 flex items-center justify-center">
+                            <div className="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
+                        </div>
+                    )}
 
                     <div className={cn(
                         "flex-grow overflow-y-auto browser-scrollbar transition-all relative z-10",
