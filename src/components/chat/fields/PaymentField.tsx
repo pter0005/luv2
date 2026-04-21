@@ -152,16 +152,21 @@ export default function PaymentField() {
     startTransition(async () => {
       try {
         const data = getValues();
+        const whatsappDigits = phone.replace(/\D/g, '');
+        const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           userId: user.uid,
-          whatsappNumber: phone.replace(/\D/g, ''),
-          guestEmail: emailInput.trim().toLowerCase(),
+          whatsappNumber: whatsappDigits,
+          guestEmail: cleanEmail,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
 
-        const pix = await processPixPayment(saveRes.intentId, total, null);
+        const pix = await processPixPayment(saveRes.intentId, total, null, {
+          whatsapp: whatsappDigits,
+          email: cleanEmail,
+        });
         if (pix.error) { setError(pix.error); return; }
         if (pix.qrCode && pix.qrCodeBase64 && pix.paymentId) {
           setPixData({
@@ -191,16 +196,21 @@ export default function PaymentField() {
     startTransition(async () => {
       try {
         const data = getValues();
+        const whatsappDigits = phone.replace(/\D/g, '');
+        const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           userId: user.uid,
-          whatsappNumber: phone.replace(/\D/g, ''),
-          guestEmail: emailInput.trim().toLowerCase(),
+          whatsappNumber: whatsappDigits,
+          guestEmail: cleanEmail,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
         const domain = window.location.origin;
-        const session = await createMercadoPagoCardSession(saveRes.intentId, domain);
+        const session = await createMercadoPagoCardSession(saveRes.intentId, domain, {
+          whatsapp: whatsappDigits,
+          email: cleanEmail,
+        });
         if (!session.success) { setError(session.error || 'Erro ao criar sessão de pagamento.'); return; }
         window.location.href = session.url;
       } catch (e: any) {
@@ -239,16 +249,21 @@ export default function PaymentField() {
     startDryRun(async () => {
       try {
         const data = getValues();
+        const whatsappDigits = phone.replace(/\D/g, '');
+        const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           userId: user.uid,
-          whatsappNumber: phone.replace(/\D/g, ''),
-          guestEmail: emailInput.trim().toLowerCase(),
+          whatsappNumber: whatsappDigits,
+          guestEmail: cleanEmail,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
         const domain = window.location.origin;
-        const report = await dryRunMercadoPagoCardSession(saveRes.intentId, domain);
+        const report = await dryRunMercadoPagoCardSession(saveRes.intentId, domain, {
+          whatsapp: whatsappDigits,
+          email: cleanEmail,
+        });
         setDryRunReport(report);
         if (!report.ok) setError(report.error || 'Dry-run falhou.');
       } catch (e: any) {

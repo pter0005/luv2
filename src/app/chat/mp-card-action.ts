@@ -18,7 +18,8 @@ export type MpCardResult =
  */
 export async function createMercadoPagoCardSession(
   intentId: string,
-  domain: string
+  domain: string,
+  contact?: { whatsapp?: string; email?: string } | null
 ): Promise<MpCardResult> {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { success: false, error: 'Mercado Pago não configurado.' };
@@ -29,13 +30,26 @@ export async function createMercadoPagoCardSession(
     if (!intentDoc.exists) return { success: false, error: 'Rascunho não encontrado.' };
 
     const intent = intentDoc.data() || {};
-    const email = (intent.guestEmail || intent.userEmail || '').trim().toLowerCase();
+    const contactEmail = (contact?.email || '').trim().toLowerCase();
+    const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
+    const docEmail = (intent.guestEmail || intent.userEmail || '').trim().toLowerCase();
+    const docWhatsapp = (intent.whatsappNumber || '').replace(/\D/g, '');
+
+    const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) ? contactEmail : docEmail;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { success: false, error: 'Email obrigatório. Preencha um email válido.' };
     }
-    const whatsapp = (intent.whatsappNumber || '').replace(/\D/g, '');
+    const whatsapp = contactWhatsapp.length >= 10 ? contactWhatsapp : docWhatsapp;
     if (whatsapp.length < 10) {
       return { success: false, error: 'WhatsApp obrigatório com DDD.' };
+    }
+
+    // Persiste contact no intent se veio novo
+    if (contactWhatsapp.length >= 10 && contactWhatsapp !== docWhatsapp) {
+      await intentDoc.ref.set({ whatsappNumber: contactWhatsapp }, { merge: true });
+    }
+    if (contactEmail && contactEmail !== docEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      await intentDoc.ref.set({ guestEmail: contactEmail }, { merge: true });
     }
 
     // Preço server-trusted
@@ -133,7 +147,8 @@ export type MpDryRunReport = {
  */
 export async function dryRunMercadoPagoCardSession(
   intentId: string,
-  domain: string
+  domain: string,
+  contact?: { whatsapp?: string; email?: string } | null
 ): Promise<MpDryRunReport> {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   const tokenConfigured = !!token;
@@ -153,8 +168,12 @@ export async function dryRunMercadoPagoCardSession(
     }
 
     const intent = intentDoc.data() || {};
-    const email = (intent.guestEmail || intent.userEmail || '').trim().toLowerCase();
-    const whatsapp = (intent.whatsappNumber || '').replace(/\D/g, '');
+    const contactEmail = (contact?.email || '').trim().toLowerCase();
+    const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
+    const docEmail = (intent.guestEmail || intent.userEmail || '').trim().toLowerCase();
+    const docWhatsapp = (intent.whatsappNumber || '').replace(/\D/g, '');
+    const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) ? contactEmail : docEmail;
+    const whatsapp = contactWhatsapp.length >= 10 ? contactWhatsapp : docWhatsapp;
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { ok: false, tokenConfigured, email, error: 'Email inválido no intent.' };

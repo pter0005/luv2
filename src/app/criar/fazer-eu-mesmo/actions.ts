@@ -235,6 +235,7 @@ export async function processPixPayment(
   intentId: string,
   clientClaimedTotal?: number,
   discountCode?: string | null,
+  contact?: { whatsapp?: string; email?: string } | null,
 ) {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { error: 'Token Mercado Pago não configurado.' };
@@ -245,12 +246,33 @@ export async function processPixPayment(
     if (!intentDoc.exists) return { error: 'Rascunho não encontrado.' };
 
     const intentData = intentDoc.data();
-    const rawWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '');
+    // Prioriza contato passado na chamada — evita race condition onde o
+    // merge-save ainda não visível nesta leitura do Firestore.
+    const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
+    const contactEmail = (contact?.email || '').trim().toLowerCase();
+    const docWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '');
+    const docEmail = (intentData?.guestEmail || intentData?.userEmail || '').trim().toLowerCase();
+
+    const rawWhatsapp = contactWhatsapp.length >= 10 ? contactWhatsapp : docWhatsapp;
     if (rawWhatsapp.length < 10) {
+      console.log('[PIX DEBUG] whatsappNumber inválido', {
+        intentId,
+        contactWhatsapp,
+        docWhatsapp,
+        docWhatsappRaw: intentData?.whatsappNumber,
+      });
       return { error: 'WhatsApp obrigatório. Preencha seu número com DDD antes de gerar o PIX.' };
     }
-    const rawEmail = (intentData?.guestEmail || intentData?.userEmail || '').trim().toLowerCase();
+    const rawEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) ? contactEmail : docEmail;
     const cleanEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail : 'pagamento@mycupid.com.br';
+
+    // Se o contact veio diferente do doc, persiste pra próximas leituras
+    if (contactWhatsapp.length >= 10 && contactWhatsapp !== docWhatsapp) {
+      await intentDoc.ref.set({ whatsappNumber: contactWhatsapp }, { merge: true });
+    }
+    if (contactEmail && contactEmail !== docEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      await intentDoc.ref.set({ guestEmail: contactEmail }, { merge: true });
+    }
     const rawName = intentData?.userName || 'Cliente MyCupid';
     const firstName = rawName.split(' ')[0];
     const lastName = rawName.split(' ').slice(1).join(' ') || 'Cliente';
