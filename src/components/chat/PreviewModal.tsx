@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
@@ -20,6 +20,8 @@ const PreviewContent = dynamic(
   }
 );
 
+const Timeline = dynamic(() => import('@/components/ui/3d-image-gallery'), { ssr: false });
+
 interface PreviewModalProps {
   open: boolean;
   onClose: () => void;
@@ -35,10 +37,43 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
   // previewPuzzleRevealed=true significa "pular a intro, mostrar a página final".
   // Começamos true e só setamos false se for a primeira vez nessa sessão.
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = React.useState(true);
+  const [showTimeline, setShowTimeline] = React.useState(false);
 
   const introType = watch('introType');
   const enablePuzzle = watch('enablePuzzle' as any);
   const puzzleImage = watch('puzzleImage' as any);
+  const timelineEventsRaw = watch('timelineEvents');
+
+  // Mesma normalização usada na página final (PageClientComponent).
+  // Sem isso, a timeline aparece vazia no preview mesmo com eventos salvos.
+  const timelineEventsForDisplay = useMemo(() => {
+    if (!Array.isArray(timelineEventsRaw)) return [];
+    return timelineEventsRaw
+      .filter((event: any) => event && event.image && typeof event.image.url === 'string')
+      .map((event: any) => {
+        let dateObj: Date | undefined;
+        if (event.date) {
+          try {
+            let d: Date;
+            if (typeof event.date === 'object' && event.date !== null && (event.date.seconds !== undefined || event.date._seconds !== undefined)) {
+              d = new Date((event.date.seconds || event.date._seconds) * 1000);
+            } else {
+              d = new Date(event.date);
+            }
+            if (!isNaN(d.getTime())) dateObj = d;
+          } catch { /* ignore */ }
+        }
+        return {
+          id: event.id || Math.random().toString(),
+          imageUrl: event.image!.url,
+          alt: 'Imagem da linha do tempo',
+          title: event.description || '',
+          date: dateObj,
+        };
+      });
+  }, [timelineEventsRaw]);
+
+  const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
 
   const showEasterPreview = introType === 'love';
   const showPoemaPreview = introType === 'poema';
@@ -129,8 +164,8 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
           <PreviewContent
             bare
             isClient={isClient}
-            onShowTimeline={() => { /* disabled in preview */ }}
-            hasValidTimelineEvents={false}
+            onShowTimeline={() => setShowTimeline(true)}
+            hasValidTimelineEvents={hasValidTimelineEvents}
             showPuzzlePreview={showPuzzlePreview}
             showEasterPreview={showEasterPreview}
             showPoemaPreview={showPoemaPreview}
@@ -138,6 +173,12 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
             setPreviewPuzzleRevealed={setPreviewPuzzleRevealed}
           />
         </div>
+
+        {showTimeline && hasValidTimelineEvents && (
+          <div className="absolute inset-0 z-[60] bg-black">
+            <Timeline events={timelineEventsForDisplay} onClose={() => setShowTimeline(false)} />
+          </div>
+        )}
       </motion.div>
     </motion.div>,
     document.body
