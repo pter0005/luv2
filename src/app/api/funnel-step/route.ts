@@ -4,8 +4,10 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 const ALLOWED_STEPS = new Set([
+  'recipient',
   'title', 'message', 'specialDate', 'gallery', 'timeline', 'music',
   'background', 'intro', 'puzzle', 'memory', 'quiz', 'word-game',
+  'extras',
   'plan', 'voice', 'payment',
   'pix_generated', 'paid',
 ]);

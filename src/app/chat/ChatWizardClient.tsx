@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
+import { useCreatingPresence } from '@/hooks/usePresence';
+import { trackFunnelStep } from '@/lib/analytics';
 import { pageSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
 import { CHAT_STEP_ORDER, getCupidLine, type ChatStepKey } from '@/lib/chat-script';
 import { WIZARD_SEGMENTS, type WizardSegmentKey } from '@/lib/wizard-segment-config';
@@ -65,6 +67,16 @@ function Inner() {
 
   const [currentStep, setCurrentStep] = useState<ChatStepKey>(CHAT_STEP_ORDER[0]);
   const [direction, setDirection] = useState<1 | -1>(1);
+
+  // Presence: conta esse visitor como "criando uma página" enquanto o /chat tá aberto
+  useCreatingPresence(true, null);
+
+  // Funnel tracking: reporta cada step visto pro /admin ver onde gente cai
+  useEffect(() => {
+    const idx = CHAT_STEP_ORDER.indexOf(currentStep);
+    if (idx < 0) return;
+    trackFunnelStep(currentStep, idx + 1, CHAT_STEP_ORDER.length);
+  }, [currentStep]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [saveTick, setSaveTick] = useState(0);

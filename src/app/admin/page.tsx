@@ -113,7 +113,9 @@ async function getAllData() {
     for (const doc of filtered) {
       const d = doc.data();
       const owner = userMap.get(d.userId);
-      const createdAtDate: Date = d.createdAt?.toDate ? d.createdAt.toDate() : new Date();
+      // Se não tem createdAt (doc corrompido/legacy), pula — não conta como "hoje"
+      if (!d.createdAt?.toDate) continue;
+      const createdAtDate: Date = d.createdAt.toDate();
       const isGift = !!d.isGift;
 
       totalPagesCount++; // conta todas, inclusive gifts, drafts e não pagas

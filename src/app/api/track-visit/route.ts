@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
     const { deviceId, path } = await request.json();
     if (!deviceId || typeof deviceId !== 'string' || deviceId.length > 100) return NextResponse.json({ ok: false });
     const db = getAdminFirestore();
-    const today = new Date().toISOString().slice(0, 10);
+    // YYYY-MM-DD no timezone de São Paulo — alinha com o que o /admin lê
+    const today = new Date()
+      .toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      .split('/').reverse().join('-');
     const visitorRef = db.collection('analytics').doc('daily').collection(today).doc(deviceId);
     const snap = await visitorRef.get();
     if (!snap.exists) {

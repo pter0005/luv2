@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const db = getAdminFirestore();
-  const today = new Date().toISOString().slice(0, 10);
+  // YYYY-MM-DD em BRT (UTC-3, sem DST desde 2019)
+  const today = new Date()
+    .toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    .split('/').reverse().join('-');
   try {
     const visitorsSnap = await db.collection('analytics').doc('daily').collection(today).get();
     const uniqueVisitors = visitorsSnap.size;
@@ -20,9 +23,10 @@ export async function GET(request: NextRequest) {
       pathCounts[path] = (pathCounts[path] ?? 0) + 1;
     });
     const topPaths = Object.entries(pathCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([path, count]) => ({ path, count }));
+    // Intervalo do dia em BRT: [00:00 BRT, 23:59:59.999 BRT] = [03:00 UTC, 02:59:59.999 UTC do dia seguinte]
     const salesSnap = await db.collection('lovepages')
-      .where('createdAt', '>=', Timestamp.fromDate(new Date(`${today}T00:00:00Z`)))
-      .where('createdAt', '<=', Timestamp.fromDate(new Date(`${today}T23:59:59Z`)))
+      .where('createdAt', '>=', Timestamp.fromDate(new Date(`${today}T03:00:00.000Z`)))
+      .where('createdAt', '<', Timestamp.fromDate(new Date(new Date(`${today}T03:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000)))
       .get();
     // Only count pages that were actually paid. Use the real charged amount
     // (paidAmount) so discounts and add-ons are reflected in the daily report.
