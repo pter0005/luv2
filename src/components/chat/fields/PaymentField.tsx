@@ -21,7 +21,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
+import { useUser, useFirebase } from '@/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import { computeTotal, getPrices, PRICES } from '@/lib/price';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import type { PageData } from '@/lib/wizard-schema';
@@ -81,6 +82,21 @@ const ERR = {
 export default function PaymentField() {
   const router = useRouter();
   const { user } = useUser();
+  const firebase = useFirebase();
+
+  // Garante que existe um user (anônimo é OK) — outros fields fazem isso sob
+  // demanda; aqui precisa antes de gerar PIX/resgatar gift/abrir checkout.
+  // Sem isso, user chega null em guest flows e o botão só mostra "Sessão carregando".
+  const ensureUser = useCallback(async () => {
+    if (user) return user;
+    if (!firebase.auth) return null;
+    try {
+      const cred = await signInAnonymously(firebase.auth);
+      return cred.user;
+    } catch {
+      return null;
+    }
+  }, [user, firebase.auth]);
   const { toast } = useToast();
   const { control, getValues, setValue } = useFormContext<PageData>();
   const locale = useLocale() as Locale;
@@ -263,14 +279,19 @@ export default function PaymentField() {
     attributionRef.current = getAttribution();
   }, []);
 
-  // Garantir que o rascunho exista
+  // Garantir que o rascunho exista — cria user anônimo se necessário.
   useEffect(() => {
-    if (!user || intentId) return;
-    const data = getValues();
-    createOrUpdatePaymentIntent({ ...data, ...attributionRef.current, userId: user.uid }).then((res) => {
-      if (res.success) setValue('intentId', res.intentId, { shouldDirty: false });
-    });
-  }, [user, intentId, getValues, setValue]);
+    if (intentId) return;
+    let cancelled = false;
+    (async () => {
+      const activeUser = await ensureUser();
+      if (cancelled || !activeUser) return;
+      const data = getValues();
+      const res = await createOrUpdatePaymentIntent({ ...data, ...attributionRef.current, userId: activeUser.uid });
+      if (!cancelled && res.success) setValue('intentId', res.intentId, { shouldDirty: false });
+    })();
+    return () => { cancelled = true; };
+  }, [intentId, getValues, setValue, ensureUser]);
 
   // Restaura QR do PIX se a pessoa recarregou/voltou antes de pagar
   useEffect(() => {
@@ -379,9 +400,8 @@ export default function PaymentField() {
 
   const handleRedeemGift = useCallback(() => {
     setError(null);
-    if (!user) { setError(t('sessionLoading')); return; }
     if (!giftToken) { setError(isUS ? 'Gift link missing. Open the gift link again.' : 'Link do presente não encontrado. Abra o link de novo.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
       setError(t('emailInvalid'));
       return;
     }
@@ -392,19 +412,21 @@ export default function PaymentField() {
     const cleanEmail = emailInput.trim().toLowerCase();
     startRedeemGift(async () => {
       try {
+        const activeUser = await ensureUser();
+        if (!activeUser) { setError(t('sessionLoading')); return; }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
-          userId: user.uid,
+          userId: activeUser.uid,
           plan: 'avancado',
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
-        const res = await finalizeWithGiftToken(saveRes.intentId, user.uid, giftToken, cleanEmail);
+        const res = await finalizeWithGiftToken(saveRes.intentId, activeUser.uid, giftToken, cleanEmail);
         if (!res.success) { setError(res.error || 'Erro ao resgatar presente.'); return; }
         try { localStorage.removeItem('mycupid_gift_token'); } catch {}
         setGiftToken(null);
@@ -413,12 +435,11 @@ export default function PaymentField() {
         setError(e?.message || 'Erro ao resgatar presente.');
       }
     });
-  }, [user, giftToken, emailInput, phone, getValues, setValue, isUS]);
+  }, [giftToken, emailInput, phone, getValues, setValue, isUS, ensureUser]);
 
   const handlePix = useCallback(() => {
     setError(null);
-    if (!user) { setError(t('sessionLoading')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
       setError(t('emailInvalid'));
       return;
     }
@@ -429,25 +450,53 @@ export default function PaymentField() {
 
     startTransition(async () => {
       try {
+        const activeUser = await ensureUser();
+        if (!activeUser) { setError(t('sessionLoading')); return; }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
-          userId: user.uid,
+          userId: activeUser.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
 
-        const pix = await processPixPayment(saveRes.intentId, total, null, {
+        // Busca o preço canônico DEPOIS do save (o serverTotal do estado pode
+        // estar defasado de renders anteriores). Passa esse valor pro PIX pra
+        // garantir match exato — zero chance de "valor mudou".
+        const freshPrice = await getIntentServerPrice(saveRes.intentId);
+        const claimedTotal = freshPrice.ok && typeof freshPrice.total === 'number'
+          ? freshPrice.total
+          : total;
+        if (freshPrice.ok && typeof freshPrice.total === 'number') {
+          setServerTotal(freshPrice.total);
+        }
+
+        const pix = await processPixPayment(saveRes.intentId, claimedTotal, null, {
           whatsapp: whatsappDigits,
           email: cleanEmail,
         });
         if (pix.error) {
           trackEvent('PaymentFailed', { method: 'pix', reason: pix.error, value: total });
+          // Auto-recovery: se foi "valor mudou", busca o novo preço e atualiza
+          // o UI silenciosamente. Usuário só precisa clicar "Gerar PIX" de novo
+          // com o valor já correto — não mais "atualize a página".
+          if (/valor mudou|price mismatch/i.test(pix.error)) {
+            const refreshed = await getIntentServerPrice(saveRes.intentId);
+            if (refreshed.ok && typeof refreshed.total === 'number') {
+              setServerTotal(refreshed.total);
+              setError(
+                isUS
+                  ? `Price updated to ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(refreshed.total)}. Tap "Generate PIX" again.`
+                  : `Valor atualizado pra ${BRL.format(refreshed.total)}. Clique em "Gerar PIX" de novo.`,
+              );
+              return;
+            }
+          }
           setError(pix.error);
           return;
         }
@@ -464,12 +513,11 @@ export default function PaymentField() {
         setError(e?.message || 'Erro ao conectar com o pagamento.');
       }
     });
-  }, [user, emailInput, phone, getValues, setValue, total]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, siteCfg.currency]);
 
   const handleCard = useCallback(() => {
     setError(null);
-    if (!user) { setError(t('sessionLoading')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
       setError(t('emailInvalid'));
       return;
     }
@@ -479,13 +527,15 @@ export default function PaymentField() {
     }
     startTransition(async () => {
       try {
+        const activeUser = await ensureUser();
+        if (!activeUser) { setError(t('sessionLoading')); return; }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
-          userId: user.uid,
+          userId: activeUser.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
         });
@@ -507,12 +557,11 @@ export default function PaymentField() {
         setError(e?.message || 'Erro ao conectar com o pagamento.');
       }
     });
-  }, [user, emailInput, phone, getValues, setValue, total]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, isUS]);
 
   const handleStripe = useCallback(() => {
     setError(null);
-    if (!user) { setError('Session loading, try again in a moment.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
       setError('Please enter a valid email.'); return;
     }
     if (phone.replace(/\D/g, '').length < 10) {
@@ -520,13 +569,15 @@ export default function PaymentField() {
     }
     startTransition(async () => {
       try {
+        const activeUser = await ensureUser();
+        if (!activeUser) { setError('Session loading, try again in a moment.'); return; }
         const data = getValues();
         const phoneDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
-          userId: user.uid,
+          userId: activeUser.uid,
           whatsappNumber: phoneDigits,
           guestEmail: cleanEmail,
           locale: 'en',
@@ -534,7 +585,15 @@ export default function PaymentField() {
         });
         if (!saveRes.success) { setError(saveRes.error || 'Failed to save draft.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
-        const session = await createStripeCheckoutSession(saveRes.intentId, total, null, {
+        // Server-trusted price pós-save — nunca usa valor defasado do cliente.
+        const freshPrice = await getIntentServerPrice(saveRes.intentId);
+        const claimedTotal = freshPrice.ok && typeof freshPrice.total === 'number'
+          ? freshPrice.total
+          : total;
+        if (freshPrice.ok && typeof freshPrice.total === 'number') {
+          setServerTotal(freshPrice.total);
+        }
+        const session = await createStripeCheckoutSession(saveRes.intentId, claimedTotal, null, {
           phone: phoneDigits,
           email: cleanEmail,
         });
@@ -548,7 +607,7 @@ export default function PaymentField() {
         setError(e?.message || 'Payment error.');
       }
     });
-  }, [user, emailInput, phone, getValues, setValue, total]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser]);
 
   const handleAdminFinalize = useCallback(() => {
     if (!user || !intentId || !isAdmin) return;
@@ -568,8 +627,7 @@ export default function PaymentField() {
     if (!isAdmin) return;
     setError(null);
     setDryRunReport(null);
-    if (!user) { setError(t('sessionLoading')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
       setError(t('emailInvalid'));
       return;
     }
@@ -579,13 +637,15 @@ export default function PaymentField() {
     }
     startDryRun(async () => {
       try {
+        const activeUser = await ensureUser();
+        if (!activeUser) { setError(t('sessionLoading')); return; }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
-          userId: user.uid,
+          userId: activeUser.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
         });
@@ -602,7 +662,7 @@ export default function PaymentField() {
         setError(e?.message || 'Erro no dry-run.');
       }
     });
-  }, [isAdmin, user, emailInput, phone, getValues, setValue]);
+  }, [isAdmin, emailInput, phone, getValues, setValue, ensureUser]);
 
   const copyPix = useCallback(async () => {
     if (!pixData) return;
@@ -1305,7 +1365,10 @@ export default function PaymentField() {
         </div>
       )}
 
-      {error && (
+      {/* Erro global — só mostra se o erro NÃO está sendo exibido dentro de um
+          card específico (gift / stripe). Evita a duplicação que aparecia pro
+          usuário ("Sessão carregando" duas vezes empilhadas). */}
+      {error && !giftToken && !isUS && (
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
