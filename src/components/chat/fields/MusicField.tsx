@@ -15,6 +15,16 @@ function isLikelyYouTubeUrl(v: string) {
   return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(v.trim());
 }
 
+// Busca título/canal via oEmbed público do YouTube (sem API key)
+async function fetchYoutubeMeta(url: string): Promise<{ title?: string; author?: string } | null> {
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return { title: data?.title, author: data?.author_name };
+  } catch { return null; }
+}
+
 export default function MusicField() {
   const { control, setValue, watch } = useFormContext<PageData>();
   const option = watch('musicOption');
@@ -70,6 +80,9 @@ export default function MusicField() {
       setSelected(r);
       setValue('musicOption', 'youtube', { shouldDirty: true });
       setValue('youtubeUrl', r.url, { shouldDirty: true, shouldValidate: true });
+      // Salva título e "artista" (canal do YT) pra aparecer no player da página
+      setValue('songName', r.title, { shouldDirty: true });
+      setValue('artistName', r.channel, { shouldDirty: true });
     },
     [setValue]
   );
@@ -78,6 +91,8 @@ export default function MusicField() {
     setSelected(null);
     setValue('youtubeUrl', '', { shouldDirty: true });
     setValue('musicOption', 'none', { shouldDirty: true });
+    setValue('songName', '', { shouldDirty: true });
+    setValue('artistName', '', { shouldDirty: true });
   }, [setValue]);
 
   const skip = useCallback(() => {
@@ -86,6 +101,8 @@ export default function MusicField() {
     setResults([]);
     setValue('youtubeUrl', '', { shouldDirty: true });
     setValue('musicOption', 'none', { shouldDirty: true });
+    setValue('songName', '', { shouldDirty: true });
+    setValue('artistName', '', { shouldDirty: true });
   }, [setValue]);
 
   // Estado: música já escolhida
@@ -228,8 +245,15 @@ export default function MusicField() {
                 value={field.value ?? ''}
                 onChange={(e) => {
                   field.onChange(e);
-                  if (e.target.value.trim()) {
+                  const v = e.target.value.trim();
+                  if (v) {
                     setValue('musicOption', 'youtube', { shouldDirty: true });
+                    if (isLikelyYouTubeUrl(v)) {
+                      fetchYoutubeMeta(v).then((meta) => {
+                        if (meta?.title) setValue('songName', meta.title, { shouldDirty: true });
+                        if (meta?.author) setValue('artistName', meta.author, { shouldDirty: true });
+                      });
+                    }
                   }
                 }}
                 placeholder="https://youtube.com/watch?v=..."
