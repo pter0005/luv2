@@ -23,6 +23,7 @@ import { uploadFile } from '@/lib/upload';
 import { compressImage } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 interface ExtraConfig {
   key: 'enablePuzzle' | 'enableMemoryGame' | 'enableQuiz' | 'enableWordGame';
@@ -32,11 +33,17 @@ interface ExtraConfig {
   accent: string; // gradient classes
 }
 
-const EXTRAS: ExtraConfig[] = [
+const EXTRAS_PT: ExtraConfig[] = [
   { key: 'enablePuzzle', icon: PuzzleIcon, label: 'Quebra-cabeça', desc: 'Monta peça por peça pra ver a foto', accent: 'from-pink-500 to-rose-500' },
   { key: 'enableMemoryGame', icon: Gamepad2, label: 'Jogo da memória', desc: 'Pares de fotos pra virar e combinar', accent: 'from-fuchsia-500 to-pink-500' },
   { key: 'enableQuiz', icon: HelpCircle, label: 'Quiz do casal', desc: 'Perguntas que só ele(a) sabe', accent: 'from-purple-500 to-pink-500' },
   { key: 'enableWordGame', icon: Wand2, label: 'Adivinhe a palavra', desc: 'Forca romântica — descobre a palavra', accent: 'from-violet-500 to-fuchsia-500' },
+];
+const EXTRAS_EN: ExtraConfig[] = [
+  { key: 'enablePuzzle', icon: PuzzleIcon, label: 'Puzzle', desc: 'Solve piece by piece to reveal the photo', accent: 'from-pink-500 to-rose-500' },
+  { key: 'enableMemoryGame', icon: Gamepad2, label: 'Memory match', desc: 'Flip cards and pair up your photos', accent: 'from-fuchsia-500 to-pink-500' },
+  { key: 'enableQuiz', icon: HelpCircle, label: 'Couple\'s quiz', desc: 'Questions only they would know', accent: 'from-purple-500 to-pink-500' },
+  { key: 'enableWordGame', icon: Wand2, label: 'Guess the word', desc: 'Romantic hangman — crack the word', accent: 'from-violet-500 to-fuchsia-500' },
 ];
 
 // ───────────────────────────────────────────────────
@@ -556,29 +563,21 @@ function WordGameSubForm() {
 // Hint + Dispatcher
 // ───────────────────────────────────────────────────
 function PreviewHint({ k }: { k: ExtraConfig['key'] }) {
-  const MAP: Record<ExtraConfig['key'], { emoji: string; hint: string; cls: string }> = {
-    enablePuzzle: {
-      emoji: '🧩',
-      hint: 'Ele(a) vai montar peça por peça pra revelar sua foto',
-      cls: 'bg-gradient-to-br from-pink-500/10 to-rose-500/5 ring-pink-400/25',
-    },
-    enableMemoryGame: {
-      emoji: '🎴',
-      hint: 'Pares de cartas com fotos de vocês — vira as cartas e acha os pares',
-      cls: 'bg-gradient-to-br from-fuchsia-500/10 to-pink-500/5 ring-fuchsia-400/25',
-    },
-    enableQuiz: {
-      emoji: '❓',
-      hint: 'Perguntas personalizadas que só quem te conhece responde',
-      cls: 'bg-gradient-to-br from-purple-500/10 to-pink-500/5 ring-purple-400/25',
-    },
-    enableWordGame: {
-      emoji: '🔤',
-      hint: 'Forca romântica — descobre a palavra letra por letra',
-      cls: 'bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 ring-violet-400/25',
-    },
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const MAP_PT: Record<ExtraConfig['key'], { emoji: string; hint: string; cls: string }> = {
+    enablePuzzle: { emoji: '🧩', hint: 'Ele(a) vai montar peça por peça pra revelar sua foto', cls: 'bg-gradient-to-br from-pink-500/10 to-rose-500/5 ring-pink-400/25' },
+    enableMemoryGame: { emoji: '🎴', hint: 'Pares de cartas com fotos de vocês — vira as cartas e acha os pares', cls: 'bg-gradient-to-br from-fuchsia-500/10 to-pink-500/5 ring-fuchsia-400/25' },
+    enableQuiz: { emoji: '❓', hint: 'Perguntas personalizadas que só quem te conhece responde', cls: 'bg-gradient-to-br from-purple-500/10 to-pink-500/5 ring-purple-400/25' },
+    enableWordGame: { emoji: '🔤', hint: 'Forca romântica — descobre a palavra letra por letra', cls: 'bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 ring-violet-400/25' },
   };
-  const { emoji, hint, cls } = MAP[k];
+  const MAP_EN: Record<ExtraConfig['key'], { emoji: string; hint: string; cls: string }> = {
+    enablePuzzle: { emoji: '🧩', hint: 'They\'ll solve it piece by piece to reveal your photo', cls: 'bg-gradient-to-br from-pink-500/10 to-rose-500/5 ring-pink-400/25' },
+    enableMemoryGame: { emoji: '🎴', hint: 'Pairs of cards with your photos — flip and match them', cls: 'bg-gradient-to-br from-fuchsia-500/10 to-pink-500/5 ring-fuchsia-400/25' },
+    enableQuiz: { emoji: '❓', hint: 'Custom questions only someone who knows you can answer', cls: 'bg-gradient-to-br from-purple-500/10 to-pink-500/5 ring-purple-400/25' },
+    enableWordGame: { emoji: '🔤', hint: 'Romantic hangman — crack the word letter by letter', cls: 'bg-gradient-to-br from-violet-500/10 to-fuchsia-500/5 ring-violet-400/25' },
+  };
+  const { emoji, hint, cls } = (isEN ? MAP_EN : MAP_PT)[k];
   return (
     <div className={cn('rounded-lg px-3 py-2 ring-1 flex items-start gap-2.5', cls)}>
       <span className="text-lg leading-none shrink-0">{emoji}</span>
@@ -601,6 +600,9 @@ function SubForm({ k }: { k: ExtraConfig['key'] }) {
 
 export default function ExtrasField() {
   const { control, watch } = useFormContext<PageData>();
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const EXTRAS = isEN ? EXTRAS_EN : EXTRAS_PT;
 
   return (
     <div className="space-y-2.5">

@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { Check, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 // Preview REAL das animações — mesmos componentes da página final
 const FallingHearts = dynamic(() => import('@/components/effects/FallingHearts'), { ssr: false });
@@ -32,7 +33,7 @@ interface BgOption {
 }
 
 // Favoritos primeiro — céu estrelado + buquê digital (nebulosa do poema)
-const OPTIONS: BgOption[] = [
+const OPTIONS_PT: BgOption[] = [
   { value: 'nebulosa', label: 'Buquê digital', emoji: '🌌', sub: 'cinematográfico', favorite: true },
   { value: 'starry-sky', label: 'Céu estrelado', emoji: '✨', sub: 'romântico', favorite: true },
   { value: 'falling-hearts', label: 'Corações', emoji: '💖', sub: 'clássico' },
@@ -40,6 +41,15 @@ const OPTIONS: BgOption[] = [
   { value: 'mystic-flowers', label: 'Flores místicas', emoji: '🌸', sub: 'delicado' },
   { value: 'floating-dots', label: 'Pontos', emoji: '💫', sub: 'etéreo' },
   { value: 'none', label: 'Nenhum', emoji: '🚫', sub: 'limpinho' },
+];
+const OPTIONS_EN: BgOption[] = [
+  { value: 'nebulosa', label: 'Digital bouquet', emoji: '🌌', sub: 'cinematic', favorite: true },
+  { value: 'starry-sky', label: 'Starry sky', emoji: '✨', sub: 'romantic', favorite: true },
+  { value: 'falling-hearts', label: 'Falling hearts', emoji: '💖', sub: 'classic' },
+  { value: 'nebula', label: 'Nebula', emoji: '🪐', sub: 'magical' },
+  { value: 'mystic-flowers', label: 'Mystic flowers', emoji: '🌸', sub: 'delicate' },
+  { value: 'floating-dots', label: 'Dots', emoji: '💫', sub: 'ethereal' },
+  { value: 'none', label: 'None', emoji: '🚫', sub: 'clean' },
 ];
 
 function PreviewNone() {
@@ -129,6 +139,9 @@ export default function BackgroundField() {
   const bg = watch('backgroundAnimation');
   const heartColor = watch('heartColor') || '#ec4899';
   const hearts = bg === 'falling-hearts';
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const OPTIONS = isEN ? OPTIONS_EN : OPTIONS_PT;
 
   const favorites = OPTIONS.filter((o) => o.favorite);
   const rest = OPTIONS.filter((o) => !o.favorite);
@@ -145,7 +158,7 @@ export default function BackgroundField() {
               <div className="flex items-center gap-1.5 px-1">
                 <Sparkles className="w-3.5 h-3.5 text-pink-300" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] bg-gradient-to-r from-pink-300 to-purple-300 bg-clip-text text-transparent">
-                  Favoritos do Cupido
+                  {isEN ? "Cupid's favorites" : 'Favoritos do Cupido'}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -168,7 +181,7 @@ export default function BackgroundField() {
             <div className="space-y-2.5 pt-2">
               <div className="flex items-center gap-1.5 px-1">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
-                  outras opções
+                  {isEN ? 'other options' : 'outras opções'}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -197,7 +210,7 @@ export default function BackgroundField() {
           render={({ field }) => (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.05] ring-1 ring-white/10">
               <label htmlFor="heart-color" className="text-sm font-medium text-white flex items-center gap-1.5">
-                <span>🎨</span> Cor dos corações
+                <span>🎨</span> {isEN ? 'Heart color' : 'Cor dos corações'}
               </label>
               <input
                 id="heart-color"
@@ -211,7 +224,9 @@ export default function BackgroundField() {
       )}
 
       <p className="text-[11.5px] text-white/45 px-1 leading-relaxed">
-        Os previews são reais — é exatamente assim que vai aparecer na página 💫
+        {isEN
+          ? 'Previews are live — that\'s exactly how it\'ll look on the page 💫'
+          : 'Os previews são reais — é exatamente assim que vai aparecer na página 💫'}
       </p>
     </div>
   );
@@ -228,6 +243,8 @@ function OptionCard({
   onSelect: () => void;
   heartColor: string;
 }) {
+  const locale = useLocale();
+  const isEN = locale === 'en';
   return (
     <button
       type="button"
@@ -244,7 +261,7 @@ function OptionCard({
       {/* Badge de favorito */}
       {opt.favorite && !selected && (
         <div className="absolute top-2 left-2 bg-gradient-to-r from-pink-500/90 to-purple-500/90 backdrop-blur px-2 py-0.5 rounded-full text-[9.5px] font-bold text-white uppercase tracking-wider ring-1 ring-white/20">
-          💘 Favorito
+          💘 {isEN ? 'Favorite' : 'Favorito'}
         </div>
       )}
 

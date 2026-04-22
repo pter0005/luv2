@@ -20,15 +20,25 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { removeSession } from "@/app/auth-actions";
+import { useLocale } from 'next-intl';
 
-const navLinks = [
+const NAV_LINKS_PT = [
   { href: "/#recursos", label: "Recursos" },
   { href: "/#planos", label: "Planos" },
   { href: "/#avaliacoes", label: "Avaliações" },
   { href: "/como-funciona", label: "Como Funciona" },
 ];
+const NAV_LINKS_EN = [
+  { href: "/#recursos", label: "Features" },
+  { href: "/#planos", label: "Plans" },
+  { href: "/#avaliacoes", label: "Reviews" },
+  { href: "/how-it-works", label: "How it works" },
+];
 
 export default function Header() {
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const navLinks = isEN ? NAV_LINKS_EN : NAV_LINKS_PT;
   const [isSheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -72,17 +82,17 @@ export default function Header() {
           <DropdownMenuContent className="w-56 bg-zinc-900/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50 rounded-2xl" align="end" forceMount>
             <DropdownMenuLabel className="font-normal px-3 py-3">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-semibold text-white leading-none">Olá, {user.displayName || "Meu Perfil"} 👋</p>
+                <p className="text-sm font-semibold text-white leading-none">{isEN ? 'Hi' : 'Olá'}, {user.displayName || (isEN ? 'My Profile' : 'Meu Perfil')} 👋</p>
                 <p className="text-xs leading-none text-zinc-400 mt-1">{user.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem onClick={() => router.push("/minhas-paginas")} className="cursor-pointer text-zinc-200 hover:text-white focus:text-white focus:bg-white/10 rounded-xl mx-1 px-3 py-2.5">
-              <Heart className="mr-2 h-4 w-4 text-pink-400" /><span>Minhas Páginas</span>
+              <Heart className="mr-2 h-4 w-4 text-pink-400" /><span>{isEN ? 'My pages' : 'Minhas Páginas'}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-white/10" />
             <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10 rounded-xl mx-1 px-3 py-2.5 mb-1">
-              <LogOut className="mr-2 h-4 w-4" /><span>Sair</span>
+              <LogOut className="mr-2 h-4 w-4" /><span>{isEN ? 'Sign out' : 'Sair'}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -93,7 +103,7 @@ export default function Header() {
         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
           className="relative inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white overflow-hidden transition-all duration-200"
           style={{ background: "linear-gradient(135deg, #9333ea, #7c3aed)", boxShadow: "0 0 20px rgba(147, 51, 234, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)" }}>
-          <Sparkles size={14} className="opacity-80" />Minha Conta
+          <Sparkles size={14} className="opacity-80" />{isEN ? 'My Account' : 'Minha Conta'}
         </motion.button>
       </Link>
     );
@@ -146,15 +156,15 @@ export default function Header() {
                       {user ? (
                         <div className="flex flex-col gap-2">
                           <Link href="/minhas-paginas" onClick={() => setSheetOpen(false)} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-purple-600/20 text-white border border-purple-500/30 font-medium text-sm transition-all hover:bg-purple-600/30">
-                            <Heart size={16} className="text-pink-400" />Minhas Páginas
+                            <Heart size={16} className="text-pink-400" />{isEN ? 'My pages' : 'Minhas Páginas'}
                           </Link>
                           <button onClick={handleSignOut} className="flex items-center gap-2 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 font-medium text-sm transition-all">
-                            <LogOut size={16} />Sair
+                            <LogOut size={16} />{isEN ? 'Sign out' : 'Sair'}
                           </button>
                         </div>
                       ) : (
                         <Link href="/login" onClick={() => setSheetOpen(false)} className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold text-sm transition-all" style={{ background: "linear-gradient(135deg, #9333ea, #7c3aed)", boxShadow: "0 0 20px rgba(147, 51, 234, 0.3)" }}>
-                          <Sparkles size={14} />Minha Conta
+                          <Sparkles size={14} />{isEN ? 'My Account' : 'Minha Conta'}
                         </Link>
                       )}
                     </div>

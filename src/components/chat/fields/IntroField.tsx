@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Heart, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 type IntroValue = PageData['introType'];
 
@@ -17,33 +18,22 @@ interface IntroOption {
   highlight?: boolean; // destaque visual — card "estrela"
 }
 
-const OPTIONS: IntroOption[] = [
-  {
-    value: 'poema',
-    emoji: '💐',
-    label: 'Buquê Digital',
-    desc: 'Abertura cinematográfica com flores pra ela(e)',
-    highlight: true,
-  },
-  {
-    value: 'love',
-    emoji: '🐰',
-    label: 'Coelhinho',
-    desc: 'Animação fofinha pra começar com graça',
-  },
-  {
-    value: undefined,
-    emoji: '✨',
-    label: 'Sem abertura',
-    desc: 'A página abre direto no conteúdo',
-  },
+const OPTIONS_PT: IntroOption[] = [
+  { value: 'poema', emoji: '💐', label: 'Buquê Digital', desc: 'Abertura cinematográfica com flores pra ela(e)', highlight: true },
+  { value: 'love', emoji: '🐰', label: 'Coelhinho', desc: 'Animação fofinha pra começar com graça' },
+  { value: undefined, emoji: '✨', label: 'Sem abertura', desc: 'A página abre direto no conteúdo' },
+];
+const OPTIONS_EN: IntroOption[] = [
+  { value: 'poema', emoji: '💐', label: 'Digital Bouquet', desc: 'A cinematic opener with flowers for them', highlight: true },
+  { value: 'love', emoji: '🐰', label: 'Cute Bunny', desc: 'A sweet animation to start with grace' },
+  { value: undefined, emoji: '✨', label: 'No intro', desc: 'The page opens straight into content' },
 ];
 
-function MostLovedBadge() {
+function MostLovedBadge({ isEN }: { isEN: boolean }) {
   return (
     <span className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-md bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-500 ring-1 ring-white/40 whitespace-nowrap">
       <Heart className="w-3 h-3 fill-white" />
-      Mais amado
+      {isEN ? 'Most loved' : 'Mais amado'}
     </span>
   );
 }
@@ -61,6 +51,9 @@ function CardSparkles() {
 export default function IntroField() {
   const { control, watch } = useFormContext<PageData>();
   const currentType = watch('introType');
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const OPTIONS = isEN ? OPTIONS_EN : OPTIONS_PT;
 
   return (
     <div className="space-y-3">
@@ -89,7 +82,7 @@ export default function IntroField() {
                       'bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.08] hover:ring-purple-400/40'
                   )}
                 >
-                  {isHighlight && <MostLovedBadge />}
+                  {isHighlight && <MostLovedBadge isEN={isEN} />}
                   {isHighlight && <CardSparkles />}
                   <div
                     className={cn(
@@ -123,7 +116,7 @@ export default function IntroField() {
           >
             <div className="pt-3 space-y-3">
               <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">
-                Pra quem é o buquê?
+                {isEN ? 'Who is the bouquet for?' : 'Pra quem é o buquê?'}
               </p>
               <Controller
                 control={control}
@@ -138,7 +131,7 @@ export default function IntroField() {
                         field.value === 'fem' ? 'bg-pink-500/20 ring-2 ring-pink-400 text-white' : 'bg-white/[0.05] ring-1 ring-white/10 text-white/80 hover:bg-white/[0.1]'
                       )}
                     >
-                      Para Ela 💝
+                      {isEN ? 'For Her 💝' : 'Para Ela 💝'}
                     </button>
                     <button
                       type="button"
@@ -148,7 +141,7 @@ export default function IntroField() {
                         field.value === 'mas' ? 'bg-blue-500/25 ring-2 ring-blue-400 text-white' : 'bg-white/[0.05] ring-1 ring-white/10 text-white/80 hover:bg-white/[0.1]'
                       )}
                     >
-                      Para Ele 💙
+                      {isEN ? 'For Him 💙' : 'Para Ele 💙'}
                     </button>
                   </div>
                 )}

@@ -1,0 +1,19 @@
+{
+  "common": {
+    "back": "Voltar",
+    "continue": "Continuar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "close": "Fechar",
+    "loading": "Carregando...",
+    "tryAgain": "Tentar de novo"
+  },
+  "chat": {
+    "topbar": {
+      "progress": "{current}/{total}",
+      "preview": "Prévia ao vivo",
+      "autosaved": "Salvo automaticamente",
+      "saving": "Salvando..."
+    }
+  }
+}

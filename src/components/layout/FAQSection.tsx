@@ -4,8 +4,9 @@ import { useState, memo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocale } from 'next-intl';
 
-const faqs = [
+const faqs_pt = [
   {
     q: 'Quanto tempo demora para criar a página?',
     a: 'Menos de 5 minutos! Você preenche os dados, escolhe fotos, música e mensagem — e pronto. Assim que o pagamento for confirmado, o link é gerado na hora.',
@@ -37,6 +38,41 @@ const faqs = [
   {
     q: 'A pessoa que recebe sabe quanto eu paguei?',
     a: 'Não. A página não mostra nenhuma informação sobre pagamento ou plano. A pessoa que recebe vê apenas a surpresa que você criou.',
+  },
+];
+
+const faqs_en = [
+  {
+    q: 'How long does it take to create the page?',
+    a: 'Under 5 minutes! You fill in the details, pick photos, music and your message — that\'s it. The link is generated instantly after payment.',
+  },
+  {
+    q: 'Does my love need to download an app?',
+    a: 'No! The page opens right in any phone or computer browser. Just send the link over text, WhatsApp, Instagram or any social network.',
+  },
+  {
+    q: 'How long does the page stay online?',
+    a: 'On the Basic plan, the page stays live for 25 hours — perfect for a one-shot surprise. On the Advanced plan, the page stays online forever as a lasting keepsake.',
+  },
+  {
+    q: 'Can I edit the page after creating it?',
+    a: 'The page is published automatically once created. If you need a tweak, reach out to our support and we\'ll sort it out quickly.',
+  },
+  {
+    q: 'What payment methods do you accept?',
+    a: 'We accept all major credit cards via Stripe — secure, PCI-compliant and with Apple Pay / Google Pay support. Your page is released instantly after payment.',
+  },
+  {
+    q: 'What if I don\'t love the result?',
+    a: 'We offer a 7-day money-back guarantee. If you\'re not happy, we refund 100%. No hoops, no questions.',
+  },
+  {
+    q: 'Can I add photos and videos?',
+    a: 'Yes! You can add up to 15 photos to the gallery, background videos, a timeline of special moments, and even record a voice note.',
+  },
+  {
+    q: 'Will the recipient see how much I paid?',
+    a: 'No. The page never shows any payment or plan info. The recipient sees only the surprise you created.',
   },
 ];
 
@@ -77,14 +113,18 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 const FAQSection = () => {
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const faqs = isEN ? faqs_en : faqs_pt;
+
   return (
     <div className="container max-w-3xl relative z-10">
       <div className="text-center mb-12">
         <h2 className="font-headline font-bold tracking-tighter text-4xl md:text-5xl">
-          Perguntas <span className="text-primary">Frequentes</span>
+          {isEN ? <>Frequently <span className="text-primary">asked</span></> : <>Perguntas <span className="text-primary">Frequentes</span></>}
         </h2>
         <p className="text-muted-foreground mt-3 text-sm max-w-lg mx-auto">
-          Tudo que você precisa saber antes de criar sua surpresa.
+          {isEN ? 'Everything you need to know before creating your surprise.' : 'Tudo que você precisa saber antes de criar sua surpresa.'}
         </p>
       </div>
       <div className="flex flex-col gap-3">

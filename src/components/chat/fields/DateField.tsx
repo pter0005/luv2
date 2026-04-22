@@ -3,35 +3,28 @@
 import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { format, formatDistanceStrict } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
 import { Check } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 type Preset = { label: string; compute: () => Date };
 
-const PRESETS: Preset[] = [
-  {
-    label: '1 mês',
-    compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return stripTime(d); },
-  },
-  {
-    label: '6 meses',
-    compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 6); return stripTime(d); },
-  },
-  {
-    label: '1 ano',
-    compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return stripTime(d); },
-  },
-  {
-    label: '2 anos',
-    compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return stripTime(d); },
-  },
-  {
-    label: '5 anos',
-    compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 5); return stripTime(d); },
-  },
+const PRESETS_PT: Preset[] = [
+  { label: '1 mês', compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return stripTime(d); } },
+  { label: '6 meses', compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 6); return stripTime(d); } },
+  { label: '1 ano', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return stripTime(d); } },
+  { label: '2 anos', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return stripTime(d); } },
+  { label: '5 anos', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 5); return stripTime(d); } },
+];
+const PRESETS_EN: Preset[] = [
+  { label: '1 month ago', compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return stripTime(d); } },
+  { label: '6 months ago', compute: () => { const d = new Date(); d.setMonth(d.getMonth() - 6); return stripTime(d); } },
+  { label: '1 year ago', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return stripTime(d); } },
+  { label: '2 years ago', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 2); return stripTime(d); } },
+  { label: '5 years ago', compute: () => { const d = new Date(); d.setFullYear(d.getFullYear() - 5); return stripTime(d); } },
 ];
 
 function stripTime(d: Date): Date {
@@ -41,16 +34,13 @@ function stripTime(d: Date): Date {
 }
 
 // ───── Preview do estilo "Padrão" (grid 6 blocos) ─────
-function StylePreviewPadrao({ color = '#FFFFFF' }: { color?: string }) {
-  const units = [
-    { v: '01', l: 'Anos' },
-    { v: '08', l: 'Meses' },
-    { v: '14', l: 'Dias' },
-    { v: '05', l: 'Hrs' },
-  ];
+function StylePreviewPadrao({ color = '#FFFFFF', isEN = false }: { color?: string; isEN?: boolean }) {
+  const units = isEN
+    ? [ { v: '01', l: 'Years' }, { v: '08', l: 'Months' }, { v: '14', l: 'Days' }, { v: '05', l: 'Hrs' } ]
+    : [ { v: '01', l: 'Anos' }, { v: '08', l: 'Meses' }, { v: '14', l: 'Dias' }, { v: '05', l: 'Hrs' } ];
   return (
     <div className="w-full">
-      <div className="text-center text-[9px] text-white/45 mb-1.5">Compartilhando momentos há</div>
+      <div className="text-center text-[9px] text-white/45 mb-1.5">{isEN ? 'Sharing moments for' : 'Compartilhando momentos há'}</div>
       <div className="grid grid-cols-4 gap-1">
         {units.map((u) => (
           <div
@@ -69,35 +59,44 @@ function StylePreviewPadrao({ color = '#FFFFFF' }: { color?: string }) {
 }
 
 // ───── Preview do estilo "Simples" (linha de texto) ─────
-function StylePreviewSimples({ color = '#FFFFFF' }: { color?: string }) {
+function StylePreviewSimples({ color = '#FFFFFF', isEN = false }: { color?: string; isEN?: boolean }) {
   return (
     <div className="w-full text-center px-2 py-2.5 rounded-md bg-black/25">
       <p className="text-[10.5px] leading-[1.5]" style={{ color }}>
-        <span className="text-white/45">Compartilhando há</span>
+        <span className="text-white/45">{isEN ? 'Together for' : 'Compartilhando há'}</span>
         <br />
         <span className="font-bold">01</span>
-        <span className="text-white/55"> anos </span>
+        <span className="text-white/55"> {isEN ? 'years' : 'anos'} </span>
         <span className="font-bold">08</span>
-        <span className="text-white/55"> meses </span>
+        <span className="text-white/55"> {isEN ? 'months' : 'meses'} </span>
         <span className="font-bold">14</span>
-        <span className="text-white/55"> dias 💜</span>
+        <span className="text-white/55"> {isEN ? 'days 💜' : 'dias 💜'}</span>
       </p>
     </div>
   );
 }
 
-const STYLE_OPTIONS: { value: 'Padrão' | 'Simples'; label: string; desc: string }[] = [
+const STYLE_OPTIONS_PT: { value: 'Padrão' | 'Simples'; label: string; desc: string }[] = [
   { value: 'Padrão', label: 'Clássico', desc: 'Blocos com números' },
   { value: 'Simples', label: 'Simples', desc: 'Uma linha de texto' },
+];
+const STYLE_OPTIONS_EN: { value: 'Padrão' | 'Simples'; label: string; desc: string }[] = [
+  { value: 'Padrão', label: 'Classic', desc: 'Blocks with numbers' },
+  { value: 'Simples', label: 'Simple', desc: 'A single line' },
 ];
 
 export default function DateField() {
   const { control, watch, setValue } = useFormContext<PageData>();
   const currentDate = watch('specialDate');
   const countdownColor = watch('countdownColor') || '#FFFFFF';
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const dateLocale = isEN ? enUS : ptBR;
+  const PRESETS = isEN ? PRESETS_EN : PRESETS_PT;
+  const STYLE_OPTIONS = isEN ? STYLE_OPTIONS_EN : STYLE_OPTIONS_PT;
 
   const togetherFor = currentDate
-    ? formatDistanceStrict(currentDate, new Date(), { locale: ptBR, unit: undefined as any })
+    ? formatDistanceStrict(currentDate, new Date(), { locale: dateLocale, unit: undefined as any })
     : null;
 
   const applyPreset = (p: Preset) => {
@@ -115,7 +114,7 @@ export default function DateField() {
             onClick={() => applyPreset(p)}
             className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-white/[0.04] hover:bg-white/[0.08] text-white/75 ring-1 ring-white/10 hover:ring-white/20 transition active:scale-95"
           >
-            há {p.label}
+            {isEN ? p.label : `há ${p.label}`}
           </button>
         ))}
       </div>
@@ -134,7 +133,7 @@ export default function DateField() {
                 field.onChange(stripTime(d));
               }}
               disabled={(date) => date > new Date() || date < new Date('1950-01-01')}
-              locale={ptBR}
+              locale={dateLocale}
               captionLayout="dropdown-buttons"
               fromYear={1960}
               toYear={new Date().getFullYear()}
@@ -148,11 +147,13 @@ export default function DateField() {
         <div className="rounded-xl bg-gradient-to-br from-pink-500/10 to-purple-500/10 ring-1 ring-pink-400/20 px-4 py-3 flex items-center gap-2.5">
           <span className="text-lg">💞</span>
           <div className="flex-1 min-w-0">
-            <div className="text-[10.5px] text-white/55 uppercase tracking-wider font-semibold">Juntos há</div>
+            <div className="text-[10.5px] text-white/55 uppercase tracking-wider font-semibold">{isEN ? 'Together for' : 'Juntos há'}</div>
             <div className="text-[14px] text-white font-bold">{togetherFor}</div>
             {currentDate && (
               <div className="text-[10.5px] text-white/45 mt-0.5">
-                desde {format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {isEN
+                  ? `since ${format(currentDate, 'MMMM d, yyyy', { locale: dateLocale })}`
+                  : `desde ${format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: dateLocale })}`}
               </div>
             )}
           </div>
@@ -163,7 +164,7 @@ export default function DateField() {
       <div className="space-y-2 pt-1">
         <div className="flex items-center gap-1.5 px-1">
           <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/50">
-            estilo do contador
+            {isEN ? 'counter style' : 'estilo do contador'}
           </span>
         </div>
         <Controller
@@ -187,9 +188,9 @@ export default function DateField() {
                   >
                     <div className="min-h-[62px] flex items-center justify-center">
                       {opt.value === 'Padrão' ? (
-                        <StylePreviewPadrao color={countdownColor} />
+                        <StylePreviewPadrao color={countdownColor} isEN={isEN} />
                       ) : (
-                        <StylePreviewSimples color={countdownColor} />
+                        <StylePreviewSimples color={countdownColor} isEN={isEN} />
                       )}
                     </div>
                     <div className="mt-2.5 pt-2 border-t border-white/5">
@@ -216,7 +217,7 @@ export default function DateField() {
         render={({ field }) => (
           <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] ring-1 ring-white/10">
             <label htmlFor="countdown-color" className="text-sm text-white flex items-center gap-1.5">
-              <span>🎨</span> Cor dos números
+              <span>🎨</span> {isEN ? 'Number color' : 'Cor dos números'}
             </label>
             <input
               id="countdown-color"
@@ -230,7 +231,9 @@ export default function DateField() {
       />
 
       <p className="text-[11.5px] text-white/45 px-1 leading-relaxed">
-        Só o dia — a gente usa pra mostrar o tempo de amor na página ⏳
+        {isEN
+          ? 'Just the day — we use it to show the time of your love on the page ⏳'
+          : 'Só o dia — a gente usa pra mostrar o tempo de amor na página ⏳'}
       </p>
     </div>
   );

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { searchMusic, type MusicSearchResult } from '@/app/chat/music-search-action';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 type Mode = 'search' | 'paste';
 
@@ -29,6 +30,8 @@ export default function MusicField() {
   const { control, setValue, watch } = useFormContext<PageData>();
   const option = watch('musicOption');
   const currentUrl = watch('youtubeUrl') ?? '';
+  const locale = useLocale();
+  const isEN = locale === 'en';
 
   const [mode, setMode] = useState<Mode>('search');
   const [query, setQuery] = useState('');
@@ -125,7 +128,7 @@ export default function MusicField() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-green-300">Música selecionada</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-green-300">{isEN ? 'Song selected' : 'Música selecionada'}</span>
             </div>
             <div className="text-sm font-semibold text-white truncate">{label}</div>
             {channel && <div className="text-[11px] text-white/55 truncate">{channel}</div>}
@@ -134,7 +137,7 @@ export default function MusicField() {
             type="button"
             onClick={clearSelection}
             className="shrink-0 w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white flex items-center justify-center transition"
-            aria-label="Remover música"
+            aria-label={isEN ? 'Remove song' : 'Remover música'}
           >
             <X className="w-4 h-4" />
           </button>
@@ -144,7 +147,7 @@ export default function MusicField() {
           onClick={skip}
           className="w-full text-[12px] text-white/55 hover:text-white/80 transition"
         >
-          Prefiro trocar ou pular a música
+          {isEN ? 'I\'d rather change or skip the song' : 'Prefiro trocar ou pular a música'}
         </button>
       </div>
     );
@@ -162,7 +165,7 @@ export default function MusicField() {
             mode === 'search' ? 'bg-white text-black' : 'text-white/70 hover:text-white'
           )}
         >
-          <Search className="w-3 h-3" /> Buscar
+          <Search className="w-3 h-3" /> {isEN ? 'Search' : 'Buscar'}
         </button>
         <button
           type="button"
@@ -172,7 +175,7 @@ export default function MusicField() {
             mode === 'paste' ? 'bg-white text-black' : 'text-white/70 hover:text-white'
           )}
         >
-          <Link2 className="w-3 h-3" /> Colar link
+          <Link2 className="w-3 h-3" /> {isEN ? 'Paste link' : 'Colar link'}
         </button>
       </div>
 
@@ -183,7 +186,7 @@ export default function MusicField() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nome da música ou artista..."
+              placeholder={isEN ? 'Song name or artist...' : 'Nome da música ou artista...'}
               className="h-12 pl-10 pr-10 bg-white/[0.04] ring-1 ring-white/10 text-white placeholder:text-white/35"
               autoFocus
             />
@@ -224,13 +227,15 @@ export default function MusicField() {
 
           {!error && !isSearching && query.trim().length >= 2 && results.length === 0 && !isLikelyYouTubeUrl(query) && (
             <div className="text-[12px] text-center text-white/45 py-4">
-              Nenhum resultado. Tenta outro termo ou cola o link direto.
+              {isEN ? 'No results. Try another term or paste a direct link.' : 'Nenhum resultado. Tenta outro termo ou cola o link direto.'}
             </div>
           )}
 
           {query.trim().length < 2 && (
             <div className="text-[12px] text-center text-white/40 py-2">
-              Ex: <span className="text-white/60">"Evidências Chitãozinho", "Iris Goo Goo Dolls"</span>
+              {isEN
+                ? <>Ex: <span className="text-white/60">&quot;Perfect Ed Sheeran&quot;, &quot;Iris Goo Goo Dolls&quot;</span></>
+                : <>Ex: <span className="text-white/60">&quot;Evidências Chitãozinho&quot;, &quot;Iris Goo Goo Dolls&quot;</span></>}
             </div>
           )}
         </>
@@ -261,7 +266,7 @@ export default function MusicField() {
                 autoFocus
               />
               <p className="text-[11.5px] text-white/45 text-center">
-                Cola o link do YouTube da música que vocês amam
+                {isEN ? 'Paste the YouTube link of the song you love' : 'Cola o link do YouTube da música que vocês amam'}
               </p>
             </div>
           )}
@@ -273,7 +278,7 @@ export default function MusicField() {
         onClick={skip}
         className="w-full h-10 rounded-lg text-[12px] text-white/55 hover:text-white/85 hover:bg-white/[0.04] transition flex items-center justify-center gap-1.5"
       >
-        <SkipForward className="w-3.5 h-3.5" /> Pular, sem música
+        <SkipForward className="w-3.5 h-3.5" /> {isEN ? 'Skip — no music' : 'Pular, sem música'}
       </button>
     </div>
   );

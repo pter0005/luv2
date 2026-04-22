@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from "framer-motion";
 import FloatingHeart from './FloatingHeart';
+import { useLocale } from 'next-intl';
 
 function UrgencyBadge() {
+  const locale = useLocale();
+  const isEN = locale === 'en';
   const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines'>('default');
   useEffect(() => {
     const now = new Date();
@@ -27,10 +30,10 @@ function UrgencyBadge() {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
         </span>
         <Gift className="w-3.5 h-3.5 text-rose-400" />
-        <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">Dia das Mulheres</span>
+        <span className="text-xs font-bold text-rose-300 uppercase tracking-wider">{isEN ? "Women's Day" : 'Dia das Mulheres'}</span>
         <span className="text-white/20">·</span>
         <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-        <span className="text-xs text-white/60 font-medium">pronto em 5 minutos</span>
+        <span className="text-xs text-white/60 font-medium">{isEN ? 'ready in 5 minutes' : 'pronto em 5 minutos'}</span>
       </motion.div>
     );
   }
@@ -43,10 +46,10 @@ function UrgencyBadge() {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
         </span>
         <span className="text-sm">💜</span>
-        <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Dia dos Namorados</span>
+        <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">{isEN ? "Valentine's Day" : 'Dia dos Namorados'}</span>
         <span className="text-white/20">·</span>
         <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-        <span className="text-xs text-white/60 font-medium">surpreenda hoje</span>
+        <span className="text-xs text-white/60 font-medium">{isEN ? 'surprise them today' : 'surpreenda hoje'}</span>
       </motion.div>
     );
   }
@@ -54,14 +57,21 @@ function UrgencyBadge() {
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
       className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full py-2 px-4 mb-6">
       <Zap className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-      <span className="text-xs font-medium text-white/60">Pronto em menos de 5 minutos</span>
+      <span className="text-xs font-medium text-white/60">{isEN ? 'Ready in under 5 minutes' : 'Pronto em menos de 5 minutos'}</span>
     </motion.div>
   );
 }
 
 const HeroSection = () => {
+  const locale = useLocale();
+  const isEN = locale === 'en';
   const heroRef = useRef(null);
-  const phrases = useMemo(() => ['para alguém especial!', 'de forma única!', 'para quem merece!'], []);
+  const phrases = useMemo(
+    () => isEN
+      ? ['for someone special!', 'in a unique way!', 'to the one you love!']
+      : ['para alguém especial!', 'de forma única!', 'para quem merece!'],
+    [isEN]
+  );
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [typedPhrase, setTypedPhrase] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -92,7 +102,7 @@ const HeroSection = () => {
           <UrgencyBadge />
 
           <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-8 min-h-[120px] lg:min-h-[auto]">
-            Declare seu amor <br />
+            {isEN ? 'Declare your love' : 'Declare seu amor'} <br />
             <span className="relative inline-block mt-2">
               <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
                 {typedPhrase}
@@ -105,24 +115,24 @@ const HeroSection = () => {
           </h1>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link href="/criar" className="w-full sm:w-auto">
+            <Link href={isEN ? '/chat' : '/criar'} className="w-full sm:w-auto">
               <Button size="xl" className="w-full sm:w-auto bg-white text-black hover:bg-purple-50 font-bold text-lg px-8 py-6 rounded-full shadow-lg">
-                Surpreender agora <ChevronRight className="w-5 h-5 ml-2" />
+                {isEN ? 'Surprise them now' : 'Surpreender agora'} <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
             <Link href="#demo-section" className="w-full sm:w-auto">
               <Button variant="ghost" size="xl" className="w-full sm:w-auto text-white border border-white/10 rounded-full px-8 py-6 hover:bg-white/5">
-                <Play className="w-4 h-4 mr-2 fill-white" /> Ver Exemplo
+                <Play className="w-4 h-4 mr-2 fill-white" /> {isEN ? 'See Example' : 'Ver Exemplo'}
               </Button>
             </Link>
           </div>
 
           <div className="flex items-center justify-center lg:justify-start gap-3 mt-4 text-xs text-white/40">
-            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" /> Pagamento seguro</span>
+            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" /> {isEN ? 'Secure payment' : 'Pagamento seguro'}</span>
             <span className="text-white/15">·</span>
-            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> 4.9 estrelas</span>
+            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> {isEN ? '4.9 stars' : '4.9 estrelas'}</span>
             <span className="text-white/15">·</span>
-            <span>Pronto em 5 min</span>
+            <span>{isEN ? 'Ready in 5 min' : 'Pronto em 5 min'}</span>
           </div>
         </div>
 
@@ -176,20 +186,20 @@ const HeroSection = () => {
                   <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e] border border-black" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Suporte</p>
-                  <p className="text-sm text-white font-bold">Online 24/7</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">{isEN ? 'Support' : 'Suporte'}</p>
+                  <p className="text-sm text-white font-bold">{isEN ? 'Online 24/7' : 'Online 24/7'}</p>
                 </div>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
                 className="absolute -right-[120px] md:-right-[180px] bottom-[10%] bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 py-4 px-5 rounded-2xl shadow-2xl z-40 flex flex-col items-center hover:scale-105 transition-transform">
                 <div className="absolute -top-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
-                  <Palette size={10} /> Design Personalizado
+                  <Palette size={10} /> {isEN ? 'Custom Design' : 'Design Personalizado'}
                 </div>
                 <div className="flex items-center gap-1 mb-1">
                   {[1,2,3,4,5].map(i => <Star key={i} size={14} className="fill-purple-500 text-purple-500" />)}
                 </div>
-                <p className="text-xs text-white font-bold">Avaliação dos usuários</p>
+                <p className="text-xs text-white font-bold">{isEN ? 'User rating' : 'Avaliação dos usuários'}</p>
               </motion.div>
 
             </div>

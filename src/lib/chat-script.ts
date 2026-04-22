@@ -1,4 +1,5 @@
 import type { WizardSegmentKey } from './wizard-segment-config';
+import type { Locale } from '@/i18n/config';
 
 export type ChatStepKey =
   | 'recipient'
@@ -188,10 +189,15 @@ export const CUPID_LINES: Record<WizardSegmentKey, SegmentLines> = {
 export function getCupidLine(
   segment: WizardSegmentKey | undefined,
   step: ChatStepKey,
-  ctx: CupidContext = {}
+  ctx: CupidContext = {},
+  locale: Locale = 'pt',
 ): string {
-  const seg = segment && CUPID_LINES[segment] ? segment : 'namorade';
-  const fn = CUPID_LINES[seg][step] ?? CUPID_LINES.namorade[step];
+  // Lazy import EN dict pra evitar custo em callsites BR
+  const dict = locale === 'en'
+    ? (require('./chat-script-en').CUPID_LINES_EN as Record<WizardSegmentKey, SegmentLines>)
+    : CUPID_LINES;
+  const seg = segment && dict[segment] ? segment : 'namorade';
+  const fn = dict[seg][step] ?? dict.namorade[step];
   try {
     return fn(ctx);
   } catch {

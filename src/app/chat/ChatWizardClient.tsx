@@ -11,10 +11,13 @@ import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
 import { useCreatingPresence } from '@/hooks/usePresence';
-import { trackFunnelStep } from '@/lib/analytics';
+import { trackFunnelStep, trackEvent } from '@/lib/analytics';
+import { captureAttribution } from '@/lib/attribution';
 import { pageSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
 import { CHAT_STEP_ORDER, getCupidLine, type ChatStepKey } from '@/lib/chat-script';
-import { WIZARD_SEGMENTS, type WizardSegmentKey } from '@/lib/wizard-segment-config';
+import { WIZARD_SEGMENTS, getWizardSegments, type WizardSegmentKey } from '@/lib/wizard-segment-config';
+import { useLocale } from 'next-intl';
+import type { Locale } from '@/i18n/config';
 import CupidVideo from '@/components/chat/CupidVideo';
 import ChatBubble from '@/components/chat/ChatBubble';
 import ChatProgress from '@/components/chat/ChatProgress';
@@ -49,13 +52,14 @@ function Inner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fireConfetti = useConfetti();
+  const locale = useLocale() as Locale;
 
   const segmentParam = searchParams.get('segment') as WizardSegmentKey | null;
   const initialSegment: WizardSegmentKey =
     segmentParam && segmentParam in WIZARD_SEGMENTS ? segmentParam : 'namorade';
 
   const [segment, setSegment] = useState<WizardSegmentKey>(initialSegment);
-  const segmentConfig = WIZARD_SEGMENTS[segment];
+  const segmentConfig = getWizardSegments(locale)[segment];
 
   const methods = useForm<PageData>({
     resolver: zodResolver(pageSchema),
@@ -68,15 +72,46 @@ function Inner() {
   const [currentStep, setCurrentStep] = useState<ChatStepKey>(CHAT_STEP_ORDER[0]);
   const [direction, setDirection] = useState<1 | -1>(1);
 
+  // Aplica ?plan=vip|avancado|basico da URL no form (landing page manda pra cá)
+  useEffect(() => {
+    const planParam = searchParams.get('plan');
+    if (planParam === 'vip' || planParam === 'avancado' || planParam === 'basico') {
+      methods.setValue('plan', planParam, { shouldDirty: false });
+      // VIP tem add-ons forçados (espelha handlePickVip do PlanField)
+      if (planParam === 'vip') {
+        methods.setValue('introType', 'poema', { shouldDirty: false });
+        methods.setValue('enableWordGame', true, { shouldDirty: false });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Presence: conta esse visitor como "criando uma página" enquanto o /chat tá aberto
   useCreatingPresence(true, null);
 
   // Funnel tracking: reporta cada step visto pro /admin ver onde gente cai
+  // + dispara eventos standard de Meta/TikTok em marcos-chave do funil pra
+  // otimização de ads funcionar (antes só o wizard antigo disparava isso).
+  // Dedup por step name em Set() previne dupla-contagem ao ir/voltar.
+  const funnelPixelFired = useRef<Set<string>>(new Set());
   useEffect(() => {
     const idx = CHAT_STEP_ORDER.indexOf(currentStep);
     if (idx < 0) return;
-    trackFunnelStep(currentStep, idx + 1, CHAT_STEP_ORDER.length);
-  }, [currentStep]);
+    trackFunnelStep(currentStep, idx + 1, CHAT_STEP_ORDER.length, { segment, locale });
+
+    const once = (key: string, fire: () => void) => {
+      if (funnelPixelFired.current.has(key)) return;
+      funnelPixelFired.current.add(key);
+      fire();
+    };
+
+    // Primeira impressão do wizard — conta como ViewContent pra retargeting
+    if (idx === 0) once('view', () => trackEvent('ViewContent', { content_name: 'chat_wizard', segment }));
+    // Plano escolhido — AddToCart (é o momento que o usuário "coloca na sacola")
+    if (currentStep === 'plan') once('atc', () => trackEvent('AddToCart', { content_name: 'plan_step', segment }));
+    // Entrou no checkout — InitiateCheckout
+    if (currentStep === 'payment') once('ic', () => trackEvent('InitiateCheckout', { content_name: 'payment_step', segment }));
+  }, [currentStep, segment, locale]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [saveTick, setSaveTick] = useState(0);
@@ -134,6 +169,12 @@ function Inner() {
     try { localStorage.setItem(STEP_KEY_STORAGE, currentStep); } catch { /* ignore */ }
   }, [currentStep, hydrated]);
 
+  // Attribution capture — roda 1x no mount, lê UTMs+fbclid+ttclid da URL
+  // e cookies do browser. Primeiro-touch vence (não sobrescreve captura anterior).
+  useEffect(() => {
+    captureAttribution();
+  }, []);
+
   // Após hidratar, se já existe um intentId finalizado (pagou e voltou / deu F5),
   // mostra a tela "sua página tá pronta" com o link — evita que a pessoa
   // precise pedir pelo WhatsApp se fechar a aba.
@@ -166,9 +207,9 @@ function Inner() {
   // da animação de "digitando" do Cupido a cada caractere que o usuário digita.
   const cupidText = useMemo(() => {
     const recipientName = methods.getValues('recipientName');
-    return getCupidLine(segment, currentStep, { recipientName });
+    return getCupidLine(segment, currentStep, { recipientName }, locale);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segment, currentStep]);
+  }, [segment, currentStep, locale]);
 
   // Alterna entre asking e idle ~4 vezes ao longo do fluxo pra ficar dinâmico.
   // Começa em 'asking' (pede o nome), alterna em blocos.
@@ -274,9 +315,13 @@ function Inner() {
           >
             <svg viewBox="0 0 24 24" className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </motion.div>
-          <h1 className="text-xl font-bold text-white mb-1">Sua página tá pronta 💌</h1>
+          <h1 className="text-xl font-bold text-white mb-1">
+            {locale === 'en' ? 'Your page is ready 💌' : 'Sua página tá pronta 💌'}
+          </h1>
           <p className="text-sm text-white/70 mb-5">
-            O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.
+            {locale === 'en'
+              ? 'Payment confirmed. Open it below to see how it turned out.'
+              : 'O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.'}
           </p>
           <div className="space-y-2">
             <button
@@ -284,7 +329,7 @@ function Inner() {
               onClick={() => router.push(`/p/${alreadyPaid.pageId}`)}
               className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98]"
             >
-              Ver minha página
+              {locale === 'en' ? 'See my page' : 'Ver minha página'}
             </button>
             <button
               type="button"
@@ -298,7 +343,7 @@ function Inner() {
               }}
               className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/70 text-[13px] font-medium ring-1 ring-white/10 transition"
             >
-              Criar uma nova página
+              {locale === 'en' ? 'Create a new page' : 'Criar uma nova página'}
             </button>
           </div>
         </motion.div>
@@ -337,7 +382,7 @@ function Inner() {
               type="button"
               onClick={handleBack}
               className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center bg-white/[0.05] text-white/80 ring-1 ring-white/10 hover:bg-white/[0.1] active:scale-95 transition"
-              aria-label="Voltar"
+              aria-label={locale === 'en' ? 'Back' : 'Voltar'}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -403,7 +448,7 @@ function Inner() {
               onClick={handleBack}
               className="flex-1 h-12 bg-transparent hover:bg-white/[0.06] text-white/70 hover:text-white/90 ring-1 ring-white/10 border-0 font-medium transition"
             >
-              Voltar
+              {locale === 'en' ? 'Back' : 'Voltar'}
             </Button>
             <Button
               type="button"
@@ -416,7 +461,7 @@ function Inner() {
                 isLast && 'opacity-40 cursor-not-allowed'
               )}
             >
-              {isLast ? 'Último passo' : 'Continuar'}
+              {isLast ? (locale === 'en' ? 'Last step' : 'Último passo') : (locale === 'en' ? 'Continue' : 'Continuar')}
               {!isLast && <ArrowRight className="w-4 h-4 ml-1.5" />}
             </Button>
           </div>

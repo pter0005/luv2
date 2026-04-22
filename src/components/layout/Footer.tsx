@@ -10,10 +10,13 @@ import { getAuth, signOut } from "firebase/auth";
 import { removeSession } from "@/app/auth-actions";
 import { useState, useEffect } from "react";
 import { ADMIN_EMAILS } from "@/lib/admin-emails";
+import { useLocale } from 'next-intl';
 
 export default function Footer() {
   const { user } = useUser();
   const router = useRouter();
+  const locale = useLocale();
+  const isEN = locale === 'en';
   const [isDevelopment, setIsDevelopment] = useState(false);
   const logoUrl = PlaceHolderImages.find((p) => p.id === "footerLogo")?.imageUrl || '/logo-placeholder.png';
 
@@ -59,7 +62,9 @@ export default function Footer() {
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              Transformando sentimentos em experiências digitais inesquecíveis. Crie, surpreenda e eternize o seu amor.
+              {isEN
+                ? 'Turning feelings into unforgettable digital experiences. Create, surprise and immortalize your love.'
+                : 'Transformando sentimentos em experiências digitais inesquecíveis. Crie, surpreenda e eternize o seu amor.'}
             </p>
             <div className="flex items-center gap-4">
               <SocialLink href="https://www.instagram.com/mycupid.oficial/" icon={<Instagram size={20} />} label="Instagram" />
@@ -70,28 +75,29 @@ export default function Footer() {
 
           {/* Coluna 2: Produto */}
           <div>
-            <h3 className="font-bold text-white mb-6">Plataforma</h3>
+            <h3 className="font-bold text-white mb-6">{isEN ? 'Platform' : 'Plataforma'}</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><FooterLink href="/criar">Criar Página</FooterLink></li>
-              <li><FooterLink href="/minhas-paginas">Minhas Criações</FooterLink></li>
-              <li><FooterLink href="/login">Login / Cadastro</FooterLink></li>
-              <li><FooterLink href="/#planos">Planos e Preços</FooterLink></li>
+              <li><FooterLink href={isEN ? '/chat' : '/criar'}>{isEN ? 'Create a page' : 'Criar Página'}</FooterLink></li>
+              <li><FooterLink href="/minhas-paginas">{isEN ? 'My creations' : 'Minhas Criações'}</FooterLink></li>
+              <li><FooterLink href="/login">{isEN ? 'Log in / Sign up' : 'Login / Cadastro'}</FooterLink></li>
+              <li><FooterLink href="/#planos">{isEN ? 'Plans & pricing' : 'Planos e Preços'}</FooterLink></li>
             </ul>
           </div>
 
           {/* Coluna 3: Suporte & Legal */}
           <div>
-            <h3 className="font-bold text-white mb-6">Suporte</h3>
+            <h3 className="font-bold text-white mb-6">{isEN ? 'Support' : 'Suporte'}</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><FooterLink href="https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0">Central de Ajuda</FooterLink></li>
-              <li><FooterLink href="/termos">Termos de uso</FooterLink></li>
-              <li><FooterLink href="/privacidade">Política de privacidade</FooterLink></li>
-               {isAdmin && <li><FooterLink href="/admin">Área Admin</FooterLink></li>}
+              <li><FooterLink href={isEN ? 'mailto:support@mycupid.net' : 'https://api.whatsapp.com/message/E3AOU6LPGW7GO1?autoload=1&app_absent=0'}>{isEN ? 'Help center' : 'Central de Ajuda'}</FooterLink></li>
+              <li><FooterLink href={isEN ? '/terms' : '/termos'}>{isEN ? 'Terms of service' : 'Termos de uso'}</FooterLink></li>
+              <li><FooterLink href={isEN ? '/privacy' : '/privacidade'}>{isEN ? 'Privacy policy' : 'Política de privacidade'}</FooterLink></li>
+              {isEN && <li><FooterLink href="/refunds">Refund policy</FooterLink></li>}
+               {isAdmin && <li><FooterLink href="/admin">{isEN ? 'Admin area' : 'Área Admin'}</FooterLink></li>}
                {isDevelopment && user && (
                 <li>
                   <button onClick={handleSignOut} className="hover:text-purple-400 transition-colors flex items-center gap-2 group text-left">
                     <LogOut size={14} />
-                    Sair (Dev)
+                    {isEN ? 'Sign out (Dev)' : 'Sair (Dev)'}
                   </button>
                 </li>
               )}
@@ -100,7 +106,7 @@ export default function Footer() {
 
           {/* Coluna 4: Desenvolvedor (Brou) */}
           <div className="lg:text-right">
-             <h3 className="font-bold text-white mb-6">Desenvolvimento</h3>
+             <h3 className="font-bold text-white mb-6">{isEN ? 'Development' : 'Desenvolvimento'}</h3>
              <a 
                 href="https://newperfect.netlify.app/" 
                 target="_blank" 
@@ -119,15 +125,19 @@ export default function Footer() {
         <div className="border-t border-white/5 pt-8 text-center text-xs text-gray-500 space-y-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2">
                  <p>
-                    © {new Date().getFullYear()} MyCupid. Todos os direitos reservados.
+                    © {new Date().getFullYear()} MyCupid. {isEN ? 'All rights reserved.' : 'Todos os direitos reservados.'}
                 </p>
                 <p className="flex items-center gap-1.5">
-                    Feito com <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> para casais apaixonados.
+                    {isEN
+                      ? <>Made with <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> for people in love.</>
+                      : <>Feito com <Heart size={12} className="text-purple-500 fill-purple-500 animate-pulse" /> para casais apaixonados.</>}
                 </p>
             </div>
-            <p>
-              MYCUPID | CNPJ: 64.966.299/0001-16
-            </p>
+            {!isEN && (
+              <p>
+                MYCUPID | CNPJ: 64.966.299/0001-16
+              </p>
+            )}
         </div>
       </div>
     </footer>

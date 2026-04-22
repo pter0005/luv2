@@ -22,9 +22,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
-import { computeTotalBRL, PRICES } from '@/lib/price';
+import { computeTotal, getPrices, PRICES } from '@/lib/price';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
+import type { Locale } from '@/i18n/config';
+import { getSiteConfig } from '@/lib/site-config';
+import { formatCurrency } from '@/lib/format';
+import { createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
 import {
   createOrUpdatePaymentIntent,
   processPixPayment,
@@ -34,12 +39,17 @@ import {
 } from '@/app/criar/fazer-eu-mesmo/actions';
 import { createMercadoPagoCardSession, dryRunMercadoPagoCardSession, type MpDryRunReport } from '@/app/chat/mp-card-action';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
+import { getIntentServerPrice } from '@/app/chat/intent-price';
 import { MercadoPagoLogo } from '@/components/chat/fields/MercadoPagoBadge';
 import QrCodeSelector from '@/app/criar/fazer-eu-mesmo/QrCodeSelector';
 import { downloadQrCard } from '@/lib/downloadQrCard';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent, setAdvancedMatching } from '@/lib/analytics';
+import { getAttribution } from '@/lib/attribution';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+// Helper compat: usa o formatter do locale ativo (BRL em pt, USD em en).
+function money(v: number, locale: Locale) { return formatCurrency(v, locale); }
 
 type Method = 'pix' | 'card';
 
@@ -57,15 +67,30 @@ function formatPhoneBR(raw: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+// Mensagens de erro locale-aware. Centraliza pra evitar PT vazando no US.
+const ERR = {
+  emailInvalid: { pt: 'Preenche um email válido pra continuar.', en: 'Please enter a valid email.' },
+  phoneInvalid: { pt: 'Preenche o WhatsApp com DDD.', en: 'Please enter a valid phone with area code.' },
+  sessionLoading: { pt: 'Sessão carregando, tenta de novo.', en: 'Session loading, try again shortly.' },
+  downloadFailed: { pt: 'Não consegui baixar', en: 'Couldn\'t download' },
+  downloadHint: { pt: 'Tenta de novo, ou salva a imagem pressionando e segurando.', en: 'Try again, or save the image by pressing and holding.' },
+  finalizing: { pt: 'Finalizando...', en: 'Finalizing...' },
+  finalizeFree: { pt: 'Finalizar sem pagar', en: 'Finalize without paying' },
+} as const;
+
 export default function PaymentField() {
   const router = useRouter();
   const { user } = useUser();
   const { toast } = useToast();
   const { control, getValues, setValue } = useFormContext<PageData>();
+  const locale = useLocale() as Locale;
+  const siteCfg = getSiteConfig(locale);
+  const t = (k: keyof typeof ERR) => ERR[k][locale === 'en' ? 'en' : 'pt'];
+  const isUS = locale === 'en';
 
-  const [plan, introType, audioRecording, musicOption, intentId, whatsappNumber, qrCodeDesign, title] = useWatch({
+  const [plan, introType, audioRecording, musicOption, intentId, whatsappNumber, qrCodeDesign, title, enableWordGame, wordGameQuestions] = useWatch({
     control,
-    name: ['plan', 'introType', 'audioRecording', 'musicOption', 'intentId', 'whatsappNumber', 'qrCodeDesign', 'title'] as const,
+    name: ['plan', 'introType', 'audioRecording', 'musicOption', 'intentId', 'whatsappNumber', 'qrCodeDesign', 'title', 'enableWordGame', 'wordGameQuestions'] as const,
   }) as [
     PageData['plan'],
     PageData['introType'],
@@ -74,31 +99,73 @@ export default function PaymentField() {
     PageData['intentId'],
     PageData['whatsappNumber'],
     PageData['qrCodeDesign'],
-    PageData['title']
+    PageData['title'],
+    PageData['enableWordGame'],
+    PageData['wordGameQuestions']
   ];
 
-  const total = useMemo(
-    () => computeTotalBRL({ plan, introType, audioRecording, musicOption, qrCodeDesign } as any),
-    [plan, introType, audioRecording, musicOption, qrCodeDesign]
+  const clientTotal = useMemo(
+    () => computeTotal({ plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions } as any, locale),
+    [plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions, locale]
   );
+
+  // ── SERVER-TRUSTED TOTAL ──
+  // O servidor é a única fonte de verdade pro valor cobrado. Depois que o
+  // intent é salvo, buscamos o total canônico e exibimos esse — nunca o do
+  // cliente. Se diferirem (ex: desconto aplicado em outra aba), o UI reflete
+  // o valor real antes do clique em "pagar", zerando a chance de "valor mudou".
+  // Enquanto não chegou a resposta (primeira renderização), mostra clientTotal
+  // como fallback — bate na esmagadora maioria dos casos.
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
+  useEffect(() => {
+    if (!intentId) { setServerTotal(null); return; }
+    let cancelled = false;
+    getIntentServerPrice(intentId).then((res) => {
+      if (cancelled) return;
+      if (res.ok && typeof res.total === 'number') setServerTotal(res.total);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [intentId, plan, introType, audioRecording, qrCodeDesign, enableWordGame, wordGameQuestions]);
+
+  const total = serverTotal ?? clientTotal;
 
   // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
   const lineItems = useMemo(() => {
+    const prices = getPrices(locale);
     const items: { label: string; value: number; hint?: string }[] = [];
-    const base = plan === 'avancado' ? PRICES.avancado : PRICES.basico;
+    const isEN = locale === 'en';
+
+    // VIP: preço flat, uma linha só — tudo já incluso no bundle.
+    if (plan === 'vip') {
+      items.push({
+        label: isEN ? 'VIP bundle' : 'Bundle VIP',
+        value: prices.vip,
+        hint: isEN ? 'everything unlocked · best value' : 'tudo liberado · melhor custo',
+      });
+      return items;
+    }
+
+    const base = plan === 'avancado' ? prices.avancado : prices.basico;
     items.push({
-      label: plan === 'avancado' ? 'Plano Avançado' : 'Plano Básico',
+      label: isEN
+        ? (plan === 'avancado' ? 'Advanced plan' : 'Basic plan')
+        : (plan === 'avancado' ? 'Plano Avançado' : 'Plano Básico'),
       value: base,
-      hint: plan === 'avancado' ? 'jogos + voz + intros + música' : 'página + fotos + contador',
+      hint: isEN
+        ? (plan === 'avancado' ? 'games + voice + intros + music' : 'page + photos + countdown')
+        : (plan === 'avancado' ? 'jogos + voz + intros + música' : 'página + fotos + contador'),
     });
-    if (introType === 'love') items.push({ label: 'Abertura especial (coelho)', value: PRICES.introLove });
-    if (introType === 'poema') items.push({ label: 'Abertura especial (poema)', value: PRICES.introPoema });
-    if (audioRecording?.url) items.push({ label: 'Mensagem de voz gravada', value: PRICES.voice });
+    if (introType === 'love') items.push({ label: isEN ? 'Special intro (bunny)' : 'Abertura especial (coelho)', value: prices.introLove });
+    if (introType === 'poema') items.push({ label: isEN ? 'Special intro (poem)' : 'Abertura especial (poema)', value: prices.introPoema });
+    if (audioRecording?.url) items.push({ label: isEN ? 'Recorded voice note' : 'Mensagem de voz gravada', value: prices.voice });
+    if (enableWordGame && Array.isArray(wordGameQuestions) && wordGameQuestions.length > 0) {
+      items.push({ label: isEN ? 'Word game' : 'Jogo de palavras', value: prices.wordGame });
+    }
     if (qrCodeDesign && qrCodeDesign !== 'classic') {
-      items.push({ label: 'QR Code personalizado', value: PRICES.qrCustom });
+      items.push({ label: isEN ? 'Custom QR code' : 'QR Code personalizado', value: prices.qrCustom });
     }
     return items;
-  }, [plan, introType, audioRecording, qrCodeDesign]);
+  }, [plan, introType, audioRecording, qrCodeDesign, enableWordGame, wordGameQuestions, locale]);
 
   const [method, setMethod] = useState<Method>('pix');
   const [isProcessing, startTransition] = useTransition();
@@ -118,7 +185,40 @@ export default function PaymentField() {
   }, [intentId]);
   const [pixTimeLeft, setPixTimeLeft] = useState(0);
   const [pixExpired, setPixExpired] = useState(false);
-  const [paid, setPaid] = useState<{ pageId: string } | null>(null);
+  const [paid, _setPaid] = useState<{ pageId: string; isGift?: boolean } | null>(null);
+
+  // Disparado exatamente 1x por pageId, em qualquer fluxo de sucesso
+  // (PIX, stripe, admin, gift). Dedup via sessionStorage resiste a
+  // re-montagens (StrictMode, back/forward). `/criando-pagina` usa a mesma
+  // chave, então MP-card + PIX não duplicam entre si.
+  // Gift dispara CompleteRegistration (value=0) em vez de Purchase pra não
+  // contaminar o ROAS de ads pagos com conversões grátis.
+  // eventId = pageId para dedup com Meta CAPI / TikTok Events API server-side.
+  const setPaid = useCallback((p: { pageId: string; isGift?: boolean } | null) => {
+    _setPaid(p);
+    if (!p) return;
+    try {
+      const dedupeKey = `purchase_fired_${p.pageId}`;
+      if (typeof window !== 'undefined' && !sessionStorage.getItem(dedupeKey)) {
+        sessionStorage.setItem(dedupeKey, '1');
+        const eventName = p.isGift ? 'CompleteRegistration' : 'Purchase';
+        trackEvent(eventName, {
+          value: p.isGift ? 0 : total,
+          currency: siteCfg.currency,
+          content_ids: [plan || 'avancado'],
+          content_type: 'product',
+          contents: [{
+            content_id: plan || 'avancado',
+            content_type: 'product',
+            quantity: 1,
+            price: p.isGift ? 0 : total,
+          }],
+        }, p.pageId);
+      }
+    } catch { /* ignore */ }
+  }, [total, plan, siteCfg.currency]);
+
+  const amFiredFor = useRef<string>('');
   const [giftToken, setGiftToken] = useState<string | null>(null);
   const [isRedeemingGift, startRedeemGift] = useTransition();
   const [isAdminAction, startAdminAction] = useTransition();
@@ -144,11 +244,30 @@ export default function PaymentField() {
     return emailOk && phoneOk;
   }, [emailInput, phone]);
 
+  // Advanced Matching: manda email + phone hasheados pro Meta/TikTok assim
+  // que o contato fica válido. Aumenta match rate de ~40% pra ~70%+ — crucial
+  // pra otimização de ads funcionar pós iOS 14.5 (ATT).
+  useEffect(() => {
+    if (!isContactValid) return;
+    const key = `${emailInput}|${phone}`;
+    if (amFiredFor.current === key) return;
+    amFiredFor.current = key;
+    setAdvancedMatching({ email: emailInput, phone }).catch(() => {});
+  }, [isContactValid, emailInput, phone]);
+
+  // Attribution (UTMs + fbp/fbc/ttclid) lida 1x e injetada em todos os saves.
+  // Persistida no intent doc pro server-side pixel (CAPI/Events API) conseguir
+  // deduplicar o Purchase com o pixel do browser e atribuir ao ad correto.
+  const attributionRef = useRef<Record<string, any>>({});
+  useEffect(() => {
+    attributionRef.current = getAttribution();
+  }, []);
+
   // Garantir que o rascunho exista
   useEffect(() => {
     if (!user || intentId) return;
     const data = getValues();
-    createOrUpdatePaymentIntent({ ...data, userId: user.uid }).then((res) => {
+    createOrUpdatePaymentIntent({ ...data, ...attributionRef.current, userId: user.uid }).then((res) => {
       if (res.success) setValue('intentId', res.intentId, { shouldDirty: false });
     });
   }, [user, intentId, getValues, setValue]);
@@ -191,11 +310,27 @@ export default function PaymentField() {
     return () => { cancelled = true; };
   }, [intentId, paid, lookupChecked]);
 
-  // Lê gift token do localStorage (vindo de /presente/[token])
+  // Lê gift token do localStorage e valida server-side.
+  // Sem isso, um token já usado ou revogado fica zumbi no storage e o botão
+  // "Resgatar" aparece mas falha no submit — frustração gratuita pro user.
   useEffect(() => {
     try {
       const stored = localStorage.getItem('mycupid_gift_token');
-      if (stored) setGiftToken(stored);
+      if (!stored) return;
+      fetch(`/api/gift?token=${encodeURIComponent(stored)}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res?.valid) {
+            setGiftToken(stored);
+          } else {
+            try { localStorage.removeItem('mycupid_gift_token'); } catch {}
+          }
+        })
+        .catch(() => {
+          // Rede falhou — mostra o botão mesmo assim (fallback otimista).
+          // Se o resgate falhar no submit, o user vê erro claro.
+          setGiftToken(stored);
+        });
     } catch { /* storage disabled */ }
   }, []);
 
@@ -239,13 +374,19 @@ export default function PaymentField() {
     setPixData(null);
     setPixExpired(false);
     setError(null);
+    trackEvent('PaymentRetry', { method: 'pix', reason: 'pix_expired' });
   }, [setPixData]);
 
   const handleRedeemGift = useCallback(() => {
     setError(null);
-    if (!user || !giftToken) return;
+    if (!user) { setError(t('sessionLoading')); return; }
+    if (!giftToken) { setError(isUS ? 'Gift link missing. Open the gift link again.' : 'Link do presente não encontrado. Abra o link de novo.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
-      setError('Preenche um email válido pra continuar.');
+      setError(t('emailInvalid'));
+      return;
+    }
+    if (phone.replace(/\D/g, '').length < 10) {
+      setError(t('phoneInvalid'));
       return;
     }
     const cleanEmail = emailInput.trim().toLowerCase();
@@ -255,6 +396,7 @@ export default function PaymentField() {
         const whatsappDigits = phone.replace(/\D/g, '');
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
+          ...attributionRef.current,
           userId: user.uid,
           plan: 'avancado',
           whatsappNumber: whatsappDigits,
@@ -266,22 +408,22 @@ export default function PaymentField() {
         if (!res.success) { setError(res.error || 'Erro ao resgatar presente.'); return; }
         try { localStorage.removeItem('mycupid_gift_token'); } catch {}
         setGiftToken(null);
-        setPaid({ pageId: res.pageId });
+        setPaid({ pageId: res.pageId, isGift: true });
       } catch (e: any) {
         setError(e?.message || 'Erro ao resgatar presente.');
       }
     });
-  }, [user, giftToken, emailInput, phone, getValues, setValue]);
+  }, [user, giftToken, emailInput, phone, getValues, setValue, isUS]);
 
   const handlePix = useCallback(() => {
     setError(null);
-    if (!user) { setError('Sessão carregando, tenta de novo em um instante.'); return; }
+    if (!user) { setError(t('sessionLoading')); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
-      setError('Preenche um email válido pra continuar.');
+      setError(t('emailInvalid'));
       return;
     }
     if (phone.replace(/\D/g, '').length < 10) {
-      setError('Preenche o WhatsApp com DDD.');
+      setError(t('phoneInvalid'));
       return;
     }
 
@@ -292,6 +434,7 @@ export default function PaymentField() {
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
+          ...attributionRef.current,
           userId: user.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
@@ -303,8 +446,13 @@ export default function PaymentField() {
           whatsapp: whatsappDigits,
           email: cleanEmail,
         });
-        if (pix.error) { setError(pix.error); return; }
+        if (pix.error) {
+          trackEvent('PaymentFailed', { method: 'pix', reason: pix.error, value: total });
+          setError(pix.error);
+          return;
+        }
         if (pix.qrCode && pix.qrCodeBase64 && pix.paymentId) {
+          trackEvent('PIXGenerated', { value: total, currency: siteCfg.currency });
           setPixData({
             qrCode: pix.qrCode,
             qrCodeBase64: pix.qrCodeBase64,
@@ -320,13 +468,13 @@ export default function PaymentField() {
 
   const handleCard = useCallback(() => {
     setError(null);
-    if (!user) { setError('Sessão carregando, tenta de novo.'); return; }
+    if (!user) { setError(t('sessionLoading')); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
-      setError('Preenche um email válido pra continuar.');
+      setError(t('emailInvalid'));
       return;
     }
     if (phone.replace(/\D/g, '').length < 10) {
-      setError('Preenche o WhatsApp com DDD.');
+      setError(t('phoneInvalid'));
       return;
     }
     startTransition(async () => {
@@ -336,6 +484,7 @@ export default function PaymentField() {
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
+          ...attributionRef.current,
           userId: user.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
@@ -347,13 +496,59 @@ export default function PaymentField() {
           whatsapp: whatsappDigits,
           email: cleanEmail,
         });
-        if (!session.success) { setError(session.error || 'Erro ao criar sessão de pagamento.'); return; }
+        if (!session.success) {
+          trackEvent('PaymentFailed', { method: 'card', reason: session.error, value: total });
+          setError(session.error || (isUS ? 'Failed to create payment session.' : 'Erro ao criar sessão de pagamento.'));
+          return;
+        }
         window.location.href = session.url;
       } catch (e: any) {
+        trackEvent('PaymentFailed', { method: 'card', reason: e?.message, value: total });
         setError(e?.message || 'Erro ao conectar com o pagamento.');
       }
     });
-  }, [user, emailInput, phone, getValues, setValue]);
+  }, [user, emailInput, phone, getValues, setValue, total]);
+
+  const handleStripe = useCallback(() => {
+    setError(null);
+    if (!user) { setError('Session loading, try again in a moment.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+      setError('Please enter a valid email.'); return;
+    }
+    if (phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid phone number.'); return;
+    }
+    startTransition(async () => {
+      try {
+        const data = getValues();
+        const phoneDigits = phone.replace(/\D/g, '');
+        const cleanEmail = emailInput.trim().toLowerCase();
+        const saveRes = await createOrUpdatePaymentIntent({
+          ...data,
+          ...attributionRef.current,
+          userId: user.uid,
+          whatsappNumber: phoneDigits,
+          guestEmail: cleanEmail,
+          locale: 'en',
+          currency: 'USD',
+        });
+        if (!saveRes.success) { setError(saveRes.error || 'Failed to save draft.'); return; }
+        setValue('intentId', saveRes.intentId, { shouldDirty: false });
+        const session = await createStripeCheckoutSession(saveRes.intentId, total, null, {
+          phone: phoneDigits,
+          email: cleanEmail,
+        });
+        if (!session.success || !session.url) {
+          trackEvent('PaymentFailed', { method: 'stripe', reason: session.error, value: total });
+          setError(session.error || 'Failed to create checkout session.'); return;
+        }
+        window.location.href = session.url;
+      } catch (e: any) {
+        trackEvent('PaymentFailed', { method: 'stripe', reason: e?.message, value: total });
+        setError(e?.message || 'Payment error.');
+      }
+    });
+  }, [user, emailInput, phone, getValues, setValue, total]);
 
   const handleAdminFinalize = useCallback(() => {
     if (!user || !intentId || !isAdmin) return;
@@ -373,13 +568,13 @@ export default function PaymentField() {
     if (!isAdmin) return;
     setError(null);
     setDryRunReport(null);
-    if (!user) { setError('Sessão carregando, tenta de novo.'); return; }
+    if (!user) { setError(t('sessionLoading')); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
-      setError('Preenche um email válido pra continuar.');
+      setError(t('emailInvalid'));
       return;
     }
     if (phone.replace(/\D/g, '').length < 10) {
-      setError('Preenche o WhatsApp com DDD.');
+      setError(t('phoneInvalid'));
       return;
     }
     startDryRun(async () => {
@@ -389,6 +584,7 @@ export default function PaymentField() {
         const cleanEmail = emailInput.trim().toLowerCase();
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
+          ...attributionRef.current,
           userId: user.uid,
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
@@ -425,7 +621,7 @@ export default function PaymentField() {
       await downloadQrCard(paid.pageId, qrCodeDesign || 'classic', `mycupid-qrcode-${paid.pageId}.png`);
     } catch (e) {
       console.error('[qr] download failed', e);
-      toast({ variant: 'destructive', title: 'Não consegui baixar', description: 'Tenta de novo, ou salva a imagem pressionando e segurando.' });
+      toast({ variant: 'destructive', title: t('downloadFailed'), description: t('downloadHint') });
     } finally {
       setIsDownloadingQr(false);
     }
@@ -435,9 +631,10 @@ export default function PaymentField() {
     if (!paid) return;
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mycupid.com.br';
     const pageUrl = `${origin}/p/${paid.pageId}`;
+    const shareLine = isUS ? 'I made something special for you 💌' : 'Fiz algo especial pra você 💌';
     const msg = title
-      ? `Fiz algo especial pra você 💌\n\n${title}\n\n${pageUrl}`
-      : `Fiz algo especial pra você 💌\n\n${pageUrl}`;
+      ? `${shareLine}\n\n${title}\n\n${pageUrl}`
+      : `${shareLine}\n\n${pageUrl}`;
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
   }, [paid, title]);
@@ -460,9 +657,19 @@ export default function PaymentField() {
           >
             <CheckCircle2 className="w-8 h-8 text-white" />
           </motion.div>
-          <h3 className="text-lg font-bold text-white mb-1">Sua página tá pronta 💌</h3>
+          <h3 className="text-lg font-bold text-white mb-1">
+            {paid.isGift
+              ? (isUS ? 'Gift redeemed 🎁' : 'Presente resgatado 🎁')
+              : (isUS ? 'Your page is ready 💌' : 'Sua página tá pronta 💌')}
+          </h3>
           <p className="text-sm text-white/70">
-            O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.
+            {paid.isGift
+              ? (isUS
+                  ? 'Advanced plan unlocked for free. Open it below to see how it turned out.'
+                  : 'Plano Avançado liberado sem custo. Abre aqui embaixo pra ver como ficou.')
+              : (isUS
+                  ? 'Payment confirmed. Open it below to see how it turned out.'
+                  : 'O pagamento já foi confirmado. Abre aqui embaixo pra ver como ficou.')}
           </p>
         </div>
 
@@ -472,7 +679,7 @@ export default function PaymentField() {
           className="w-full h-12 rounded-xl bg-white hover:bg-white/90 text-black font-semibold transition active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <ExternalLink className="w-4 h-4" />
-          Ver minha página
+          {isUS ? 'See my page' : 'Ver minha página'}
         </button>
 
         {/* WhatsApp share — botão principal, bem destacado */}
@@ -484,7 +691,7 @@ export default function PaymentField() {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
-          Compartilhar minha página no WhatsApp
+          {isUS ? 'Share my page (WhatsApp / SMS)' : 'Compartilhar minha página no WhatsApp'}
         </button>
 
         {/* QR download */}
@@ -496,22 +703,24 @@ export default function PaymentField() {
         >
           {isDownloadingQr ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Gerando QR...
+              <Loader2 className="w-4 h-4 animate-spin" /> {isUS ? 'Generating QR...' : 'Gerando QR...'}
             </>
           ) : (
             <>
               <Download className="w-4 h-4" />
-              {qrCodeDesign && qrCodeDesign !== 'classic' ? 'Baixar QR personalizado' : 'Baixar QR Code'}
+              {qrCodeDesign && qrCodeDesign !== 'classic'
+                ? (isUS ? 'Download custom QR' : 'Baixar QR personalizado')
+                : (isUS ? 'Download QR Code' : 'Baixar QR Code')}
             </>
           )}
         </button>
 
         <button
           type="button"
-          onClick={() => router.push('/criar')}
+          onClick={() => router.push(isUS ? '/chat' : '/criar')}
           className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/10 text-white/70 hover:text-white text-[13.5px] font-medium transition"
         >
-          Criar uma nova página
+          {isUS ? 'Create a new page' : 'Criar uma nova página'}
         </button>
       </motion.div>
     );
@@ -532,7 +741,7 @@ export default function PaymentField() {
             <Sparkles className="w-3 h-3" />
             <span>Seu pedido</span>
           </div>
-          <span className="text-[11px] text-white/45">Pagamento único</span>
+          <span className="text-[11px] text-white/45">{isUS ? 'One-time payment' : 'Pagamento único'}</span>
         </div>
 
         {/* Breakdown linha por linha */}
@@ -556,7 +765,7 @@ export default function PaymentField() {
         <div className="pt-3 border-t border-white/10 flex items-baseline justify-between">
           <div>
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-white/55 font-semibold">Total</div>
-            <div className="text-[11px] text-white/50 mt-0.5">Acesso vitalício · sem mensalidade</div>
+            <div className="text-[11px] text-white/50 mt-0.5">{isUS ? 'Lifetime access · no subscription' : 'Acesso vitalício · sem mensalidade'}</div>
           </div>
           <div className="text-2xl font-bold text-white tabular-nums">{BRL.format(total)}</div>
         </div>
@@ -603,7 +812,7 @@ export default function PaymentField() {
             )}
           />
           {emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim()) && (
-            <p className="text-[11px] text-red-300/90 px-0.5">Confere o email — parece que tá faltando algo.</p>
+            <p className="text-[11px] text-red-300/90 px-0.5">{isUS ? 'Double-check the email — looks like something\'s off.' : 'Confere o email — parece que tá faltando algo.'}</p>
           )}
         </div>
         <div className="space-y-1.5">
@@ -622,7 +831,7 @@ export default function PaymentField() {
                 : 'ring-white/10 focus:ring-pink-500/40'
             )}
           />
-          <p className="text-[11px] text-white/45 px-0.5">Mandamos o link da página assim que o pagamento cair.</p>
+          <p className="text-[11px] text-white/45 px-0.5">{isUS ? 'We\'ll email you the page link as soon as the payment clears.' : 'Mandamos o link da página assim que o pagamento cair.'}</p>
         </div>
       </div>
 
@@ -634,8 +843,8 @@ export default function PaymentField() {
               <Sparkles className="w-4 h-4 text-purple-300" />
             </div>
             <div>
-              <p className="text-[14px] font-bold text-white leading-tight">Você tem um presente 🎁</p>
-              <p className="text-[11.5px] text-white/55 mt-0.5">Plano Avançado liberado, sem pagar nada.</p>
+              <p className="text-[14px] font-bold text-white leading-tight">{isUS ? 'You have a gift 🎁' : 'Você tem um presente 🎁'}</p>
+              <p className="text-[11.5px] text-white/55 mt-0.5">{isUS ? 'Advanced plan unlocked — no payment.' : 'Plano Avançado liberado, sem pagar nada.'}</p>
             </div>
           </div>
           <button
@@ -651,19 +860,61 @@ export default function PaymentField() {
           >
             {isRedeemingGift ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Finalizando...
+                <Loader2 className="w-4 h-4 animate-spin" /> {t('finalizing')}
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" /> Resgatar meu presente grátis
+                <Sparkles className="w-4 h-4" /> {isUS ? 'Redeem my free gift' : 'Resgatar meu presente grátis'}
               </>
             )}
           </button>
+          {error && (
+            <div className="rounded-xl p-3 bg-red-500/10 ring-1 ring-red-400/40 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-300 mt-0.5 shrink-0" />
+              <span className="text-[12.5px] text-red-100/90 leading-relaxed">{error}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stripe checkout (mercado US) — botão único redireciona */}
+      {!giftToken && isUS && (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleStripe}
+            disabled={isProcessing || !isContactValid}
+            className={cn(
+              'w-full h-14 rounded-2xl font-bold text-white text-[15px] transition flex items-center justify-center gap-2',
+              'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500',
+              'hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400',
+              'shadow-[0_14px_40px_-12px_rgba(168,85,247,0.7)] active:scale-[0.98]',
+              'disabled:opacity-60 disabled:cursor-not-allowed'
+            )}
+          >
+            {isProcessing ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Redirecting...</>
+            ) : !isContactValid ? (
+              <>Enter email + phone first</>
+            ) : (
+              <><Lock className="w-4 h-4" /> Pay {money(total, locale)} securely</>
+            )}
+          </button>
+          <div className="flex items-center justify-center gap-3 text-[11px] text-white/45">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Powered by Stripe · 256-bit encryption</span>
+          </div>
+          {error && (
+            <div className="rounded-xl p-3 bg-red-500/10 ring-1 ring-red-400/30 text-[12.5px] text-red-200 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
         </div>
       )}
 
       {/* Como pagar — destaque visual forte (some se tem gift pendente) */}
-      {!giftToken && (
+      {!giftToken && !isUS && (
       <>
       <div>
         <div className="flex items-center gap-2 mb-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
@@ -693,7 +944,7 @@ export default function PaymentField() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[15px] font-bold text-white">PIX</span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 font-bold uppercase tracking-wider">
-                  instantâneo
+                  {isUS ? 'instant' : 'instantâneo'}
                 </span>
               </div>
               <div className="text-[12px] text-white/60 mt-0.5">
@@ -728,9 +979,9 @@ export default function PaymentField() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[15px] font-bold text-white">Cartão</span>
+                <span className="text-[15px] font-bold text-white">{isUS ? 'Card' : 'Cartão'}</span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 font-bold uppercase tracking-wider">
-                  crédito / débito
+                  {isUS ? 'credit / debit' : 'crédito / débito'}
                 </span>
               </div>
               <div className="text-[12px] text-white/60 mt-0.5">
@@ -1049,7 +1300,7 @@ export default function PaymentField() {
             disabled={!intentId || isAdminAction}
             className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-100 disabled:opacity-50 transition"
           >
-            {isAdminAction ? 'Finalizando...' : 'Finalizar sem pagar'}
+            {isAdminAction ? t('finalizing') : t('finalizeFree')}
           </button>
         </div>
       )}

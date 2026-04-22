@@ -106,7 +106,7 @@ GalleryImage.displayName = 'GalleryImage';
 // ─────────────────────────────────────────────────────────────
 // EXPIRY BANNER — mostra quando plano basico está quase expirando
 // ─────────────────────────────────────────────────────────────
-function ExpiryBanner({ expireAt }: { expireAt: any }) {
+function ExpiryBanner({ expireAt, isEN = false }: { expireAt: any; isEN?: boolean }) {
     const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
     const [isExpired, setIsExpired] = useState(false);
 
@@ -158,14 +158,14 @@ function ExpiryBanner({ expireAt }: { expireAt: any }) {
             {isExpired ? (
                 <div className="flex items-center justify-center gap-2">
                     <AlertTriangle size={16} />
-                    <span>Esta página expirou.</span>
-                    <a href="https://mycupid.com.br" className="underline ml-2">Criar nova página →</a>
+                    <span>{isEN ? 'This page has expired.' : 'Esta página expirou.'}</span>
+                    <a href={isEN ? 'https://mycupid.net' : 'https://mycupid.com.br'} className="underline ml-2">{isEN ? 'Create new page →' : 'Criar nova página →'}</a>
                 </div>
             ) : timeLeft ? (
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                     <Clock size={16} className="animate-pulse" />
                     <span>
-                        Esta página expira em{' '}
+                        {isEN ? 'This page expires in' : 'Esta página expira em'}{' '}
                         <span className="tabular-nums font-black">
                             {timeLeft.hours > 0 && `${timeLeft.hours}h `}
                             {String(timeLeft.minutes).padStart(2, '0')}m{' '}
@@ -186,6 +186,9 @@ function ExpiryBanner({ expireAt }: { expireAt: any }) {
 
 export default function PageClientComponent({ pageData }: { pageData: any }) {
   const { user } = useUser();
+  // Locale do doc — NÃO do visitante. Garante que uma página criada em BR
+  // mostra PT mesmo se aberta pelo `.net` e vice-versa.
+  const isEN = pageData.locale === 'en';
   const [showTimeline, setShowTimeline] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
@@ -343,7 +346,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     <div className="min-h-screen w-full bg-background relative overflow-x-hidden">
       
       {/* BANNER DE EXPIRAÇÃO — plano basico próximo de expirando */}
-      {!isDemoPage && pageData.plan === 'basico' && <ExpiryBanner expireAt={pageData.expireAt} />}
+      {!isDemoPage && pageData.plan === 'basico' && <ExpiryBanner expireAt={pageData.expireAt} isEN={isEN} />}
 
       {/* UPSELL — popup de upgrade para permanente */}
       {!isDemoPage && pageData.plan === 'basico' && pageData.expireAt && (
@@ -422,7 +425,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                     onClick={() => setShowTimeline(true)} 
                     className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                 >
-                    <View className="mr-2 h-5 w-5" /> Nossa Linha do Tempo
+                    <View className="mr-2 h-5 w-5" /> {isEN ? 'Our Timeline' : 'Nossa Linha do Tempo'}
                 </Button>
             </div>
           )}
@@ -458,7 +461,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                       onClick={() => setShowGames(true)} 
                       className="bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-8 py-6 text-lg rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95 w-full max-w-xs"
                   >
-                      <Gamepad2 className="mr-2 h-5 w-5" /> Vamos Jogar?
+                      <Gamepad2 className="mr-2 h-5 w-5" /> {isEN ? "Let's Play?" : 'Vamos Jogar?'}
                   </Button>
               </div>
           )}
@@ -488,7 +491,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   className="flex items-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-400/30 text-white text-sm font-semibold hover:from-pink-500/30 hover:to-fuchsia-500/30 transition-all animate-pulse shadow-lg shadow-pink-500/10"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                  Toque para ativar a música
+                  {isEN ? 'Tap to start the music' : 'Toque para ativar a música'}
                 </button>
              )}
           </div>
@@ -503,15 +506,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         <Heart className="w-6 h-6 text-white" fill="white" />
                     </div>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">Gostou dessa página?</h3>
-                <p className="text-xs text-gray-400 mb-4">Crie a sua e surpreenda alguém especial também</p>
+                <h3 className="text-lg font-bold text-white mb-1">{isEN ? 'Loved this page?' : 'Gostou dessa página?'}</h3>
+                <p className="text-xs text-gray-400 mb-4">{isEN ? 'Create yours and surprise someone special too' : 'Crie a sua e surpreenda alguém especial também'}</p>
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={handleShareLink}
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white text-sm bg-white/10 hover:bg-white/15 border border-white/10 transition-all active:scale-95"
                     >
                         {linkCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
-                        {linkCopied ? 'Link copiado!' : 'Compartilhar esta página'}
+                        {linkCopied ? (isEN ? 'Link copied!' : 'Link copiado!') : (isEN ? 'Share this page' : 'Compartilhar esta página')}
                     </button>
                     <button
                         onClick={handleDownloadQr}
@@ -519,16 +522,16 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium text-zinc-500 hover:text-zinc-300 text-xs transition-colors disabled:opacity-60"
                     >
                         {isDownloadingQr ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                        {isDownloadingQr ? 'Gerando...' : 'Baixar QR Code'}
+                        {isDownloadingQr ? (isEN ? 'Generating...' : 'Gerando...') : (isEN ? 'Download QR Code' : 'Baixar QR Code')}
                     </button>
                     <a
-                        href="https://mycupid.com.br/criar"
+                        href={isEN ? 'https://mycupid.net/chat' : 'https://mycupid.com.br/criar'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-white text-sm bg-gradient-to-r from-pink-600 to-purple-600 hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-purple-900/40"
                     >
                         <Heart className="w-4 h-4" fill="white" />
-                        Criar minha página
+                        {isEN ? 'Create my page' : 'Criar minha página'}
                     </a>
                 </div>
             </div>

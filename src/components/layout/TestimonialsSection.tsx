@@ -5,6 +5,7 @@ import TestimonialsMarquee from '@/components/layout/TestimonialsMarquee';
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 // Avatares reais dos depoimentos — mesmos do TestimonialsMarquee
 const AVATAR_URLS = [
@@ -16,6 +17,8 @@ const AVATAR_URLS = [
 ];
 
 const TestimonialsSection = () => {
+  const locale = useLocale();
+  const isEN = locale === 'en';
   return (
     <div className="relative w-full overflow-hidden">
       <div className="container relative z-10">
@@ -50,19 +53,21 @@ const TestimonialsSection = () => {
                 ))}
               </div>
               <span className="text-sm font-bold text-white">4.9</span>
-              <span className="text-xs text-zinc-400">de +10.000 casais</span>
+              <span className="text-xs text-zinc-400">{isEN ? 'from 10,000+ couples' : 'de +10.000 casais'}</span>
             </div>
           </div>
 
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4 leading-tight">
-            Histórias reais.{' '}
+            {isEN ? 'Real stories.' : 'Histórias reais.'}{' '}
             <span className="text-transparent bg-clip-text"
               style={{ backgroundImage: 'linear-gradient(135deg, #a855f7, #ec4899)' }}>
-              Emoções de verdade.
+              {isEN ? 'Real emotions.' : 'Emoções de verdade.'}
             </span>
           </h2>
           <p className="text-base text-zinc-400 max-w-xl mx-auto">
-            Mais de 10.000 casais já eternizaram suas histórias. Veja o que eles estão dizendo.
+            {isEN
+              ? 'Over 10,000 couples have immortalized their stories. See what they\'re saying.'
+              : 'Mais de 10.000 casais já eternizaram suas histórias. Veja o que eles estão dizendo.'}
           </p>
 
           {/* Rating bar visual */}
@@ -77,11 +82,17 @@ const TestimonialsSection = () => {
               border: '1px solid rgba(255,255,255,0.07)',
             }}
           >
-            {[
-              { label: '5 estrelas', pct: 91 },
-              { label: '4 estrelas', pct: 7 },
-              { label: '3 ou menos', pct: 2 },
-            ].map(({ label, pct }) => (
+            {(isEN
+              ? [
+                  { label: '5 stars', pct: 91 },
+                  { label: '4 stars', pct: 7 },
+                  { label: '3 or less', pct: 2 },
+                ]
+              : [
+                  { label: '5 estrelas', pct: 91 },
+                  { label: '4 estrelas', pct: 7 },
+                  { label: '3 ou menos', pct: 2 },
+                ]).map(({ label, pct }) => (
               <div key={label} className="flex items-center gap-2">
                 <span className="text-xs text-zinc-500 whitespace-nowrap w-20 text-right">{label}</span>
                 <div className="w-20 h-1.5 rounded-full overflow-hidden bg-zinc-800">
@@ -112,11 +123,9 @@ const TestimonialsSection = () => {
           className="flex justify-center mt-10"
         >
           <p className="text-sm text-zinc-500 text-center max-w-sm">
-            Junte-se a{' '}
-            <strong className="text-white">+10.000 casais</strong>
-            {' '}que já criaram páginas incríveis.{' '}
+            {isEN ? <>Join <strong className="text-white">10,000+ couples</strong> who already created amazing pages.{' '}</> : <>Junte-se a <strong className="text-white">+10.000 casais</strong>{' '}que já criaram páginas incríveis.{' '}</>}
             <a href="#planos" className="text-purple-400 hover:text-purple-300 font-semibold transition-colors underline underline-offset-2">
-              Criar a minha agora →
+              {isEN ? 'Create mine now →' : 'Criar a minha agora →'}
             </a>
           </p>
         </motion.div>

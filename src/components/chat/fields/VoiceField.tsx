@@ -9,11 +9,14 @@ import { signInAnonymously } from 'firebase/auth';
 import { uploadFile } from '@/lib/upload';
 import { useToast } from '@/hooks/use-toast';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 export default function VoiceField() {
   const { control, setValue } = useFormContext<PageData>();
   const firebase = useFirebase();
   const { toast } = useToast();
+  const locale = useLocale();
+  const isEN = locale === 'en';
   const audioRecording = useWatch({ control, name: 'audioRecording' });
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -41,7 +44,7 @@ export default function VoiceField() {
     }
     if (!activeUser) {
       setStatus('idle');
-      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar. Tente de novo.' });
+      toast({ variant: 'destructive', title: isEN ? 'Error' : 'Erro', description: isEN ? 'Couldn\'t save. Try again.' : 'Não foi possível salvar. Tente de novo.' });
       return;
     }
     setStatus('uploading');
@@ -49,10 +52,10 @@ export default function VoiceField() {
       const data = await uploadFile(firebase.storage, activeUser.uid, blob, 'audio');
       setValue('audioRecording', data, { shouldDirty: true, shouldValidate: true });
       setStatus('recorded');
-      toast({ title: 'Mensagem salva 💝', description: 'Sua voz vai emocionar demais.' });
+      toast({ title: isEN ? 'Message saved 💝' : 'Mensagem salva 💝', description: isEN ? 'Your voice will melt their heart.' : 'Sua voz vai emocionar demais.' });
     } catch {
       setStatus('idle');
-      toast({ variant: 'destructive', title: 'Erro no upload' });
+      toast({ variant: 'destructive', title: isEN ? 'Upload error' : 'Erro no upload' });
     }
   };
 
@@ -88,7 +91,7 @@ export default function VoiceField() {
         });
       }, 1000);
     } catch {
-      toast({ variant: 'destructive', title: 'Microfone bloqueado', description: 'Libere o mic nas permissões.' });
+      toast({ variant: 'destructive', title: isEN ? 'Mic blocked' : 'Microfone bloqueado', description: isEN ? 'Allow mic access in your browser settings.' : 'Libere o mic nas permissões.' });
     }
   };
 
@@ -115,10 +118,12 @@ export default function VoiceField() {
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <Gem className="w-3 h-3 text-fuchsia-300" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">Feature especial</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">{isEN ? 'Special feature' : 'Feature especial'}</span>
             </div>
             <p className="text-xs text-white/80 leading-snug">
-              Imagina a cara dela(e) ao <em>ouvir sua voz</em> dizendo o que sente 🥹 até 60s.
+              {isEN
+                ? <>Imagine their face when they <em>hear your voice</em> saying what you feel 🥹 up to 60s.</>
+                : <>Imagina a cara dela(e) ao <em>ouvir sua voz</em> dizendo o que sente 🥹 até 60s.</>}
             </p>
           </div>
         </div>
@@ -134,7 +139,7 @@ export default function VoiceField() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
               </span>
-              Gravar minha mensagem
+              {isEN ? 'Record my message' : 'Gravar minha mensagem'}
             </span>
           </button>
         )}
@@ -147,10 +152,10 @@ export default function VoiceField() {
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
               </span>
               <span className="font-mono text-lg font-bold tabular-nums text-white">{mmss}</span>
-              <span className="text-[10px] uppercase tracking-wider text-red-300">Gravando</span>
+              <span className="text-[10px] uppercase tracking-wider text-red-300">{isEN ? 'Recording' : 'Gravando'}</span>
             </div>
             <Button type="button" onClick={stop} variant="destructive" size="sm" className="w-full">
-              <StopCircle className="mr-1.5 h-4 w-4" /> Parar
+              <StopCircle className="mr-1.5 h-4 w-4" /> {isEN ? 'Stop' : 'Parar'}
             </Button>
           </div>
         )}
@@ -158,7 +163,7 @@ export default function VoiceField() {
         {status === 'uploading' && (
           <div className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white/[0.06] ring-1 ring-white/10">
             <Loader2 className="h-4 w-4 animate-spin text-pink-300" />
-            <span className="text-xs font-medium text-white">Salvando…</span>
+            <span className="text-xs font-medium text-white">{isEN ? 'Saving…' : 'Salvando…'}</span>
           </div>
         )}
 
@@ -167,16 +172,16 @@ export default function VoiceField() {
             <div className="rounded-xl bg-white/[0.06] ring-1 ring-pink-400/30 p-3 backdrop-blur">
               <div className="flex items-center gap-1.5 mb-2">
                 <CheckCircle className="h-3.5 w-3.5 text-green-400" />
-                <span className="text-xs font-semibold text-green-300">Mensagem gravada</span>
+                <span className="text-xs font-semibold text-green-300">{isEN ? 'Message recorded' : 'Mensagem gravada'}</span>
               </div>
               <audio src={audioRecording.url} controls className="w-full h-8" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Button type="button" variant="outline" size="sm" onClick={start}>
-                <Mic className="mr-1 h-3.5 w-3.5" /> Gravar de novo
+                <Mic className="mr-1 h-3.5 w-3.5" /> {isEN ? 'Record again' : 'Gravar de novo'}
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={remove} className="text-muted-foreground hover:text-destructive">
-                <Trash className="mr-1 h-3.5 w-3.5" /> Remover
+                <Trash className="mr-1 h-3.5 w-3.5" /> {isEN ? 'Remove' : 'Remover'}
               </Button>
             </div>
           </div>

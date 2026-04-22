@@ -114,6 +114,25 @@ export async function POST(req: NextRequest) {
                     return NextResponse.json({ success: true }, { status: 200 });
                 }
 
+                // Persist the real charged amount on the intent BEFORE finalize.
+                // Card flow goes straight through MP Checkout Pro (no PIX gen step),
+                // so paidAmount is only available here via the webhook payload.
+                // Without this, finalizeLovePage falls back to plan base price,
+                // triggering the "Intent finalizado sem paidAmount" alert.
+                try {
+                    const txAmount = Number((paymentInfo as any)?.transaction_amount);
+                    if (isFinite(txAmount) && txAmount > 0) {
+                        const { getAdminFirestore } = await import('@/lib/firebase/admin/config');
+                        const db = getAdminFirestore();
+                        await db.collection('payment_intents').doc(intentId).set(
+                            { paidAmount: txAmount },
+                            { merge: true },
+                        );
+                    }
+                } catch (e) {
+                    console.warn('[WEBHOOK] Failed to persist paidAmount before finalize:', e);
+                }
+
                 // Centralized Logic: Call the "brain" function to finalize the page
                 const finalizationResult = await finalizeLovePage(intentId, paymentId.toString());
 

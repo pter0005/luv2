@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Flame } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 export default function ScarcityBanner() {
   const [spots, setSpots] = useState(0);
+  const locale = useLocale();
+  const isEN = locale === 'en';
 
   useEffect(() => {
     // Gera um número entre 3-9 baseado na hora do dia (parece real, muda a cada ~2h)
@@ -37,7 +40,9 @@ export default function ScarcityBanner() {
       <p className="text-xs font-bold text-white flex items-center justify-center gap-2">
         <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
         <span>
-          Restam <span className="text-yellow-300 tabular-nums">{spots}</span> páginas com preço promocional hoje
+          {isEN
+            ? <>Only <span className="text-yellow-300 tabular-nums">{spots}</span> pages left at promo price today</>
+            : <>Restam <span className="text-yellow-300 tabular-nums">{spots}</span> páginas com preço promocional hoje</>}
         </span>
         <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
       </p>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Loader2 } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 type State = 'idle' | 'saving' | 'saved';
 
@@ -14,6 +15,8 @@ interface AutosaveBadgeProps {
 
 export default function AutosaveBadge({ pulseKey, className }: AutosaveBadgeProps) {
   const [state, setState] = useState<State>('idle');
+  const locale = useLocale();
+  const isEN = locale === 'en';
 
   useEffect(() => {
     if (pulseKey === 0) return;
@@ -40,12 +43,12 @@ export default function AutosaveBadge({ pulseKey, className }: AutosaveBadgeProp
             {state === 'saving' ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                <span>salvando</span>
+                <span>{isEN ? 'saving' : 'salvando'}</span>
               </>
             ) : (
               <>
                 <Check className="w-3 h-3" />
-                <span>salvo</span>
+                <span>{isEN ? 'saved' : 'salvo'}</span>
               </>
             )}
           </div>

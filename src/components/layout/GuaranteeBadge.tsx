@@ -1,26 +1,30 @@
 'use client';
 
 import { ShieldCheck, Lock, Headphones } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 interface GuaranteeBadgeProps {
     compact?: boolean;
 }
 
 export default function GuaranteeBadge({ compact = false }: GuaranteeBadgeProps) {
+    const locale = useLocale();
+    const isEN = locale === 'en';
+
     if (compact) {
         return (
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-zinc-500">
                 <span className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    Garantia 7 dias
+                    {isEN ? '7-day guarantee' : 'Garantia 7 dias'}
                 </span>
                 <span className="flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-purple-400" />
-                    Dados protegidos
+                    {isEN ? 'Data protected' : 'Dados protegidos'}
                 </span>
                 <span className="flex items-center gap-1.5">
                     <Headphones className="w-3.5 h-3.5 text-blue-400" />
-                    Suporte 24h
+                    {isEN ? '24h support' : 'Suporte 24h'}
                 </span>
             </div>
         );
@@ -36,20 +40,22 @@ export default function GuaranteeBadge({ compact = false }: GuaranteeBadgeProps)
         >
             <div className="flex items-center justify-center gap-2 mb-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <span className="text-sm font-black text-white">Garantia de 7 dias</span>
+                <span className="text-sm font-black text-white">{isEN ? '7-day guarantee' : 'Garantia de 7 dias'}</span>
             </div>
             <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                Se você não ficar satisfeito, devolvemos 100% do valor. Sem perguntas.
+                {isEN
+                  ? 'If you\'re not satisfied, we refund 100%. No questions asked.'
+                  : 'Se você não ficar satisfeito, devolvemos 100% do valor. Sem perguntas.'}
             </p>
             <div className="flex items-center justify-center gap-4 text-[11px] text-zinc-500">
                 <span className="flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-purple-400" /> Pagamento Seguro
+                    <Lock className="w-3 h-3 text-purple-400" /> {isEN ? 'Secure Payment' : 'Pagamento Seguro'}
                 </span>
                 <span className="flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> Dados Protegidos
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> {isEN ? 'Data Protected' : 'Dados Protegidos'}
                 </span>
                 <span className="flex items-center gap-1">
-                    <Headphones className="w-3 h-3 text-blue-400" /> Suporte 24h
+                    <Headphones className="w-3 h-3 text-blue-400" /> {isEN ? '24h Support' : 'Suporte 24h'}
                 </span>
             </div>
         </div>

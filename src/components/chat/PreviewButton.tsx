@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Eye, Sparkles } from 'lucide-react';
+import { useLocale } from 'next-intl';
 
 interface PreviewButtonProps {
   onClick: () => void;
@@ -10,6 +11,9 @@ interface PreviewButtonProps {
 }
 
 export default function PreviewButton({ onClick, visible = true }: PreviewButtonProps) {
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const label = isEN ? 'See how it\'s looking' : 'Ver como está ficando';
   if (!visible) return null;
 
   return (
@@ -21,7 +25,7 @@ export default function PreviewButton({ onClick, visible = true }: PreviewButton
       exit={{ opacity: 0, y: 12, scale: 0.9 }}
       whileTap={{ scale: 0.94 }}
       transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-      aria-label="Ver como está ficando"
+      aria-label={label}
       className="group fixed bottom-24 right-4 z-40 active:scale-95"
       style={{ filter: 'drop-shadow(0 10px 28px rgba(236,72,153,0.45))' }}
     >
@@ -41,7 +45,7 @@ export default function PreviewButton({ onClick, visible = true }: PreviewButton
         >
           <Eye className="w-[18px] h-[18px] drop-shadow" strokeWidth={2.5} />
         </motion.span>
-        <span className="drop-shadow-sm">Ver como está ficando</span>
+        <span className="drop-shadow-sm">{label}</span>
         <Sparkles className="w-[14px] h-[14px] text-yellow-200/90 drop-shadow" strokeWidth={2.4} />
       </span>
     </motion.button>

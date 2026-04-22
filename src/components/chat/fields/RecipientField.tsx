@@ -3,6 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { WizardSegmentKey } from '@/lib/wizard-segment-config';
+import { useLocale } from 'next-intl';
 
 interface RecipientFieldProps {
   value: WizardSegmentKey;
@@ -15,20 +16,37 @@ interface Option {
   hint?: string;
 }
 
-const PRIMARY: Option[] = [
+const PRIMARY_PT: Option[] = [
   { key: 'namorade', label: 'Namorado(a)', hint: 'A pessoa que mora no seu coração' },
   { key: 'espouse', label: 'Esposo(a)', hint: 'Pra quem escolheu a vida toda' },
   { key: 'amige', label: 'Amigo(a)', hint: 'Amizade que é família' },
 ];
 
-const SECONDARY: Option[] = [
+const SECONDARY_PT: Option[] = [
   { key: 'mae', label: 'Mãe' },
   { key: 'pai', label: 'Pai' },
   { key: 'avo', label: 'Avó/Avô' },
   { key: 'filho', label: 'Filho(a)' },
 ];
 
+const PRIMARY_EN: Option[] = [
+  { key: 'namorade', label: 'Partner', hint: 'The one who lives in your heart' },
+  { key: 'espouse', label: 'Spouse', hint: 'The one you chose for life' },
+  { key: 'amige', label: 'Best friend', hint: 'The friend who\'s family' },
+];
+
+const SECONDARY_EN: Option[] = [
+  { key: 'mae', label: 'Mom' },
+  { key: 'pai', label: 'Dad' },
+  { key: 'avo', label: 'Grandparent' },
+  { key: 'filho', label: 'Child' },
+];
+
 export default function RecipientField({ value, onChange }: RecipientFieldProps) {
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const PRIMARY = isEN ? PRIMARY_EN : PRIMARY_PT;
+  const SECONDARY = isEN ? SECONDARY_EN : SECONDARY_PT;
   return (
     <div className="space-y-5">
       <div className="space-y-2">
@@ -55,7 +73,7 @@ export default function RecipientField({ value, onChange }: RecipientFieldProps)
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-white/[0.08]" />
-        <span className="text-[10.5px] uppercase tracking-[0.2em] text-white/40">ou</span>
+        <span className="text-[10.5px] uppercase tracking-[0.2em] text-white/40">{isEN ? 'or' : 'ou'}</span>
         <div className="flex-1 h-px bg-white/[0.08]" />
       </div>
 

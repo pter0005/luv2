@@ -2,28 +2,77 @@
 
 import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
-import { Check, Sparkles, Heart, Image as ImageIcon, Clock, Gamepad2, Mic, Wand2, Music, Infinity as InfinityIcon, Timer } from 'lucide-react';
+import { Check, Sparkles, Heart, Image as ImageIcon, Clock, Gamepad2, Mic, Wand2, Music, Infinity as InfinityIcon, Timer, Crown, Gem } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
+import { getPrices, computeVipSavings } from '@/lib/price';
+import { formatCurrency } from '@/lib/format';
+import type { Locale } from '@/i18n/config';
 
 type Feature = { icon: React.ReactNode; text: string };
 
-const BASICO_FEATURES: Feature[] = [
+const BASICO_FEATURES_PT: Feature[] = [
   { icon: <Heart className="w-3.5 h-3.5" />, text: 'Página dedicada com título e mensagem' },
   { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'Galeria de fotos (até 10)' },
   { icon: <Clock className="w-3.5 h-3.5" />, text: 'Contador de tempo juntos' },
   { icon: <Sparkles className="w-3.5 h-3.5" />, text: 'Linha do tempo dos momentos' },
 ];
-
-const AVANCADO_EXTRAS: Feature[] = [
+const AVANCADO_EXTRAS_PT: Feature[] = [
   { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: 'Joguinhos: quebra-cabeça, memória, quiz' },
   { icon: <Mic className="w-3.5 h-3.5" />, text: 'Mensagem de voz gravada por você' },
   { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Intros especiais (coelho/poema)' },
   { icon: <Music className="w-3.5 h-3.5" />, text: 'Música de fundo personalizada' },
 ];
+const VIP_FEATURES_PT: Feature[] = [
+  { icon: <Gem className="w-3.5 h-3.5" />, text: 'TUDO do Avançado incluído' },
+  { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Intro do Buquê Digital desbloqueada 💐' },
+  { icon: <Mic className="w-3.5 h-3.5" />, text: 'Mensagem de voz já incluída' },
+  { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'QR Code personalizado (qualquer tema)' },
+  { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: 'Jogo "adivinhe a palavra" incluso' },
+  { icon: <Crown className="w-3.5 h-3.5" />, text: 'Tudo fechado, sem surpresa de preço' },
+];
+const BASICO_FEATURES_EN: Feature[] = [
+  { icon: <Heart className="w-3.5 h-3.5" />, text: 'Dedicated page with title and message' },
+  { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'Photo gallery (up to 10)' },
+  { icon: <Clock className="w-3.5 h-3.5" />, text: 'Time-together counter' },
+  { icon: <Sparkles className="w-3.5 h-3.5" />, text: 'Timeline of your moments' },
+];
+const AVANCADO_EXTRAS_EN: Feature[] = [
+  { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: 'Games: puzzle, memory match, quiz' },
+  { icon: <Mic className="w-3.5 h-3.5" />, text: 'Voice message recorded by you' },
+  { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Special intros (bunny / poem)' },
+  { icon: <Music className="w-3.5 h-3.5" />, text: 'Custom background music' },
+];
+const VIP_FEATURES_EN: Feature[] = [
+  { icon: <Gem className="w-3.5 h-3.5" />, text: 'EVERYTHING in Advanced included' },
+  { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Digital Bouquet intro unlocked 💐' },
+  { icon: <Mic className="w-3.5 h-3.5" />, text: 'Voice message already included' },
+  { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'Custom QR Code (any theme)' },
+  { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: '"Guess the word" game included' },
+  { icon: <Crown className="w-3.5 h-3.5" />, text: 'Flat price, no surprises' },
+];
 
 export default function PlanField() {
-  const { control } = useFormContext<PageData>();
+  const { control, setValue } = useFormContext<PageData>();
+  const locale = useLocale() as Locale;
+  const isEN = locale === 'en';
+  const BASICO_FEATURES = isEN ? BASICO_FEATURES_EN : BASICO_FEATURES_PT;
+  const AVANCADO_EXTRAS = isEN ? AVANCADO_EXTRAS_EN : AVANCADO_EXTRAS_PT;
+  const VIP_FEATURES = isEN ? VIP_FEATURES_EN : VIP_FEATURES_PT;
+  const prices = getPrices(locale);
+  const savings = computeVipSavings(locale);
+
+  // Ao escolher VIP: ativa TODOS os add-ons automaticamente (flat price de verdade).
+  // Ao sair de VIP: NÃO reseta os add-ons — o user pode ter escolhido algum antes.
+  const handlePickVip = () => {
+    setValue('plan', 'vip', { shouldDirty: true });
+    setValue('introType', 'poema', { shouldDirty: true });
+    // Forçar wordGame ativo se tem perguntas configuradas
+    setValue('enableWordGame', true, { shouldDirty: true });
+    // QR custom: user escolhe o design, só ativa "não-clássico" se tava em classic
+    // (não sobrescreve escolha anterior)
+  };
 
   return (
     <div className="space-y-3">
@@ -32,7 +81,79 @@ export default function PlanField() {
         name="plan"
         render={({ field }) => (
           <div className="space-y-3">
-            {/* AVANÇADO — primeiro, pré-selecionado */}
+            {/* ─────────────────────────────────────────── */}
+            {/* VIP — topo, destaque máximo (ancoragem) */}
+            {/* ─────────────────────────────────────────── */}
+            <button
+              type="button"
+              onClick={handlePickVip}
+              className={cn(
+                'w-full rounded-2xl p-4 text-left transition relative overflow-hidden',
+                field.value === 'vip'
+                  ? 'bg-gradient-to-br from-amber-500/25 via-pink-500/20 to-purple-500/25 ring-2 ring-amber-400 shadow-[0_14px_40px_-10px_rgba(251,191,36,0.55)]'
+                  : 'bg-gradient-to-br from-amber-500/12 via-pink-500/8 to-purple-500/12 ring-2 ring-amber-400/60 hover:ring-amber-400'
+              )}
+            >
+              {/* Shimmer */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+
+              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500 text-white uppercase tracking-wider ring-1 ring-white/40 shadow-md flex items-center gap-1 whitespace-nowrap">
+                <Crown className="w-3 h-3 fill-white" />
+                {isEN ? 'Best value' : 'Melhor custo'}
+                <Crown className="w-3 h-3 fill-white" />
+              </span>
+
+              <div className="flex items-start justify-between mb-1.5 mt-1">
+                <div>
+                  <div className="font-black text-[17px] text-white leading-tight flex items-center gap-1.5">
+                    VIP
+                    <Gem className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div className="text-[11.5px] text-amber-100/90 mt-0.5 font-medium">
+                    {isEN ? 'Everything unlocked · flat price' : 'Tudo liberado · preço fechado'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[18px] font-black text-white leading-none">
+                    {formatCurrency(prices.vip, locale)}
+                  </div>
+                  {savings > 0 && (
+                    <div className="text-[10.5px] font-bold text-emerald-300 mt-0.5">
+                      {isEN ? `Save ${formatCurrency(savings, locale)}` : `Economize ${formatCurrency(savings, locale)}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {field.value === 'vip' && (
+                <div className="absolute top-3 right-3 bg-gradient-to-br from-amber-400 to-pink-500 rounded-full p-1 ring-2 ring-white/30 shadow-md">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+              )}
+
+              {/* Forever badge */}
+              <div className="mt-2 mb-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-500/20 via-pink-500/15 to-purple-500/20 ring-1 ring-amber-300/40">
+                <InfinityIcon className="w-3.5 h-3.5 text-amber-200 shrink-0" />
+                <span className="text-[11.5px] font-bold text-amber-50">
+                  {isEN
+                    ? <>Online <span className="underline decoration-amber-300/60">forever</span> + every premium feature</>
+                    : <>No ar <span className="underline decoration-amber-300/60">pra sempre</span> + todos os premium</>}
+                </span>
+              </div>
+
+              <ul className="space-y-1.5">
+                {VIP_FEATURES.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-[12px] text-white/90">
+                    <span className="text-amber-300/90">{f.icon}</span>
+                    <span>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </button>
+
+            {/* ─────────────────────────────────────────── */}
+            {/* AVANÇADO — meio, pré-selecionado default */}
+            {/* ─────────────────────────────────────────── */}
             <button
               type="button"
               onClick={() => field.onChange('avancado')}
@@ -43,34 +164,39 @@ export default function PlanField() {
                   : 'bg-gradient-to-br from-purple-500/8 to-pink-500/6 ring-1 ring-purple-400/30 hover:ring-purple-400/60'
               )}
             >
-              <span className="absolute -top-2.5 right-3 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white uppercase tracking-wider ring-1 ring-white/30 shadow-md">
-                Mais escolhido ✨
-              </span>
               <div className="flex items-start justify-between mb-1.5">
                 <div>
                   <div className="font-bold text-[15px] text-white leading-tight flex items-center gap-1.5">
-                    Avançado
+                    {isEN ? 'Advanced' : 'Avançado'}
                     <Sparkles className="w-3.5 h-3.5 text-pink-300" />
                   </div>
-                  <div className="text-[11px] text-white/60 mt-0.5">A experiência completa</div>
+                  <div className="text-[11px] text-white/60 mt-0.5">{isEN ? 'The full experience' : 'A experiência completa'}</div>
                 </div>
-                {field.value === 'avancado' && (
-                  <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 ring-2 ring-white/20">
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                <div className="text-right">
+                  <div className="text-[14px] font-bold text-white/90">
+                    {formatCurrency(prices.avancado, locale)}
                   </div>
-                )}
+                  <div className="text-[10px] text-white/40 mt-0.5">
+                    {isEN ? '+ add-ons optional' : '+ add-ons opcionais'}
+                  </div>
+                </div>
               </div>
 
-              {/* Destaque: pra sempre */}
+              {field.value === 'avancado' && (
+                <div className="absolute top-3 right-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 ring-2 ring-white/20">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+              )}
+
               <div className="mt-2 mb-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-pink-500/20 to-purple-500/15 ring-1 ring-pink-400/40">
                 <InfinityIcon className="w-3.5 h-3.5 text-pink-200 shrink-0" />
                 <span className="text-[11.5px] font-bold text-pink-100">
-                  Fica no ar <span className="underline decoration-pink-300/60">pra sempre</span>
+                  {isEN ? <>Stays online <span className="underline decoration-pink-300/60">forever</span></> : <>Fica no ar <span className="underline decoration-pink-300/60">pra sempre</span></>}
                 </span>
               </div>
 
               <div className="text-[11px] text-white/55 font-medium">
-                Tudo do Básico +
+                {isEN ? 'Everything in Basic +' : 'Tudo do Básico +'}
               </div>
               <ul className="mt-1.5 space-y-1.5">
                 {AVANCADO_EXTRAS.map((f, i) => (
@@ -82,7 +208,9 @@ export default function PlanField() {
               </ul>
             </button>
 
-            {/* BÁSICO — segundo, com aviso de expiração */}
+            {/* ─────────────────────────────────────────── */}
+            {/* BÁSICO — rodapé, com aviso de expiração */}
+            {/* ─────────────────────────────────────────── */}
             <button
               type="button"
               onClick={() => field.onChange('basico')}
@@ -95,21 +223,26 @@ export default function PlanField() {
             >
               <div className="flex items-start justify-between mb-1.5">
                 <div>
-                  <div className="font-bold text-[15px] text-white leading-tight">Básico</div>
-                  <div className="text-[11px] text-white/55 mt-0.5">O essencial pra emocionar</div>
+                  <div className="font-bold text-[15px] text-white leading-tight">{isEN ? 'Basic' : 'Básico'}</div>
+                  <div className="text-[11px] text-white/55 mt-0.5">{isEN ? 'The essentials to move them' : 'O essencial pra emocionar'}</div>
                 </div>
-                {field.value === 'basico' && (
-                  <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 ring-2 ring-white/20">
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                <div className="text-right">
+                  <div className="text-[14px] font-bold text-white/85">
+                    {formatCurrency(prices.basico, locale)}
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Aviso: 25h */}
+              {field.value === 'basico' && (
+                <div className="absolute top-3 right-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 ring-2 ring-white/20">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+              )}
+
               <div className="mt-2 mb-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-amber-500/10 ring-1 ring-amber-400/30">
                 <Timer className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                 <span className="text-[11.5px] font-bold text-amber-100">
-                  Expira em <span className="underline decoration-amber-300/60">25 horas</span>
+                  {isEN ? <>Expires in <span className="underline decoration-amber-300/60">25 hours</span></> : <>Expira em <span className="underline decoration-amber-300/60">25 horas</span></>}
                 </span>
               </div>
 

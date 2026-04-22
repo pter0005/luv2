@@ -3,20 +3,20 @@
 import Script from 'next/script'
 import { usePathname } from 'next/navigation'
 import { Suspense, useEffect } from 'react'
+import { useLocale } from 'next-intl';
 
-// This is needed to make TypeScript happy about the window.fbq property.
 declare global {
   interface Window {
     fbq: (...args: any[]) => void;
   }
 }
 
-// This component is needed to call `fbq('track', 'PageView')` on client-side navigation.
+const FB_PIXEL_BR = '791416833992288';
+const FB_PIXEL_US = process.env.NEXT_PUBLIC_META_PIXEL_ID_US || '';
+
 function FacebookPixelEvents() {
   const pathname = usePathname()
   useEffect(() => {
-    // The first 'PageView' is fired by the script itself.
-    // This hook is needed to track subsequent page views on client-side navigation.
     if (typeof window.fbq === 'function') {
       window.fbq('track', 'PageView')
     }
@@ -25,6 +25,15 @@ function FacebookPixelEvents() {
 }
 
 export default function FacebookPixel() {
+  const locale = useLocale();
+  const pixelId = locale === 'en' ? FB_PIXEL_US : FB_PIXEL_BR;
+  if (!pixelId) {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production' && locale === 'en') {
+      console.warn('[FacebookPixel] NEXT_PUBLIC_META_PIXEL_ID_US is not set — US tracking disabled.');
+    }
+    return null;
+  }
+
   return (
     <>
       <Script id="fb-pixel-base" strategy="afterInteractive">
@@ -37,7 +46,7 @@ export default function FacebookPixel() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window,document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '791416833992288');
+          fbq('init', '${pixelId}');
           fbq('track', 'PageView');
         `}
       </Script>
@@ -46,7 +55,7 @@ export default function FacebookPixel() {
           height="1"
           width="1"
           style={{ display: 'none' }}
-          src="https://www.facebook.com/tr?id=791416833992288&ev=PageView&noscript=1"
+          src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`}
           alt=""
         />
       </noscript>

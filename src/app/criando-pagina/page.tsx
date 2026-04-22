@@ -129,6 +129,7 @@ function CreatingPageContent() {
                 window.ttq.track('Purchase', {
                     value,
                     currency: 'BRL',
+                    event_id: pageId,
                     contents: [{
                         content_id: effectivePlan,
                         content_type: 'product',

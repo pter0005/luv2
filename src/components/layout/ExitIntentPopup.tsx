@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Heart, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { trackEvent } from '@/lib/analytics';
+import { useLocale } from 'next-intl';
 
 const SESSION_KEY = 'mycupid_exit_intent_shown';
 
@@ -13,6 +14,8 @@ export default function ExitIntentPopup() {
     const [countdown, setCountdown] = useState(15 * 60); // 15 min
     const listenerAttached = useRef(false);
     const activationDelay = useRef(false);
+    const locale = useLocale();
+    const isEN = locale === 'en';
 
     const show = useCallback(() => {
         if (sessionStorage.getItem(SESSION_KEY)) return;
@@ -114,10 +117,12 @@ export default function ExitIntentPopup() {
 
                             {/* Title */}
                             <h3 className="text-xl font-black text-white mb-2">
-                                Espera! Sua surpresa ainda não está pronta
+                                {isEN ? 'Wait! Your surprise isn\'t ready yet' : 'Espera! Sua surpresa ainda não está pronta'}
                             </h3>
                             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-                                Você já começou algo especial. Não deixe isso se perder — a pessoa amada merece esse presente.
+                                {isEN
+                                  ? 'You\'ve already started something special. Don\'t let it go — your loved one deserves this gift.'
+                                  : 'Você já começou algo especial. Não deixe isso se perder — a pessoa amada merece esse presente.'}
                             </p>
 
                             {/* Countdown */}
@@ -126,12 +131,12 @@ export default function ExitIntentPopup() {
                             >
                                 <Clock className="w-4 h-4 text-red-400" />
                                 <span className="text-sm font-bold text-red-300">
-                                    Oferta expira em {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                                    {isEN ? 'Offer expires in' : 'Oferta expira em'} {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                                 </span>
                             </div>
 
                             {/* CTA */}
-                            <Link href="/criar" className="block">
+                            <Link href={isEN ? '/chat' : '/criar'} className="block">
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -143,14 +148,14 @@ export default function ExitIntentPopup() {
                                     }}
                                 >
                                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                                    <span className="relative">Voltar e finalizar</span>
+                                    <span className="relative">{isEN ? 'Back and finish' : 'Voltar e finalizar'}</span>
                                     <ArrowRight className="w-4 h-4 relative" />
                                 </motion.button>
                             </Link>
 
                             {/* Dismiss */}
                             <button onClick={dismiss} className="mt-4 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                                Não, obrigado
+                                {isEN ? 'No thanks' : 'Não, obrigado'}
                             </button>
                         </div>
                     </motion.div>

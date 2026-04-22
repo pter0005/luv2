@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useFormContext } from 'react-hook-form';
 import { Loader2, Smartphone } from 'lucide-react';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 const PreviewContent = dynamic(
   () => import('@/app/criar/fazer-eu-mesmo/PreviewContent'),
@@ -24,6 +25,8 @@ export default function DesktopPreviewPane() {
   const [isClient, setIsClient] = useState(false);
   const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(true);
   const [showTimeline, setShowTimeline] = useState(false);
+  const locale = useLocale();
+  const isEN = locale === 'en';
 
   const { watch } = useFormContext<PageData>();
   const introType = watch('introType');
@@ -71,7 +74,7 @@ export default function DesktopPreviewPane() {
     <div className="sticky top-24 flex flex-col items-center">
       <div className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-white/50">
         <Smartphone className="w-3 h-3" />
-        <span>prévia ao vivo</span>
+        <span>{isEN ? 'live preview' : 'prévia ao vivo'}</span>
       </div>
       <div
         className="relative w-full max-w-[360px] aspect-[9/19] rounded-[36px] overflow-hidden bg-black ring-1 ring-white/15"
@@ -107,7 +110,7 @@ export default function DesktopPreviewPane() {
           </div>
         )}
       </div>
-      <p className="mt-3 text-[11px] text-white/40">atualiza conforme você preenche</p>
+      <p className="mt-3 text-[11px] text-white/40">{isEN ? 'updates as you type' : 'atualiza conforme você preenche'}</p>
     </div>
   );
 }

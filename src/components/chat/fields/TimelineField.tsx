@@ -4,8 +4,9 @@ import React, { useRef, useState, useCallback } from 'react';
 import { useFormContext, useFieldArray, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
 import { CalendarIcon, ImagePlus, Loader2, X } from 'lucide-react';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,6 +27,9 @@ export default function TimelineField() {
   const { user } = useUser();
   const firebase = useFirebase();
   const { toast } = useToast();
+  const locale = useLocale();
+  const isEN = locale === 'en';
+  const dateLocale = isEN ? enUS : ptBR;
 
   const handleSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -34,11 +38,11 @@ export default function TimelineField() {
     const remaining = MAX_TIMELINE_IMAGES - fields.length;
     const selected = Array.from(files).slice(0, remaining);
     if (selected.length === 0) {
-      toast({ variant: 'destructive', title: 'Limite atingido', description: `Máximo de ${MAX_TIMELINE_IMAGES} momentos.` });
+      toast({ variant: 'destructive', title: isEN ? 'Limit reached' : 'Limite atingido', description: isEN ? `Max ${MAX_TIMELINE_IMAGES} moments.` : `Máximo de ${MAX_TIMELINE_IMAGES} momentos.` });
       return;
     }
     if (files.length > selected.length) {
-      toast({ title: `${selected.length} de ${files.length} momentos`, description: `Limite de ${MAX_TIMELINE_IMAGES} atingido.` });
+      toast({ title: isEN ? `${selected.length} of ${files.length} moments` : `${selected.length} de ${files.length} momentos`, description: isEN ? `Max ${MAX_TIMELINE_IMAGES} reached.` : `Limite de ${MAX_TIMELINE_IMAGES} atingido.` });
     }
 
     let activeUser = user;
@@ -85,7 +89,7 @@ export default function TimelineField() {
     }
 
     if (failed > 0) {
-      toast({ variant: 'destructive', title: `${failed} ${failed === 1 ? 'momento falhou' : 'momentos falharam'}`, description: 'Tenta de novo.' });
+      toast({ variant: 'destructive', title: isEN ? `${failed} ${failed === 1 ? 'moment failed' : 'moments failed'}` : `${failed} ${failed === 1 ? 'momento falhou' : 'momentos falharam'}`, description: isEN ? 'Try again.' : 'Tenta de novo.' });
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [fields.length, user, firebase, append, toast]);
@@ -114,7 +118,7 @@ export default function TimelineField() {
                         className={cn('h-8 w-full justify-start font-normal text-xs', !field.value && 'text-muted-foreground')}
                       >
                         <CalendarIcon className="w-3 h-3 mr-1" />
-                        {field.value ? format(field.value, 'dd MMM yyyy', { locale: ptBR }) : 'Data do momento'}
+                        {field.value ? format(field.value, 'dd MMM yyyy', { locale: dateLocale }) : (isEN ? 'Moment date' : 'Data do momento')}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -122,7 +126,7 @@ export default function TimelineField() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        locale={ptBR}
+                        locale={dateLocale}
                         initialFocus
                         captionLayout="dropdown-buttons"
                         fromYear={1960}
@@ -139,7 +143,7 @@ export default function TimelineField() {
                   <Input
                     {...field}
                     value={field.value ?? ''}
-                    placeholder="Conta o que rolou..."
+                    placeholder={isEN ? 'Tell what happened...' : 'Conta o que rolou...'}
                     className="h-8 text-xs"
                     maxLength={120}
                   />
@@ -150,7 +154,7 @@ export default function TimelineField() {
               type="button"
               onClick={() => remove(i)}
               className="self-start text-white/60 hover:text-red-400 p-1"
-              aria-label="Remover"
+              aria-label={isEN ? 'Remove' : 'Remover'}
             >
               <X className="w-4 h-4" />
             </button>
@@ -165,7 +169,7 @@ export default function TimelineField() {
             <Loader2 className="w-5 h-5 animate-spin text-pink-300" />
           </div>
           <div className="flex-1 flex items-center">
-            <span className="text-[12px] text-white/50">Enviando momento…</span>
+            <span className="text-[12px] text-white/50">{isEN ? 'Uploading moment…' : 'Enviando momento…'}</span>
           </div>
         </div>
       ))}
@@ -188,7 +192,9 @@ export default function TimelineField() {
             <>
               <Loader2 className="w-4 h-4 animate-spin text-pink-300" />
               <span className="text-[12px] font-semibold text-white">
-                Enviando {pendingCount} {pendingCount === 1 ? 'momento' : 'momentos'}…
+                {isEN
+                  ? `Uploading ${pendingCount} ${pendingCount === 1 ? 'moment' : 'moments'}…`
+                  : `Enviando ${pendingCount} ${pendingCount === 1 ? 'momento' : 'momentos'}…`}
               </span>
             </>
           ) : (
@@ -196,10 +202,10 @@ export default function TimelineField() {
               <div className="flex items-center gap-2">
                 <ImagePlus className="w-4 h-4 text-pink-300" />
                 <span className="text-[13px] font-semibold text-white">
-                  Adicionar momentos ({fields.length}/{MAX_TIMELINE_IMAGES})
+                  {isEN ? `Add moments (${fields.length}/${MAX_TIMELINE_IMAGES})` : `Adicionar momentos (${fields.length}/${MAX_TIMELINE_IMAGES})`}
                 </span>
               </div>
-              <span className="text-[10.5px] text-white/50">pode escolher várias fotos de uma vez</span>
+              <span className="text-[10.5px] text-white/50">{isEN ? 'you can pick multiple photos at once' : 'pode escolher várias fotos de uma vez'}</span>
             </>
           )}
         </button>

@@ -1,5 +1,6 @@
 // Textos adaptativos do wizard por segmento.
 // Lido pelo CreatePageWizard via ?segment= na URL.
+import type { Locale } from '@/i18n/config';
 
 export type WizardSegmentKey = 'namorade' | 'mae' | 'espouse' | 'amige' | 'pai' | 'avo' | 'filho';
 
@@ -195,3 +196,16 @@ export const DEFAULT_WIZARD_CONFIG: WizardSegmentConfig = {
   successSubtitle: 'Compartilhe o link com quem você ama.',
   whatsappMessage: 'Fiz uma surpresa especial pra você 💝 abre aqui quando puder',
 };
+
+
+// Getters locale-aware — lazy require pra evitar overhead em BR
+export function getWizardSegments(locale: Locale = "pt") {
+  if (locale === "en") return require("./wizard-segment-config-en").WIZARD_SEGMENTS_EN as typeof WIZARD_SEGMENTS;
+  return WIZARD_SEGMENTS;
+}
+
+export function getDefaultWizardConfig(locale: Locale = "pt"): WizardSegmentConfig {
+  if (locale === "en") return require("./wizard-segment-config-en").DEFAULT_WIZARD_CONFIG_EN;
+  return DEFAULT_WIZARD_CONFIG;
+}
+

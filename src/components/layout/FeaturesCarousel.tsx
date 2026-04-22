@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -112,65 +113,26 @@ const IphoneMockup = ({ children, isActive }: { children: React.ReactNode, isAct
 export default function FeaturesCarousel() {
     const [swiper, setSwiper] = useState<SwiperType | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+    const locale = useLocale();
+    const isEN = locale === 'en';
 
-    const featureSlides = useMemo(() => [
-        {
-          id: 1,
-          icon: Calendar,
-          title: 'Linha do Tempo',
-          description: 'Reviva sua jornada com uma linha do tempo animada e elegante.',
-          type: 'image',
-          media: "https://i.imgur.com/2HDcwcz.png"
-        },
-        {
-          id: 2,
-          icon: Clock,
-          title: 'Contador de Tempo',
-          description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.',
-          type: 'image',
-          media: "https://i.imgur.com/tEMaoeI.png"
-        },
-        {
-            id: 3,
-            icon: Music,
-            title: 'Trilha Sonora',
-            description: 'Adicione a trilha sonora de vocês, com música do Youtube ou gravando sua voz.',
-            type: 'image',
-            media: 'https://i.imgur.com/S6pfmgd.png',
-        },
-        {
-          id: 4,
-          icon: Puzzle,
-          title: 'Quebra-cabeça',
-          description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.',
-          type: 'image',
-          media: "https://i.imgur.com/wLrcydK.png"
-        },
-        {
-            id: 5,
-            icon: Gamepad2,
-            title: 'Jogo da Memória',
-            description: 'Um jogo super fofo com as fotos de vocês pra ela se divertir antes da surpresa final.',
-            type: 'image',
-            media: 'https://i.imgur.com/6JGGVTs.png',
-        },
-        {
-            id: 6,
-            icon: HelpCircle,
-            title: 'Quiz do Casal',
-            description: 'Será que vocês se conhecem mesmo? Teste os conhecimentos com um quiz divertido!',
-            type: 'image',
-            media: 'https://i.imgur.com/HIw2TMC.png',
-        },
-        {
-            id: 7,
-            icon: Gamepad2,
-            title: 'Jogos Interativos',
-            description: 'Divirtam-se juntos com jogos personalizados que testam a sintonia de vocês.',
-            type: 'image',
-            media: 'https://i.imgur.com/EI289he.png',
-        },
-    ], []);
+    const featureSlides = useMemo(() => isEN ? [
+        { id: 1, icon: Calendar, title: 'Timeline', description: 'Relive your journey with an elegant animated timeline.', type: 'image', media: 'https://i.imgur.com/2HDcwcz.png' },
+        { id: 2, icon: Clock, title: 'Time Counter', description: 'Show the exact time you\'ve shared together — from years to seconds.', type: 'image', media: 'https://i.imgur.com/tEMaoeI.png' },
+        { id: 3, icon: Music, title: 'Soundtrack', description: 'Add your soundtrack with YouTube music or your own voice recording.', type: 'image', media: 'https://i.imgur.com/S6pfmgd.png' },
+        { id: 4, icon: Puzzle, title: 'Puzzle', description: 'Start with a game! Your loved one solves a photo puzzle to reveal the surprise.', type: 'image', media: 'https://i.imgur.com/wLrcydK.png' },
+        { id: 5, icon: Gamepad2, title: 'Memory Match', description: 'A super cute memory game with your photos for fun before the final surprise.', type: 'image', media: 'https://i.imgur.com/6JGGVTs.png' },
+        { id: 6, icon: HelpCircle, title: "Couple's Quiz", description: 'Do you really know each other? Test it with a fun quiz!', type: 'image', media: 'https://i.imgur.com/HIw2TMC.png' },
+        { id: 7, icon: Gamepad2, title: 'Interactive Games', description: 'Have fun together with custom games that test your connection.', type: 'image', media: 'https://i.imgur.com/EI289he.png' },
+    ] : [
+        { id: 1, icon: Calendar, title: 'Linha do Tempo', description: 'Reviva sua jornada com uma linha do tempo animada e elegante.', type: 'image', media: 'https://i.imgur.com/2HDcwcz.png' },
+        { id: 2, icon: Clock, title: 'Contador de Tempo', description: 'Mostre o tempo exato que vocês compartilham, desde anos até segundos.', type: 'image', media: 'https://i.imgur.com/tEMaoeI.png' },
+        { id: 3, icon: Music, title: 'Trilha Sonora', description: 'Adicione a trilha sonora de vocês, com música do Youtube ou gravando sua voz.', type: 'image', media: 'https://i.imgur.com/S6pfmgd.png' },
+        { id: 4, icon: Puzzle, title: 'Quebra-cabeça', description: 'Comece com um jogo! A pessoa amada monta uma foto especial para revelar a surpresa.', type: 'image', media: 'https://i.imgur.com/wLrcydK.png' },
+        { id: 5, icon: Gamepad2, title: 'Jogo da Memória', description: 'Um jogo super fofo com as fotos de vocês pra ela se divertir antes da surpresa final.', type: 'image', media: 'https://i.imgur.com/6JGGVTs.png' },
+        { id: 6, icon: HelpCircle, title: 'Quiz do Casal', description: 'Será que vocês se conhecem mesmo? Teste os conhecimentos com um quiz divertido!', type: 'image', media: 'https://i.imgur.com/HIw2TMC.png' },
+        { id: 7, icon: Gamepad2, title: 'Jogos Interativos', description: 'Divirtam-se juntos com jogos personalizados que testam a sintonia de vocês.', type: 'image', media: 'https://i.imgur.com/EI289he.png' },
+    ], [isEN]);
 
     const activeContent = featureSlides[activeIndex];
 

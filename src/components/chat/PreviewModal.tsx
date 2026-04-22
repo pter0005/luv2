@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 import type { PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 const PreviewContent = dynamic(
   () => import('@/app/criar/fazer-eu-mesmo/PreviewContent'),
@@ -33,6 +34,8 @@ const INTRO_SEEN_KEY = 'chat-preview-intro-seen-v1';
 
 export default function PreviewModal({ open, onClose }: PreviewModalProps) {
   const { watch } = useFormContext<PageData>();
+  const locale = useLocale();
+  const isEN = locale === 'en';
   const [isClient, setIsClient] = React.useState(false);
   // previewPuzzleRevealed=true significa "pular a intro, mostrar a página final".
   // Começamos true e só setamos false se for a primeira vez nessa sessão.
@@ -141,12 +144,12 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
           type="button"
           onClick={onClose}
           className="absolute top-3 right-3 z-50 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90 ring-1 ring-white/20"
-          aria-label="Fechar pré-visualização"
+          aria-label={isEN ? 'Close preview' : 'Fechar pré-visualização'}
         >
           <X className="w-4 h-4" />
         </button>
         <div className="absolute top-3 left-3 z-50 px-3 py-1 rounded-full bg-black/70 text-white text-[10px] uppercase tracking-widest ring-1 ring-white/20">
-          Prévia
+          {isEN ? 'Preview' : 'Prévia'}
         </div>
 
         {showReplayButton && (
@@ -156,7 +159,7 @@ export default function PreviewModal({ open, onClose }: PreviewModalProps) {
             className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[11.5px] font-semibold shadow-lg ring-1 ring-white/20 active:scale-[0.97] transition"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            Ver intro de novo
+            {isEN ? 'Replay intro' : 'Ver intro de novo'}
           </button>
         )}
 

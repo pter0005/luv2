@@ -13,48 +13,159 @@ import { computeTotalBRL } from '@/lib/price';
 import { notifyAdmins } from '@/lib/notify-admin';
 
 // ─────────────────────────────────────────────
-// META CAPI
+// META CAPI + TIKTOK EVENTS API
 // ─────────────────────────────────────────────
-async function sendServerSidePurchaseEvent(plan: 'basico' | 'avancado', pageId: string, userEmail?: string, paidAmount?: number) {
-  const PIXEL_ID = process.env.META_PIXEL_ID;
-  const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
-  if (!PIXEL_ID || !ACCESS_TOKEN) return;
+// Server-side pixel calls são críticas pós iOS 14.5 (ATT) e Safari ITP: o
+// pixel do browser perde 20–40% dos eventos (ad blockers, navegação privada,
+// ITP expirando cookies). CAPI/Events API complementam enviando direto de
+// server-to-server. O event_id = pageId dedup com o pixel do browser.
+async function postJson(url: string, body: unknown, label: string) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) console.error(`[${label}] Erro:`, data);
+    else console.log(`[${label}] OK`);
+  } catch (err) {
+    console.error(`[${label}] Exceção:`, err);
+  }
+}
+
+function sha256(raw: string): string {
+  return createHash('sha256').update(raw.toLowerCase().trim()).digest('hex');
+}
+
+interface ServerPurchaseInput {
+  plan: 'basico' | 'avancado' | 'vip';
+  pageId: string;
+  userEmail?: string;
+  userPhone?: string;
+  paidAmount?: number;
+  locale?: 'pt' | 'en';
+  fbp?: string; // _fbp cookie (Facebook browser id)
+  fbc?: string; // _fbc cookie (Facebook click id, from fbclid param)
+  ttclid?: string; // TikTok click id
+  ttp?: string; // _ttp cookie
+  eventSourceUrl?: string;
+}
+
+async function sendServerSidePurchaseEvent(input: ServerPurchaseInput | 'basico' | 'avancado' | 'vip', pageIdLegacy?: string, userEmailLegacy?: string, paidAmountLegacy?: number) {
+  // Legacy call signature: (plan, pageId, email, paidAmount)
+  const opts: ServerPurchaseInput = typeof input === 'string'
+    ? { plan: input, pageId: pageIdLegacy!, userEmail: userEmailLegacy, paidAmount: paidAmountLegacy }
+    : input;
+
+  const { plan, pageId, userEmail, userPhone, paidAmount, locale, fbp, fbc, ttclid, ttp, eventSourceUrl } = opts;
+  const isEN = locale === 'en';
+  const currency = isEN ? 'USD' : 'BRL';
+  const defaultDomain = isEN ? 'https://mycupid.net' : 'https://mycupid.com.br';
+  const sourceUrl = eventSourceUrl || `${defaultDomain}/chat`;
+
+  const value = (typeof paidAmount === 'number' && paidAmount > 0)
+    ? paidAmount
+    : (plan === 'vip' ? 29.90 : plan === 'avancado' ? 24.90 : 19.90);
+
+  // Phone para hashing: só dígitos, país prefixo (55 BR, 1 US) se faltar.
+  const rawPhone = (userPhone || '').replace(/\D/g, '');
+  const hashedPhone = rawPhone
+    ? sha256(rawPhone.length >= 10 && rawPhone.length <= 11
+        ? (isEN ? `1${rawPhone}` : `55${rawPhone}`)
+        : rawPhone)
+    : null;
 
   const headersList = await headers();
   const clientIp = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || '177.160.0.1';
   const userAgent = headersList.get('user-agent') || 'Mozilla/5.0';
-  const value = (typeof paidAmount === 'number' && paidAmount > 0)
-    ? paidAmount
-    : (plan === 'avancado' ? 24.90 : 19.90);
 
-  const userData: Record<string, any> = { client_ip_address: clientIp, client_user_agent: userAgent };
-  if (userEmail) {
-    userData.em = [createHash('sha256').update(userEmail.toLowerCase().trim()).digest('hex')];
-  }
+  // ── Meta CAPI ──
+  const META_PIXEL_ID = isEN
+    ? (process.env.META_PIXEL_ID_US || process.env.META_PIXEL_ID)
+    : process.env.META_PIXEL_ID;
+  const META_TOKEN = isEN
+    ? (process.env.META_ACCESS_TOKEN_US || process.env.META_ACCESS_TOKEN)
+    : process.env.META_ACCESS_TOKEN;
 
-  try {
-    const res = await fetch(`https://graph.facebook.com/v19.0/${PIXEL_ID}/events?access_token=${ACCESS_TOKEN}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+  if (META_PIXEL_ID && META_TOKEN) {
+    const metaUserData: Record<string, any> = {
+      client_ip_address: clientIp,
+      client_user_agent: userAgent,
+    };
+    if (userEmail) metaUserData.em = [sha256(userEmail)];
+    if (hashedPhone) metaUserData.ph = [hashedPhone];
+    if (fbp) metaUserData.fbp = fbp;
+    if (fbc) metaUserData.fbc = fbc;
+
+    await postJson(
+      `https://graph.facebook.com/v19.0/${META_PIXEL_ID}/events?access_token=${META_TOKEN}`,
+      {
         data: [{
           event_name: 'Purchase',
-          // event_id = pageId permite o Meta deduplicar este CAPI com o pixel do browser
-          // (que também usa pageId como eventID). Cada venda real = 1 event_id único.
           event_id: pageId,
           event_time: Math.floor(Date.now() / 1000),
-          event_source_url: 'https://mycupid.com.br/criar/fazer-eu-mesmo',
+          event_source_url: sourceUrl,
           action_source: 'website',
-          user_data: userData,
-          custom_data: { value, currency: 'BRL', content_ids: [plan], content_type: 'product', order_id: pageId },
+          user_data: metaUserData,
+          custom_data: {
+            value,
+            currency,
+            content_ids: [plan],
+            content_type: 'product',
+            order_id: pageId,
+          },
         }],
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) console.error('[Meta CAPI] Erro:', data);
-    else console.log('[Meta CAPI] Purchase enviado. PageId:', pageId);
-  } catch (err) {
-    console.error('[Meta CAPI] Exceção:', err);
+      },
+      'Meta CAPI',
+    );
+  }
+
+  // ── TikTok Events API ──
+  const TT_PIXEL_ID = isEN
+    ? (process.env.TIKTOK_PIXEL_ID_US || process.env.TIKTOK_PIXEL_ID)
+    : process.env.TIKTOK_PIXEL_ID;
+  const TT_TOKEN = isEN
+    ? (process.env.TIKTOK_ACCESS_TOKEN_US || process.env.TIKTOK_ACCESS_TOKEN)
+    : process.env.TIKTOK_ACCESS_TOKEN;
+
+  if (TT_PIXEL_ID && TT_TOKEN) {
+    const ttUserData: Record<string, any> = {
+      ip: clientIp,
+      user_agent: userAgent,
+    };
+    if (userEmail) ttUserData.email = sha256(userEmail);
+    if (hashedPhone) ttUserData.phone = hashedPhone;
+    if (ttclid) ttUserData.ttclid = ttclid;
+    if (ttp) ttUserData.ttp = ttp;
+
+    try {
+      const res = await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Access-Token': TT_TOKEN },
+        body: JSON.stringify({
+          event_source: 'web',
+          event_source_id: TT_PIXEL_ID,
+          data: [{
+            event: 'Purchase',
+            event_time: Math.floor(Date.now() / 1000),
+            event_id: pageId,
+            user: ttUserData,
+            page: { url: sourceUrl },
+            properties: {
+              currency,
+              value,
+              contents: [{ content_id: plan, content_type: 'product', quantity: 1, price: value }],
+            },
+          }],
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.code !== 0) console.error('[TikTok Events API] Erro:', data);
+      else console.log('[TikTok Events API] OK');
+    } catch (e) {
+      console.error('[TikTok Events API] Exceção:', e);
+    }
   }
 }
 
@@ -399,7 +510,7 @@ export async function processPixPayment(
           });
           // Notify admin: PIX generated (non-blocking)
           const title = (intentData?.title as string) || 'Sem título';
-          const plan = intentData?.plan === 'avancado' ? 'Avançado' : 'Básico';
+          const plan = intentData?.plan === 'vip' ? 'VIP' : intentData?.plan === 'avancado' ? 'Avançado' : 'Básico';
           notifyAdmins(
             `🔔 PIX gerado — R$${amount.toFixed(2).replace('.', ',')}`,
             `${title} — Plano ${plan} — aguardando pagamento`,
@@ -598,6 +709,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   finalData.paymentId = paymentId;
   finalData.status = 'paid';
   finalData.componentVersion = 'v2';
+  // Propaga locale do intent pro doc final — pageData.locale fica imutável,
+  // garantindo que a página seja renderizada no idioma em que foi criada.
+  if (!finalData.locale) finalData.locale = (data?.locale === 'en' ? 'en' : 'pt');
   if (data.paidAmount) finalData.paidAmount = data.paidAmount;
 
   // introType vem do formulário (ex: 'love') e é preservado no finalData automaticamente
@@ -639,12 +753,24 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   if (data.guestEmail) {
     await createGuestAccount(data.guestEmail, data.userId as string, newPageId);
   }
-  await sendServerSidePurchaseEvent(
-    finalData.plan as 'basico' | 'avancado',
-    newPageId,
-    userEmail,
-    typeof data.paidAmount === 'number' ? data.paidAmount : undefined,
-  );
+  // Skip server-side pixel for free finalizations (gift/credit/admin) — esses
+  // viram CompleteRegistration no client, não Purchase, e não alimentam ROAS.
+  const isFreePixelSkip = paymentId.startsWith('credit_') || paymentId.startsWith('gift_') || paymentId.startsWith('admin_');
+  if (!isFreePixelSkip) {
+    await sendServerSidePurchaseEvent({
+      plan: finalData.plan as 'basico' | 'avancado' | 'vip',
+      pageId: newPageId,
+      userEmail,
+      userPhone: data.whatsappNumber,
+      paidAmount: typeof data.paidAmount === 'number' ? data.paidAmount : undefined,
+      locale: data.locale === 'en' ? 'en' : 'pt',
+      fbp: data.fbp,
+      fbc: data.fbc,
+      ttclid: data.ttclid,
+      ttp: data.ttp,
+      eventSourceUrl: data.eventSourceUrl,
+    });
+  }
 
   // ── Notify admin via Realtime DB + Push ──────────────────────────────────
   // Use the amount that was actually charged (stored on the intent when PIX
@@ -654,9 +780,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const rawPaid = Number(data.paidAmount);
   const saleValue = isFinite(rawPaid) && rawPaid > 0
     ? rawPaid
-    : (finalData.plan === 'avancado' ? 24.90 : 19.90);
+    : (finalData.plan === 'vip' ? 29.90 : finalData.plan === 'avancado' ? 24.90 : 19.90);
   const saleTitle = (finalData.title as string) || 'Sem título';
-  const salePlan = finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
+  const salePlan = finalData.plan === 'vip' ? 'VIP' : finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
 
   // Sanity check: every PAID intent should have paidAmount saved by
   // processPixPayment. If it's missing, we're falling back to the plan base
@@ -809,14 +935,36 @@ export async function finalizeWithGiftToken(
   email: string,
 ): Promise<FinalizePageResult> {
   const db = getAdminFirestore();
-
-  // 1. Valida o token
   const tokenRef = db.collection('gift_tokens').doc(giftToken);
-  const tokenSnap = await tokenRef.get();
-  if (!tokenSnap.exists) return { success: false, error: 'Link de presente inválido.' };
-  if (tokenSnap.data()?.used) return { success: false, error: 'Este presente já foi utilizado.' };
 
-  // 2. Atualiza o intent com plan=avancado, guestEmail e flag isGift
+  // ── 1. Claim atômico do token ─────────────────────────────────────────────
+  // Lê + marca `used: true` numa transação só. Dois clicks simultâneos (ex:
+  // user dá double-tap, ou abre o link em duas abas) não conseguem ambos
+  // resgatar — Firestore aborta a segunda transação com conflict. Sem isso,
+  // o check `if (used)` + o `update` depois tinham uma janela de ~200ms de
+  // race pra gerar duas páginas grátis com o mesmo token.
+  // Marcamos `claimedAt` antes da página existir; `pageId` é preenchido no passo 4.
+  try {
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(tokenRef);
+      if (!snap.exists) throw new Error('GIFT_NOT_FOUND');
+      const d = snap.data() as any;
+      if (d?.used) throw new Error('GIFT_ALREADY_USED');
+      tx.update(tokenRef, {
+        used: true,
+        claimedAt: Timestamp.now(),
+        claimedByUserId: userId,
+        claimedByEmail: email,
+      });
+    });
+  } catch (err: any) {
+    if (err?.message === 'GIFT_NOT_FOUND') return { success: false, error: 'Link de presente inválido.' };
+    if (err?.message === 'GIFT_ALREADY_USED') return { success: false, error: 'Este presente já foi utilizado.' };
+    console.error('[Gift] Transação falhou:', err);
+    return { success: false, error: 'Não foi possível resgatar o presente. Tente novamente.' };
+  }
+
+  // ── 2. Atualiza o intent com plan=avancado, guestEmail e flag isGift ──────
   const intentSnap = await db.collection('payment_intents').doc(intentId).get();
   const originalPlan = intentSnap.data()?.plan;
   try {
@@ -827,18 +975,30 @@ export async function finalizeWithGiftToken(
     console.warn('[finalizeWithGiftToken] Falha ao atualizar intent:', e);
   }
 
-  // 3. Finaliza a página
+  // ── 3. Finaliza a página ──────────────────────────────────────────────────
   const result = await finalizeLovePage(intentId, `gift_${giftToken}`);
-  if (!result.success) return result;
+  if (!result.success) {
+    // Rollback: finalize falhou, devolve o token pro pool pra user tentar de novo.
+    // Sem isso, o user perde o gift pra sempre por um erro transitório no move de arquivos.
+    try {
+      await tokenRef.update({ used: false, claimedAt: FieldValue.delete(), claimedByUserId: FieldValue.delete(), claimedByEmail: FieldValue.delete() });
+    } catch (rollbackErr) {
+      console.error('[Gift] Rollback falhou — token fica marcado como usado:', rollbackErr);
+      logCriticalError('payment', 'Gift token stuck as used after finalize failure', {
+        giftToken, intentId, userId, email, finalizeError: result.error,
+      }).catch(() => {});
+    }
+    return result;
+  }
 
-  // 4. Marca token como usado e page como gift
+  // ── 4. Persiste metadata final do claim + marca page como gift ────────────
   try {
     await Promise.all([
-      tokenRef.update({ used: true, usedAt: Timestamp.now(), usedByEmail: email, pageId: result.pageId }),
+      tokenRef.update({ usedAt: Timestamp.now(), usedByEmail: email, pageId: result.pageId }),
       db.collection('lovepages').doc(result.pageId).update({ isGift: true, giftToken }),
     ]);
   } catch (err) {
-    console.error('[Gift] Falha ao marcar token como usado:', err);
+    console.error('[Gift] Falha ao marcar metadata pós-finalize:', err);
   }
 
   return { success: true, pageId: result.pageId };

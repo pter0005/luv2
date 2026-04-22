@@ -11,3 +11,6 @@
 
 [functions."api/cron/daily-report"]
   schedule = "59 23 * * *"
+
+[functions."api/cron/conversion-monitor"]
+  schedule = "0 * * * *"

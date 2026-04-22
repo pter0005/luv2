@@ -11,6 +11,7 @@ import { uploadFile } from '@/lib/upload';
 import { compressImage } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import { MAX_GALLERY_IMAGES, type PageData } from '@/lib/wizard-schema';
+import { useLocale } from 'next-intl';
 
 type PendingUpload = {
   id: string;
@@ -29,6 +30,8 @@ export default function GalleryField() {
   const { user } = useUser();
   const firebase = useFirebase();
   const { toast } = useToast();
+  const locale = useLocale();
+  const isEN = locale === 'en';
 
   const totalCount = fields.length + pending.length;
   const remainingSlots = MAX_GALLERY_IMAGES - totalCount;
@@ -46,14 +49,14 @@ export default function GalleryField() {
 
     const slots = MAX_GALLERY_IMAGES - fields.length - pending.length;
     if (slots <= 0) {
-      toast({ variant: 'destructive', title: 'Limite atingido', description: `Máximo de ${MAX_GALLERY_IMAGES} fotos.` });
+      toast({ variant: 'destructive', title: isEN ? 'Limit reached' : 'Limite atingido', description: isEN ? `Max ${MAX_GALLERY_IMAGES} photos.` : `Máximo de ${MAX_GALLERY_IMAGES} fotos.` });
       return;
     }
     const selected = files.slice(0, slots);
     if (files.length > selected.length) {
       toast({
-        title: `${selected.length} de ${files.length} fotos`,
-        description: `Limite de ${MAX_GALLERY_IMAGES} atingido — o resto foi ignorado.`,
+        title: isEN ? `${selected.length} of ${files.length} photos` : `${selected.length} de ${files.length} fotos`,
+        description: isEN ? `Max ${MAX_GALLERY_IMAGES} reached — the rest was skipped.` : `Limite de ${MAX_GALLERY_IMAGES} atingido — o resto foi ignorado.`,
       });
     }
 
@@ -63,7 +66,7 @@ export default function GalleryField() {
         const cred = await signInAnonymously(firebase.auth);
         activeUser = cred.user;
       } catch {
-        toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível iniciar a sessão.' });
+        toast({ variant: 'destructive', title: isEN ? 'Error' : 'Erro', description: isEN ? 'Couldn\'t start the session.' : 'Não foi possível iniciar a sessão.' });
         return;
       }
     }
@@ -127,8 +130,10 @@ export default function GalleryField() {
     if (failed > 0) {
       toast({
         variant: 'destructive',
-        title: `${failed} ${failed === 1 ? 'foto falhou' : 'fotos falharam'}`,
-        description: 'Tenta mandar de novo as que faltaram.',
+        title: isEN
+          ? `${failed} ${failed === 1 ? 'photo failed' : 'photos failed'}`
+          : `${failed} ${failed === 1 ? 'foto falhou' : 'fotos falharam'}`,
+        description: isEN ? 'Try re-uploading the ones that failed.' : 'Tenta mandar de novo as que faltaram.',
       });
     }
   }, [fields.length, pending.length, user, firebase, append, toast]);
@@ -220,7 +225,9 @@ export default function GalleryField() {
 
       {fields.length > 0 && (
         <p className="text-[10.5px] text-white/40 px-0.5 text-center">
-          Arrasta as fotos pra reordenar · a primeira é o destaque 💫
+          {isEN
+            ? 'Drag to reorder · the first is the headline 💫'
+            : 'Arrasta as fotos pra reordenar · a primeira é o destaque 💫'}
         </p>
       )}
 
@@ -269,7 +276,9 @@ export default function GalleryField() {
               <>
                 <Loader2 className="w-5 h-5 text-pink-300 animate-spin" />
                 <span className="text-[11.5px] font-semibold text-white">
-                  Enviando {pending.length} {pending.length === 1 ? 'foto' : 'fotos'}…
+                  {isEN
+                    ? `Uploading ${pending.length} ${pending.length === 1 ? 'photo' : 'photos'}…`
+                    : `Enviando ${pending.length} ${pending.length === 1 ? 'foto' : 'fotos'}…`}
                 </span>
               </>
             ) : (
@@ -278,10 +287,12 @@ export default function GalleryField() {
                   <ImagePlus className="w-4.5 h-4.5 text-white" />
                 </div>
                 <span className="text-[12.5px] font-semibold text-white leading-tight">
-                  Escolher da galeria
+                  {isEN ? 'Pick from gallery' : 'Escolher da galeria'}
                 </span>
                 <span className="text-[10px] text-white/55">
-                  até {remainingSlots} {remainingSlots === 1 ? 'foto' : 'fotos'} · pode selecionar várias
+                  {isEN
+                    ? `up to ${remainingSlots} ${remainingSlots === 1 ? 'photo' : 'photos'} · multi-select`
+                    : `até ${remainingSlots} ${remainingSlots === 1 ? 'foto' : 'fotos'} · pode selecionar várias`}
                 </span>
               </>
             )}
@@ -301,18 +312,22 @@ export default function GalleryField() {
               <Camera className="w-4.5 h-4.5 text-white/80" />
             </div>
             <span className="text-[12.5px] font-semibold text-white/85 leading-tight">
-              Tirar foto
+              {isEN ? 'Take photo' : 'Tirar foto'}
             </span>
-            <span className="text-[10px] text-white/40">usar câmera</span>
+            <span className="text-[10px] text-white/40">{isEN ? 'use camera' : 'usar câmera'}</span>
           </button>
         </div>
       )}
 
       {fields.length > 0 && (
         <div className="flex items-center justify-between text-[11px] text-white/50 px-0.5">
-          <span>{fields.length} de {MAX_GALLERY_IMAGES} {fields.length === 1 ? 'foto' : 'fotos'}</span>
+          <span>
+            {isEN
+              ? `${fields.length} of ${MAX_GALLERY_IMAGES} ${fields.length === 1 ? 'photo' : 'photos'}`
+              : `${fields.length} de ${MAX_GALLERY_IMAGES} ${fields.length === 1 ? 'foto' : 'fotos'}`}
+          </span>
           {fields.length >= 3 && fields.length < MAX_GALLERY_IMAGES && (
-            <span className="text-emerald-300/80">👌 já tá bom pra seguir</span>
+            <span className="text-emerald-300/80">{isEN ? '👌 good to go' : '👌 já tá bom pra seguir'}</span>
           )}
         </div>
       )}
@@ -320,7 +335,7 @@ export default function GalleryField() {
       {fields.length >= 2 && (
         <div className="pt-3 space-y-2">
           <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/55 px-0.5">
-            Modo de exibição
+            {isEN ? 'Display style' : 'Modo de exibição'}
           </div>
           <GalleryStylePicker />
         </div>
