@@ -88,12 +88,10 @@ export function getPrices(locale: Locale): typeof PRICES {
 }
 
 /**
- * Calcula quanto a pessoa "economiza" escolhendo VIP vs comprar tudo separado.
- * Usado no card VIP pra mostrar "Save $X" — ancoragem visual forte.
+ * Economia exibida no card VIP — valor fixo pra ancoragem visual consistente.
+ * Não é uma função dos add-ons porque o objetivo é marketing/percepção de
+ * valor, não cálculo aritmético do bundle.
  */
-export function computeVipSavings(locale: Locale): number {
-  const p = getPrices(locale);
-  // Advanced + todos os add-ons principais = total "teórico" se comprasse separado
-  const fullSeparate = p.avancado + p.introPoema + p.voice + p.wordGame + p.qrCustom;
-  return Math.max(0, Number((fullSeparate - p.vip).toFixed(2)));
+export function computeVipSavings(_locale: Locale): number {
+  return 15;
 }

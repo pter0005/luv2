@@ -499,86 +499,91 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
         </div>
 
-        {/* ── EDIT CTA (VIP only, owner only) ─────────────────────── */}
-        {!isDemoPage && pageData.plan === 'vip' && user?.uid && pageData.userId && user.uid === pageData.userId && (
-          <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">
-            <Link
-              href={`/editar/${pageData.id}`}
-              className="group relative block rounded-2xl p-4 overflow-hidden transition-transform active:scale-[0.98]"
-              style={{
-                background: 'linear-gradient(135deg, rgba(251,191,36,0.18), rgba(236,72,153,0.18), rgba(168,85,247,0.18))',
-                border: '1.5px solid rgba(251,191,36,0.4)',
-                boxShadow: '0 14px 40px -12px rgba(236,72,153,0.45), inset 0 1px 0 rgba(255,255,255,0.08)',
-              }}
-            >
-              {/* shimmer */}
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-
-              <div className="relative flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0 shadow-md ring-1 ring-white/30">
-                  <Pencil className="w-5 h-5 text-white" strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <Crown className="w-3 h-3 text-amber-300 shrink-0" />
-                    <span className="text-[9.5px] uppercase tracking-[0.2em] text-amber-200 font-bold">
-                      {isEN ? 'VIP benefit' : 'Benefício VIP'}
-                    </span>
-                  </div>
-                  <div className="text-[15px] font-black text-white leading-tight mt-0.5">
-                    {isEN ? 'Edit this page' : 'Editar esta página'}
-                  </div>
-                  <div className="text-[11.5px] text-white/70 mt-0.5 leading-snug">
-                    {isEN ? 'Change photos, music, text anytime' : 'Troque fotos, música, texto a qualquer hora'}
-                  </div>
-                </div>
-                <div className="text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition shrink-0">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14m-6-6 6 6-6 6" />
-                  </svg>
-                </div>
-              </div>
-            </Link>
-          </div>
-        )}
-
-        {/* ── SHARE CTA ─────────────────────────────────────────── */}
+        {/* ── SHARE CTA (com Edit no topo pro dono VIP) ──────────── */}
         <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">
-            <div className="relative rounded-2xl p-6 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm text-center">
-                <div className="flex items-center justify-center mb-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
-                        <Heart className="w-6 h-6 text-white" fill="white" />
+            {(() => {
+              const canEdit = !isDemoPage && pageData.plan === 'vip' && user?.uid && pageData.userId && user.uid === pageData.userId;
+              return (
+                <div className="relative rounded-2xl p-6 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm text-center">
+                    {/* Edit panel (VIP + dono): banner dourado no topo do card, separado
+                        do resto por divider — visualmente destaca "benefício exclusivo"
+                        sem poluir a UI com card separado. */}
+                    {canEdit && (
+                      <>
+                        <Link
+                          href={`/editar/${pageData.id}`}
+                          className="group relative -mx-6 -mt-6 mb-5 block overflow-hidden rounded-t-2xl p-4 active:scale-[0.99] transition-transform text-left"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(236,72,153,0.20), rgba(168,85,247,0.22))',
+                            borderBottom: '1px solid rgba(251,191,36,0.3)',
+                          }}
+                        >
+                          {/* shimmer animado no hover */}
+                          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+                          <div className="relative flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0 shadow-md ring-1 ring-white/30">
+                              <Pencil className="w-5 h-5 text-white" strokeWidth={2.5} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <Crown className="w-3 h-3 text-amber-300 shrink-0" />
+                                <span className="text-[9.5px] uppercase tracking-[0.2em] text-amber-200 font-bold">
+                                  {isEN ? 'VIP benefit' : 'Benefício VIP'}
+                                </span>
+                              </div>
+                              <div className="text-[15px] font-black text-white leading-tight mt-0.5">
+                                {isEN ? 'Edit my page' : 'Editar minha página'}
+                              </div>
+                              <div className="text-[11.5px] text-white/70 mt-0.5 leading-snug">
+                                {isEN ? 'Change anything, anytime' : 'Mude qualquer coisa, a qualquer hora'}
+                              </div>
+                            </div>
+                            <div className="text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition shrink-0">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14m-6-6 6 6-6 6" />
+                              </svg>
+                            </div>
+                          </div>
+                        </Link>
+                      </>
+                    )}
+
+                    <div className="flex items-center justify-center mb-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                            <Heart className="w-6 h-6 text-white" fill="white" />
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-1">{isEN ? 'Loved this page?' : 'Gostou dessa página?'}</h3>
+                    <p className="text-xs text-gray-400 mb-4">{isEN ? 'Create yours and surprise someone special too' : 'Crie a sua e surpreenda alguém especial também'}</p>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={handleShareLink}
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white text-sm bg-white/10 hover:bg-white/15 border border-white/10 transition-all active:scale-95"
+                        >
+                            {linkCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
+                            {linkCopied ? (isEN ? 'Link copied!' : 'Link copiado!') : (isEN ? 'Share this page' : 'Compartilhar esta página')}
+                        </button>
+                        <button
+                            onClick={handleDownloadQr}
+                            disabled={isDownloadingQr}
+                            className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium text-zinc-500 hover:text-zinc-300 text-xs transition-colors disabled:opacity-60"
+                        >
+                            {isDownloadingQr ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                            {isDownloadingQr ? (isEN ? 'Generating...' : 'Gerando...') : (isEN ? 'Download QR Code' : 'Baixar QR Code')}
+                        </button>
+                        <a
+                            href={isEN ? 'https://mycupid.net/chat' : 'https://mycupid.com.br/criar'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-white text-sm bg-gradient-to-r from-pink-600 to-purple-600 hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-purple-900/40"
+                        >
+                            <Heart className="w-4 h-4" fill="white" />
+                            {isEN ? 'Create my page' : 'Criar minha página'}
+                        </a>
                     </div>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">{isEN ? 'Loved this page?' : 'Gostou dessa página?'}</h3>
-                <p className="text-xs text-gray-400 mb-4">{isEN ? 'Create yours and surprise someone special too' : 'Crie a sua e surpreenda alguém especial também'}</p>
-                <div className="flex flex-col gap-2">
-                    <button
-                        onClick={handleShareLink}
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-white text-sm bg-white/10 hover:bg-white/15 border border-white/10 transition-all active:scale-95"
-                    >
-                        {linkCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
-                        {linkCopied ? (isEN ? 'Link copied!' : 'Link copiado!') : (isEN ? 'Share this page' : 'Compartilhar esta página')}
-                    </button>
-                    <button
-                        onClick={handleDownloadQr}
-                        disabled={isDownloadingQr}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg font-medium text-zinc-500 hover:text-zinc-300 text-xs transition-colors disabled:opacity-60"
-                    >
-                        {isDownloadingQr ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                        {isDownloadingQr ? (isEN ? 'Generating...' : 'Gerando...') : (isEN ? 'Download QR Code' : 'Baixar QR Code')}
-                    </button>
-                    <a
-                        href={isEN ? 'https://mycupid.net/chat' : 'https://mycupid.com.br/criar'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-black text-white text-sm bg-gradient-to-r from-pink-600 to-purple-600 hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-purple-900/40"
-                    >
-                        <Heart className="w-4 h-4" fill="white" />
-                        {isEN ? 'Create my page' : 'Criar minha página'}
-                    </a>
-                </div>
-            </div>
+              );
+            })()}
         </div>
 
         <footer className="relative z-10 w-full mt-8 text-center">
