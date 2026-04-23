@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { useUser } from '@/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,7 @@ import StarrySky from '@/components/effects/StarrySky';
 import MysticVortex from '@/components/effects/MysticVortex';
 import FloatingDots from '@/components/effects/FloatingDots';
 import { Button } from '@/components/ui/button';
-import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy, Download } from 'lucide-react';
+import { View, Puzzle, Loader2, Play, CheckCircle, Instagram, Mail, MessageSquare, Gamepad2, BrainCircuit, ArrowLeft, X, HelpCircle, Clock, AlertTriangle, Share2, Heart, Copy, Download, Pencil, Crown } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import NebulaBackground from '@/components/effects/NebulaBackground';
 import NebulosaPoema from '@/components/effects/NebulosaPoema';
@@ -497,6 +498,49 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
           </div>
 
         </div>
+
+        {/* ── EDIT CTA (VIP only, owner only) ─────────────────────── */}
+        {!isDemoPage && pageData.plan === 'vip' && user?.uid && pageData.userId && user.uid === pageData.userId && (
+          <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">
+            <Link
+              href={`/editar/${pageData.id}`}
+              className="group relative block rounded-2xl p-4 overflow-hidden transition-transform active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.18), rgba(236,72,153,0.18), rgba(168,85,247,0.18))',
+                border: '1.5px solid rgba(251,191,36,0.4)',
+                boxShadow: '0 14px 40px -12px rgba(236,72,153,0.45), inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}
+            >
+              {/* shimmer */}
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+
+              <div className="relative flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0 shadow-md ring-1 ring-white/30">
+                  <Pencil className="w-5 h-5 text-white" strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="w-3 h-3 text-amber-300 shrink-0" />
+                    <span className="text-[9.5px] uppercase tracking-[0.2em] text-amber-200 font-bold">
+                      {isEN ? 'VIP benefit' : 'Benefício VIP'}
+                    </span>
+                  </div>
+                  <div className="text-[15px] font-black text-white leading-tight mt-0.5">
+                    {isEN ? 'Edit this page' : 'Editar esta página'}
+                  </div>
+                  <div className="text-[11.5px] text-white/70 mt-0.5 leading-snug">
+                    {isEN ? 'Change photos, music, text anytime' : 'Troque fotos, música, texto a qualquer hora'}
+                  </div>
+                </div>
+                <div className="text-white/60 group-hover:text-white group-hover:translate-x-0.5 transition shrink-0">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14m-6-6 6 6-6 6" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* ── SHARE CTA ─────────────────────────────────────────── */}
         <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">

@@ -71,7 +71,7 @@ export async function createMercadoPagoCardSession(
     const preference = new Preference(client);
 
     const safeDomain = domain.replace(/\/$/, '');
-    const planLabel = intent.plan === 'avancado' ? 'Avançado' : 'Básico';
+    const planLabel = intent.plan === 'vip' ? 'VIP' : intent.plan === 'avancado' ? 'Avançado' : 'Básico';
 
     const pref = await preference.create({
       body: {
@@ -197,7 +197,7 @@ export async function dryRunMercadoPagoCardSession(
     }
 
     const safeDomain = domain.replace(/\/$/, '');
-    const planLabel = intent.plan === 'avancado' ? 'Avançado' : 'Básico';
+    const planLabel = intent.plan === 'vip' ? 'VIP' : intent.plan === 'avancado' ? 'Avançado' : 'Básico';
     const backUrls = {
       success: `${safeDomain}/chat/pagamento?status=approved&intent=${intentId}`,
       failure: `${safeDomain}/chat/pagamento?status=rejected&intent=${intentId}`,

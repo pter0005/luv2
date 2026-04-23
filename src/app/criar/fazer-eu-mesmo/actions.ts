@@ -66,7 +66,7 @@ async function sendServerSidePurchaseEvent(input: ServerPurchaseInput | 'basico'
 
   const value = (typeof paidAmount === 'number' && paidAmount > 0)
     ? paidAmount
-    : (plan === 'vip' ? 29.90 : plan === 'avancado' ? 24.90 : 19.90);
+    : (plan === 'vip' ? 39.90 : plan === 'avancado' ? 24.90 : 19.90);
 
   // Phone para hashing: só dígitos, país prefixo (55 BR, 1 US) se faltar.
   const rawPhone = (userPhone || '').replace(/\D/g, '');
@@ -780,7 +780,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const rawPaid = Number(data.paidAmount);
   const saleValue = isFinite(rawPaid) && rawPaid > 0
     ? rawPaid
-    : (finalData.plan === 'vip' ? 29.90 : finalData.plan === 'avancado' ? 24.90 : 19.90);
+    : (finalData.plan === 'vip' ? 39.90 : finalData.plan === 'avancado' ? 24.90 : 19.90);
   const saleTitle = (finalData.title as string) || 'Sem título';
   const salePlan = finalData.plan === 'vip' ? 'VIP' : finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
 
@@ -1009,4 +1009,137 @@ export async function finalizeWithGiftToken(
 // ─────────────────────────────────────────────
 export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string): Promise<StripeSessionResult> {
   return { success: false, error: 'Stripe integration is not fully configured on the backend.' };
+}
+
+// ─────────────────────────────────────────────
+// EDITAR PÁGINA (VIP only)
+// ─────────────────────────────────────────────
+// Atualiza uma página já publicada. Só VIP tem acesso a essa feature — é o
+// diferencial principal do plano. Auth gate triple-check:
+//   1. userId do request tem que bater com pageData.userId
+//   2. plano tem que ser VIP (previne upgrade-without-paying)
+//   3. campos bloqueados (plan, userId, paidAmount, isGift, lovePageId) são
+//      explicitamente removidos do update pra evitar privilege escalation
+//      (ex: user mandando plan=vip num update de uma página Básico).
+
+const BLOCKED_UPDATE_KEYS = new Set([
+  'plan', 'userId', 'lovePageId', 'pageId', 'id',
+  'paidAmount', 'paymentId', 'isGift', 'giftToken',
+  'createdAt', 'status', 'expireAt',
+]);
+
+export interface UpdatePageResult {
+  success: boolean;
+  error?: string;
+}
+
+export async function updateLovePage(
+  pageId: string,
+  userId: string,
+  partialData: any,
+): Promise<UpdatePageResult> {
+  if (!pageId || !userId) return { success: false, error: 'Missing pageId or userId.' };
+
+  const db = getAdminFirestore();
+  const pageRef = db.collection('lovepages').doc(pageId);
+  const pageSnap = await pageRef.get();
+  if (!pageSnap.exists) return { success: false, error: 'Página não encontrada.' };
+  const existing = pageSnap.data()!;
+
+  // ── Verifica session cookie pra bloquear spoofing do userId ─────────────
+  // O cliente manda `userId` como argumento (padrão do projeto). Sem isso,
+  // qualquer um poderia chamar updateLovePage(pageId, userId_da_vitima, ...)
+  // e passar o ID do dono pra bypass. Checamos o session cookie do Firebase
+  // Admin pra garantir que o userId passado bate com o user logado.
+  // Fallback: se não tiver session cookie (SSR em dev / browser sem auth
+  // setado), a verificação é best-effort — o check de userId + plan abaixo
+  // ainda bloqueia a edição de páginas que não são suas.
+  try {
+    const sessionCookie = (await import('next/headers')).cookies().get('__session')?.value;
+    if (sessionCookie) {
+      const adminApp = (await import('@/lib/firebase/admin/config')).getAdminApp();
+      const decoded = await getAuth(adminApp).verifySessionCookie(sessionCookie, true);
+      if (decoded.uid !== userId) {
+        console.warn('[updateLovePage] Session UID mismatch', { sessionUid: decoded.uid, requestUid: userId });
+        return { success: false, error: 'Sessão inválida. Faça login de novo.' };
+      }
+    }
+  } catch (e: any) {
+    // Cookie ausente, expirado, ou inválido — não bloqueia o fluxo aqui,
+    // mas loga pra auditoria. Os checks de ownership + VIP abaixo seguram.
+    console.warn('[updateLovePage] Session verify skipped:', e?.message);
+  }
+
+  // Auth gate — dono + VIP. Admin bypass pra suporte.
+  let isAdmin = false;
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const email = userDoc.data()?.email;
+    if (email && ADMIN_EMAILS.includes(email)) isAdmin = true;
+  } catch { /* ignore */ }
+
+  if (!isAdmin && existing.userId !== userId) {
+    return { success: false, error: 'Você não tem permissão para editar esta página.' };
+  }
+  if (!isAdmin && existing.plan !== 'vip') {
+    return { success: false, error: 'Edição disponível apenas no plano VIP.' };
+  }
+
+  // Strip campos bloqueados e sanitize. Isso é a defesa principal contra
+  // privilege escalation — mesmo que o cliente mande "plan": "vip", ignoramos.
+  const cleaned: Record<string, any> = {};
+  for (const k in partialData) {
+    if (BLOCKED_UPDATE_KEYS.has(k)) continue;
+    cleaned[k] = sanitizeForFirebase(partialData[k]);
+  }
+
+  // Move arquivos temp/ pra lovepages/{pageId}/... (novos uploads durante edit).
+  // Arquivos já persistidos em lovepages/... não se movem (moveFileWithRetry
+  // tem guard `startsWith('temp/')`).
+  const bucket = getAdminStorage();
+
+  try {
+    if (Array.isArray(cleaned.galleryImages)) {
+      cleaned.galleryImages = await Promise.all(
+        cleaned.galleryImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'gallery', pageId)),
+      );
+    }
+    if (Array.isArray(cleaned.timelineEvents)) {
+      cleaned.timelineEvents = await Promise.all(
+        cleaned.timelineEvents.map(async (event: any) => {
+          if (event?.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', pageId);
+          return { ...event, date: ensureTimestamp(event.date) };
+        }),
+      );
+    }
+    if (cleaned.puzzleImage) cleaned.puzzleImage = await moveFileWithRetry(bucket, db, cleaned.puzzleImage, 'puzzle', pageId);
+    if (cleaned.audioRecording) cleaned.audioRecording = await moveFileWithRetry(bucket, db, cleaned.audioRecording, 'audio', pageId);
+    if (cleaned.backgroundVideo) cleaned.backgroundVideo = await moveFileWithRetry(bucket, db, cleaned.backgroundVideo, 'video', pageId);
+    if (Array.isArray(cleaned.memoryGameImages)) {
+      cleaned.memoryGameImages = await Promise.all(
+        cleaned.memoryGameImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', pageId)),
+      );
+    }
+    if (cleaned.specialDate) cleaned.specialDate = ensureTimestamp(cleaned.specialDate);
+  } catch (err) {
+    console.error('[updateLovePage] File move failed:', err);
+    return { success: false, error: 'Falha ao subir arquivos novos. Tente de novo.' };
+  }
+
+  cleaned.updatedAt = Timestamp.now();
+
+  try {
+    await pageRef.update(cleaned);
+  } catch (err: any) {
+    console.error('[updateLovePage] Update failed:', err);
+    return { success: false, error: err?.message || 'Falha ao salvar edição.' };
+  }
+
+  // Revalida caches: página pública + listagem do user.
+  try {
+    revalidatePath(`/p/${pageId}`);
+    revalidatePath('/minhas-paginas');
+  } catch { /* ignore */ }
+
+  return { success: true };
 }

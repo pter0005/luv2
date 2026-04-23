@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
-import { Check, Sparkles, Heart, Image as ImageIcon, Clock, Gamepad2, Mic, Wand2, Music, Infinity as InfinityIcon, Timer, Crown, Gem } from 'lucide-react';
+import { Check, Sparkles, Heart, Image as ImageIcon, Clock, Gamepad2, Mic, Wand2, Music, Infinity as InfinityIcon, Timer, Crown, Gem, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
@@ -25,12 +25,12 @@ const AVANCADO_EXTRAS_PT: Feature[] = [
   { icon: <Music className="w-3.5 h-3.5" />, text: 'Música de fundo personalizada' },
 ];
 const VIP_FEATURES_PT: Feature[] = [
+  { icon: <Pencil className="w-3.5 h-3.5" />, text: 'Edite a página quando quiser, pra sempre ✨' },
   { icon: <Gem className="w-3.5 h-3.5" />, text: 'TUDO do Avançado incluído' },
   { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Intro do Buquê Digital desbloqueada 💐' },
   { icon: <Mic className="w-3.5 h-3.5" />, text: 'Mensagem de voz já incluída' },
   { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'QR Code personalizado (qualquer tema)' },
   { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: 'Jogo "adivinhe a palavra" incluso' },
-  { icon: <Crown className="w-3.5 h-3.5" />, text: 'Tudo fechado, sem surpresa de preço' },
 ];
 const BASICO_FEATURES_EN: Feature[] = [
   { icon: <Heart className="w-3.5 h-3.5" />, text: 'Dedicated page with title and message' },
@@ -45,12 +45,12 @@ const AVANCADO_EXTRAS_EN: Feature[] = [
   { icon: <Music className="w-3.5 h-3.5" />, text: 'Custom background music' },
 ];
 const VIP_FEATURES_EN: Feature[] = [
+  { icon: <Pencil className="w-3.5 h-3.5" />, text: 'Edit your page anytime, forever ✨' },
   { icon: <Gem className="w-3.5 h-3.5" />, text: 'EVERYTHING in Advanced included' },
   { icon: <Wand2 className="w-3.5 h-3.5" />, text: 'Digital Bouquet intro unlocked 💐' },
   { icon: <Mic className="w-3.5 h-3.5" />, text: 'Voice message already included' },
   { icon: <ImageIcon className="w-3.5 h-3.5" />, text: 'Custom QR Code (any theme)' },
   { icon: <Gamepad2 className="w-3.5 h-3.5" />, text: '"Guess the word" game included' },
-  { icon: <Crown className="w-3.5 h-3.5" />, text: 'Flat price, no surprises' },
 ];
 
 export default function PlanField() {
@@ -84,6 +84,16 @@ export default function PlanField() {
             {/* ─────────────────────────────────────────── */}
             {/* VIP — topo, destaque máximo (ancoragem) */}
             {/* ─────────────────────────────────────────── */}
+            {/* Wrapper com pt-3 pra dar espaço ao badge "MELHOR CUSTO" que
+                fica em cima. O button tem overflow-hidden (pro shimmer), o que
+                cortaria o badge se ele ficasse dentro — por isso o badge mora
+                aqui fora como sibling absoluto. */}
+            <div className="relative pt-3">
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 z-10 text-[10px] font-bold px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500 text-white uppercase tracking-wider ring-1 ring-white/40 shadow-md flex items-center gap-1 whitespace-nowrap pointer-events-none">
+                <Crown className="w-3 h-3 fill-white" />
+                {isEN ? 'Best value' : 'Melhor custo'}
+                <Crown className="w-3 h-3 fill-white" />
+              </span>
             <button
               type="button"
               onClick={handlePickVip}
@@ -96,12 +106,6 @@ export default function PlanField() {
             >
               {/* Shimmer */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
-
-              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500 text-white uppercase tracking-wider ring-1 ring-white/40 shadow-md flex items-center gap-1 whitespace-nowrap">
-                <Crown className="w-3 h-3 fill-white" />
-                {isEN ? 'Best value' : 'Melhor custo'}
-                <Crown className="w-3 h-3 fill-white" />
-              </span>
 
               <div className="flex items-start justify-between mb-1.5 mt-1">
                 <div>
@@ -131,13 +135,13 @@ export default function PlanField() {
                 </div>
               )}
 
-              {/* Forever badge */}
+              {/* Forever badge — destaca o diferencial VIP #1: editar quando quiser */}
               <div className="mt-2 mb-3 flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-gradient-to-r from-amber-500/20 via-pink-500/15 to-purple-500/20 ring-1 ring-amber-300/40">
                 <InfinityIcon className="w-3.5 h-3.5 text-amber-200 shrink-0" />
                 <span className="text-[11.5px] font-bold text-amber-50">
                   {isEN
-                    ? <>Online <span className="underline decoration-amber-300/60">forever</span> + every premium feature</>
-                    : <>No ar <span className="underline decoration-amber-300/60">pra sempre</span> + todos os premium</>}
+                    ? <>Online <span className="underline decoration-amber-300/60">forever</span> · <span className="underline decoration-amber-300/60">edit anytime</span></>
+                    : <>No ar <span className="underline decoration-amber-300/60">pra sempre</span> · <span className="underline decoration-amber-300/60">edite quando quiser</span></>}
                 </span>
               </div>
 
@@ -150,6 +154,7 @@ export default function PlanField() {
                 ))}
               </ul>
             </button>
+            </div>
 
             {/* ─────────────────────────────────────────── */}
             {/* AVANÇADO — meio, pré-selecionado default */}
