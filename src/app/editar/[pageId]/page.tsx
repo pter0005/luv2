@@ -4,10 +4,33 @@ import EditPageClient from './EditPageClient';
 
 export const dynamic = 'force-dynamic';
 
-// Server-side pre-check: página existe e é VIP? Se não, redireciona pro /p/.
-// A auth real (userId bate) acontece dentro do EditPageClient (precisa do user
-// logado via Firebase Auth no client), mas já fazemos essa primeira filtragem
-// pra não servir um form de edit inútil pra quem nunca vai poder submeter.
+// Serialização profunda tratando Firestore Timestamps. O JSON.stringify nativo
+// chama toJSON() do Timestamp antes do replacer, produzindo {seconds,nanoseconds}
+// que quebra o revive no cliente. Aqui convertemos pra ISO string ANTES do stringify.
+function deepSerialize(v: any): any {
+  if (v === null || v === undefined) return v;
+  // Firestore Timestamp (tem seconds + nanoseconds OU _seconds/_nanoseconds)
+  if (typeof v === 'object') {
+    if (typeof (v as any).toDate === 'function') {
+      try { return (v as any).toDate().toISOString(); } catch { return null; }
+    }
+    if (typeof (v as any).seconds === 'number' && typeof (v as any).nanoseconds === 'number') {
+      try { return new Date((v as any).seconds * 1000 + (v as any).nanoseconds / 1e6).toISOString(); } catch { return null; }
+    }
+    if (typeof (v as any)._seconds === 'number') {
+      try { return new Date((v as any)._seconds * 1000).toISOString(); } catch { return null; }
+    }
+    if (v instanceof Date) return v.toISOString();
+    if (Array.isArray(v)) return v.map(deepSerialize);
+    const out: Record<string, any> = {};
+    for (const k in v) {
+      if (Object.prototype.hasOwnProperty.call(v, k)) out[k] = deepSerialize((v as any)[k]);
+    }
+    return out;
+  }
+  return v;
+}
+
 export default async function EditarPaginaPage({ params }: { params: { pageId: string } }) {
   const pageId = params.pageId;
   if (!pageId) redirect('/');
@@ -18,19 +41,10 @@ export default async function EditarPaginaPage({ params }: { params: { pageId: s
 
   const data = snap.data();
   if (data?.plan !== 'vip') {
-    // Não é VIP — redireciona pra página pública (usuário pode ver, não editar)
     redirect(`/p/${pageId}`);
   }
 
-  // Serializa pro client. Timestamps viram ISO strings, o resto passa tal qual.
-  // Campos pesados (galleryImages, timelineEvents) são passados porque o form
-  // precisa deles pré-preenchidos. Firestore refs/funções são removidas por JSON.
-  const serialized = JSON.parse(JSON.stringify(data, (_k, v) => {
-    if (v && typeof v === 'object' && typeof v.toDate === 'function') {
-      return v.toDate().toISOString();
-    }
-    return v;
-  }));
+  const serialized = deepSerialize(data);
 
   return <EditPageClient pageId={pageId} initialData={serialized} ownerId={data?.userId || ''} />;
 }

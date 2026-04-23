@@ -342,24 +342,27 @@ function Section({ title, sub, children, action, icon: Icon, accent = '#a855f7' 
 // ─────────────────────────────────────────────────────────────────────────────
 // WIZARD FUNNEL
 // ─────────────────────────────────────────────────────────────────────────────
+// Espelha CHAT_STEP_ORDER em src/lib/chat-script.ts — se mudar lá, muda aqui.
+// Steps do wizard ANTIGO (/criar/fazer-eu-mesmo: puzzle, memory, quiz, word-game
+// como steps separados) foram removidos: no /chat atual tudo isso vive em
+// 'extras'. Ficaram aparecendo com ~3 hits residuais (usuários caindo no wizard
+// velho) que poluíam o relatório e faziam parecer que ninguém completava jogos.
 const WIZARD_STEPS: { id: string; label: string }[] = [
-  { id: 'title', label: '1. Título' },
-  { id: 'message', label: '2. Mensagem' },
-  { id: 'specialDate', label: '3. Data especial' },
-  { id: 'gallery', label: '4. Galeria' },
-  { id: 'timeline', label: '5. Timeline' },
-  { id: 'music', label: '6. Música' },
-  { id: 'background', label: '7. Fundo' },
-  { id: 'intro', label: '8. Intro' },
-  { id: 'puzzle', label: '9. Quebra-cabeça' },
-  { id: 'memory', label: '10. Memória' },
-  { id: 'quiz', label: '11. Quiz' },
-  { id: 'word-game', label: '12. Palavra' },
-  { id: 'plan', label: '13. Plano' },
-  { id: 'voice', label: '14. Voz' },
-  { id: 'payment', label: '15. Pagamento' },
+  { id: 'recipient',   label: '1. Destinatário' },
+  { id: 'title',       label: '2. Título' },
+  { id: 'message',     label: '3. Mensagem' },
+  { id: 'specialDate', label: '4. Data especial' },
+  { id: 'gallery',     label: '5. Galeria' },
+  { id: 'timeline',    label: '6. Timeline' },
+  { id: 'intro',       label: '7. Intro' },
+  { id: 'music',       label: '8. Música' },
+  { id: 'voice',       label: '9. Voz' },
+  { id: 'background',  label: '10. Fundo' },
+  { id: 'extras',      label: '11. Jogos & extras' },
+  { id: 'plan',        label: '12. Plano' },
+  { id: 'payment',     label: '13. Pagamento' },
   { id: 'pix_generated', label: '→ PIX gerado' },
-  { id: 'paid', label: '✓ Pago' },
+  { id: 'paid',        label: '✓ Pago' },
 ];
 
 function WizardFunnel({ data }: { data: Record<string, number> }) {
@@ -367,31 +370,92 @@ function WizardFunnel({ data }: { data: Record<string, number> }) {
   if (first === 0) {
     return <p className="text-sm text-zinc-500 text-center py-6">Nenhum visitante começou o formulário hoje ainda.</p>;
   }
+  // Pré-calcula pra poder mostrar drop-off step-to-step (não só vs topo do funil)
+  const rows = WIZARD_STEPS.map((step, i) => {
+    const count = data[step.id] || 0;
+    const prev = i > 0 ? (data[WIZARD_STEPS[i - 1].id] || 0) : first;
+    const pct = first > 0 ? (count / first) * 100 : 0;
+    const stepDrop = prev > 0 ? ((prev - count) / prev) * 100 : 0;
+    return { step, count, pct, stepDrop };
+  });
   return (
-    <div className="space-y-1.5">
-      {WIZARD_STEPS.map(step => {
-        const count = data[step.id] || 0;
-        const pct = first > 0 ? (count / first) * 100 : 0;
+    <div className="space-y-1">
+      {/* Header enxuto — topo do funil em verde, destaca o "denominator" */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-[10px] uppercase tracking-[0.15em] text-zinc-500 font-semibold">
+        <span>Step</span>
+        <span className="flex items-center gap-3">
+          <span className="w-10 text-right">visita</span>
+          <span className="w-16 text-right">% topo</span>
+          <span className="w-16 text-right">drop</span>
+        </span>
+      </div>
+      {rows.map(({ step, count, pct, stepDrop }, i) => {
         const isTerminal = step.id === 'pix_generated' || step.id === 'paid';
+        const isPaid = step.id === 'paid';
+        const dropCritical = stepDrop >= 30 && i > 0 && count > 0;
         return (
-          <div key={step.id} className="flex items-center gap-3 text-xs">
-            <span className="w-32 shrink-0 text-zinc-400 font-medium truncate">{step.label}</span>
-            <div className="flex-1 h-6 rounded-md overflow-hidden relative"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div className="h-full rounded-md transition-all"
+          <div key={step.id} className="flex items-center gap-3 py-1 group">
+            {/* Label */}
+            <span className={cn(
+              'w-36 shrink-0 text-[12px] font-medium truncate transition-colors',
+              isPaid ? 'text-emerald-300' : isTerminal ? 'text-emerald-400/80' : 'text-zinc-300'
+            )}>
+              {step.label}
+            </span>
+
+            {/* Barra */}
+            <div className="flex-1 h-7 rounded-lg overflow-hidden relative ring-1 ring-white/[0.06] bg-white/[0.02]">
+              <div
+                className="h-full transition-all duration-500 ease-out"
                 style={{
-                  width: `${Math.min(100, pct)}%`,
-                  background: isTerminal
-                    ? 'linear-gradient(90deg, #34d399, #10b981)'
-                    : 'linear-gradient(90deg, #a855f7, #6366f1)',
-                }} />
-              <span className="absolute inset-0 flex items-center px-2 text-[11px] font-bold text-white tabular-nums">
-                {count} <span className="text-white/50 ml-1.5">({pct.toFixed(0)}%)</span>
+                  width: `${Math.max(pct, pct > 0 ? 1.5 : 0)}%`,
+                  background: isPaid
+                    ? 'linear-gradient(90deg, #34d399 0%, #10b981 60%, #059669 100%)'
+                    : isTerminal
+                    ? 'linear-gradient(90deg, #fbbf24 0%, #34d399 100%)'
+                    : pct >= 70
+                    ? 'linear-gradient(90deg, #a855f7 0%, #8b5cf6 100%)'
+                    : pct >= 40
+                    ? 'linear-gradient(90deg, #a855f7 0%, #ec4899 100%)'
+                    : 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                  boxShadow: pct > 0 ? '0 0 12px -4px rgba(168,85,247,0.4)' : 'none',
+                }}
+              />
+              {/* Label dentro da barra quando a barra é grande o suficiente;
+                  labels compridas escondem pra evitar overflow */}
+              <span className="absolute inset-y-0 left-2.5 flex items-center text-[11px] font-bold text-white/95 tabular-nums drop-shadow-sm pointer-events-none">
+                {pct > 12 ? `${pct.toFixed(0)}%` : ''}
               </span>
             </div>
+
+            {/* Contagem absoluta */}
+            <span className="w-10 shrink-0 text-right text-[12px] font-bold text-white tabular-nums">
+              {count}
+            </span>
+            {/* % do topo (igual à barra, mas sempre visível) */}
+            <span className="w-16 shrink-0 text-right text-[11px] text-zinc-400 tabular-nums">
+              {pct.toFixed(1)}%
+            </span>
+            {/* Drop-off step a step — destaca queda forte em vermelho pra achar gargalo */}
+            <span
+              className={cn(
+                'w-16 shrink-0 text-right text-[11px] font-semibold tabular-nums',
+                i === 0 ? 'text-zinc-600' : dropCritical ? 'text-red-400' : stepDrop > 10 ? 'text-amber-300/80' : 'text-zinc-500',
+              )}
+              title={i === 0 ? 'Primeiro step — sem drop' : `${stepDrop.toFixed(1)}% saíram entre esse step e o anterior`}
+            >
+              {i === 0 ? '—' : stepDrop > 0 ? `-${stepDrop.toFixed(0)}%` : stepDrop < 0 ? `+${Math.abs(stepDrop).toFixed(0)}%` : '0%'}
+            </span>
           </div>
         );
       })}
+      {/* Conclusão — CR total, rápida de ver */}
+      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
+        <span className="text-zinc-500">Conversão geral (topo → pago)</span>
+        <span className="font-bold text-emerald-300 tabular-nums">
+          {first > 0 ? (((data['paid'] || 0) / first) * 100).toFixed(2) : '0.00'}%
+        </span>
+      </div>
     </div>
   );
 }

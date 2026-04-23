@@ -148,18 +148,22 @@
     font-size:2.78em;line-height:1.18;letter-spacing:.005em;
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
-    /* padding-top generoso — o "J" de "jasmim" em Great Vibes tem ascendente
-       ornamental que extrapola a cap-height em ~40%. .30em do próprio span
-       (que já é 2.78em do body) reserva espaço suficiente pra não cortar.
-       padding-left maior (.35em) pra comportar o swash ornamental esquerdo
-       do J — antes cortava em "jasmim". */
-    padding:.30em .08em .08em .35em;margin-top:0;
+    /* Padding base simétrico pro texto centralizar de verdade no container.
+       Antes: .30em top, .08em right, .08em bottom, .35em left — o left grande
+       empurrava todas as flores pra direita, e o top grande empurrava pra
+       baixo. Esses valores eram feitos APENAS pra jasmim (J cursive tem swash
+       ornamental que extrapola). Pra rosa/violeta/girassol/orquídea não
+       precisa — letras inicial/final sem swashs pesados. */
+    padding:.12em .10em .08em .10em;margin-top:0;
     overflow:visible;
     transform:translateY(-20px);
     transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1);
     will-change:transform,opacity,filter;
   }
   #textOverlay .word.flower.in{transform:translateY(0)}
+  /* Jasmim recebe override: padding-top e padding-left maiores pra acomodar
+     o swash ornamental do J em Great Vibes sem cortar. */
+  #textOverlay .word.flower.f-jasmim{padding:.30em .10em .08em .35em}
 
   /* Per-flower color treatments
      Each hero word has a gradient in its own color and a SUBTLE static glow

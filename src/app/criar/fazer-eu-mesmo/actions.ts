@@ -5,7 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { logCriticalError } from '@/lib/log-critical-error';
@@ -1055,10 +1055,10 @@ export async function updateLovePage(
   // setado), a verificação é best-effort — o check de userId + plan abaixo
   // ainda bloqueia a edição de páginas que não são suas.
   try {
-    const sessionCookie = (await import('next/headers')).cookies().get('__session')?.value;
+    const sessionCookie = cookies().get('__session')?.value;
     if (sessionCookie) {
-      const adminApp = (await import('@/lib/firebase/admin/config')).getAdminApp();
-      const decoded = await getAuth(adminApp).verifySessionCookie(sessionCookie, true);
+      const { getAdminApp } = await import('@/lib/firebase/admin/config');
+      const decoded = await getAuth(getAdminApp()).verifySessionCookie(sessionCookie, true);
       if (decoded.uid !== userId) {
         console.warn('[updateLovePage] Session UID mismatch', { sessionUid: decoded.uid, requestUid: userId });
         return { success: false, error: 'Sessão inválida. Faça login de novo.' };
@@ -1133,6 +1133,42 @@ export async function updateLovePage(
   } catch (err: any) {
     console.error('[updateLovePage] Update failed:', err);
     return { success: false, error: err?.message || 'Falha ao salvar edição.' };
+  }
+
+  // ── Cleanup de arquivos órfãos ────────────────────────────────────────────
+  // User removeu fotos da galeria/timeline durante edit? Os arquivos velhos
+  // ficariam no Storage pra sempre, gastando quota. Compara paths antigos vs
+  // novos e deleta os que foram descartados. Best-effort: falha aqui não
+  // quebra o update — já foi salvo com sucesso no Firestore.
+  try {
+    const collectPaths = (obj: any): string[] => {
+      const paths: string[] = [];
+      if (!obj) return paths;
+      const walk = (x: any) => {
+        if (!x) return;
+        if (Array.isArray(x)) { x.forEach(walk); return; }
+        if (typeof x === 'object') {
+          if (typeof x.path === 'string' && x.path.startsWith('lovepages/')) paths.push(x.path);
+          Object.values(x).forEach(walk);
+        }
+      };
+      walk(obj);
+      return paths;
+    };
+    const oldPaths = new Set(collectPaths(existing));
+    const newPaths = new Set(collectPaths(cleaned));
+    const orphans = [...oldPaths].filter((p) => !newPaths.has(p));
+    if (orphans.length > 0) {
+      await Promise.all(
+        orphans.map((p) =>
+          bucket.file(p).delete().catch((e) => {
+            console.warn('[updateLovePage] Orphan cleanup failed for', p, e?.message);
+          }),
+        ),
+      );
+    }
+  } catch (e) {
+    console.warn('[updateLovePage] Orphan sweep failed (non-critical):', e);
   }
 
   // Revalida caches: página pública + listagem do user.
