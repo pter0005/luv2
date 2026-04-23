@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
+import { getLatestPageForUser } from '@/app/chat/latest-page';
+import { useUser } from '@/firebase';
 import { useCreatingPresence } from '@/hooks/usePresence';
 import { trackFunnelStep, trackEvent } from '@/lib/analytics';
 import { captureAttribution } from '@/lib/attribution';
@@ -53,6 +55,7 @@ function Inner() {
   const searchParams = useSearchParams();
   const fireConfetti = useConfetti();
   const locale = useLocale() as Locale;
+  const { user } = useUser();
 
   const segmentParam = searchParams.get('segment') as WizardSegmentKey | null;
   const initialSegment: WizardSegmentKey =
@@ -175,23 +178,38 @@ function Inner() {
     captureAttribution();
   }, []);
 
-  // Após hidratar, se já existe um intentId finalizado (pagou e voltou / deu F5),
-  // mostra a tela "sua página tá pronta" com o link — evita que a pessoa
-  // precise pedir pelo WhatsApp se fechar a aba.
+  // Detecta se o user JÁ tem página paga — duas fontes:
+  //   1. intentId no localStorage (mesmo device, pagou e voltou)
+  //   2. userId logado (troca de device, limpou storage, etc.)
+  //
+  // Se ?new=true na URL, pula a detecção — user pediu explicitamente pra criar
+  // uma nova (chegou via /presente/[token] ou link com new=true). Evita prender
+  // usuário que quer 2ª página no estado "já tem página".
   useEffect(() => {
     if (!hydrated || alreadyPaid) return;
-    const intentId = methods.getValues('intentId');
-    if (!intentId) return;
+    if (searchParams.get('new') === 'true') return;
     let cancelled = false;
     (async () => {
-      const res = await lookupIntentStatus(intentId);
+      // 1) Tenta pelo intentId salvo localmente (mais rápido)
+      const intentId = methods.getValues('intentId');
+      if (intentId) {
+        const res = await lookupIntentStatus(intentId);
+        if (cancelled) return;
+        if (res.exists && res.status === 'completed' && res.pageId) {
+          setAlreadyPaid({ pageId: res.pageId });
+          return;
+        }
+      }
+      // 2) Fallback: busca última página paga do user logado no Firestore
+      if (!user?.uid) return;
+      const latest = await getLatestPageForUser(user.uid);
       if (cancelled) return;
-      if (res.exists && res.status === 'completed' && res.pageId) {
-        setAlreadyPaid({ pageId: res.pageId });
+      if (latest.exists && latest.pageId) {
+        setAlreadyPaid({ pageId: latest.pageId });
       }
     })();
     return () => { cancelled = true; };
-  }, [hydrated, alreadyPaid, methods]);
+  }, [hydrated, alreadyPaid, methods, user?.uid, searchParams]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -339,7 +357,10 @@ function Inner() {
                   localStorage.removeItem(STEP_KEY_STORAGE);
                   localStorage.removeItem(SEGMENT_STORAGE);
                 } catch {}
-                window.location.reload();
+                // ?new=true sinaliza pra detecção PULAR o atalho de página já
+                // paga — senão o user é preso no estado "já tem página" mesmo
+                // querendo criar outra.
+                window.location.href = '/chat?new=true';
               }}
               className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/70 text-[13px] font-medium ring-1 ring-white/10 transition"
             >

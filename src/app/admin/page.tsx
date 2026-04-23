@@ -179,7 +179,10 @@ async function getAllData() {
       let date: string | null = null;
       try { date = toBRDate(createdAtDate); } catch (_) {}
 
-      const src = (d.utmSource || 'direct') as string;
+      // Wizard antigo (/criar) salva como `utmSource`; wizard novo (/chat)
+      // salva via captureAttribution como `utm_source`. Normaliza os dois.
+      const rawSrc = (d.utmSource || d.utm_source || 'direct') as string;
+      const src = rawSrc.toLowerCase().trim();
 
       if (date && date >= cutoff) {
         salesByDay[date] = (salesByDay[date] || 0) + 1;

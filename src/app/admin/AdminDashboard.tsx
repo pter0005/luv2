@@ -1373,15 +1373,22 @@ export default function AdminDashboard({
                 const barW = Math.min((row.visits / (sourceRows[0]?.visits || 1)) * 100, 100);
                 return (
                   <div key={row.source}>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="text-base">{meta.emoji}</span>
                         <span className="text-xs font-bold" style={{ color: meta.color }}>{meta.label}</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="text-zinc-400 font-mono">{row.visits.toLocaleString('pt-BR')} vis.</span>
-                        <span className="text-emerald-400 font-bold font-mono">{brl(row.revenue)}</span>
-                        <span className="font-bold font-mono text-[11px]"
+                        <span className="text-zinc-400 font-mono" title="Visitas únicas">
+                          <span className="text-zinc-500 text-[10px]">👁</span> {row.visits.toLocaleString('pt-BR')}
+                        </span>
+                        <span className="text-pink-300 font-mono font-bold" title="Vendas">
+                          <span className="text-pink-400/70 text-[10px]">🛒</span> {row.sales.toLocaleString('pt-BR')}
+                        </span>
+                        <span className="text-emerald-400 font-bold font-mono" title="Receita">
+                          {brl(row.revenue)}
+                        </span>
+                        <span className="font-bold font-mono text-[11px]" title="Taxa de conversão"
                           style={{ color: conv >= 2 ? '#34d399' : conv >= 0.5 ? '#fbbf24' : '#f87171' }}>
                           {row.convRate}%
                         </span>

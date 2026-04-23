@@ -45,7 +45,7 @@ import { MercadoPagoLogo } from '@/components/chat/fields/MercadoPagoBadge';
 import QrCodeSelector from '@/app/criar/fazer-eu-mesmo/QrCodeSelector';
 import { downloadQrCard } from '@/lib/downloadQrCard';
 import { useToast } from '@/hooks/use-toast';
-import { trackEvent, setAdvancedMatching } from '@/lib/analytics';
+import { trackEvent, setAdvancedMatching, trackFunnelStep } from '@/lib/analytics';
 import { getAttribution } from '@/lib/attribution';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -230,6 +230,10 @@ export default function PaymentField() {
             price: p.isGift ? 0 : total,
           }],
         }, p.pageId);
+        // Funnel final — marca esse device/sessão como "pago" pro painel
+        // "Funil do Wizard" mostrar a conversão real. Dedup lateral em
+        // trackFunnelStep (Set reportedFunnelSteps) garante 1-por-sessão.
+        trackFunnelStep('paid', 999, 999);
       }
     } catch { /* ignore */ }
   }, [total, plan, siteCfg.currency]);
@@ -502,6 +506,9 @@ export default function PaymentField() {
         }
         if (pix.qrCode && pix.qrCodeBase64 && pix.paymentId) {
           trackEvent('PIXGenerated', { value: total, currency: siteCfg.currency });
+          // Funnel — PIX gerado com sucesso. Alimenta o "→ PIX gerado" no
+          // painel e o drop PIXGenerated→Paid (principal gargalo real).
+          trackFunnelStep('pix_generated', 14, 15);
           setPixData({
             qrCode: pix.qrCode,
             qrCodeBase64: pix.qrCodeBase64,

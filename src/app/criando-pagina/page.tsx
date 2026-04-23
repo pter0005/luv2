@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { trackFunnelStep } from '@/lib/analytics';
 
 declare global {
   interface Window {
@@ -117,6 +118,11 @@ function CreatingPageContent() {
                 }
                 sessionStorage.setItem(dedupeKey, '1');
             } catch (_) { /* sessionStorage bloqueado */ }
+
+            // Funnel — marca 'paid' no wizard_funnel pro admin mostrar a taxa
+            // real de conversão. É o ÚNICO lugar onde o MP-card flow passa
+            // antes do user ver a página pronta (redirect vem do gateway).
+            trackFunnelStep('paid', 999, 999);
 
             const effectivePlan = plan || 'avancado';
             // Prefer the real charged amount so the pixel event matches what
