@@ -223,7 +223,34 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   const [showGames, setShowGames] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  
+
+  // AUTO-HEAL: detecta se o doc tem URLs `temp/` (arquivo ainda não foi
+  // movido pra storage final) e chama /api/page-heal pra tentar recuperar em
+  // tempo real. Se curou, recarrega a página depois de 2s pra mostrar as
+  // URLs novas. Dedup via sessionStorage — evita loop infinito se o heal
+  // retornar "nenhum curado" (arquivos já deletados do storage).
+  useEffect(() => {
+    if (!pageData?.id) return;
+    if (typeof window === 'undefined') return;
+    const healedKey = `heal_tried_${pageData.id}`;
+    if (sessionStorage.getItem(healedKey)) return;
+
+    const docStr = JSON.stringify(pageData);
+    const hasTempUrls = docStr.includes('"temp/') || docStr.includes('%2Ftemp%2F');
+    if (!hasTempUrls) return;
+
+    sessionStorage.setItem(healedKey, '1');
+    fetch(`/api/page-heal?pageId=${encodeURIComponent(pageData.id)}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then((res) => {
+        if (res?.healed > 0) {
+          // Deu certo — recarrega pra pegar URLs novas do Firestore
+          setTimeout(() => window.location.reload(), 1500);
+        }
+      })
+      .catch(() => { /* silencioso — cron faz segunda tentativa em até 30min */ });
+  }, [pageData?.id]);
+
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);
   
   const [puzzleRevealed, setPuzzleRevealed] = useState(false);

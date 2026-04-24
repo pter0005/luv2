@@ -14,3 +14,9 @@
 
 [functions."api/cron/conversion-monitor"]
   schedule = "0 * * * *"
+
+# Self-heal de imagens: a cada 30min varre páginas recentes (72h) procurando
+# arquivos ainda em temp/ e tenta mover pro storage final. Recuperação
+# automática sem intervenção manual — cliente geralmente nem nota a falha.
+[functions."api/cron/self-heal-images"]
+  schedule = "*/30 * * * *"
