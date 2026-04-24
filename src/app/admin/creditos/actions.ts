@@ -3,6 +3,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { getAuth } from 'firebase-admin/auth';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { requireAdmin } from '@/lib/admin-action-guard';
 
 export type CreditEntry = {
   email: string;
@@ -18,6 +19,7 @@ export type CreditEntry = {
 
 // ── Busca todos os créditos ──────────────────
 export async function getAllCredits(): Promise<CreditEntry[]> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const snap = await db.collection('user_credits').orderBy('updatedAt', 'desc').get();
   return snap.docs.map(doc => {
@@ -44,6 +46,7 @@ export async function addCredits(
   credits: number,
   note?: string
 ): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin();
   if (!email || credits < 1) return { success: false, error: 'Email ou créditos inválidos.' };
 
   const db = getAdminFirestore();
@@ -92,6 +95,7 @@ export async function setTotalCredits(
   totalCredits: number,
   note?: string
 ): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin();
   if (!email || totalCredits < 0) return { success: false, error: 'Dados inválidos.' };
 
   const db = getAdminFirestore();
@@ -123,6 +127,7 @@ export async function setTotalCredits(
 
 // ── Busca email pelo ID da página ────────────
 export async function getEmailByPageId(pageId: string): Promise<{ email: string | null; error?: string }> {
+  await requireAdmin();
   if (!pageId.trim()) return { email: null, error: 'ID inválido.' };
   const db = getAdminFirestore();
   try {
@@ -139,6 +144,7 @@ export async function getEmailByPageId(pageId: string): Promise<{ email: string 
 
 // ── Remove usuário dos créditos ──────────────
 export async function removeUserCredits(email: string): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin();
   const db = getAdminFirestore();
   try {
     await db.collection('user_credits').doc(email.toLowerCase().trim()).delete();

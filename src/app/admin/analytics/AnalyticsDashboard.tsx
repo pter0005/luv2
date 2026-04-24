@@ -155,24 +155,44 @@ export default function AnalyticsDashboard({
   totalVisitors, totalSales, totalRevenue, overallConv,
   chartData, sourceRows, recentSales,
 }: DashboardProps) {
-  const [confirmStep, setConfirmStep] = useState(0); // 0=idle, 1=typed, 2=doing, 3=done
+  const [confirmStep, setConfirmStep] = useState(0); // 0=idle, 1=typed, 2=password, 3=doing, 4=done
   const [confirmInput, setConfirmInput] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetError, setResetError] = useState('');
   const CONFIRM_WORD = 'APAGAR TUDO';
 
   const handleReset = async () => {
+    setResetError('');
     if (confirmStep === 0) { setConfirmStep(1); return; }
-    if (confirmInput !== CONFIRM_WORD) return;
-    setConfirmStep(2);
+    if (confirmStep === 1) {
+      if (confirmInput !== CONFIRM_WORD) return;
+      setConfirmStep(2);
+      return;
+    }
+    // step 2 = envia com senha
+    if (!resetPassword) { setResetError('Digite a senha.'); return; }
+    setConfirmStep(3);
     try {
-      const r = await fetch('/api/admin/analytics/reset', { method: 'POST' });
+      const r = await fetch('/api/admin/analytics/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: resetPassword }),
+      });
       if (r.ok) {
-        setConfirmStep(3);
+        setConfirmStep(4);
         setTimeout(() => window.location.reload(), 1500);
       } else {
-        setConfirmStep(1);
+        const data = await r.json().catch(() => ({}));
+        setResetError(
+          data?.error === 'invalid_password' ? 'Senha incorreta.' :
+          data?.error === 'unauthorized' ? 'Você não é admin.' :
+          'Falha no reset. Tente de novo.',
+        );
+        setConfirmStep(2);
       }
     } catch {
-      setConfirmStep(1);
+      setResetError('Erro de conexão.');
+      setConfirmStep(2);
     }
   };
 
@@ -412,7 +432,7 @@ export default function AnalyticsDashboard({
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-30"
                 style={{ background: 'rgba(239,68,68,0.25)', border: '1px solid rgba(239,68,68,0.5)', color: '#fca5a5' }}>
                 <Zap className="w-4 h-4" />
-                Confirmar
+                Próximo (senha)
               </button>
               <button onClick={() => { setConfirmStep(0); setConfirmInput(''); }}
                 className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors px-2">
@@ -423,13 +443,45 @@ export default function AnalyticsDashboard({
         )}
 
         {confirmStep === 2 && (
+          <div className="space-y-3">
+            <p className="text-xs text-red-400 font-bold">Senha de confirmação:</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="password"
+                value={resetPassword}
+                onChange={e => { setResetPassword(e.target.value); setResetError(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') handleReset(); }}
+                placeholder="senha"
+                autoFocus
+                autoComplete="new-password"
+                className="px-3 py-2 rounded-xl text-sm font-mono text-white bg-red-950/30 border border-red-500/30 focus:outline-none focus:border-red-500/60 w-48"
+              />
+              <button
+                onClick={handleReset}
+                disabled={!resetPassword}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-30"
+                style={{ background: 'rgba(239,68,68,0.3)', border: '1px solid rgba(239,68,68,0.6)', color: '#fca5a5' }}>
+                <Zap className="w-4 h-4" />Apagar tudo
+              </button>
+              <button onClick={() => { setConfirmStep(0); setConfirmInput(''); setResetPassword(''); setResetError(''); }}
+                className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors px-2">
+                Cancelar
+              </button>
+            </div>
+            {resetError && (
+              <p className="text-xs text-red-400 font-bold">⚠ {resetError}</p>
+            )}
+          </div>
+        )}
+
+        {confirmStep === 3 && (
           <div className="flex items-center gap-2 text-sm text-red-300">
             <RefreshCw className="w-4 h-4 animate-spin" />
             Apagando tudo...
           </div>
         )}
 
-        {confirmStep === 3 && (
+        {confirmStep === 4 && (
           <div className="flex items-center gap-2 text-sm text-green-400 font-bold">
             ✓ Tudo apagado! Recarregando...
           </div>

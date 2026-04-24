@@ -384,6 +384,15 @@
   #replayBtn{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:11px 26px;background:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(180,110,200,.14) 100%);border:1px solid rgba(255,255,255,.35);color:#fff;font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:15px;letter-spacing:.03em;border-radius:999px;cursor:pointer;z-index:15;opacity:0;pointer-events:none;transition:opacity .6s ease,transform .25s ease,box-shadow .3s ease;-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 8px 28px rgba(170,50,160,.3),0 0 38px rgba(255,140,210,.18);text-shadow:0 1px 2px rgba(60,10,80,.5)}
   #replayBtn.shown{opacity:.9;pointer-events:auto}
   #replayBtn:hover{opacity:1;transform:translateX(-50%) scale(1.04);box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 10px 36px rgba(180,60,170,.4),0 0 60px rgba(255,140,210,.28)}
+  /* Skip animation button — canto inferior direito, discreto.
+     Só aparece DURANTE a animação (classe .shown, setada quando startAnim
+     roda; escondido em startBtn visible + finale). Pressiona → dispara
+     poema:done imediatamente. Ícone ⏭ (skip forward) + label "pular". */
+  #skipBtn{position:fixed;bottom:16px;right:14px;display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 10px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.75);font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;letter-spacing:.02em;border-radius:999px;cursor:pointer;z-index:20;opacity:0;pointer-events:none;transition:opacity .4s ease,transform .2s ease,background .2s ease,color .2s ease;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  #skipBtn.shown{opacity:.7;pointer-events:auto}
+  #skipBtn:hover,#skipBtn:focus{opacity:1;background:rgba(0,0,0,0.55);color:#fff;transform:scale(1.04);outline:none}
+  #skipBtn:active{transform:scale(.97)}
+  #skipBtn svg{opacity:.9}
   @media (prefers-reduced-motion:reduce){
     #textOverlay .word{transition:opacity .4s ease;transform:none!important}
     #startBtn{transition:opacity .4s ease}
@@ -403,6 +412,12 @@
 </div>
 <button id="genderBtn" aria-label="trocar versão">&#9792;</button>
 <button id="replayBtn">repetir &#9825;</button>
+<button id="skipBtn" aria-label="pular animação" title="Pular animação">
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+    <path d="M6 5v14l8-7zM16 5v14h3V5z"/>
+  </svg>
+  <span>pular</span>
+</button>
 <div id="loading">carregando</div>
 
 <script id="flower-data" type="application/json">{"canvas":{"width":375,"height":812},"layers":[{"name":"SACOLA MUIÉ - Copia","x":-241.9,"y":127.2,"w":1080,"h":1350,"scale":0.557,"rotation":0,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/bouquet-bag.webp"},{"name":"2","x":-249.7,"y":91.6,"w":1080,"h":1350,"scale":0.348,"rotation":-38.8,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/bouquet-filler-1.webp"},{"name":"2","x":-3.6,"y":145.4,"w":1080,"h":1350,"scale":0.316,"rotation":48.4,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/bouquet-filler-2.webp"},{"name":"orquidea","x":12,"y":149.7,"w":1080,"h":1350,"scale":0.239,"rotation":10.5,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/orchid.webp"},{"name":"é - Copia (2)","x":123.3,"y":228.5,"w":1080,"h":1350,"scale":0.187,"rotation":27.7,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/rose.webp"},{"name":"VIOLETA","x":-159,"y":182,"w":1080,"h":1350,"scale":0.21,"rotation":-20.1,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/violet.webp"},{"name":"Jasmim","x":-105.6,"y":145.9,"w":1080,"h":1350,"scale":0.28,"rotation":0,"opacity":1,"flipX":false,"imageW":400,"imageH":500,"src":"flowers/jasmin.webp"},{"name":"GIRASSOL","x":-193.2,"y":234.4,"w":1080,"h":1350,"scale":0.159,"rotation":20.8,"opacity":1,"flipX":true,"imageW":400,"imageH":500,"src":"flowers/sunflower.webp"}]}</script>
@@ -1625,6 +1640,7 @@ function frame(now) {
     if (!animationDone) {
       animationDone = true;
       document.getElementById('replayBtn').classList.add('shown');
+      document.getElementById('skipBtn').classList.remove('shown');
       // Signal parent app (if embedded) — give 1.2s for finale text to breathe before reveal
       setTimeout(() => __postToParent({ type: 'poema:done' }), 1200);
     }
@@ -1738,6 +1754,12 @@ function startAnim() {
     spawnPetal(false);
   }
   document.getElementById('replayBtn').classList.remove('shown');
+  // Mostra botão de pular 1.5s depois da animação começar — dá tempo pro user
+  // perceber a intro antes de ver o skip. Se o skip aparecer imediato, muita
+  // gente clica reflexivamente sem ver nada.
+  setTimeout(() => {
+    if (!animationDone) document.getElementById('skipBtn').classList.add('shown');
+  }, 1500);
   textOverlay.innerHTML = '';
   textOverlay.classList.remove('out');
   scheduleFrame(frame);  // kick off the loop
@@ -1753,6 +1775,7 @@ function replay() {
   textOverlay.innerHTML = '';
   textOverlay.classList.remove('out', 'finale');
   document.getElementById('replayBtn').classList.remove('shown');
+  document.getElementById('skipBtn').classList.remove('shown');
   document.getElementById('startBtn').classList.remove('hidden');
   // Redraw initial static state (background + any "prelude" visible)
   enterViewMode();
@@ -1762,6 +1785,17 @@ function replay() {
 
 document.getElementById('startBtn').addEventListener('click', startAnim);
 document.getElementById('replayBtn').addEventListener('click', replay);
+// Pular animação: dispara poema:done imediatamente pro parent app revelar a
+// página e esconde o botão. Se o user clicar várias vezes ou por engano, o
+// parent (PageClientComponent) já tem dedup via `calledRef` — multi-emit é
+// safe. animationDone = true pra cancelar o setTimeout do replay/skip pending.
+document.getElementById('skipBtn').addEventListener('click', () => {
+  if (animationDone) return;
+  animationDone = true;
+  document.getElementById('skipBtn').classList.remove('shown');
+  document.getElementById('replayBtn').classList.add('shown');
+  __postToParent({ type: 'poema:done' });
+});
 document.getElementById('genderBtn').addEventListener('click', () => {
   gender = gender === 'fem' ? 'mas' : 'fem';
   document.getElementById('genderBtn').textContent = gender === 'fem' ? '\u2640' : '\u2642';

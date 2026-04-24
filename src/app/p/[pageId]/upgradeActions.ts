@@ -3,14 +3,37 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { FieldValue } from 'firebase-admin/firestore';
+import { headers } from 'next/headers';
+import { rateLimit } from '@/lib/rate-limit';
+import { logCriticalError } from '@/lib/log-critical-error';
 
 const UPGRADE_PRICE = 9.99;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function getClientIp(): string {
+  try {
+    const h = headers();
+    return (h.get('x-forwarded-for') || '').split(',')[0].trim() || h.get('x-real-ip') || 'unknown';
+  } catch { return 'unknown'; }
+}
 
 export async function createUpgradePayment(pageId: string, email: string): Promise<
   { qrCode: string; qrCodeBase64: string; paymentId: string } | { error: string }
 > {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { error: 'Pagamento não configurado.' };
+
+  // Rate limit: 5 gerações PIX por IP por minuto. Evita spam que pode derrubar
+  // a conta no antifraude do MP — cada PIX gerado conta como "transação
+  // iniciada" mesmo se ninguém pagar.
+  const ip = getClientIp();
+  if (!rateLimit(`upgrade-pix:${ip}`, 5, 60_000).ok) {
+    return { error: 'Muitas tentativas. Espere 1 minuto.' };
+  }
+
+  // Valida email server-side (o frontend valida mas cliente pode fazer bypass)
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return { error: 'Email inválido.' };
 
   try {
     const db = getAdminFirestore();
@@ -29,7 +52,7 @@ export async function createUpgradePayment(pageId: string, email: string): Promi
         description: 'MyCupid — Upgrade para Permanente',
         payment_method_id: 'pix',
         payer: {
-          email: email || 'upgrade@mycupid.com.br',
+          email: cleanEmail,
           first_name: 'Cliente',
           last_name: 'MyCupid',
           identification: { type: 'CPF', number: '19100000000' },
@@ -56,12 +79,47 @@ export async function verifyUpgradePayment(
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { success: false, error: 'Token não configurado.' };
 
+  // Rate limit: polling legítimo é ~1 chamada a cada 5s (= 12/min). Cap em 60
+  // cobre polling + retries. Previne brute-force de paymentIds.
+  const ip = getClientIp();
+  if (!rateLimit(`upgrade-verify:${ip}`, 60, 60_000).ok) {
+    return { success: false, error: 'Muitas tentativas.' };
+  }
+
   try {
     const client = new MercadoPagoConfig({ accessToken: token });
     const payment = new Payment(client);
     const info = await payment.get({ id: paymentId }) as any;
 
     if (info.status !== 'approved') return { success: false };
+
+    // ── VALIDAÇÃO CRÍTICA ─────────────────────────────────────────────────
+    // Sem isso, qualquer atacante com acesso a QUALQUER paymentId aprovado
+    // da MP (seu ou de terceiro) poderia upgradar páginas alheias grátis.
+    // O external_reference é fixado pelo createUpgradePayment com formato
+    // "upgrade_{pageId}" e é imutável pelo cliente — amarra a prova de
+    // pagamento à página específica.
+    const expectedRef = `upgrade_${pageId}`;
+    if (info.external_reference !== expectedRef) {
+      logCriticalError('payment', 'verifyUpgradePayment: external_reference mismatch', {
+        pageId,
+        paymentId,
+        received: info.external_reference,
+        expected: expectedRef,
+        ip,
+      }).catch(() => {});
+      return { success: false, error: 'Pagamento não corresponde a esta página.' };
+    }
+
+    // Valida valor também — proteção extra (atacante com payment aprovado de
+    // R$1 centavo não consegue upgradar página).
+    const amount = Number(info.transaction_amount);
+    if (!isFinite(amount) || amount < UPGRADE_PRICE - 0.01) {
+      logCriticalError('payment', 'verifyUpgradePayment: amount mismatch', {
+        pageId, paymentId, amount, expected: UPGRADE_PRICE, ip,
+      }).catch(() => {});
+      return { success: false, error: 'Valor do pagamento incorreto.' };
+    }
 
     return await applyUpgrade(pageId, paymentId);
   } catch (e: any) {
@@ -97,6 +155,9 @@ export async function applyUpgrade(
     });
     return { success: true };
   } catch (e: any) {
+    logCriticalError('payment', 'applyUpgrade failed', {
+      pageId, paymentId, error: e?.message,
+    }).catch(() => {});
     return { success: false, error: e.message };
   }
 }

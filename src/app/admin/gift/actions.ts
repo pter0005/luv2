@@ -3,6 +3,7 @@
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { randomBytes } from 'crypto';
+import { requireAdmin } from '@/lib/admin-action-guard';
 
 export type GiftToken = {
   token: string;
@@ -18,6 +19,7 @@ export async function createGiftToken(
   credits: number,
   note?: string,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const token = randomBytes(16).toString('hex');
   try {
@@ -34,6 +36,7 @@ export async function createGiftToken(
 }
 
 export async function getAllGiftTokens(): Promise<GiftToken[]> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const snap = await db.collection('gift_tokens').orderBy('createdAt', 'desc').limit(50).get();
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://mycupid.com.br').replace(/\/$/, '');
@@ -52,6 +55,7 @@ export async function getAllGiftTokens(): Promise<GiftToken[]> {
 }
 
 export async function deleteGiftToken(token: string): Promise<void> {
+  await requireAdmin();
   const db = getAdminFirestore();
   await db.collection('gift_tokens').doc(token).delete();
 }

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { pageSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
 import { updateLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+import { requestEditAccess } from './auth';
 import { useToast } from '@/hooks/use-toast';
 
 import TitleField from '@/components/chat/fields/TitleField';
@@ -29,6 +30,10 @@ interface EditPageClientProps {
   pageId: string;
   ownerId: string;
   initialData: any;
+  /** Email mascarado ("pedr***@gmail.com") pra mostrar como dica no modal de verificação */
+  pageEmailHint?: string;
+  /** Se true, o servidor já validou que tem cookie de edição válido — pula o modal */
+  preAuthorized?: boolean;
 }
 
 interface Section {
@@ -74,7 +79,7 @@ function reviveDates(data: any): any {
   return cloned;
 }
 
-export default function EditPageClient({ pageId, ownerId, initialData }: EditPageClientProps) {
+export default function EditPageClient({ pageId, ownerId, initialData, pageEmailHint, preAuthorized }: EditPageClientProps) {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
@@ -97,23 +102,49 @@ export default function EditPageClient({ pageId, ownerId, initialData }: EditPag
     shouldUnregister: false,
   });
 
-  // Auth gate no client: dono OU loading. Se user carregou e NÃO é dono, redirect.
-  // Admin bypass não é checado no client — o server action já cobre.
-  const [authChecked, setAuthChecked] = useState(false);
+  // ── AUTH: dois caminhos ──────────────────────────────────────────────────
+  //  1. User logado que é o dono (user.uid === ownerId) — libera direto
+  //  2. Cookie de edição já validado (`preAuthorized`) — libera direto
+  //  3. Caso contrário → modal pedindo email. Se email bate com guestEmail da
+  //     página, backend grava cookie e libera.
+  const [authChecked, setAuthChecked] = useState(preAuthorized || false);
+  const [emailModalOpen, setEmailModalOpen] = useState(!preAuthorized);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+
+  // Se user logado bate com ownerId, libera silenciosamente (modal fecha)
   useEffect(() => {
+    if (preAuthorized) return;
     if (isUserLoading) return;
-    if (!user) {
-      // Sem login — manda pro login e volta depois
-      router.replace(`/login?redirect=/editar/${pageId}`);
+    if (user && user.uid === ownerId) {
+      setAuthChecked(true);
+      setEmailModalOpen(false);
+    }
+  }, [user, isUserLoading, ownerId, preAuthorized]);
+
+  const verifyEmail = async () => {
+    setEmailError('');
+    const email = emailInput.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      setEmailError('Email inválido.');
       return;
     }
-    if (user.uid !== ownerId) {
-      toast({ variant: 'destructive', title: 'Sem permissão', description: 'Você não é o dono desta página.' });
-      router.replace(`/p/${pageId}`);
-      return;
+    setVerifying(true);
+    try {
+      const res = await requestEditAccess(pageId, email);
+      if (res.ok) {
+        setAuthChecked(true);
+        setEmailModalOpen(false);
+      } else {
+        setEmailError(res.error || 'Não foi possível verificar.');
+      }
+    } catch {
+      setEmailError('Erro. Tente de novo.');
+    } finally {
+      setVerifying(false);
     }
-    setAuthChecked(true);
-  }, [user, isUserLoading, ownerId, pageId, router, toast]);
+  };
 
   const toggleSection = (id: string) => {
     setOpenIds(prev => {
@@ -125,21 +156,21 @@ export default function EditPageClient({ pageId, ownerId, initialData }: EditPag
   };
 
   const handleSave = () => {
-    if (!user) return;
+    // User logado passa o uid; user autenticado por email passa string vazia
+    // (o backend valida via cookie edit_token_{pageId}).
+    const callerUid = user?.uid || '';
     methods.handleSubmit(
       (data) => {
         startSaving(async () => {
-          // Tira campos que o backend bloqueia (defense in depth — o server
-          // também strippa, mas poupamos bandwidth e evitamos sanitize server-side).
           const payload: any = { ...data };
           delete payload.plan;
           delete payload.userId;
           delete payload.intentId;
-          delete payload.payment; // PII sensível — não envolvida no edit
+          delete payload.payment;
           delete payload.utmSource;
-          delete payload.whatsappNumber; // já salvo no create, edit não mexe
+          delete payload.whatsappNumber;
 
-          const res = await updateLovePage(pageId, user.uid, payload);
+          const res = await updateLovePage(pageId, callerUid, payload);
           if (!res.success) {
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: res.error || 'Tente de novo.' });
             return;
@@ -155,10 +186,91 @@ export default function EditPageClient({ pageId, ownerId, initialData }: EditPag
     )();
   };
 
-  if (isUserLoading || !authChecked) {
+  // Gate antes de mostrar o form: pede email se não está pre-autorizado nem é
+  // o dono logado. UI estilo "enter your email" — o email salvo na compra é
+  // a chave. Dica mascarada (pedr***@gmail.com) ajuda a lembrar sem vazar.
+  if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white/60">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#0a0012] via-[#060010] to-black text-white">
+        <div className="w-full max-w-md rounded-2xl p-6 ring-1 ring-amber-400/30 bg-gradient-to-br from-amber-500/10 via-pink-500/5 to-purple-500/10 backdrop-blur-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-amber-400/20 ring-1 ring-amber-300/40 flex items-center justify-center shrink-0">
+              <Crown className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-amber-300/90 font-bold">Edição VIP</span>
+              <h1 className="text-lg font-bold leading-tight">Verificar identidade</h1>
+            </div>
+          </div>
+
+          <p className="text-sm text-white/60 mb-1 leading-relaxed">
+            Pra editar, confirma o email usado na compra desta página:
+          </p>
+          {pageEmailHint && (
+            <p className="text-[11px] text-amber-200/70 font-mono mb-4">
+              Dica: <span className="text-amber-100">{pageEmailHint}</span>
+            </p>
+          )}
+          {!pageEmailHint && <div className="mb-4" />}
+
+          <div className="space-y-3">
+            <div className="rounded-lg p-2.5 bg-amber-500/10 ring-1 ring-amber-400/20 text-[11.5px] text-amber-100/90 leading-relaxed">
+              <strong className="text-amber-200">Atenção:</strong> o email precisa ser <strong>exatamente o mesmo</strong> que você usou ao comprar. Se não lembrar, confere na caixa de entrada — mandamos o link da página pra lá.
+            </div>
+
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              autoCapitalize="off"
+              autoCorrect="off"
+              placeholder="seuemail@exemplo.com"
+              value={emailInput}
+              onChange={e => { setEmailInput(e.target.value); setEmailError(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') verifyEmail(); }}
+              autoFocus
+              disabled={verifying}
+              className={cn(
+                'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/35',
+                'bg-white/[0.04] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition',
+                emailError ? 'ring-red-400/50 focus:ring-red-400/60' : 'ring-white/10 focus:ring-amber-400/50',
+              )}
+            />
+
+            {emailError && (
+              <div className="flex items-start gap-2 rounded-lg p-2.5 bg-red-500/10 ring-1 ring-red-400/30">
+                <AlertCircle className="w-4 h-4 text-red-300 mt-0.5 shrink-0" />
+                <span className="text-[12.5px] text-red-100/90">{emailError}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={verifyEmail}
+              disabled={verifying || !emailInput.trim()}
+              className={cn(
+                'w-full h-12 rounded-xl font-bold text-white transition flex items-center justify-center gap-2 active:scale-[0.98]',
+                'bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500',
+                'shadow-[0_10px_30px_-10px_rgba(236,72,153,0.6)]',
+                'disabled:opacity-60 disabled:cursor-not-allowed',
+              )}
+            >
+              {verifying ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Verificando...</>
+              ) : (
+                <><Check className="w-4 h-4" /> Confirmar e editar</>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push(`/p/${pageId}`)}
+              className="w-full text-[12px] text-white/45 hover:text-white/70 transition"
+            >
+              Voltar pra página
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -43,13 +43,30 @@ export default function UpgradeModal({ pageId, expireAt }: { pageId: string; exp
     return () => clearTimeout(t);
   }, [pageId]);
 
+  // Abre o modal quando o botão "Tornar permanente" no ExpiryBanner é clicado
+  // — sem isso, o user não tinha como abrir o modal depois de dismissá-lo.
+  useEffect(() => {
+    const handler = () => {
+      try { sessionStorage.removeItem(`upgrade_dismissed_${pageId}`); } catch {}
+      // Reset pra tela de oferta (se user abriu-fechou-pagou-tentou abrir de
+      // novo, não queremos mostrar um PIX velho)
+      setStep('offer');
+      setError('');
+      setVisible(true);
+    };
+    window.addEventListener('mycupid:open-upgrade', handler);
+    return () => window.removeEventListener('mycupid:open-upgrade', handler);
+  }, [pageId]);
+
   // Countdown
   useEffect(() => {
     const id = setInterval(() => setTimeLeft(getTimeLeft(expireAt)), 1000);
     return () => clearInterval(id);
   }, [expireAt]);
 
-  // Polling pagamento
+  // Polling pagamento — PIX MP tem validade de 30 min. Polling cobre 32 min
+  // com margem. Se o user fechar a aba antes, o webhook MP (/api/webhooks/mp)
+  // ainda aplica o upgrade — quando abrir a página de novo, ela já é permanente.
   const pollPayment = useCallback(async (pid: string) => {
     setPolling(true);
     let attempts = 0;
@@ -62,7 +79,9 @@ export default function UpgradeModal({ pageId, expireAt }: { pageId: string; exp
         setStep('success');
         setTimeout(() => window.location.reload(), 3000);
       }
-      if (attempts >= 120) { clearInterval(id); setPolling(false); }
+      // 32 min de polling (384 × 5s). Cobre a validade do PIX + margem pro
+      // webhook cair depois do cliente-side timer. 60 × 5s = 5 min era curto.
+      if (attempts >= 384) { clearInterval(id); setPolling(false); }
     }, 5000);
   }, [pageId]);
 

@@ -1,15 +1,12 @@
 import { redirect } from 'next/navigation';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import EditPageClient from './EditPageClient';
+import { verifyEditToken } from './auth';
 
 export const dynamic = 'force-dynamic';
 
-// Serialização profunda tratando Firestore Timestamps. O JSON.stringify nativo
-// chama toJSON() do Timestamp antes do replacer, produzindo {seconds,nanoseconds}
-// que quebra o revive no cliente. Aqui convertemos pra ISO string ANTES do stringify.
 function deepSerialize(v: any): any {
   if (v === null || v === undefined) return v;
-  // Firestore Timestamp (tem seconds + nanoseconds OU _seconds/_nanoseconds)
   if (typeof v === 'object') {
     if (typeof (v as any).toDate === 'function') {
       try { return (v as any).toDate().toISOString(); } catch { return null; }
@@ -46,5 +43,28 @@ export default async function EditarPaginaPage({ params }: { params: { pageId: s
 
   const serialized = deepSerialize(data);
 
-  return <EditPageClient pageId={pageId} initialData={serialized} ownerId={data?.userId || ''} />;
+  // Verifica se já tem cookie de edição (email validado previamente). Se
+  // sim, passa pro client em modo "liberado"; senão, cliente exibe modal
+  // pedindo email antes de mostrar o form.
+  const tokenCheck = await verifyEditToken(pageId);
+
+  return (
+    <EditPageClient
+      pageId={pageId}
+      initialData={serialized}
+      ownerId={data?.userId || ''}
+      pageEmailHint={maskEmail(data?.guestEmail || data?.ownerEmail || '')}
+      preAuthorized={tokenCheck.ok}
+    />
+  );
+}
+
+// Mascara email pra mostrar uma dica no modal de verificação:
+// "pedr***@gmail.com" — suficiente pra user lembrar sem vazar o email inteiro.
+function maskEmail(raw: string): string {
+  if (!raw || !raw.includes('@')) return '';
+  const [local, domain] = raw.split('@');
+  if (!local || !domain) return '';
+  const visible = local.slice(0, Math.min(3, local.length));
+  return `${visible}${'*'.repeat(Math.max(3, local.length - visible.length))}@${domain}`;
 }

@@ -72,19 +72,35 @@ class IntroErrorBoundary extends React.Component<
 
 const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) => {
     const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+    // Timeout: se a imagem não carregou em 12s, mostra estado de erro em vez
+    // de spinner eterno. Cobre caso de URLs de arquivos já deletados do temp/
+    // (Cloud Storage retorna 404, mas o Next.js Image às vezes não chama
+    // onError pra certos erros de rede). 12s é generoso pro 3G brasileiro.
+    useEffect(() => {
+      if (status !== 'loading') return;
+      const t = setTimeout(() => setStatus((s) => (s === 'loading' ? 'error' : s)), 12000);
+      return () => clearTimeout(t);
+    }, [status]);
+
+    // URL quebrada conhecida: arquivo foi pra temp/ mas o move pro storage
+    // permanente falhou. Em vez de tentar carregar (vai dar 404), já mostra
+    // placeholder. Admin consegue identificar via /admin/pages.
+    const isBroken = typeof img?.url === 'string' && img.url.includes('/temp/');
+
     return (
         <div className="relative w-full h-full bg-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex items-center justify-center">
-            {status === 'loading' && (
+            {status === 'loading' && !isBroken && (
                 <div className="absolute inset-0 flex items-center justify-center z-0">
                    <Loader2 className="w-6 h-6 text-white/20 animate-spin" />
                 </div>
             )}
-            {status === 'error' && (
-                <div className="absolute inset-0 flex items-center justify-center z-0 text-white/20 text-xs text-center px-4">
-                    <span>❤️</span>
+            {(status === 'error' || isBroken) && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-0 text-white/35 text-[11px] text-center px-4 gap-2">
+                    <Heart className="w-6 h-6 fill-white/15 stroke-none" />
+                    <span>Foto indisponível</span>
                 </div>
             )}
-            {img?.url && (
+            {img?.url && !isBroken && (
                 <Image
                     src={img.url}
                     alt={`Imagem da galeria ${index + 1}`}
@@ -173,12 +189,22 @@ function ExpiryBanner({ expireAt, isEN = false }: { expireAt: any; isEN?: boolea
                             {String(timeLeft.seconds).padStart(2, '0')}s
                         </span>
                     </span>
-                    <a
-                        href="https://mycupid.com.br"
-                        className="ml-3 px-3 py-1 bg-black/20 hover:bg-black/30 rounded-full text-xs transition-all"
+                    <button
+                        type="button"
+                        onClick={() => {
+                          // Dispara evento customizado que o UpgradeModal
+                          // escuta. Sem redirect — abre o modal in-page pra
+                          // user pagar sem sair. Limpa o "dismissed" flag
+                          // pra reabrir caso tenha fechado antes.
+                          try {
+                            sessionStorage.removeItem('upgrade_dismissed_' + (window.location.pathname.split('/p/')[1] || ''));
+                          } catch {}
+                          window.dispatchEvent(new CustomEvent('mycupid:open-upgrade'));
+                        }}
+                        className="ml-3 px-3 py-1 bg-black/20 hover:bg-black/30 rounded-full text-xs transition-all cursor-pointer"
                     >
-                        Tornar permanente →
-                    </a>
+                        {isEN ? 'Make permanent →' : 'Tornar permanente →'}
+                    </button>
                 </div>
             ) : null}
         </motion.div>
@@ -499,10 +525,14 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
         </div>
 
-        {/* ── SHARE CTA (com Edit no topo pro dono VIP) ──────────── */}
+        {/* ── SHARE CTA (com Edit no topo pro VIP) ──────────── */}
         <div className="relative z-10 w-full max-w-md mx-auto mt-8 px-4">
             {(() => {
-              const canEdit = !isDemoPage && pageData.plan === 'vip' && user?.uid && pageData.userId && user.uid === pageData.userId;
+              // Banner de edição aparece pra QUALQUER visitante em página VIP.
+              // A autenticação real (verificação do email do dono) acontece
+              // no /editar/[pageId]. Assim o dono consegue editar em QUALQUER
+              // device (celular novo, trocou navegador) só lembrando do email.
+              const canEdit = !isDemoPage && pageData.plan === 'vip';
               return (
                 <div className="relative rounded-2xl p-6 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm text-center">
                     {/* Edit panel (VIP + dono): banner dourado no topo do card, separado

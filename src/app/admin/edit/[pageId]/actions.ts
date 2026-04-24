@@ -5,6 +5,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireAdmin } from '@/lib/admin-action-guard';
 
 // Basic validation for the data
 interface UpdatablePageData {
@@ -14,6 +15,7 @@ interface UpdatablePageData {
 }
 
 export async function updateLovePage(pageId: string, data: UpdatablePageData) {
+    await requireAdmin();
     if (!pageId) {
         return { error: 'Page ID is missing.' };
     }
@@ -48,6 +50,7 @@ export async function updateLovePage(pageId: string, data: UpdatablePageData) {
 }
 
 export async function makePagePermanent(pageId: string) {
+    await requireAdmin();
     if (!pageId) {
         return { error: 'Page ID is missing.' };
     }

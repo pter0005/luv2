@@ -2,12 +2,14 @@
 
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { requireAdmin } from '@/lib/admin-action-guard';
 
 export async function createDiscountCode(
   code: string,
   discount: number,
   maxUses: number,
 ): Promise<{ success: boolean; error?: string }> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const clean = code.toUpperCase().trim();
   try {
@@ -26,6 +28,7 @@ export async function createDiscountCode(
 }
 
 export async function getDiscountCodes() {
+  await requireAdmin();
   const db = getAdminFirestore();
   const snap = await db.collection('discount_codes').orderBy('createdAt', 'desc').get();
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://mycupid.com.br').replace(/\/$/, '');
@@ -45,11 +48,13 @@ export async function getDiscountCodes() {
 }
 
 export async function toggleDiscountCode(code: string, active: boolean): Promise<void> {
+  await requireAdmin();
   const db = getAdminFirestore();
   await db.collection('discount_codes').doc(code).update({ active });
 }
 
 export async function deleteDiscountCode(code: string): Promise<void> {
+  await requireAdmin();
   const db = getAdminFirestore();
   await db.collection('discount_codes').doc(code).delete();
 }

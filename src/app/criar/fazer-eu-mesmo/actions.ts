@@ -623,7 +623,11 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
     }
   }
 
-  // All retries failed — log and return original (temp URL) so page saves but can be recovered
+  // All retries failed — log em failed_file_moves + alerta crítico.
+  // A page ainda salva com URL temp/ pra NÃO perder os outros campos (mensagem,
+  // título, etc.) — recovery manual via /admin/pages ou reprocessPageFiles.
+  // Antes: log silencioso → cliente via loading infinito pra sempre.
+  // Agora: logCriticalError dispara push pros admins pra ação imediata.
   try {
     await db.collection('failed_file_moves').add({
       pageId: newPageId, oldPath, newPath, targetFolder,
@@ -633,6 +637,17 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
   } catch (e) {
     console.error('[moveFile] CRITICAL: could not log failure:', { oldPath, newPath, lastError });
   }
+  // Alerta centralizado — aparece no admin /errors + notifyAdmins push
+  try {
+    await logCriticalError('page_creation', `Falha ao mover ${targetFolder} pro storage final`, {
+      pageId: newPageId,
+      oldPath,
+      newPath,
+      targetFolder,
+      attempts: maxRetries,
+      error: lastError?.message,
+    });
+  } catch { /* best effort */ }
 
   return fileObject; // returns temp URL — page saves, file recovery tool can fix later
 }
@@ -1038,7 +1053,7 @@ export async function updateLovePage(
   userId: string,
   partialData: any,
 ): Promise<UpdatePageResult> {
-  if (!pageId || !userId) return { success: false, error: 'Missing pageId or userId.' };
+  if (!pageId) return { success: false, error: 'Missing pageId.' };
 
   const db = getAdminFirestore();
   const pageRef = db.collection('lovepages').doc(pageId);
@@ -1046,39 +1061,70 @@ export async function updateLovePage(
   if (!pageSnap.exists) return { success: false, error: 'Página não encontrada.' };
   const existing = pageSnap.data()!;
 
-  // ── Verifica session cookie pra bloquear spoofing do userId ─────────────
-  // O cliente manda `userId` como argumento (padrão do projeto). Sem isso,
-  // qualquer um poderia chamar updateLovePage(pageId, userId_da_vitima, ...)
-  // e passar o ID do dono pra bypass. Checamos o session cookie do Firebase
-  // Admin pra garantir que o userId passado bate com o user logado.
-  // Fallback: se não tiver session cookie (SSR em dev / browser sem auth
-  // setado), a verificação é best-effort — o check de userId + plan abaixo
-  // ainda bloqueia a edição de páginas que não são suas.
-  try {
-    const sessionCookie = cookies().get('__session')?.value;
-    if (sessionCookie) {
-      const { getAdminApp } = await import('@/lib/firebase/admin/config');
-      const decoded = await getAuth(getAdminApp()).verifySessionCookie(sessionCookie, true);
-      if (decoded.uid !== userId) {
-        console.warn('[updateLovePage] Session UID mismatch', { sessionUid: decoded.uid, requestUid: userId });
-        return { success: false, error: 'Sessão inválida. Faça login de novo.' };
+  // ── AUTH: 3 caminhos aceitos ─────────────────────────────────────────────
+  // 1. Admin (ADMIN_EMAILS) → bypass total
+  // 2. Dono logado (user.uid === pageData.userId + session cookie válido)
+  // 3. Edit token por email (cookie edit_token_{pageId} HMAC-assinado, setado
+  //    via requestEditAccess depois do user digitar o email correto)
+  //
+  // Caminho 3 foi adicionado porque a maioria dos VIPs criou como guest
+  // anônimo — userId do doc é um UID anônimo único do device original, então
+  // em outro navegador user.uid nunca bate. Email é a referência acessível.
+  let isAdmin = false;
+  let authorized = false;
+
+  // Check admin bypass
+  if (userId) {
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const email = userDoc.data()?.email;
+      if (email && ADMIN_EMAILS.includes(email)) {
+        isAdmin = true;
+        authorized = true;
       }
-    }
-  } catch (e: any) {
-    // Cookie ausente, expirado, ou inválido — não bloqueia o fluxo aqui,
-    // mas loga pra auditoria. Os checks de ownership + VIP abaixo seguram.
-    console.warn('[updateLovePage] Session verify skipped:', e?.message);
+    } catch { /* ignore */ }
   }
 
-  // Auth gate — dono + VIP. Admin bypass pra suporte.
-  let isAdmin = false;
-  try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    const email = userDoc.data()?.email;
-    if (email && ADMIN_EMAILS.includes(email)) isAdmin = true;
-  } catch { /* ignore */ }
+  // Check session cookie (dono logado tradicional)
+  if (!authorized && userId) {
+    try {
+      const sessionCookie = cookies().get('__session')?.value;
+      if (sessionCookie) {
+        const { getAdminApp } = await import('@/lib/firebase/admin/config');
+        const decoded = await getAuth(getAdminApp()).verifySessionCookie(sessionCookie, true);
+        if (decoded.uid === userId && existing.userId === userId) {
+          authorized = true;
+        }
+      } else if (existing.userId === userId) {
+        // Fallback sem cookie (ex: SSR dev) — ainda exige userId bater no doc
+        authorized = true;
+      }
+    } catch (e: any) {
+      console.warn('[updateLovePage] Session verify skipped:', e?.message);
+    }
+  }
 
-  if (!isAdmin && existing.userId !== userId) {
+  // Check edit token cookie (email-validado via requestEditAccess)
+  if (!authorized) {
+    try {
+      const editToken = cookies().get('edit_token_' + pageId)?.value;
+      if (editToken) {
+        const { verifyEditToken } = await import('@/app/editar/[pageId]/auth');
+        const r = await verifyEditToken(pageId);
+        if (r.ok && r.email) {
+          // Confirma que o email do token ainda bate com o doc (defesa extra)
+          const pageEmails = [existing.guestEmail, existing.ownerEmail, existing.userEmail]
+            .filter(Boolean)
+            .map((e: string) => e.toLowerCase().trim());
+          if (pageEmails.includes(r.email)) authorized = true;
+        }
+      }
+    } catch (e: any) {
+      console.warn('[updateLovePage] Edit token verify skipped:', e?.message);
+    }
+  }
+
+  if (!authorized) {
     return { success: false, error: 'Você não tem permissão para editar esta página.' };
   }
   if (!isAdmin && existing.plan !== 'vip') {

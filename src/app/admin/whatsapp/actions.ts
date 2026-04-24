@@ -2,6 +2,7 @@
 
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
+import { requireAdmin } from '@/lib/admin-action-guard';
 
 export interface AbandonedCart {
   intentId: string;
@@ -36,6 +37,7 @@ function formatDate(ts: any): string {
 }
 
 export async function getAbandonedCarts(): Promise<AbandonedCart[]> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const carts: AbandonedCart[] = [];
 
@@ -71,6 +73,7 @@ export async function getAbandonedCarts(): Promise<AbandonedCart[]> {
 }
 
 export async function getRecentBuyers(): Promise<RecentBuyer[]> {
+  await requireAdmin();
   const db = getAdminFirestore();
   const buyers: RecentBuyer[] = [];
 
@@ -99,6 +102,7 @@ export async function getRecentBuyers(): Promise<RecentBuyer[]> {
 }
 
 export async function markMessageSent(id: string, type: 'abandoned' | 'buyer', messageType: string) {
+  await requireAdmin();
   const db = getAdminFirestore();
   const collection = type === 'abandoned' ? 'payment_intents' : 'lovepages';
 
