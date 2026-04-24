@@ -671,7 +671,11 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
     }
   }
 
-  // Todas as tentativas falharam — loga em 2 canais independentes.
+  // Todas as tentativas falharam — loga APENAS em `failed_file_moves` pra
+  // tracking técnico. NÃO dispara `logCriticalError` por arquivo (isso gerava
+  // 55 logs pra uma página com 10 arquivos quebrados — inflava o painel de
+  // erros sem utilidade, já que 1 página = 1 problema). O finalizeLovePage
+  // faz UM ÚNICO log agregado com total pós-loop.
   try {
     await db.collection('failed_file_moves').add({
       pageId: newPageId, oldPath, newPath, targetFolder,
@@ -681,18 +685,10 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
   } catch (e) {
     console.error('[moveFile] CRITICAL: could not log failure:', { oldPath, newPath, lastError });
   }
-  try {
-    await logCriticalError('page_creation', `Falha ao mover ${targetFolder} pro storage final`, {
-      pageId: newPageId,
-      oldPath, newPath, targetFolder,
-      attempts: maxRetries,
-      error: lastError?.message,
-    });
-  } catch { /* best effort */ }
 
   // Retorna fileObject com flag pro caller saber que falhou — usado na
-  // recuperação automática pós-finalize.
-  return { ...fileObject, _moveFailed: true };
+  // recuperação automática pós-finalize e pro log agregado.
+  return { ...fileObject, _moveFailed: true, _moveError: lastError?.message || 'unknown', _targetFolder: targetFolder };
 }
 
 // Helper: processa items com concurrency limit. Sem isso, Promise.all com 20
@@ -750,10 +746,13 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const newPageId = db.collection('lovepages').doc().id;
   const sanitizedData = sanitizeForFirebase(data);
 
-  // Concurrency limit = 3. Balanço entre velocidade (paralelismo) e não
-  // estressar o Cloud Storage (que retorna 429/503 com mais burst). Testes
-  // mostram que 3 simultâneos completam 10 fotos em ~4-6s sem throttle.
-  const CONCURRENCY = 3;
+  // Concurrency limit = 2. Anterior era 3, mas com páginas VIP tendo 30-40
+  // arquivos (galeria + timeline + memory + puzzle + audio + vídeo) o burst
+  // era grande demais — memory-game especificamente dava 55 falhas/dia pra 8
+  // páginas. Diminui velocidade (10 fotos: ~6-8s em vez de ~4-6s) mas
+  // praticamente zera taxa de falha. Latência aceitável porque é server-side,
+  // user não espera.
+  const CONCURRENCY = 2;
   if (sanitizedData.galleryImages?.length) {
     sanitizedData.galleryImages = await mapWithLimit(
       sanitizedData.galleryImages,
@@ -784,13 +783,54 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     );
   }
 
-  // Flag _moveFailed é interno — tira antes de salvar no Firestore (não polui
-  // o doc). O sweep scan do /admin/pages detecta via `path` começar com temp/
-  // que é o que sobra se o move falhou.
+  // ── LOG AGREGADO: 1 entrada por página (não por arquivo) ────────────────
+  // Antes: `moveFileWithRetry` disparava logCriticalError() por ARQUIVO — uma
+  // página com 10 fotos quebradas gerava 10 logs. Painel ficava com "55 erros"
+  // que eram 5-8 páginas. Agora contamos aqui e emitimos 1 log com totais +
+  // breakdown por folder — fácil de ação no admin.
+  const collectFailures = (v: any, failures: Array<{ folder: string; error: string }> = []): typeof failures => {
+    if (Array.isArray(v)) { v.forEach(it => collectFailures(it, failures)); return failures; }
+    if (v && typeof v === 'object') {
+      if (v._moveFailed) {
+        failures.push({ folder: v._targetFolder || 'unknown', error: v._moveError || 'unknown' });
+      }
+      for (const k in v) collectFailures(v[k], failures);
+    }
+    return failures;
+  };
+  const allFailures = [
+    ...collectFailures(sanitizedData.galleryImages),
+    ...collectFailures(sanitizedData.timelineEvents),
+    ...collectFailures(sanitizedData.memoryGameImages),
+    ...collectFailures(sanitizedData.puzzleImage),
+    ...collectFailures(sanitizedData.audioRecording),
+    ...collectFailures(sanitizedData.backgroundVideo),
+  ];
+  if (allFailures.length > 0) {
+    // Agrupa por folder pra insight rápido ("memory-game: 6 falhas, gallery: 2")
+    const byFolder: Record<string, number> = {};
+    allFailures.forEach(f => { byFolder[f.folder] = (byFolder[f.folder] || 0) + 1; });
+    const summary = Object.entries(byFolder).map(([k, v]) => `${k}:${v}`).join(', ');
+    try {
+      await logCriticalError('page_creation', `Página finalizada com ${allFailures.length} arquivos quebrados (${summary})`, {
+        pageId: newPageId,
+        totalFailed: allFailures.length,
+        byFolder,
+        sampleError: allFailures[0]?.error,
+      });
+    } catch { /* best effort */ }
+  }
+
+  // Flag _moveFailed/_moveError/_targetFolder são internos — tira antes de
+  // salvar no Firestore (não polui o doc). O sweep scan do /admin/pages
+  // detecta via `path` começar com temp/ que é o que sobra se o move falhou.
   const stripMoveFlag = (v: any): any => {
     if (Array.isArray(v)) return v.map(stripMoveFlag);
     if (v && typeof v === 'object') {
-      if ('_moveFailed' in v) { const { _moveFailed, ...rest } = v; return stripMoveFlag(rest); }
+      if ('_moveFailed' in v || '_moveError' in v || '_targetFolder' in v) {
+        const { _moveFailed, _moveError, _targetFolder, ...rest } = v;
+        return stripMoveFlag(rest);
+      }
       const out: any = {};
       for (const k in v) out[k] = stripMoveFlag(v[k]);
       return out;

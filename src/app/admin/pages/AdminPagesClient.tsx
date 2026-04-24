@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { reprocessPageFiles, removeBrokenFileRefs } from './actions';
+import { reprocessPageFiles, removeBrokenFileRefs, reprocessAllPages, markIrrecoverableAsResolved } from './actions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -360,6 +360,37 @@ export default function AdminPagesClient({
 }) {
     const [filter, setFilter] = useState<'all' | 'vip' | 'avancado' | 'basico'>('all');
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [batchPending, startBatch] = useTransition();
+    const [batchResult, setBatchResult] = useState<{ processed: number; moved: number; failed: number; total: number } | null>(null);
+    const [cleanupPending, startCleanup] = useTransition();
+    const [cleanupResult, setCleanupResult] = useState<{ marked: number; stillRecoverable: number; checked: number } | null>(null);
+
+    const handleReprocessAll = () => {
+        setBatchResult(null);
+        startBatch(async () => {
+            const res = await reprocessAllPages();
+            if (res.success) {
+                setBatchResult({
+                    processed: res.processed,
+                    moved: res.totalMoved,
+                    failed: res.totalFailed,
+                    total: res.total,
+                });
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        });
+    };
+
+    const handleCleanupIrrecoverable = () => {
+        setCleanupResult(null);
+        startCleanup(async () => {
+            const res = await markIrrecoverableAsResolved();
+            if (res.success) {
+                setCleanupResult({ marked: res.marked, stillRecoverable: res.stillRecoverable, checked: res.checked });
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        });
+    };
 
     const filtered = useMemo(() => {
         if (filter === 'all') return pagesWithIssues;
@@ -408,6 +439,75 @@ export default function AdminPagesClient({
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Ações em lote */}
+            {(pagesWithIssues.length > 0 || stats.totalPending > 0) && (
+                <div className="grid gap-3 md:grid-cols-2">
+                    {/* Reprocessar — tenta mover arquivos temp/ que ainda existem */}
+                    {pagesWithIssues.length > 0 && (
+                        <div className="rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-pink-500/5 p-4">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                                <RefreshCw className="w-4 h-4 text-purple-400" />
+                                Reprocessar em lote
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-3">
+                                Tenta mover `temp/` → `lovepages/` em até 30 páginas. Seguro — recuperação automática pra arquivos ainda existentes.
+                            </p>
+                            <Button
+                                onClick={handleReprocessAll}
+                                disabled={batchPending}
+                                className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                            >
+                                {batchPending ? (
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Reprocessando...</>
+                                ) : (
+                                    <><RefreshCw className="w-4 h-4 mr-2" /> Reprocessar todas ({pagesWithIssues.length})</>
+                                )}
+                            </Button>
+                            {batchResult && (
+                                <div className="mt-3 rounded-lg bg-green-500/10 text-green-300 p-2.5 text-xs flex items-start gap-2">
+                                    <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                    <span>
+                                        {batchResult.processed}/{batchResult.total} páginas · {batchResult.moved} movidos · {batchResult.failed} quebrados. Recarregando...
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Marcar irrecuperáveis como resolved — zera painel de erros sem ação */}
+                    {stats.totalPending > 0 && (
+                        <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-red-500/5 p-4">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                Limpar erros irrecuperáveis
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-3">
+                                Marca como resolvidos os logs onde o arquivo source já sumiu do Storage (não tem como recuperar). Zera o alerta de "{stats.totalPending} erros".
+                            </p>
+                            <Button
+                                onClick={handleCleanupIrrecoverable}
+                                disabled={cleanupPending}
+                                className="bg-amber-600 hover:bg-amber-700 text-white w-full"
+                            >
+                                {cleanupPending ? (
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checando storage...</>
+                                ) : (
+                                    <><CheckCircle className="w-4 h-4 mr-2" /> Marcar irrecuperáveis ({stats.totalPending})</>
+                                )}
+                            </Button>
+                            {cleanupResult && (
+                                <div className="mt-3 rounded-lg bg-green-500/10 text-green-300 p-2.5 text-xs flex items-start gap-2">
+                                    <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                    <span>
+                                        {cleanupResult.checked} checados · {cleanupResult.marked} marcados como resolvidos · {cleanupResult.stillRecoverable} ainda recuperáveis. Recarregando...
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Filtros por plano + contadores */}
             <div className="flex items-center gap-2 flex-wrap">

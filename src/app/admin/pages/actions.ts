@@ -209,6 +209,135 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
     }
 }
 
+// ── MARCAR COMO IRRECUPERÁVEIS (limpa painel de erros antigos) ─────
+// Varre `failed_file_moves` pendentes e, pra cada um, checa se o source
+// AINDA existe no Storage. Se não existe mais (o TTL do bucket deletou),
+// marca como `resolved: true, resolution: 'unrecoverable'`. Isso zera o
+// painel de erros "55 erros no site" que o admin não tem ação pra tomar
+// (arquivos não podem voltar).
+export async function markIrrecoverableAsResolved(): Promise<{
+  success: boolean;
+  checked: number;
+  marked: number;
+  stillRecoverable: number;
+  error?: string;
+}> {
+  await requireAdmin();
+  const db = getAdminFirestore();
+  const bucket = getAdminStorage();
+
+  try {
+    const snap = await db.collection('failed_file_moves')
+      .where('resolved', '==', false)
+      .limit(500)
+      .get();
+
+    if (snap.empty) return { success: true, checked: 0, marked: 0, stillRecoverable: 0 };
+
+    let marked = 0;
+    let stillRecoverable = 0;
+    const batch = db.batch();
+
+    // Checa existência em paralelo limitado pra não estourar rate limit
+    const CHECK_CONCURRENCY = 5;
+    const docs = snap.docs;
+    let idx = 0;
+    await Promise.all(Array(CHECK_CONCURRENCY).fill(null).map(async () => {
+      while (idx < docs.length) {
+        const doc = docs[idx++];
+        const d = doc.data();
+        const path = d.oldPath || d.newPath;
+        if (!path) {
+          // Log inválido — marca como resolved pra limpar ruído
+          batch.update(doc.ref, { resolved: true, resolvedAt: Timestamp.now(), resolution: 'invalid_log' });
+          marked++;
+          continue;
+        }
+        try {
+          const file = bucket.file(path);
+          const [exists] = await file.exists();
+          if (!exists) {
+            // Arquivo sumiu do Storage (TTL bucket ou já foi movido) — marca irrecuperável.
+            // Se foi movido, o doc da página já tem a URL nova. Se sumiu, não há o que fazer.
+            batch.update(doc.ref, {
+              resolved: true,
+              resolvedAt: Timestamp.now(),
+              resolution: 'unrecoverable',
+              reason: 'source_deleted_from_storage',
+            });
+            marked++;
+          } else {
+            stillRecoverable++;
+          }
+        } catch {
+          // Erro no check — não marca, deixa pra próxima
+          stillRecoverable++;
+        }
+      }
+    }));
+
+    if (marked > 0) await batch.commit();
+    revalidatePath('/admin/pages');
+    revalidatePath('/admin');
+
+    return { success: true, checked: snap.size, marked, stillRecoverable };
+  } catch (err: any) {
+    return { success: false, checked: 0, marked: 0, stillRecoverable: 0, error: err?.message || 'unknown' };
+  }
+}
+
+// ── REPROCESSAR EM LOTE (todas as páginas com issues) ─────────────
+// Roda reprocessPageFiles sequencialmente em cada página com problemas.
+// Sequencial pra não estressar o Cloud Storage + permitir progress tracking.
+// Retorna resumo por página. Demora longo em lote grande — chamar com timeout
+// relaxado (fetch `keepalive` no client ou progress polling).
+export async function reprocessAllPages(): Promise<{
+  success: boolean;
+  total: number;
+  processed: number;
+  totalMoved: number;
+  totalFailed: number;
+  results: Array<{ pageId: string; moved: number; failed: number; error?: string }>;
+  error?: string;
+}> {
+  await requireAdmin();
+  try {
+    const { pagesWithIssues } = await getAdminPagesData();
+    const results: Array<{ pageId: string; moved: number; failed: number; error?: string }> = [];
+    let totalMoved = 0;
+    let totalFailed = 0;
+
+    // Cap em 30 pra não timeout em lote grande — admin chama de novo pra resto
+    const BATCH_CAP = 30;
+    const toProcess = pagesWithIssues.slice(0, BATCH_CAP);
+
+    for (const page of toProcess) {
+      try {
+        const res = await reprocessPageFiles(page.id);
+        totalMoved += res.moved || 0;
+        totalFailed += res.failed || 0;
+        results.push({ pageId: page.id, moved: res.moved || 0, failed: res.failed || 0, error: res.error });
+      } catch (err: any) {
+        results.push({ pageId: page.id, moved: 0, failed: 0, error: err?.message || 'unknown' });
+      }
+    }
+
+    return {
+      success: true,
+      total: pagesWithIssues.length,
+      processed: toProcess.length,
+      totalMoved,
+      totalFailed,
+      results,
+    };
+  } catch (err: any) {
+    return {
+      success: false, total: 0, processed: 0, totalMoved: 0, totalFailed: 0, results: [],
+      error: err?.message || 'unknown',
+    };
+  }
+}
+
 // ── REMOVER REFERÊNCIAS QUEBRADAS ─────────────────────────────────
 // Quando arquivos já foram limpos pelo Cloud Storage (temp/ expira ~24h),
 // o reprocessPageFiles não consegue mover (source não existe). Essa função
