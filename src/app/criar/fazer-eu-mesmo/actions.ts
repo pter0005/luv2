@@ -66,7 +66,7 @@ async function sendServerSidePurchaseEvent(input: ServerPurchaseInput | 'basico'
 
   const value = (typeof paidAmount === 'number' && paidAmount > 0)
     ? paidAmount
-    : (plan === 'vip' ? 39.90 : plan === 'avancado' ? 24.90 : 19.90);
+    : (plan === 'vip' ? 34.99 : plan === 'avancado' ? 24.90 : 19.90);
 
   // Phone para hashing: só dígitos, país prefixo (55 BR, 1 US) se faltar.
   const rawPhone = (userPhone || '').replace(/\D/g, '');
@@ -795,7 +795,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const rawPaid = Number(data.paidAmount);
   const saleValue = isFinite(rawPaid) && rawPaid > 0
     ? rawPaid
-    : (finalData.plan === 'vip' ? 39.90 : finalData.plan === 'avancado' ? 24.90 : 19.90);
+    : (finalData.plan === 'vip' ? 34.99 : finalData.plan === 'avancado' ? 24.90 : 19.90);
   const saleTitle = (finalData.title as string) || 'Sem título';
   const salePlan = finalData.plan === 'vip' ? 'VIP' : finalData.plan === 'avancado' ? 'Avançado' : 'Básico';
 

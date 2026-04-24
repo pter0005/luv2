@@ -74,12 +74,13 @@ function UrgencyBadge() {
 function VipCard() {
   const locale = useLocale();
   const isEN = locale === 'en';
-  const price = '29';
-  const cents = isEN ? '.90' : ',90';
+  const price = '34';
+  const cents = isEN ? '.99' : ',99';
   const currency = isEN ? '$' : 'R$';
-  // Preço "riscado" = avançado + todos add-ons (~$42.50) pra ancorar
-  const strikePrice = isEN ? '$42.50' : 'R$42,50';
-  const savings = isEN ? '$12.60' : 'R$12,60';
+  // Preço "riscado" — ancoragem de "quanto custaria comprar avançado + todos
+  // os add-ons separados" pra destacar o valor do bundle VIP.
+  const strikePrice = isEN ? '$49.90' : 'R$49,90';
+  const savings = isEN ? '$14.91' : 'R$14,91';
 
   return (
     <motion.div

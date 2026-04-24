@@ -6,7 +6,7 @@ import type { Locale } from '@/i18n/config';
 export const PRICES = {
   basico: 19.90,
   avancado: 24.90,
-  vip: 39.90,          // bundle flat — TUDO incluído + edição ilimitada
+  vip: 34.99,          // bundle flat — TUDO incluído + edição ilimitada
   introLove: 5.90,
   introPoema: 6.90,
   voice: 2.90,
@@ -20,7 +20,7 @@ export const PRICES = {
 export const PRICES_USD = {
   basico: 19.90,
   avancado: 24.90,
-  vip: 39.90,
+  vip: 34.99,
   introLove: 5.90,
   introPoema: 6.90,
   voice: 2.90,
