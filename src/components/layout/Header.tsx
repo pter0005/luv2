@@ -143,7 +143,7 @@ export default function Header() {
                 <SheetContent side="right" className="bg-zinc-950/98 backdrop-blur-2xl border-white/10 w-72">
                   <SheetHeader>
                     <SheetTitle className="flex items-center">
-                      <Image src={headerLogoUrl} alt="MyCupid Logo" width={300} height={75} className="w-auto h-10 object-contain" />
+                      <Image src={headerLogoUrl} alt="MyCupid Logo" width={300} height={75} unoptimized className="w-auto h-10 object-contain" />
                     </SheetTitle>
                   </SheetHeader>
                   <div className="flex flex-col mt-8 px-1 gap-1">

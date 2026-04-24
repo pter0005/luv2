@@ -38,7 +38,7 @@ const HowItWorksSection = () => {
                         </div>
                         <div className="card-glow p-6 pt-10 rounded-2xl flex flex-col items-center flex-grow w-full transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-105 bg-white/5 border-white/10">
                             <div className="relative w-48 h-48 mb-4">
-                                <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill className="object-contain" sizes="192px"/>
+                                <Image src={step.icon || "https://placehold.co/160"} alt={step.title} fill unoptimized className="object-contain" sizes="192px"/>
                             </div>
                             <h3 className="font-bold text-lg text-foreground">{step.title}</h3>
                             <p className="text-muted-foreground text-sm mt-2 flex-grow">{step.description}</p>

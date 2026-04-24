@@ -58,6 +58,7 @@ export default function Footer() {
                 alt="MyCupid Logo"
                 width={200}
                 height={50}
+                unoptimized
                 className="w-48 h-auto"
               />
             </Link>

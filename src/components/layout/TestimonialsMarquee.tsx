@@ -47,13 +47,13 @@ const TestimonialCard = memo(({ image, name, text }: { image: string, name: stri
             {/* Cabeçalho: Foto + Nome + Stars */}
             <div className="flex items-center gap-3 mb-4">
                 <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden ring-2 ring-white/10 group-hover:ring-purple-500 transition-all duration-500">
-                    <Image 
-                        src={image} 
-                        alt={name} 
-                        fill 
-                        className="object-cover" 
+                    <Image
+                        src={image}
+                        alt={name}
+                        fill
+                        unoptimized
+                        className="object-cover"
                         sizes="48px"
-                        quality={80}
                     />
                 </div>
                 <div>

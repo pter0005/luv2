@@ -1,40 +1,80 @@
 'use server';
 
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
 import { requireAdmin } from '@/lib/admin-action-guard';
 
 // ── HELPER: gera URL Firebase Storage com token (sem makePublic) ──
+// Se setMetadata falhar (IAM sem storage.objects.update, transiente, etc.),
+// tenta re-ler do bucket — pode ter escrito mas só a response ter falhado.
+// Se realmente falhou, ainda retorna a URL com o token gerado localmente —
+// mesmo que o backend ainda não tenha persistido, o token tá no state e a
+// próxima chamada eventualmente sincroniza.
 async function getTokenUrl(file: any, bucket: any): Promise<string> {
-    const [metadata] = await file.getMetadata();
-    let token: string = metadata?.metadata?.firebaseStorageDownloadTokens;
+    let token: string | undefined;
+    try {
+        const [metadata] = await file.getMetadata();
+        token = metadata?.metadata?.firebaseStorageDownloadTokens;
+    } catch { /* trata igual a "sem token" */ }
+
     if (!token) {
         token = randomUUID();
-        await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+        try {
+            await file.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
+        } catch (setErr) {
+            // Set falhou — pode ser IAM, network transient, ou race.
+            // Re-tenta ler: se o metadata agora tem token, usa esse em vez do
+            // gerado localmente (evita dois tokens concorrentes pro mesmo file).
+            try {
+                const [retry] = await file.getMetadata();
+                const existing = retry?.metadata?.firebaseStorageDownloadTokens;
+                if (existing) token = existing;
+            } catch { /* mantém o randomUUID como fallback */ }
+        }
     }
     const encoded = encodeURIComponent(file.name);
     return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${token}`;
 }
 
 // ── HELPER: move arquivo de temp/ para lovepages/ com token URL ───
+// Alinhado com moveFileWithRetry em criar/fazer-eu-mesmo/actions.ts: 4 tentativas
+// com backoff exponencial (1.5s, 3s, 4.5s, 6s) pra lidar com transient errors
+// do Cloud Storage (network, contention). Check de sourceExists antes de copy
+// evita erro falso-positivo quando o source já foi movido em attempt anterior.
 async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<{ success: boolean; url?: string; error?: string }> {
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    const maxRetries = 4;
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const sourceFile = bucket.file(oldPath);
             const targetFile = bucket.file(newPath);
             const [targetExists] = await targetFile.exists();
-            if (!targetExists) await sourceFile.copy(targetFile);
+            if (!targetExists) {
+                const [sourceExists] = await sourceFile.exists();
+                if (!sourceExists) {
+                    // Source já foi movido antes mas doc não atualizou, ou foi deletado pelo TTL.
+                    // Sem source e sem target = nada a fazer, retorna erro.
+                    return { success: false, error: 'source_missing' };
+                }
+                await sourceFile.copy(targetFile);
+            }
             const url = await getTokenUrl(targetFile, bucket);
-            try { await sourceFile.delete(); } catch (_) {}
+            try {
+                const [srcStill] = await sourceFile.exists();
+                if (srcStill) await sourceFile.delete();
+            } catch { /* cleanup non-critical */ }
             return { success: true, url };
         } catch (error: any) {
-            if (attempt < 3) await new Promise(r => setTimeout(r, 1000));
-            else return { success: false, error: error.message };
+            lastError = error;
+            if (attempt < maxRetries) {
+                // Backoff exponencial 1.5s × attempt: 1.5s → 3s → 4.5s
+                await new Promise(r => setTimeout(r, 1500 * attempt));
+            }
         }
     }
-    return { success: false, error: 'unknown' };
+    return { success: false, error: lastError?.message || 'unknown' };
 }
 
 // ── HELPER: corrige URL quebrada de arquivo já em lovepages/ ──────
@@ -56,16 +96,39 @@ async function fixBrokenUrl(bucket: any, fileObj: any): Promise<any> {
 }
 
 // ── REPROCESSAR UMA PÁGINA ESPECÍFICA ────────────────────────────
+// Lock via transação: evita que dois admins apertando "Reprocessar" ao mesmo
+// tempo batam no bucket em paralelo (race no sourceFile.delete). Lock expira
+// em 5 min pra não travar o doc se a action crashar no meio.
+const REPROCESS_LOCK_TTL_MS = 5 * 60 * 1000;
+
 export async function reprocessPageFiles(pageId: string): Promise<{ success: boolean; moved: number; failed: number; error?: string }> {
     await requireAdmin();
     const db = getAdminFirestore();
     const bucket = getAdminStorage();
 
-    try {
-        const pageRef = db.collection('lovepages').doc(pageId);
-        const pageSnap = await pageRef.get();
-        if (!pageSnap.exists) return { success: false, moved: 0, failed: 0, error: 'Página não encontrada.' };
+    const pageRef = db.collection('lovepages').doc(pageId);
 
+    // ── 1. Claim do lock via transação atômica ──────────────────────────────
+    try {
+        await db.runTransaction(async (tx) => {
+            const snap = await tx.get(pageRef);
+            if (!snap.exists) throw new Error('PAGE_NOT_FOUND');
+            const d = snap.data() || {};
+            const lockedAt = d._reprocessLockAt?.toMillis?.() ?? 0;
+            if (lockedAt && Date.now() - lockedAt < REPROCESS_LOCK_TTL_MS) {
+                throw new Error('LOCKED');
+            }
+            tx.update(pageRef, { _reprocessLockAt: Timestamp.now() });
+        });
+    } catch (err: any) {
+        if (err?.message === 'PAGE_NOT_FOUND') return { success: false, moved: 0, failed: 0, error: 'Página não encontrada.' };
+        if (err?.message === 'LOCKED') return { success: false, moved: 0, failed: 0, error: 'Outra operação de reprocesso está em andamento. Espere 5min.' };
+        return { success: false, moved: 0, failed: 0, error: err?.message || 'Falha ao obter lock.' };
+    }
+
+    // A partir daqui garantimos unlock no finally, inclusive em erro
+    try {
+        const pageSnap = await pageRef.get();
         const data = pageSnap.data()!;
         const updates: any = {};
         let moved = 0;
@@ -73,7 +136,6 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
 
         const tryMove = async (fileObj: any, folder: string) => {
             if (!fileObj?.path) return fileObj;
-            // Arquivo ainda em temp/ — mover para lovepages/
             if (fileObj.path.startsWith('temp/')) {
                 const fileName = fileObj.path.split('/').pop();
                 if (!fileName) return fileObj;
@@ -82,7 +144,6 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
                 if (result.success) { moved++; return { url: result.url, path: newPath }; }
                 else { failed++; return fileObj; }
             }
-            // Arquivo já em lovepages/ mas com URL quebrada — só corrige a URL
             if (fileObj.path.startsWith('lovepages/')) {
                 const fixed = await fixBrokenUrl(bucket, fileObj);
                 if (fixed.url !== fileObj.url) moved++;
@@ -91,56 +152,59 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
             return fileObj;
         };
 
-        // Galeria
         if (data.galleryImages?.length) {
-            const updated = await Promise.all(data.galleryImages.map((img: any) => tryMove(img, 'gallery')));
-            updates.galleryImages = updated;
+            updates.galleryImages = await Promise.all(data.galleryImages.map((img: any) => tryMove(img, 'gallery')));
         }
-
-        // Timeline
         if (data.timelineEvents?.length) {
-            const updated = await Promise.all(data.timelineEvents.map(async (ev: any) => {
+            updates.timelineEvents = await Promise.all(data.timelineEvents.map(async (ev: any) => {
                 if (ev.image) ev.image = await tryMove(ev.image, 'timeline');
                 return ev;
             }));
-            updates.timelineEvents = updated;
         }
-
-        // Puzzle
         if (data.puzzleImage) updates.puzzleImage = await tryMove(data.puzzleImage, 'puzzle');
-
-        // Áudio
         if (data.audioRecording) updates.audioRecording = await tryMove(data.audioRecording, 'audio');
-
-        // Vídeo
         if (data.backgroundVideo) updates.backgroundVideo = await tryMove(data.backgroundVideo, 'video');
-
-        // Jogo da memória
         if (data.memoryGameImages?.length) {
-            const updated = await Promise.all(data.memoryGameImages.map((img: any) => tryMove(img, 'memory-game')));
-            updates.memoryGameImages = updated;
+            updates.memoryGameImages = await Promise.all(data.memoryGameImages.map((img: any) => tryMove(img, 'memory-game')));
         }
+
+        // Libera o lock + flag updatedAt pro cache invalidate pegar
+        updates._reprocessLockAt = FieldValue.delete();
+        updates.updatedAt = Timestamp.now();
 
         if (Object.keys(updates).length > 0) {
             await pageRef.update(updates);
         }
 
-        // Marcar failed_file_moves relacionados como resolvidos
+        // Marca failed_file_moves relacionados como resolvidos (audit trail)
         const failedMovesSnap = await db.collection('failed_file_moves')
             .where('pageId', '==', pageId)
             .where('resolved', '==', false)
             .get();
-        
         const batch = db.batch();
         failedMovesSnap.docs.forEach(doc => {
-            batch.update(doc.ref, { resolved: true, resolvedAt: Timestamp.now(), resolution: 'manual_reprocess' });
+            batch.update(doc.ref, {
+                resolved: true,
+                resolvedAt: Timestamp.now(),
+                resolution: 'manual_reprocess',
+                movedCount: moved,
+                failedCount: failed,
+            });
         });
         await batch.commit();
 
+        // Invalida cache da página pública também — a URL nova só aparece
+        // pro cliente se Next.js re-render. Sem isso cliente vê a versão cached
+        // por até 60s (dependendo da config).
         revalidatePath('/admin/pages');
-        return { success: true, moved, failed };
+        revalidatePath(`/p/${pageId}`);
 
+        return { success: true, moved, failed };
     } catch (error: any) {
+        // Libera o lock mesmo em erro pra não travar por 5min
+        try {
+            await pageRef.update({ _reprocessLockAt: FieldValue.delete() });
+        } catch { /* ignore */ }
         return { success: false, moved: 0, failed: 0, error: error.message };
     }
 }
@@ -151,7 +215,6 @@ export async function reprocessPageFiles(pageId: string): Promise<{ success: boo
 // checa quais arquivos ainda existem no bucket e REMOVE do doc Firestore
 // apenas as referências órfãs. Fotos irrecuperáveis — só use quando cliente
 // confirmar que não tem backup.
-import { FieldValue } from 'firebase-admin/firestore';
 
 export async function removeBrokenFileRefs(pageId: string): Promise<{ success: boolean; removed: number; error?: string }> {
     await requireAdmin();
@@ -225,9 +288,12 @@ export async function removeBrokenFileRefs(pageId: string): Promise<{ success: b
 }
 
 // ── BUSCAR DADOS PARA A PÁGINA DE MONITORAMENTO ───────────────────
-// Varre recursivamente qualquer valor procurando `path` que começa com 'temp/'.
-// Detecta o problema MESMO quando `failed_file_moves` não foi escrito (bug
-// que acontecia quando o próprio `.add()` também falhava).
+// Varre recursivamente procurando `path` que começa com 'temp/' OU `url`
+// que ainda referencia `/temp/` (inclusive encoded `%2Ftemp%2F`). Detecta:
+//  - `failed_file_moves` escrito corretamente (caminho feliz)
+//  - Scan direto do doc: `path` ficou em temp/ (add() do log também falhou)
+//  - URL stale: `path` foi atualizado pra lovepages/ mas `url` continua
+//    apontando pra temp/ (desync entre 2 campos, raro mas acontece)
 function findTempPaths(obj: any, paths: string[] = []): string[] {
     if (!obj || typeof obj !== 'object') return paths;
     if (Array.isArray(obj)) {
@@ -236,6 +302,16 @@ function findTempPaths(obj: any, paths: string[] = []): string[] {
     }
     if (typeof obj.path === 'string' && obj.path.startsWith('temp/')) {
         paths.push(obj.path);
+    }
+    if (typeof obj.url === 'string') {
+        // Detecta tanto literal "/temp/" quanto encoded "%2Ftemp%2F" (Firebase
+        // Storage SDK às vezes retorna URLs encoded). Só adiciona se ainda não
+        // encontrou um path temp nesse mesmo objeto (evita duplicar).
+        const urlHasTemp = obj.url.includes('/temp/') || obj.url.includes('%2Ftemp%2F');
+        const pathAlreadyTemp = typeof obj.path === 'string' && obj.path.startsWith('temp/');
+        if (urlHasTemp && !pathAlreadyTemp) {
+            paths.push(obj.path || obj.url);
+        }
     }
     Object.values(obj).forEach(v => findTempPaths(v, paths));
     return paths;
@@ -334,9 +410,23 @@ export async function getAdminPagesData() {
     });
 
     // ── 4. Estatísticas gerais de failed_file_moves ─────────────────────────
-    const allFailedSnap = await db.collection('failed_file_moves').get();
-    const totalFailed = allFailedSnap.size;
-    const totalResolved = allFailedSnap.docs.filter(d => d.data().resolved).length;
+    // Usa .count() em vez de .get() — escala O(1) em vez de O(N) conforme a
+    // coleção cresce. Evita que a /admin/pages fique lenta depois de meses
+    // de acumulo de logs (a coleção nunca é purgada).
+    let totalFailed = 0;
+    let totalResolved = 0;
+    try {
+        const totalCount = await db.collection('failed_file_moves').count().get();
+        totalFailed = totalCount.data().count;
+        const resolvedCount = await db.collection('failed_file_moves').where('resolved', '==', true).count().get();
+        totalResolved = resolvedCount.data().count;
+    } catch (e) {
+        // Fallback se o SDK não suportar .count() (super antigo) — tira amostra
+        console.warn('[getAdminPagesData] .count() falhou, usando fallback:', e);
+        const sample = await db.collection('failed_file_moves').limit(1000).get();
+        totalFailed = sample.size;
+        totalResolved = sample.docs.filter(d => d.data().resolved).length;
+    }
     const totalPending = totalFailed - totalResolved;
 
     return {

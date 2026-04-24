@@ -84,8 +84,11 @@ const GalleryImage = React.memo(({ img, index }: { img: any, index: number }) =>
 
     // URL quebrada conhecida: arquivo foi pra temp/ mas o move pro storage
     // permanente falhou. Em vez de tentar carregar (vai dar 404), já mostra
-    // placeholder. Admin consegue identificar via /admin/pages.
-    const isBroken = typeof img?.url === 'string' && img.url.includes('/temp/');
+    // placeholder. Detecta tanto "/temp/" literal quanto "%2Ftemp%2F" encoded
+    // (Firebase Storage SDK às vezes retorna URLs percent-encoded).
+    const isBroken = typeof img?.url === 'string' && (
+        img.url.includes('/temp/') || img.url.includes('%2Ftemp%2F')
+    );
 
     return (
         <div className="relative w-full h-full bg-zinc-800/50 rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex items-center justify-center">

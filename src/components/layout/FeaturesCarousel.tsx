@@ -211,16 +211,21 @@ export default function FeaturesCarousel() {
                              {({ isActive }) => (
                                  <IphoneMockup isActive={isActive}>
                                     {slide.type === 'video' ? (
-                                        <video 
-                                            src={slide.media} 
-                                            autoPlay loop muted playsInline 
+                                        <video
+                                            src={slide.media}
+                                            autoPlay loop muted playsInline
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
-                                        <Image 
-                                            src={slide.media} 
+                                        // `unoptimized` pula o /_next/image proxy. Imgur já serve
+                                        // PNG otimizado via CloudFront — não precisa re-processar. Evita
+                                        // estourar cota de Image Optimization do host (causava todas as
+                                        // screenshots do carrossel aparecerem em preto).
+                                        <Image
+                                            src={slide.media}
                                             alt={slide.title}
                                             fill
+                                            unoptimized
                                             className="object-contain"
                                             sizes="(max-width: 768px) 260px, 310px"
                                         />

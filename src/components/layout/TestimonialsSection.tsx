@@ -42,7 +42,7 @@ const TestimonialsSection = () => {
               {AVATAR_URLS.map((src, i) => (
                 <div key={i} className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-black flex-shrink-0"
                   style={{ zIndex: AVATAR_URLS.length - i }}>
-                  <Image src={src} alt="Casal feliz" width={28} height={28} className="object-cover w-full h-full" />
+                  <Image src={src} alt="Casal feliz" width={28} height={28} unoptimized className="object-cover w-full h-full" />
                 </div>
               ))}
             </div>
