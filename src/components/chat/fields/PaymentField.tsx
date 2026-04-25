@@ -148,7 +148,7 @@ export default function PaymentField() {
   // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
   const lineItems = useMemo(() => {
     const prices = getPrices(locale);
-    const items: { label: string; value: number; hint?: string }[] = [];
+    const items: { label: string; value: number; originalValue?: number; hint?: string }[] = [];
     const isEN = locale === 'en';
 
     // VIP: preço flat, uma linha só — tudo já incluso no bundle.
@@ -156,6 +156,7 @@ export default function PaymentField() {
       items.push({
         label: isEN ? 'VIP bundle' : 'Bundle VIP',
         value: prices.vip,
+        originalValue: isEN ? 54.99 : 44.99,
         hint: isEN ? 'everything unlocked · best value' : 'tudo liberado · melhor custo',
       });
       return items;
@@ -167,6 +168,7 @@ export default function PaymentField() {
         ? (plan === 'avancado' ? 'Advanced plan' : 'Basic plan')
         : (plan === 'avancado' ? 'Plano Avançado' : 'Plano Básico'),
       value: base,
+      originalValue: plan === 'avancado' ? (isEN ? 34.99 : 34.99) : undefined,
       hint: isEN
         ? (plan === 'avancado' ? 'games + voice + intros + music' : 'page + photos + countdown')
         : (plan === 'avancado' ? 'jogos + voz + intros + música' : 'página + fotos + contador'),
@@ -826,8 +828,15 @@ export default function PaymentField() {
                   <div className="text-[11px] text-white/45 mt-0.5">{item.hint}</div>
                 )}
               </div>
-              <div className="text-[13px] text-white/85 font-semibold tabular-nums shrink-0">
-                {BRL.format(item.value)}
+              <div className="flex items-baseline gap-1.5 shrink-0">
+                {item.originalValue && (
+                  <span className="text-[11px] text-white/35 line-through tabular-nums">
+                    {BRL.format(item.originalValue)}
+                  </span>
+                )}
+                <span className={`text-[13px] font-semibold tabular-nums ${item.originalValue ? 'text-emerald-400' : 'text-white/85'}`}>
+                  {BRL.format(item.value)}
+                </span>
               </div>
             </div>
           ))}

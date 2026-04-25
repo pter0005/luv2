@@ -14,7 +14,7 @@ import {
   Percent, AlertTriangle, Copy, Check,
   ExternalLink, Edit, Calendar, Trash2, RefreshCw,
   Zap, ArrowUpRight, ArrowDownRight, ShoppingBag,
-  TrendingUp, Receipt, Sparkles, Target, Flame, Crown,
+  TrendingUp, Receipt, Sparkles, Target, Crown,
   BarChart3, Activity, Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -884,48 +884,6 @@ function GoalProgressRing({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WEEKDAY HEATMAP — vendas por dia da semana (últimos 30d)
-// ─────────────────────────────────────────────────────────────────────────────
-function WeekdayHeatmap({ chartData }: { chartData: DayData[] }) {
-  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const buckets = [0, 0, 0, 0, 0, 0, 0];
-  chartData.forEach(d => {
-    const date = new Date(`${d.date}T12:00:00`);
-    buckets[date.getDay()] += d.sales;
-  });
-  const max = Math.max(...buckets, 1);
-  const bestIdx = buckets.indexOf(Math.max(...buckets));
-
-  return (
-    <div>
-      <div className="grid grid-cols-7 gap-1.5 mb-2">
-        {buckets.map((count, i) => {
-          const intensity = count / max;
-          return (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <div className="relative w-full aspect-square rounded-lg flex items-center justify-center font-bold"
-                style={{
-                  background: count === 0
-                    ? 'rgba(255,255,255,0.02)'
-                    : `rgba(139,92,246,${0.1 + intensity * 0.35})`,
-                  border: `1px solid rgba(139,92,246,${0.15 + intensity * 0.25})`,
-                }}>
-                <span className={`text-xs ${count === 0 ? 'text-zinc-700' : 'text-white'}`}>
-                  {count}
-                </span>
-              </div>
-              <span className="text-[9px] font-semibold text-zinc-500 uppercase">{days[i]}</span>
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-[10px] text-zinc-500 text-center mt-2">
-        Melhor dia: <span className="font-bold text-purple-300">{days[bestIdx]}</span> ·{' '}
-        <span className="font-mono">{buckets[bestIdx]} vendas</span>
-      </p>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SALE HISTORY ROW
@@ -1211,76 +1169,67 @@ export default function AdminDashboard({
           icon={Percent} accent={convAccent} />
       </div>
 
-      {/* ── MAIN CHART + HEATMAP ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2">
-          <Section title="Visitantes & Vendas" sub="Últimos 30 dias" icon={BarChart3} accent="#818cf8">
-            <div className="flex items-center gap-5 mb-4 text-[10px]">
-              <span className="flex items-center gap-1.5 text-indigo-300">
-                <span className="w-3 h-2 rounded inline-block"
-                  style={{ background: 'linear-gradient(180deg, #818cf8, rgba(129,140,248,0.3))' }} />
-                <span className="font-bold">Visitantes únicos</span>
-              </span>
-              <span className="flex items-center gap-1.5 text-purple-300">
-                <span className="w-3 h-2 inline-block rounded"
-                  style={{ background: 'linear-gradient(180deg, #c084fc, #a855f7)' }} />
-                <span className="font-bold">Vendas</span>
-              </span>
-            </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#818cf8" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#c084fc" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#a855f7" stopOpacity={0.6} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Area dataKey="visitors" name="Visitantes" fill="url(#gV)" stroke="#818cf8"
-                  strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: '#818cf8', stroke: '#fff', strokeWidth: 2 }} />
-                <Bar dataKey="sales" name="Vendas" fill="url(#gS)"
-                  radius={[4, 4, 0, 0]} maxBarSize={18} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </Section>
+      {/* ── MAIN CHART ──────────────────────────────────────────────────── */}
+      <Section title="Visitantes & Vendas" sub="Últimos 30 dias" icon={BarChart3} accent="#818cf8">
+        <div className="flex items-center gap-5 mb-4 text-[10px]">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-[3px] rounded-full inline-block" style={{ background: '#818cf8' }} />
+            <span className="font-semibold text-indigo-300">Visitantes únicos</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-[3px] rounded-full inline-block" style={{ background: '#e879f9' }} />
+            <span className="font-semibold text-fuchsia-300">Vendas</span>
+          </span>
         </div>
-        <Section title="Melhor Dia da Semana" sub="Vendas por dia (30d)" icon={Flame} accent="#ec4899">
-          <WeekdayHeatmap chartData={chartData} />
-        </Section>
-      </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#818cf8" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#e879f9" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#a855f7" stopOpacity={0.5} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="2 6" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#3f3f46', fontWeight: 500 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 10, fill: '#3f3f46' }} axisLine={false} tickLine={false} />
+            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+            <Area dataKey="visitors" name="Visitantes" fill="url(#gV)" stroke="#818cf8"
+              strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#818cf8', stroke: '#1e1b4b', strokeWidth: 2 }} />
+            <Bar dataKey="sales" name="Vendas" fill="url(#gS)"
+              radius={[3, 3, 0, 0]} maxBarSize={14} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </Section>
 
       {/* ── REVENUE AREA CHART ─────────────────────────────────────────── */}
       <Section title="Receita Diária (BRL)" sub="Faturamento nos últimos 30 dias" icon={TrendingUp} accent="#34d399">
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={chartData} margin={{ top: 4, right: 12, left: -8, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={280}>
+          <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -4, bottom: 0 }}>
             <defs>
               <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34d399" stopOpacity={0.6} />
-                <stop offset="50%" stopColor="#10b981" stopOpacity={0.25} />
+                <stop offset="0%" stopColor="#34d399" stopOpacity={0.35} />
+                <stop offset="60%" stopColor="#10b981" stopOpacity={0.1} />
                 <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: '#52525b' }} axisLine={false} tickLine={false}
+            <CartesianGrid strokeDasharray="2 6" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#3f3f46', fontWeight: 500 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 10, fill: '#3f3f46' }} axisLine={false} tickLine={false}
               tickFormatter={v => `R$${v}`} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
             <Area
               type="monotone"
               dataKey="revenue"
               name="Receita"
               stroke="#34d399"
-              strokeWidth={3}
+              strokeWidth={2.5}
               fill="url(#gR)"
               dot={false}
-              activeDot={{ r: 6, fill: '#34d399', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: '#34d399', stroke: '#064e3b', strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

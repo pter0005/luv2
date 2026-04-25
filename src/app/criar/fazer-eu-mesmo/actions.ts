@@ -587,7 +587,7 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
 // 5. Retorna flag `_moveFailed` no fileObject pro caller poder distinguir
 //    sucesso de fallback (permite recuperação automática mais adiante).
 
-async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 6): Promise<any> {
+async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 4): Promise<any> {
   if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) return fileObject;
 
   const oldPath = fileObject.path;
@@ -602,58 +602,44 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       const sourceFile = bucket.file(oldPath);
       const targetFile = bucket.file(newPath);
 
-      // 1. Copy file (idempotente — skip se já existe no destino)
-      const [targetExists] = await targetFile.exists();
-      if (!targetExists) {
-        const [sourceExists] = await sourceFile.exists();
-        if (!sourceExists) {
-          // Fonte some. Pode ser eventual consistency; retry.
-          // Se em 3 tentativas ainda não achou, considera realmente ausente.
-          if (attempt >= 3) {
-            console.warn(`[moveFile] Source confirmed missing after ${attempt} checks: ${oldPath}`);
-            lastError = new Error(`source_missing: ${oldPath}`);
-            break;
-          }
-          throw new Error(`source_not_visible_yet (attempt ${attempt})`);
-        }
+      // Tenta copy direto — sem exists() check antes (economiza 2 RTTs por arquivo).
+      // Se target já existe é idempotente (copy sobrescreve com mesmo conteúdo).
+      // Se source não existe, copy lança 404 → capturado no catch → retry ou break.
+      try {
         await sourceFile.copy(targetFile);
+      } catch (copyErr: any) {
+        const is404 = copyErr?.code === 404 || copyErr?.message?.includes('No such object');
+        if (is404 && attempt >= 3) {
+          console.warn(`[moveFile] Source confirmed missing after ${attempt} tries: ${oldPath}`);
+          lastError = new Error(`source_missing: ${oldPath}`);
+          break;
+        }
+        throw copyErr;
       }
 
-      // 2. Pega o token de download. O copy do Cloud Storage PRESERVA metadata
-      // (incluindo firebaseStorageDownloadTokens), então geralmente já tá lá.
+      // Pega o token do target pós-copy (Cloud Storage preserva metadata do source).
       const [metadata] = await targetFile.getMetadata();
       let token: string | undefined = metadata?.metadata?.firebaseStorageDownloadTokens;
 
-      // 3. Sem token? Gera um novo (edge case: bucket config strips custom md)
       if (!token) {
         token = randomUUID();
         try {
           await targetFile.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } });
-        } catch (setErr: any) {
-          // Se setMetadata falhar, re-tenta ler — pode ter escrito mas só a
-          // response ter falhado. Se ainda falhar, usa o token gerado local
-          // (a URL ainda funciona porque o Storage aceita qualquer token que
-          // já estava no metadata, e o fallback-generate é best-effort).
+        } catch {
           try {
             const [retry] = await targetFile.getMetadata();
             const existing = retry?.metadata?.firebaseStorageDownloadTokens;
             if (existing) token = existing;
-          } catch { /* mantém o randomUUID */ }
+          } catch { /* usa o randomUUID gerado */ }
         }
       }
 
-      // 4. Constroi a URL pública
       const encodedPath = encodeURIComponent(newPath);
       const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
 
-      // 5. Cleanup do source — só depois de confirmar target OK. Best-effort:
-      // se falhar, nem loga. Arquivo órfão em temp/ é um problema de storage
-      // cost, não de cliente.
+      // Cleanup source em background — best-effort, não bloqueia.
       (async () => {
-        try {
-          const [srcStill] = await sourceFile.exists();
-          if (srcStill) await sourceFile.delete();
-        } catch { /* silencioso */ }
+        try { await sourceFile.delete(); } catch { /* silencioso */ }
       })();
 
       return { url: publicUrl, path: newPath };
@@ -661,12 +647,10 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       lastError = error;
       console.warn(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error?.message);
       if (attempt < maxRetries) {
-        // Backoff exponencial 800ms → 1.6s → 3.2s → 6.4s + jitter ±25%
-        // Jitter evita que vários arquivos em paralelo caiam na mesma janela
-        // de retry (thundering herd que re-estressa o Storage).
-        const base = 800 * Math.pow(2, attempt - 1);
-        const jitter = base * (0.75 + Math.random() * 0.5);
-        await new Promise(r => setTimeout(r, Math.min(jitter, 10_000)));
+        // Backoff: 500ms → 1s → 2s + jitter ±20%
+        const base = 500 * Math.pow(2, attempt - 1);
+        const jitter = base * (0.8 + Math.random() * 0.4);
+        await new Promise(r => setTimeout(r, Math.min(jitter, 3_000)));
       }
     }
   }

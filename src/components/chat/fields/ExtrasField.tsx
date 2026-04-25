@@ -202,7 +202,7 @@ function MemorySubForm() {
           } catch (err) {
             console.warn('[memory] compressImage falhou, enviando original', err);
           }
-          const up = await uploadFile(firebase.storage, activeUser!.uid, toUpload, 'memory');
+          const up = await uploadFile(firebase.storage, activeUser!.uid, toUpload, 'memory-game');
           return { ok: true as const, up, entry };
         } catch (err) {
           console.error('[memory] upload falhou', err);

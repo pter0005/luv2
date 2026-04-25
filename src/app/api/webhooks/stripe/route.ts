@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 // já nos entrega isso via req.text() antes de parsear JSON.
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;

@@ -1,7 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 import { applyUpgrade } from '@/app/p/[pageId]/upgradeActions';
 import { logCriticalError } from '@/lib/log-critical-error';
 import crypto from 'crypto';
