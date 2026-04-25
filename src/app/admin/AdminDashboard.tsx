@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 import { SaleNotification } from '@/components/admin/SaleNotification';
+import { ErrorStatusWidget } from '@/components/admin/ErrorStatusWidget';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -1107,65 +1108,7 @@ export default function AdminDashboard({
   return (
     <div className="space-y-6">
       <SaleNotification onSale={handleSaleDetected} />
-
-      {/* ── ERROR MONITORING ─────────────────────────────────────────────── */}
-      <div className="rounded-2xl overflow-hidden"
-        style={{
-          border: unresolvedErrorCount > 0 ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(34,197,94,0.15)',
-          background: unresolvedErrorCount > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(34,197,94,0.03)',
-        }}>
-        <div className="px-5 py-3 border-b flex items-center justify-between"
-          style={{ borderColor: unresolvedErrorCount > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)' }}>
-          <div className="flex items-center gap-2">
-            {unresolvedErrorCount > 0
-              ? <AlertTriangle className="w-4 h-4 text-red-400" />
-              : <Check className="w-4 h-4 text-emerald-400" />}
-            <h2 className={`text-sm font-bold ${unresolvedErrorCount > 0 ? 'text-red-300' : 'text-emerald-400'}`}>
-              {unresolvedErrorCount > 0
-                ? `${unresolvedErrorCount} erro${unresolvedErrorCount > 1 ? 's' : ''} no site`
-                : 'Nenhum erro no site'}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {unresolvedErrorCount > 0 && (
-              <button
-                className="text-[10px] text-zinc-500 hover:text-emerald-400 px-2 py-1 rounded border border-white/5 hover:border-emerald-500/30 transition-colors"
-                onClick={async () => {
-                  if (!confirm(`Marcar ${unresolvedErrorCount} erro(s) como resolvido(s)?`)) return;
-                  await fetch('/api/error-log/resolve-all', { method: 'POST' });
-                  window.location.reload();
-                }}
-              >
-                resolver todos
-              </button>
-            )}
-            <span className="text-[10px] text-zinc-500 font-mono">monitoramento ativo</span>
-          </div>
-        </div>
-        {unresolvedErrorCount > 0 && (
-          <div className="p-4 space-y-2 max-h-48 overflow-y-auto">
-            {recentErrors.filter(e => !e.resolved).slice(0, 8).map(err => (
-              <div key={err.id}
-                className="flex items-start gap-3 px-3 py-2 rounded-xl text-xs"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div className="flex-grow min-w-0">
-                  <p className="text-red-300 font-medium truncate">{err.message}</p>
-                  <p className="text-zinc-600 truncate">{err.url} · {err.createdAt}</p>
-                </div>
-                <button
-                  className="text-[10px] text-zinc-600 hover:text-emerald-400 shrink-0 px-2 py-1 rounded border border-transparent hover:border-emerald-500/30 transition-colors"
-                  onClick={async () => {
-                    await fetch(`/api/error-log/${err.id}/resolve`, { method: 'POST' });
-                    window.location.reload();
-                  }}
-                >
-                  resolver
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ErrorStatusWidget initialErrors={recentErrors} initialUnresolvedCount={unresolvedErrorCount} />
 
       {/* ── PIX ABANDONADOS ─────────────────────────────────────────────── */}
       <AbandonedPixSection />

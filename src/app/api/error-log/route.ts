@@ -2,6 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { requireAdmin } from '@/lib/admin-action-guard';
+
+export async function GET(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+  try {
+    const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') ?? '20'), 50);
+    const db = getAdminFirestore();
+    const [snap, countSnap] = await Promise.all([
+      db.collection('error_logs').orderBy('createdAt', 'desc').limit(limit).get(),
+      db.collection('error_logs').where('resolved', '==', false).count().get(),
+    ]);
+    const errors = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        message: data.message,
+        url: data.url,
+        resolved: data.resolved,
+        createdAt: data.createdAt?.toDate
+          ? new Intl.DateTimeFormat('pt-BR', {
+              day: '2-digit', month: '2-digit',
+              hour: '2-digit', minute: '2-digit',
+              timeZone: 'America/Sao_Paulo',
+            }).format(data.createdAt.toDate())
+          : '',
+      };
+    });
+    return NextResponse.json({ errors, unresolvedCount: countSnap.data().count });
+  } catch (err: any) {
+    return NextResponse.json({ error: 'failed' }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   // Anti-flood: caps the endpoint at ~20 writes / IP / minute. Legitimate
