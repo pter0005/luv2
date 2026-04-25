@@ -831,11 +831,11 @@ export default function PaymentField() {
               <div className="flex items-baseline gap-1.5 shrink-0">
                 {item.originalValue && (
                   <span className="text-[11px] text-white/35 line-through tabular-nums">
-                    {BRL.format(item.originalValue)}
+                    {money(item.originalValue, locale)}
                   </span>
                 )}
                 <span className={`text-[13px] font-semibold tabular-nums ${item.originalValue ? 'text-emerald-400' : 'text-white/85'}`}>
-                  {BRL.format(item.value)}
+                  {money(item.value, locale)}
                 </span>
               </div>
             </div>
@@ -848,7 +848,7 @@ export default function PaymentField() {
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-white/55 font-semibold">Total</div>
             <div className="text-[11px] text-white/50 mt-0.5">{isUS ? 'Lifetime access · no subscription' : 'Acesso vitalício · sem mensalidade'}</div>
           </div>
-          <div className="text-2xl font-bold text-white tabular-nums">{BRL.format(total)}</div>
+          <div className="text-2xl font-bold text-white tabular-nums">{money(total, locale)}</div>
         </div>
       </div>
 

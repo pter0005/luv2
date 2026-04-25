@@ -110,17 +110,23 @@ const fmtDate = (d: Date) =>
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border px-4 py-3 text-xs shadow-2xl"
-      style={{ background: '#18181b', borderColor: 'rgba(255,255,255,0.1)' }}>
-      <p className="font-bold text-white mb-2">{label}</p>
+    <div className="rounded-xl px-3.5 py-2.5 text-xs shadow-2xl"
+      style={{
+        background: 'rgba(9,9,11,0.95)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(12px)',
+      }}>
+      <p className="font-semibold text-white/60 mb-2 text-[10px] uppercase tracking-wider">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-2 mb-1" style={{ color: p.color }}>
-          <span className="inline-block w-2 h-2 rounded-full" style={{ background: p.color }} />
-          {p.name}:{' '}
-          <span className="font-black ml-1">
+        <div key={p.dataKey} className="flex items-center justify-between gap-4 mb-1 last:mb-0">
+          <span className="flex items-center gap-1.5 text-white/50">
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: p.color }} />
+            {p.name}
+          </span>
+          <span className="font-bold tabular-nums" style={{ color: p.color }}>
             {p.dataKey === 'revenue' ? brl(p.value) : p.value.toLocaleString('pt-BR')}
           </span>
-        </p>
+        </div>
       ))}
     </div>
   );
@@ -319,18 +325,22 @@ function Section({ title, sub, children, action, icon: Icon, accent = '#a855f7' 
   return (
     <div className="rounded-2xl overflow-hidden"
       style={{
-        border: '1px solid rgba(255,255,255,0.06)',
-        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset',
       }}>
       <div className="px-5 sm:px-6 py-4 border-b flex items-center justify-between gap-3"
-        style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-2.5 min-w-0">
           {Icon && (
-            <Icon className="w-4 h-4 shrink-0" style={{ color: accent }} />
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}>
+              <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
+            </div>
           )}
           <div className="min-w-0">
-            <h2 className="text-[13px] sm:text-sm font-bold text-white tracking-tight truncate">{title}</h2>
-            {sub && <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">{sub}</p>}
+            <h2 className="text-[13px] sm:text-sm font-bold text-white/90 tracking-tight truncate">{title}</h2>
+            {sub && <p className="text-[10px] sm:text-[11px] text-zinc-600 mt-0.5 truncate">{sub}</p>}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}
