@@ -68,10 +68,13 @@ export default function PlanField() {
   const handlePickVip = () => {
     setValue('plan', 'vip', { shouldDirty: true });
     setValue('introType', 'poema', { shouldDirty: true });
-    // Forçar wordGame ativo se tem perguntas configuradas
     setValue('enableWordGame', true, { shouldDirty: true });
-    // QR custom: user escolhe o design, só ativa "não-clássico" se tava em classic
-    // (não sobrescreve escolha anterior)
+  };
+
+  const handlePickAvancado = () => {
+    setValue('plan', 'avancado', { shouldDirty: true });
+    setValue('introType', 'poema', { shouldDirty: true });
+    setValue('enableWordGame', true, { shouldDirty: true });
   };
 
   return (
@@ -180,7 +183,7 @@ export default function PlanField() {
               </span>
             <button
               type="button"
-              onClick={() => field.onChange('avancado')}
+              onClick={handlePickAvancado}
               className={cn(
                 'w-full rounded-2xl p-4 text-left transition relative overflow-hidden',
                 field.value === 'avancado'

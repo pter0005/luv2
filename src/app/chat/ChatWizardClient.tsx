@@ -80,11 +80,11 @@ function Inner() {
     const planParam = searchParams.get('plan');
     if (planParam === 'vip' || planParam === 'avancado' || planParam === 'basico') {
       methods.setValue('plan', planParam, { shouldDirty: false });
-      if (planParam === 'vip') {
+      if (planParam === 'vip' || planParam === 'avancado') {
         methods.setValue('introType', 'poema', { shouldDirty: false });
         methods.setValue('enableWordGame', true, { shouldDirty: false });
       }
-    } else if (!planParam) {
+    } else {
       // Sem ?plan= na URL: pré-seleciona VIP com add-ons incluídos
       methods.setValue('plan', 'vip', { shouldDirty: false });
       methods.setValue('introType', 'poema', { shouldDirty: false });
