@@ -7,6 +7,7 @@ import {
   Sparkles, Plus, Trash2, Star, StarOff, BookmarkPlus, ChevronDown, ChevronUp,
   ExternalLink, Eye, Zap, AlertTriangle,
 } from 'lucide-react';
+import { getPresets, saveCustomPresets as saveCustomPresetsAction, saveDefaultPreset as saveDefaultPresetAction } from './preset-actions';
 
 type AbandonedPix = {
   id: string;
@@ -57,8 +58,12 @@ const BUILTIN_PRESETS: MessagePreset[] = [
   },
 ];
 
-const STORAGE_PRESETS = 'recuperar_pix_presets_v1';
-const STORAGE_DEFAULT = 'recuperar_pix_default_preset_v1';
+// LocalStorage vira CACHE OTIMISTA — source of truth é o Firestore via
+// getPresets/saveCustomPresets/saveDefaultPreset. Antes era só local, o que
+// causava "mensagem criada no PC não aparecia no celular" (cada device com
+// seu storage isolado). Agora sync entre devices.
+const CACHE_PRESETS = 'recuperar_pix_presets_v1';
+const CACHE_DEFAULT = 'recuperar_pix_default_preset_v1';
 
 function getTimeAgo(iso: string | null): string {
   if (!iso) return '—';
@@ -115,26 +120,49 @@ export default function RecuperarPixClient() {
   const [newPresetName, setNewPresetName] = useState('');
   const [newPresetContent, setNewPresetContent] = useState('');
 
-  // Load presets from localStorage
+  // Load presets: primeiro cache local (instantâneo), depois Firestore
+  // (source of truth, sobrescreve se vier diferente). Garante que o PC
+  // sempre vê o que foi salvo no celular e vice-versa.
   useEffect(() => {
+    // 1. Pinta da cache pra evitar flash de vazio
     try {
-      const savedPresets = localStorage.getItem(STORAGE_PRESETS);
-      if (savedPresets) setCustomPresets(JSON.parse(savedPresets));
-      const savedDefault = localStorage.getItem(STORAGE_DEFAULT);
-      if (savedDefault) setDefaultPresetId(savedDefault);
+      const cachedPresets = localStorage.getItem(CACHE_PRESETS);
+      if (cachedPresets) setCustomPresets(JSON.parse(cachedPresets));
+      const cachedDefault = localStorage.getItem(CACHE_DEFAULT);
+      if (cachedDefault) setDefaultPresetId(cachedDefault);
     } catch {}
+
+    // 2. Busca do Firestore e atualiza se vier coisa diferente
+    (async () => {
+      try {
+        const remote = await getPresets();
+        setCustomPresets(remote.customPresets);
+        setDefaultPresetId(remote.defaultPresetId);
+        // Atualiza cache pra próxima visita ser instantânea
+        try {
+          localStorage.setItem(CACHE_PRESETS, JSON.stringify(remote.customPresets));
+          localStorage.setItem(CACHE_DEFAULT, remote.defaultPresetId);
+        } catch {}
+      } catch (err) {
+        console.warn('[presets] falha ao buscar remoto, usando cache local:', err);
+      }
+    })();
   }, []);
 
   const allPresets = useMemo(() => [...BUILTIN_PRESETS, ...customPresets], [customPresets]);
 
+  // Write-through: atualiza UI imediato + cache local + dispara save no Firestore.
+  // Se Firestore falhar, UI continua OK (otimista); próximo load sincroniza.
   const saveCustomPresets = (next: MessagePreset[]) => {
     setCustomPresets(next);
-    try { localStorage.setItem(STORAGE_PRESETS, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(CACHE_PRESETS, JSON.stringify(next)); } catch {}
+    saveCustomPresetsAction(next).catch(err => console.warn('[presets] save remote failed:', err));
   };
 
   const saveDefaultPreset = (id: string) => {
     setDefaultPresetId(id);
-    try { localStorage.setItem(STORAGE_DEFAULT, id); } catch {}
+    try { localStorage.setItem(CACHE_DEFAULT, id); } catch {}
+    saveDefaultPresetAction(id).catch(err => console.warn('[presets] save default failed:', err));
   };
 
   const createPreset = () => {

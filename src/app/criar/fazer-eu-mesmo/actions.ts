@@ -971,6 +971,12 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
 // ─────────────────────────────────────────────
 // VERIFICAR PAGAMENTO MERCADO PAGO
 // ─────────────────────────────────────────────
+// Cache in-memory dos logs já emitidos por (paymentId) — o cliente pollea a
+// cada 3s durante 15 min. Sem dedup, uma falha persistente gera ~300 logs
+// duplicados do mesmo paymentId. Cache TTL de 5min cobre o ciclo inteiro.
+const _verifyErrorLogged = new Map<string, number>();
+const VERIFY_LOG_DEDUP_MS = 5 * 60 * 1000;
+
 export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: string): Promise<PaymentVerificationResult> {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { status: 'error', error: 'Token do Mercado Pago não configurado.' };
@@ -983,7 +989,13 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
     if (paymentInfo.status === 'approved') {
       const result = await finalizeLovePage(intentId, paymentId);
       if (!result.success) {
-        await logCriticalError('page_creation', `Página não criada após PIX aprovado: ${result.error}`, { intentId, paymentId });
+        // Finalize falhou — log só uma vez por paymentId (até 5min).
+        const key = `fin:${paymentId}`;
+        const last = _verifyErrorLogged.get(key) || 0;
+        if (Date.now() - last > VERIFY_LOG_DEDUP_MS) {
+          _verifyErrorLogged.set(key, Date.now());
+          await logCriticalError('page_creation', `Página não criada após PIX aprovado: ${result.error}`, { intentId, paymentId });
+        }
         return { status: 'error', error: result.error || 'Falha ao finalizar.' };
       }
       return { status: 'approved', pageId: result.pageId };
@@ -994,7 +1006,14 @@ export async function verifyPaymentWithMercadoPago(paymentId: string, intentId: 
     if (known.includes(currentStatus)) return { status: currentStatus as any };
     return { status: 'pending' };
   } catch (error: any) {
-    await logCriticalError('payment', `Verificação PIX falhou: ${error.message}`, { paymentId, intentId, stack: error.stack });
+    // Dedup: evita 300+ logs idênticos durante polling de 15min. Loga a
+    // primeira ocorrência, silencia as repetições do mesmo paymentId.
+    const key = `verify:${paymentId}`;
+    const last = _verifyErrorLogged.get(key) || 0;
+    if (Date.now() - last > VERIFY_LOG_DEDUP_MS) {
+      _verifyErrorLogged.set(key, Date.now());
+      await logCriticalError('payment', `Verificação PIX falhou: ${error.message}`, { paymentId, intentId, stack: error.stack });
+    }
     return { status: 'error', error: error.message, details: error };
   }
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, MessageCircle, ShoppingCart, Star, Send, Copy, CheckCircle, Users, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, MessageCircle, ShoppingCart, Star, Send, Copy, CheckCircle, Users, AlertTriangle, Save, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { type AbandonedCart, type RecentBuyer, markMessageSent } from './actions';
+import { getTemplateOverrides, saveTemplateOverride, clearTemplateOverride } from './template-overrides';
 
 /* ── Message Templates ─────────────────────────────────────────────── */
 
@@ -91,12 +92,75 @@ function whatsappLink(phone: string, text: string): string {
   return `https://api.whatsapp.com/send?phone=${intl}&text=${encodeURIComponent(text)}`;
 }
 
+const CACHE_KEY = 'admin_whatsapp_overrides_v1';
+
 export default function WhatsAppClient({ abandoned, buyers }: Props) {
   const [tab, setTab] = useState<Tab>('abandoned');
   const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES.recover.messages[0]);
-  const [customText, setCustomText] = useState('');
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load overrides: cache local primeiro (instantâneo), depois Firestore
+  // (source of truth, atualiza UI se vier diferente). Sincronia entre devices.
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) setOverrides(JSON.parse(cached));
+    } catch {}
+    (async () => {
+      try {
+        const remote = await getTemplateOverrides();
+        setOverrides(remote);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(remote)); } catch {}
+      } catch {}
+    })();
+  }, []);
+
+  // Texto efetivo do template selecionado: override (editado) ou default.
+  const messageText = overrides[selectedTemplate.id] ?? selectedTemplate.text;
+  const hasOverride = selectedTemplate.id in overrides;
+
+  // Salva override com debounce de 700ms — não dispara request a cada tecla
+  // mas garante persistência rápida quando usuário pausa de digitar.
+  const handleEdit = (text: string) => {
+    setOverrides(prev => {
+      const next = { ...prev, [selectedTemplate.id]: text };
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setSaveStatus('saving');
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await saveTemplateOverride(selectedTemplate.id, text);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1500);
+      } catch {
+        setSaveStatus('idle');
+      }
+    }, 700);
+  };
+
+  // Volta pro texto default do template (limpa override no remote + local)
+  const handleReset = async () => {
+    setOverrides(prev => {
+      const next = { ...prev };
+      delete next[selectedTemplate.id];
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setSaveStatus('saving');
+    try {
+      await clearTemplateOverride(selectedTemplate.id);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1500);
+    } catch {
+      setSaveStatus('idle');
+    }
+  };
 
   const abandonedWithPhone = abandoned.filter(c => c.whatsappNumber);
   const abandonedWithoutPhone = abandoned.filter(c => !c.whatsappNumber);
@@ -113,8 +177,6 @@ export default function WhatsAppClient({ abandoned, buyers }: Props) {
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
-
-  const messageText = customText || selectedTemplate.text;
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#09090b' }}>
@@ -173,26 +235,58 @@ export default function WhatsAppClient({ abandoned, buyers }: Props) {
         {/* Template selector */}
         {tab !== 'templates' && (
           <div className="rounded-2xl p-4 mb-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Mensagem selecionada</p>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Mensagem selecionada</p>
+              {/* Indicador de status do salvamento — sincroniza entre devices */}
+              <div className="flex items-center gap-2">
+                {saveStatus === 'saving' && (
+                  <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                    <Save className="w-3 h-3 animate-pulse" /> salvando...
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="text-[10px] text-green-400 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> salvo
+                  </span>
+                )}
+                {hasOverride && saveStatus === 'idle' && (
+                  <button
+                    onClick={handleReset}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 transition"
+                    title="Volta pro texto original do template"
+                  >
+                    <RotateCcw className="w-3 h-3" /> resetar pra original
+                  </button>
+                )}
+                {hasOverride && saveStatus === 'idle' && (
+                  <span className="text-[10px] text-purple-400 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30">editado</span>
+                )}
+              </div>
+            </div>
             <div className="flex gap-2 mb-3 flex-wrap">
               {Object.entries(TEMPLATES).map(([key, tmpl]) => (
                 tmpl.messages.map(msg => (
-                  <button key={msg.id} onClick={() => { setSelectedTemplate(msg); setCustomText(''); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  <button key={msg.id} onClick={() => setSelectedTemplate(msg)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all relative ${
                       selectedTemplate.id === msg.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-zinc-500 hover:text-zinc-300 border border-transparent'
                     }`}>
                     {tmpl.icon} {msg.name}
+                    {(msg.id in overrides) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-purple-400 ring-2 ring-zinc-900" title="Editado" />
+                    )}
                   </button>
                 ))
               ))}
             </div>
             <textarea
-              value={customText || selectedTemplate.text}
-              onChange={(e) => setCustomText(e.target.value)}
-              rows={3}
+              value={messageText}
+              onChange={(e) => handleEdit(e.target.value)}
+              rows={4}
               className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-purple-500 resize-none"
             />
-            <p className="text-[10px] text-zinc-600 mt-1">Edite a mensagem acima ou selecione outro template</p>
+            <p className="text-[10px] text-zinc-600 mt-1">
+              Edição é salva automaticamente e sincroniza entre seus dispositivos.
+            </p>
           </div>
         )}
 

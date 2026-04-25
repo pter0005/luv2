@@ -46,7 +46,7 @@ import QrCodeSelector from '@/app/criar/fazer-eu-mesmo/QrCodeSelector';
 import { downloadQrCard } from '@/lib/downloadQrCard';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, setAdvancedMatching, trackFunnelStep } from '@/lib/analytics';
-import { getAttribution } from '@/lib/attribution';
+import { getAttribution, captureAttribution } from '@/lib/attribution';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 // Helper compat: usa o formatter do locale ativo (BRL em pt, USD em en).
@@ -280,6 +280,11 @@ export default function PaymentField() {
   // deduplicar o Purchase com o pixel do browser e atribuir ao ad correto.
   const attributionRef = useRef<Record<string, any>>({});
   useEffect(() => {
+    // Captura (idempotente: first-touch vence) antes de ler. Redundância
+    // defensiva — useVisitorTracking já chama, mas garante que mesmo se o hook
+    // falhou (SSR race, ad blocker), a attribution é capturada aqui antes do
+    // save do intent. Sem isso, vendas vindas de TikTok apareciam como "direct".
+    try { captureAttribution(); } catch { /* ignore */ }
     attributionRef.current = getAttribution();
   }, []);
 

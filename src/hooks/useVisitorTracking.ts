@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
-import { getAttribution } from '@/lib/attribution';
+import { getAttribution, captureAttribution } from '@/lib/attribution';
 
 // Detecta a fonte de tráfego do visitante. Ordem:
 //   1. UTM source na URL atual (prioridade máxima — link fresco)
@@ -42,6 +42,18 @@ function detectSource(): string {
 
 export function useVisitorTracking(userEmail?: string | null) {
   const pathname = usePathname();
+
+  // CAPTURA UTM/fbclid/ttclid SEMPRE que o pathname muda com params UTM.
+  // Antes, só o ChatWizardClient chamava captureAttribution — usuário que
+  // entrava via TikTok (?utm_source=tiktok) na LANDING perdia o UTM ao
+  // navegar pro /chat se não viesse com query string. First-touch persiste
+  // em localStorage pra não sobrescrever campanha original, mas a captura
+  // precisa rodar em toda page load pra garantir que CAPTURA pelo menos uma vez.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { captureAttribution(); } catch { /* ignore */ }
+  }, [pathname]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (userEmail && ADMIN_EMAILS.includes(userEmail)) return; // não conta admin

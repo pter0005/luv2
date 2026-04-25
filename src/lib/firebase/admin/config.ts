@@ -1,5 +1,5 @@
 import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { getDatabase } from 'firebase-admin/database';
@@ -47,10 +47,30 @@ export function getAdminApp() {
   }
 }
 
-// As funções auxiliares continuam as mesmas, usando a inicialização segura.
+// Firestore singleton com `ignoreUndefinedProperties: true`.
+//
+// Sem essa flag, o Firestore Admin lança "Cannot use undefined as a Firestore
+// value" quando qualquer campo do doc é `undefined`. Isso acontecia em massa
+// no fluxo de PIX: wizard salva `audioRecording: undefined` quando user não
+// gravou voz → polling (verifyPaymentWithMercadoPago) tentava atualizar doc e
+// falhava a CADA 3 segundos, gerando centenas de logs "Verificação PIX falhou".
+//
+// `settings()` só pode ser chamado UMA vez por Firestore instance (ou lança
+// "Firestore has already been initialized"). Por isso guardamos a instância
+// global via _instance flag e usamos sempre a mesma.
+let _firestoreInstance: Firestore | null = null;
 export function getAdminFirestore() {
+  if (_firestoreInstance) return _firestoreInstance;
   const app = getAdminApp();
-  return getFirestore(app);
+  const db = getFirestore(app);
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch (e) {
+    // Já setado por outra chamada — OK, só usa a instância. Não invalida.
+    console.warn('[firestore] settings already applied:', (e as any)?.message);
+  }
+  _firestoreInstance = db;
+  return db;
 }
 
 export function getAdminAuth() {
