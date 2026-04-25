@@ -75,16 +75,20 @@ function Inner() {
   const [currentStep, setCurrentStep] = useState<ChatStepKey>(CHAT_STEP_ORDER[0]);
   const [direction, setDirection] = useState<1 | -1>(1);
 
-  // Aplica ?plan=vip|avancado|basico da URL no form (landing page manda pra cá)
+  // Aplica ?plan=vip|avancado|basico da URL; sem param → mantém default vip + força add-ons
   useEffect(() => {
     const planParam = searchParams.get('plan');
     if (planParam === 'vip' || planParam === 'avancado' || planParam === 'basico') {
       methods.setValue('plan', planParam, { shouldDirty: false });
-      // VIP tem add-ons forçados (espelha handlePickVip do PlanField)
       if (planParam === 'vip') {
         methods.setValue('introType', 'poema', { shouldDirty: false });
         methods.setValue('enableWordGame', true, { shouldDirty: false });
       }
+    } else if (!planParam) {
+      // Sem ?plan= na URL: pré-seleciona VIP com add-ons incluídos
+      methods.setValue('plan', 'vip', { shouldDirty: false });
+      methods.setValue('introType', 'poema', { shouldDirty: false });
+      methods.setValue('enableWordGame', true, { shouldDirty: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

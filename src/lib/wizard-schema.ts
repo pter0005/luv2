@@ -41,7 +41,7 @@ export const wordGameQuestionSchema = z.object({
 });
 
 export const pageSchema = z.object({
-  plan: z.string().default('avancado'),
+  plan: z.string().default('vip'),
   intentId: z.string().optional(),
   userId: z.string().optional(),
   title: z.string().default("Seu Título Aqui"),
@@ -86,7 +86,7 @@ export const pageSchema = z.object({
 export type PageData = z.infer<typeof pageSchema>;
 
 export const chatDefaultValues: Partial<PageData> = {
-  plan: 'avancado',
+  plan: 'vip',
   title: "",
   titleColor: "#FFFFFF",
   message: "",
