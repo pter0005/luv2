@@ -14,7 +14,8 @@ export default async function DoItYourselfPage({ searchParams }: PageProps) {
   // admin precisa ver exatamente o que o cliente vê.
   const isAdmin = await isAdminRequest();
   const hasDiscount = typeof searchParams?.discount === 'string' && searchParams.discount.length > 0;
-  if (isAdmin && !hasDiscount) {
+  const hasGift = typeof searchParams?.gift === 'string' && searchParams.gift.length > 0;
+  if (isAdmin && !hasDiscount && !hasGift) {
     const segment = typeof searchParams?.segment === 'string' ? searchParams!.segment : undefined;
     const target = segment ? `/chat?segment=${encodeURIComponent(segment)}` : '/chat';
     redirect(target);

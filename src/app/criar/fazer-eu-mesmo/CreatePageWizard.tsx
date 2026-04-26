@@ -1883,6 +1883,20 @@ const PlanStep = React.memo(() => {
 
     const [lockedPlan, setLockedPlan] = useState<string | null>(null);
     useEffect(() => {
+        const giftToken = new URLSearchParams(window.location.search).get('gift') || localStorage.getItem('mycupid_gift_token');
+        if (giftToken) {
+            fetch(`/api/gift?token=${giftToken}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.valid && d.plan) {
+                        const wizardPlan = d.plan === 'vip' ? 'avancado' : d.plan;
+                        setLockedPlan(wizardPlan);
+                        field.onChange(wizardPlan);
+                    }
+                })
+                .catch(() => {});
+            return;
+        }
         const email = user?.email;
         if (!email || !firestore) return;
         getDoc(firestoreDoc(firestore, 'user_credits', email.toLowerCase().trim()))
@@ -1891,8 +1905,9 @@ const PlanStep = React.memo(() => {
                     const d = snap.data();
                     const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
                     if (available > 0 && d.plan) {
-                        setLockedPlan(d.plan);
-                        field.onChange(d.plan);
+                        const wizardPlan = d.plan === 'vip' ? 'avancado' : d.plan;
+                        setLockedPlan(wizardPlan);
+                        field.onChange(wizardPlan);
                     }
                 }
             })
@@ -1980,7 +1995,7 @@ const PlanStep = React.memo(() => {
                 <div className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-green-500/10 border border-green-500/20">
                     <Gift className="w-5 h-5 text-green-400 shrink-0" />
                     <p className="text-sm text-green-300 font-medium">
-                        Você tem um crédito grátis para o plano <span className="font-black">{lockedPlan === 'vip' ? 'VIP' : lockedPlan === 'avancado' ? 'Avançado' : 'Básico'}</span>!
+                        Você tem uma página grátis no plano <span className="font-black">{lockedPlan === 'avancado' ? 'Avançado' : 'Básico'}</span>!
                     </p>
                 </div>
             )}
@@ -2949,7 +2964,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             <p className="text-sm font-black text-white leading-tight">
                                 Você tem {userCredits} crédito{userCredits > 1 ? 's' : ''} grátis!
                             </p>
-                            <p className="text-xs text-white/50">Crie esta página no Plano Avançado sem pagar nada</p>
+                            <p className="text-xs text-white/50">Crie esta página no Plano {creditPlan === 'basico' ? 'Básico' : 'Avançado'} sem pagar nada</p>
                         </div>
                     </div>
                     <button
@@ -3035,7 +3050,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                                 startTransition(async () => {
                                     try {
                                         const data = getValues();
-                                        const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, plan: 'avancado', guestEmail: email });
+                                        const saveResult = await createOrUpdatePaymentIntent({ ...data, userId: user.uid, guestEmail: email });
                                         if (!saveResult.success) { setError({ message: saveResult.error }); return; }
                                         localStorage.removeItem('mycupid_gift_token');
                                         const finalResult = await finalizeWithGiftToken(saveResult.intentId!, user.uid, giftToken, email);

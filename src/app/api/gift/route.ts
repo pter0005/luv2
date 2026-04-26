@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const d = snap.data()!;
   if (d.used) return NextResponse.json({ valid: false, reason: 'used' });
 
-  return NextResponse.json({ valid: true, credits: d.credits ?? 1 });
+  return NextResponse.json({ valid: true, credits: d.credits ?? 1, plan: d.plan || 'avancado' });
 }
 
 // POST /api/gift — marca o token como usado
