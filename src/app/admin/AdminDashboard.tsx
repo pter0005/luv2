@@ -44,6 +44,7 @@ export type SaleRecord = {
 };
 export type ErrorLog = {
   id: string; message: string; url: string; createdAt: string; resolved: boolean;
+  category?: string | null; extra?: any;
 };
 export type AttachRate = {
   sample: number; intro: number; voice: number; wordGame: number; qr: number;

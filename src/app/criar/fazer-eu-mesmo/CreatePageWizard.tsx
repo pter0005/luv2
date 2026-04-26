@@ -171,6 +171,7 @@ const pageSchema = z.object({
   utmSource: z.string().optional(),
   whatsappNumber: z.string().optional(),
   payment: paymentSchema.optional(),
+  _uploadingCount: z.number().default(0),
 });
 
 export type PageData = z.infer<typeof pageSchema>;
@@ -365,12 +366,12 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
 // GALLERY STEP
 // ─────────────────────────────────────────────
 const GalleryStep = React.memo(() => {
-    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { control, formState: { errors }, setValue, getValues } = useFormContext<PageData>();
     const { fields, append, remove } = useFieldArray({ control, name: "galleryImages" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
-    const uploadingRef = useRef(false); // guard contra onChange duplo no mobile
-    const lastUploadFinishedRef = useRef(0); // cooldown contra onChange tardio pós-upload
+    const uploadingRef = useRef(false);
+    const lastUploadFinishedRef = useRef(0);
     const { toast } = useToast();
     const isLimitReached = fields.length >= MAX_GALLERY_IMAGES;
 
@@ -407,6 +408,7 @@ const GalleryStep = React.memo(() => {
 
         uploadingRef.current = true;
         setIsUploading(true);
+        setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
             const uploadPromises = uniqueFiles.map(async file => {
                 const compressedFile = await compressImage(file, 1280, 0.9);
@@ -431,7 +433,8 @@ const GalleryStep = React.memo(() => {
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
-            lastUploadFinishedRef.current = Date.now(); // marca fim para o cooldown
+            lastUploadFinishedRef.current = Date.now();
+            setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
         }
     };
 
@@ -542,7 +545,7 @@ GalleryStep.displayName = 'GalleryStep';
 // TIMELINE STEP
 // ─────────────────────────────────────────────
 const TimelineStep = React.memo(() => {
-    const { control, formState: { errors } } = useFormContext<PageData>();
+    const { control, formState: { errors }, setValue, getValues } = useFormContext<PageData>();
     const { fields, remove, append } = useFieldArray({ control, name: "timelineEvents" });
     const { user, storage, isUserLoading } = useFirebase();
     const [isUploading, setIsUploading] = useState(false);
@@ -581,13 +584,13 @@ const TimelineStep = React.memo(() => {
         if (filesToUpload.length === 0) return;
         uploadingRef.current = true;
         setIsUploading(true);
+        setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
             const uploadPromises = filesToUpload.map(async (file) => {
                 const compressedFile = await compressImage(file, 1280, 0.85);
                 return uploadFile(storage, user.uid, compressedFile, 'timeline');
             });
             const uploadedFiles = await Promise.all(uploadPromises);
-            // FIX: sem id manual — useFieldArray gerencia IDs sozinho
             const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
                 image: fileData,
                 description: '',
@@ -614,6 +617,7 @@ const TimelineStep = React.memo(() => {
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
+            setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
         }
     };
 
@@ -1167,7 +1171,7 @@ IntroStep.displayName = "IntroStep";
 const VOICE_MESSAGE_PRICE = 2.90;
 
 const VoiceMessageStep = React.memo(() => {
-    const { control, setValue } = useFormContext<PageData>();
+    const { control, setValue, getValues } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const audioRecording = useWatch({ control, name: "audioRecording" });
@@ -1202,6 +1206,7 @@ const VoiceMessageStep = React.memo(() => {
             return;
         }
         setStatus('uploading');
+        setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
             const fileData = await uploadFile(storage, user.uid, audioBlob, 'audio');
             setValue("audioRecording", fileData, { shouldDirty: true, shouldValidate: true });
@@ -1221,6 +1226,8 @@ const VoiceMessageStep = React.memo(() => {
                     </div>
                 )
             });
+        } finally {
+            setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
         }
     };
 
@@ -1398,7 +1405,7 @@ VoiceMessageStep.displayName = "VoiceMessageStep";
 // PUZZLE STEP — FIX #5: toast quando !user || !storage
 // ─────────────────────────────────────────────
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
-    const { control, setValue, watch } = useFormContext<PageData>();
+    const { control, setValue, getValues, watch } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
     const enablePuzzle = watch("enablePuzzle");
     const puzzleImage = watch("puzzleImage");
@@ -1419,6 +1426,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             setIsProcessing(true);
+            setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
             try {
                 const compressedBlob = await compressImage(file, 1280, 0.9);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
@@ -1440,6 +1448,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 });
             } finally {
                 setIsProcessing(false);
+                setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
             }
         }
     };
@@ -1512,8 +1521,7 @@ PuzzleStep.displayName = 'PuzzleStep';
 // MEMORY GAME STEP — FIX #4: isUserLoading adicionado
 // ─────────────────────────────────────────────
 const MemoryGameStep = React.memo(() => {
-    const { control, watch } = useFormContext<PageData>();
-    // FIX #4: isUserLoading incluído para evitar falha silenciosa
+    const { control, watch, setValue, getValues } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
     const { toast } = useToast();
     const { fields, append, remove } = useFieldArray({ control, name: "memoryGameImages" });
@@ -1554,6 +1562,7 @@ const MemoryGameStep = React.memo(() => {
 
         uploadingRef.current = true;
         setIsUploading(true);
+        setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
             const uploadPromises = uniqueFiles.map(async file => {
                 const compressedFile = await compressImage(file, 400, 0.8);
@@ -1579,6 +1588,7 @@ const MemoryGameStep = React.memo(() => {
             setIsUploading(false);
             uploadingRef.current = false;
             lastUploadFinishedRef.current = Date.now();
+            setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
         }
     };
 
@@ -2134,6 +2144,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const { getValues, watch, setValue, control } = useFormContext<PageData>();
     const plan = watch('plan') as 'basico' | 'avancado';
     const intentId = watch('intentId');
+    const uploadingCount = watch('_uploadingCount') || 0;
     const { user } = useUser();
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
@@ -2446,6 +2457,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPixData(null);
         setPixExpired(false);
         pixCreatedAtRef.current = 0;
+        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de pagar.' }); return; }
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) { setError({ message: 'Preencha seu WhatsApp com DDD para continuar.' }); return; }
@@ -2495,6 +2507,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const handleStripePayment = () => {
         setError(null);
+        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de pagar.' }); return; }
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         startTransition(async () => {
@@ -2559,6 +2572,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const handleCreditFinalize = () => {
         setError(null);
+        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de continuar.' }); return; }
         if (!user || !user.email) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
         if (!intentId) { setError({ message: 'Rascunho não encontrado. Tente recarregar a página.' }); return; }
         startTransition(async () => {
@@ -2704,7 +2718,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
-                    <Button onClick={handleStripePayment} disabled={isProcessing || (isAnonymousUser && !confirmedGuestEmail)} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
+                    <Button onClick={handleStripePayment} disabled={isProcessing || uploadingCount > 0 || (isAnonymousUser && !confirmedGuestEmail)} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
                         {isProcessing ? (
                             <Loader2 className="animate-spin" />
                         ) : (
@@ -3082,11 +3096,13 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button
                   onClick={handleOneClickPix}
-                  disabled={isProcessing || whatsappNumber.replace(/\D/g, '').length < 10}
+                  disabled={isProcessing || uploadingCount > 0 || whatsappNumber.replace(/\D/g, '').length < 10}
                   size="lg"
                   className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6] disabled:opacity-60 disabled:cursor-not-allowed">
                     {isProcessing ? (
                         <><Loader2 className="mr-2 h-5 w-5 animate-spin" /><span>Gerando QR Code do Mercado Pago...</span></>
+                    ) : uploadingCount > 0 ? (
+                        <span>Aguarde o envio das imagens...</span>
                     ) : whatsappNumber.replace(/\D/g, '').length < 10 ? (
                         <span>Preencha seu WhatsApp para continuar</span>
                     ) : (
@@ -3482,7 +3498,7 @@ function WizardInternal() {
         // Isso corta writes zerados causados por re-renders/watch loops.
         let snapshotKey = '';
         try {
-            const { intentId: _iid, ...rest } = dataToSave as any;
+            const { intentId: _iid, _uploadingCount: _uc, ...rest } = dataToSave as any;
             snapshotKey = JSON.stringify(rest);
         } catch { snapshotKey = String(Date.now()); }
         if (snapshotKey && snapshotKey === autosaveLastSnapshotRef.current) return;

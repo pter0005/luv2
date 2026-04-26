@@ -19,11 +19,17 @@ export async function GET(req: NextRequest) {
     ]);
     const errors = snap.docs.map(d => {
       const data = d.data();
+      let parsedExtra: any = null;
+      if (data.extra) {
+        try { parsedExtra = JSON.parse(data.extra); } catch { parsedExtra = data.extra; }
+      }
       return {
         id: d.id,
         message: data.message,
+        category: data.category || null,
         url: data.url,
         resolved: data.resolved,
+        extra: parsedExtra,
         createdAt: data.createdAt?.toDate
           ? new Intl.DateTimeFormat('pt-BR', {
               day: '2-digit', month: '2-digit',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Check, X, ChevronUp } from 'lucide-react';
+import { AlertTriangle, Check, X, ChevronUp, ChevronDown, FileWarning } from 'lucide-react';
 import type { ErrorLog } from '@/app/admin/AdminDashboard';
 
 interface Props {
@@ -16,6 +16,7 @@ export function ErrorStatusWidget({ initialErrors = [], initialUnresolvedCount =
   const [open, setOpen] = useState(false);
   const [resolving, setResolving] = useState<string | null>(null);
   const [resolvingAll, setResolvingAll] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchErrors = useCallback(async () => {
     try {
@@ -112,26 +113,78 @@ export function ErrorStatusWidget({ initialErrors = [], initialUnresolvedCount =
 
             {/* Error list */}
             {unresolved.length > 0 ? (
-              <div className="max-h-72 overflow-y-auto p-3 space-y-2">
-                {unresolved.slice(0, 8).map(err => (
-                  <div
-                    key={err.id}
-                    className="flex items-start gap-3 px-3 py-2 rounded-xl text-xs"
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
-                  >
-                    <div className="flex-grow min-w-0">
-                      <p className="text-red-300 font-medium truncate">{err.message}</p>
-                      <p className="text-zinc-600 truncate mt-0.5">{err.url} · {err.createdAt}</p>
-                    </div>
-                    <button
-                      onClick={() => handleResolve(err.id)}
-                      disabled={resolving === err.id}
-                      className="text-[10px] text-zinc-600 hover:text-emerald-400 shrink-0 px-2 py-1 rounded border border-transparent hover:border-emerald-500/30 transition-colors disabled:opacity-40"
+              <div className="max-h-96 overflow-y-auto p-3 space-y-2">
+                {unresolved.slice(0, 8).map(err => {
+                  const hasExtra = err.extra && (err.extra.files || err.extra.byFolder || err.extra.byError);
+                  const isExpanded = expandedId === err.id;
+                  return (
+                    <div
+                      key={err.id}
+                      className="rounded-xl text-xs"
+                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
                     >
-                      {resolving === err.id ? '...' : 'resolver'}
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-start gap-3 px-3 py-2">
+                        <div className="flex-grow min-w-0">
+                          <p className="text-red-300 font-medium" style={{ display: '-webkit-box', WebkitLineClamp: isExpanded ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {err.message}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {err.category && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-zinc-500">{err.category}</span>
+                            )}
+                            <p className="text-zinc-600 truncate">{err.url} · {err.createdAt}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {hasExtra && (
+                            <button
+                              onClick={() => setExpandedId(isExpanded ? null : err.id)}
+                              className="p-1 rounded hover:bg-white/5 text-zinc-500 hover:text-amber-400 transition-colors"
+                              title="Ver detalhes"
+                            >
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleResolve(err.id)}
+                            disabled={resolving === err.id}
+                            className="text-[10px] text-zinc-600 hover:text-emerald-400 px-2 py-1 rounded border border-transparent hover:border-emerald-500/30 transition-colors disabled:opacity-40"
+                          >
+                            {resolving === err.id ? '...' : 'resolver'}
+                          </button>
+                        </div>
+                      </div>
+                      {isExpanded && hasExtra && (
+                        <div className="px-3 pb-2 pt-0 space-y-1.5 border-t border-white/5 mt-1">
+                          {err.extra.pageId && (
+                            <p className="text-zinc-500"><span className="text-zinc-400">Page:</span> {err.extra.pageId}</p>
+                          )}
+                          {err.extra.email && (
+                            <p className="text-zinc-500"><span className="text-zinc-400">Email:</span> {err.extra.email}</p>
+                          )}
+                          {err.extra.byError && (
+                            <p className="text-zinc-500">
+                              <span className="text-zinc-400">Causas:</span>{' '}
+                              {Object.entries(err.extra.byError as Record<string, number>).map(([k, v]) => `${k}(${v})`).join(', ')}
+                            </p>
+                          )}
+                          {err.extra.files && Array.isArray(err.extra.files) && (
+                            <div className="mt-1">
+                              <p className="text-zinc-400 mb-0.5">Arquivos:</p>
+                              <div className="max-h-32 overflow-y-auto space-y-0.5 pl-1">
+                                {(err.extra.files as string[]).map((f: string, i: number) => (
+                                  <p key={i} className="text-zinc-600 font-mono text-[10px] break-all">
+                                    <FileWarning className="w-2.5 h-2.5 inline mr-1 text-red-400/60" />{f}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="px-4 py-5 text-center">

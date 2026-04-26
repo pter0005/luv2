@@ -278,7 +278,7 @@ function sanitizeForFirebase(obj: any): any {
 // SALVAR RASCUNHO — aceita guest IDs (guest_UUID)
 // ─────────────────────────────────────────────
 export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<CreateIntentResult> {
-  const { intentId, ...restOfPageData } = fullPageData;
+  const { intentId, _uploadingCount, ...restOfPageData } = fullPageData;
 
   if (!restOfPageData.userId) {
     return { success: false, error: 'ID de usuário não encontrado.', details: 'userId missing' };
@@ -779,11 +779,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   // página com 10 fotos quebradas gerava 10 logs. Painel ficava com "55 erros"
   // que eram 5-8 páginas. Agora contamos aqui e emitimos 1 log com totais +
   // breakdown por folder — fácil de ação no admin.
-  const collectFailures = (v: any, failures: Array<{ folder: string; error: string }> = []): typeof failures => {
+  const collectFailures = (v: any, failures: Array<{ folder: string; error: string; path: string }> = []): typeof failures => {
     if (Array.isArray(v)) { v.forEach(it => collectFailures(it, failures)); return failures; }
     if (v && typeof v === 'object') {
       if (v._moveFailed) {
-        failures.push({ folder: v._targetFolder || 'unknown', error: v._moveError || 'unknown' });
+        failures.push({ folder: v._targetFolder || 'unknown', error: v._moveError || 'unknown', path: v.path || 'unknown' });
       }
       for (const k in v) collectFailures(v[k], failures);
     }
@@ -798,16 +798,31 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     ...collectFailures(sanitizedData.backgroundVideo),
   ];
   if (allFailures.length > 0) {
-    // Agrupa por folder pra insight rápido ("memory-game: 6 falhas, gallery: 2")
     const byFolder: Record<string, number> = {};
-    allFailures.forEach(f => { byFolder[f.folder] = (byFolder[f.folder] || 0) + 1; });
-    const summary = Object.entries(byFolder).map(([k, v]) => `${k}:${v}`).join(', ');
+    const byError: Record<string, number> = {};
+    allFailures.forEach(f => {
+      byFolder[f.folder] = (byFolder[f.folder] || 0) + 1;
+      const errType = f.error.includes('source_missing') ? 'source_missing'
+        : f.error.includes('429') || f.error.includes('503') || f.error.includes('rate') ? 'rate_limit'
+        : f.error.includes('not_found') ? 'not_found'
+        : f.error;
+      byError[errType] = (byError[errType] || 0) + 1;
+    });
+    const folderSummary = Object.entries(byFolder).map(([k, v]) => `${k}:${v}`).join(', ');
+    const errorSummary = Object.entries(byError).map(([k, v]) => `${k}(${v})`).join(', ');
+    const pageTitle = (data.title as string) || 'Sem título';
+    const pageEmail = (data.guestEmail || data.userEmail || '') as string;
     try {
-      await logCriticalError('page_creation', `Página finalizada com ${allFailures.length} arquivos quebrados (${summary})`, {
+      await logCriticalError('page_creation',
+        `"${pageTitle}" (${pageEmail || 'sem email'}) — ${allFailures.length} arquivos quebrados [${folderSummary}] — Causa: ${errorSummary}`, {
         pageId: newPageId,
+        intentId,
+        title: pageTitle,
+        email: pageEmail,
         totalFailed: allFailures.length,
         byFolder,
-        sampleError: allFailures[0]?.error,
+        byError,
+        files: allFailures.slice(0, 30).map(f => `${f.folder}: ${f.path} → ${f.error}`),
       });
     } catch { /* best effort */ }
   }

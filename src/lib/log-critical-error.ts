@@ -8,12 +8,13 @@ export async function logCriticalError(
 ) {
   try {
     const db = getAdminFirestore();
+    const extraLimit = category === 'page_creation' ? 5000 : 2000;
     await db.collection('error_logs').add({
       message: String(message).slice(0, 500),
       category,
       url: details?.intentId ? `intent:${details.intentId}` : 'server',
       stack: details?.stack ? String(details.stack).slice(0, 2000) : null,
-      extra: details ? JSON.stringify(details).slice(0, 2000) : null,
+      extra: details ? JSON.stringify(details).slice(0, extraLimit) : null,
       userAgent: 'server',
       createdAt: Timestamp.now(),
       resolved: false,
