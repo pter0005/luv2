@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Gift, ArrowRight } from 'lucide-react';
 
-export default function GiftReveal({ token, credits }: { token: string; credits: number }) {
+const PLAN_LABELS: Record<string, string> = {
+  basico: 'Básico',
+  avancado: 'Avançado',
+  vip: 'VIP',
+};
+
+export default function GiftReveal({ token, credits, plan }: { token: string; credits: number; plan: string }) {
   const router = useRouter();
   const [starting, setStarting] = useState(false);
 
@@ -13,7 +19,7 @@ export default function GiftReveal({ token, credits }: { token: string; credits:
     setStarting(true);
     localStorage.setItem('mycupid_gift_token', token);
     setTimeout(() => {
-      router.push('/chat?plan=avancado&new=true');
+      router.push(`/criar/fazer-eu-mesmo?plan=${plan}&new=true&gift=${token}`);
     }, 500);
   };
 
@@ -112,7 +118,7 @@ export default function GiftReveal({ token, credits }: { token: string; credits:
           transition={{ delay: 0.65 }}
           className="text-xs text-white/25 mt-4"
         >
-          Plano Avançado · Sem cartão · Sem cobrança
+          Plano {PLAN_LABELS[plan] || 'Avançado'} · Sem cartão · Sem cobrança
         </motion.p>
       </motion.div>
     </div>

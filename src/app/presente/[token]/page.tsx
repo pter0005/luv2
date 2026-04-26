@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function GiftPage({ params }: { params: { token: string } }) {
   let credits = 0;
+  let plan = 'avancado';
   let isValid = false;
 
   try {
@@ -14,12 +15,13 @@ export default async function GiftPage({ params }: { params: { token: string } }
     if (snap.exists && !snap.data()?.used) {
       isValid = true;
       credits = snap.data()?.credits ?? 1;
+      plan = snap.data()?.plan || 'avancado';
     }
   } catch (_) {}
 
   if (!isValid) {
-    redirect('/chat?plan=avancado&new=true');
+    redirect('/criar/fazer-eu-mesmo');
   }
 
-  return <GiftReveal token={params.token} credits={credits} />;
+  return <GiftReveal token={params.token} credits={credits} plan={plan} />;
 }
