@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
  */
 
 async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<{ ok: boolean; url?: string }> {
+  let source404Count = 0;
   for (let attempt = 1; attempt <= 4; attempt++) {
     try {
       const src = bucket.file(oldPath);
@@ -27,7 +28,11 @@ async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<
       const [dstExists] = await dst.exists();
       if (!dstExists) {
         const [srcExists] = await src.exists();
-        if (!srcExists) return { ok: false };
+        if (!srcExists) {
+          source404Count++;
+          if (source404Count >= 2) return { ok: false };
+          throw new Error('source_not_found_retry');
+        }
         await src.copy(dst);
       }
       const [md] = await dst.getMetadata();
@@ -38,8 +43,12 @@ async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<
       }
       const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(newPath)}?alt=media&token=${token}`;
       return { ok: true, url };
-    } catch {
-      if (attempt < 4) await new Promise(r => setTimeout(r, 500 * attempt));
+    } catch (err: any) {
+      if (attempt < 4) {
+        const isRateLimit = err?.code === 429 || err?.code === 503;
+        const wait = isRateLimit ? 2000 * attempt : 500 * attempt;
+        await new Promise(r => setTimeout(r, wait));
+      }
     }
   }
   return { ok: false };

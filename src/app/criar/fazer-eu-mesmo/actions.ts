@@ -596,31 +596,32 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
 
   const newPath = `lovepages/${newPageId}/${targetFolder}/${fileName}`;
   let lastError: any = null;
+  let source404Count = 0;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const sourceFile = bucket.file(oldPath);
       const targetFile = bucket.file(newPath);
 
-      // Verifica se target já existe (idempotência) — evita copy desnecessário.
       const [targetExists] = await targetFile.exists();
       if (!targetExists) {
-        try {
-          await sourceFile.copy(targetFile);
-        } catch (copyErr: any) {
-          const is404 = copyErr?.code === 404 || copyErr?.message?.includes('No such object');
-          // Cloud Storage tem eventual consistency — 404 pode ser replica lag.
-          // Só desiste após 5 tentativas confirmadas.
-          if (is404 && attempt >= 5) {
-            console.warn(`[moveFile] Source confirmed missing after ${attempt} tries: ${oldPath}`);
+        // Pre-check: verifica se source existe antes de tentar copy.
+        // Evita copy cego que retorna 404 ambíguo (source vs target).
+        const [sourceExists] = await sourceFile.exists();
+        if (!sourceExists) {
+          source404Count++;
+          // Eventual consistency: exists() pode dar false em replica atrasada.
+          // Só confirma missing após 3 checks negativos consecutivos.
+          if (source404Count >= 3) {
+            console.warn(`[moveFile] Source confirmed missing after ${source404Count} checks: ${oldPath}`);
             lastError = new Error(`source_missing: ${oldPath}`);
             break;
           }
-          throw copyErr;
+          throw new Error(`source_not_found_attempt_${attempt}`);
         }
+        await sourceFile.copy(targetFile);
       }
 
-      // Pega o token do target pós-copy (Cloud Storage preserva metadata do source).
       const [metadata] = await targetFile.getMetadata();
       let token: string | undefined = metadata?.metadata?.firebaseStorageDownloadTokens;
 
@@ -640,7 +641,6 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       const encodedPath = encodeURIComponent(newPath);
       const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodedPath}?alt=media&token=${token}`;
 
-      // Cleanup source em background — best-effort, não bloqueia.
       (async () => {
         try { await sourceFile.delete(); } catch { /* silencioso */ }
       })();
@@ -650,10 +650,14 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       lastError = error;
       console.warn(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error?.message);
       if (attempt < maxRetries) {
-        // Backoff exponencial: 500ms → 1s → 2s → 4s → 8s + jitter ±20%
-        const base = 500 * Math.pow(2, attempt - 1);
+        // Backoff: 429/503 (rate limit) usa wait mais longo que outros erros.
+        const isRateLimit = error?.code === 429 || error?.code === 503
+          || error?.message?.includes('429') || error?.message?.includes('503')
+          || error?.message?.includes('rate') || error?.message?.includes('Too Many');
+        const base = isRateLimit ? 2000 * Math.pow(2, attempt - 1) : 500 * Math.pow(2, attempt - 1);
+        const cap = isRateLimit ? 15_000 : 8_000;
         const jitter = base * (0.8 + Math.random() * 0.4);
-        await new Promise(r => setTimeout(r, Math.min(jitter, 8_000)));
+        await new Promise(r => setTimeout(r, Math.min(jitter, cap)));
       }
     }
   }

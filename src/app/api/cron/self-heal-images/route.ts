@@ -43,6 +43,7 @@ async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Pr
 async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<{ ok: boolean; url?: string; missing?: boolean; error?: string }> {
   const maxRetries = 5;
   let lastError: any = null;
+  let source404Count = 0;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const sourceFile = bucket.file(oldPath);
@@ -50,7 +51,12 @@ async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<
       const [targetExists] = await targetFile.exists();
       if (!targetExists) {
         const [sourceExists] = await sourceFile.exists();
-        if (!sourceExists) return { ok: false, missing: true, error: 'source_missing' };
+        if (!sourceExists) {
+          source404Count++;
+          // Eventual consistency: só confirma missing após 2 checks negativos.
+          if (source404Count >= 2) return { ok: false, missing: true, error: 'source_missing' };
+          throw new Error('source_not_found_retry');
+        }
         await sourceFile.copy(targetFile);
       }
       const [metadata] = await targetFile.getMetadata();
@@ -60,7 +66,6 @@ async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<
         try { await targetFile.setMetadata({ metadata: { firebaseStorageDownloadTokens: token } }); } catch { /* fallback ao local */ }
       }
       const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(newPath)}?alt=media&token=${token}`;
-      // cleanup silencioso
       (async () => {
         try {
           const [srcStill] = await sourceFile.exists();
@@ -71,9 +76,12 @@ async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<
     } catch (err: any) {
       lastError = err;
       if (attempt < maxRetries) {
-        const base = 600 * Math.pow(2, attempt - 1);
+        const isRateLimit = err?.code === 429 || err?.code === 503
+          || err?.message?.includes('429') || err?.message?.includes('503');
+        const base = isRateLimit ? 2000 * Math.pow(2, attempt - 1) : 600 * Math.pow(2, attempt - 1);
+        const cap = isRateLimit ? 15_000 : 8_000;
         const jitter = base * (0.8 + Math.random() * 0.4);
-        await new Promise(r => setTimeout(r, Math.min(jitter, 8000)));
+        await new Promise(r => setTimeout(r, Math.min(jitter, cap)));
       }
     }
   }
