@@ -1877,8 +1877,27 @@ const PlanStep = React.memo(() => {
     const { control } = useFormContext<PageData>();
     const { field } = useController({ name: 'plan', control });
     const { user } = useUser();
+    const { firestore } = useFirebase();
     const adminEmails = ADMIN_EMAILS;
     const isAdmin = user?.email && adminEmails.includes(user.email);
+
+    const [lockedPlan, setLockedPlan] = useState<string | null>(null);
+    useEffect(() => {
+        const email = user?.email;
+        if (!email || !firestore) return;
+        getDoc(firestoreDoc(firestore, 'user_credits', email.toLowerCase().trim()))
+            .then((snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
+                    if (available > 0 && d.plan) {
+                        setLockedPlan(d.plan);
+                        field.onChange(d.plan);
+                    }
+                }
+            })
+            .catch(() => {});
+    }, [user?.email, !!firestore]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const selectedPlan = field.value;
     const isBasicoSelected = selectedPlan === 'basico';
@@ -1957,10 +1976,19 @@ const PlanStep = React.memo(() => {
                     </div>
                 </motion.div>
             )}
-            <RadioGroup onValueChange={field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {lockedPlan && (
+                <div className="rounded-2xl px-4 py-3 flex items-center gap-3 bg-green-500/10 border border-green-500/20">
+                    <Gift className="w-5 h-5 text-green-400 shrink-0" />
+                    <p className="text-sm text-green-300 font-medium">
+                        Você tem um crédito grátis para o plano <span className="font-black">{lockedPlan === 'vip' ? 'VIP' : lockedPlan === 'avancado' ? 'Avançado' : 'Básico'}</span>!
+                    </p>
+                </div>
+            )}
+            <RadioGroup onValueChange={lockedPlan ? undefined : field.onChange} value={field.value} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* ── PLANO BÁSICO — tom de alerta (temporário) ── */}
                 <Label htmlFor="plan-basico" className={cn(
-                    "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
+                    "relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 border-2",
+                    lockedPlan && lockedPlan !== 'basico' ? "opacity-40 cursor-not-allowed pointer-events-none" : "cursor-pointer",
                     isBasicoSelected
                         ? "border-amber-500/60 shadow-lg shadow-amber-500/10"
                         : "border-white/10 hover:border-amber-500/30"
@@ -2016,7 +2044,8 @@ const PlanStep = React.memo(() => {
 
                 {/* ── PLANO AVANÇADO — premium, eterno ── */}
                 <Label htmlFor="plan-avancado" className={cn(
-                    "relative flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2",
+                    "relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 border-2",
+                    lockedPlan && lockedPlan !== 'avancado' ? "opacity-40 cursor-not-allowed pointer-events-none" : "cursor-pointer",
                     isAvancadoSelected
                         ? "border-purple-400 shadow-2xl shadow-purple-500/25"
                         : "border-purple-500/40 hover:border-purple-400/70"
@@ -2082,8 +2111,8 @@ const PlanStep = React.memo(() => {
                 </Label>
             </RadioGroup>
 
-            {/* Upsell helper quando Básico selecionado */}
-            {isBasicoSelected && (
+            {/* Upsell helper quando Básico selecionado (não mostra se plano está travado por crédito) */}
+            {isBasicoSelected && !lockedPlan && (
                 <motion.button
                     type="button"
                     initial={{ opacity: 0, y: 8 }}
@@ -2294,8 +2323,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     // ── CRÉDITOS DO USUÁRIO ────────────────────────────────────────
     const [userCredits, setUserCredits] = useState(0);
+    const [creditPlan, setCreditPlan] = useState<string | null>(null);
     useEffect(() => {
-        // Checa tanto o email de conta real quanto o guestEmail confirmado
         const emailToCheck = user?.email || confirmedGuestEmail;
         if (!emailToCheck || !firestore) return;
         getDoc(firestoreDoc(firestore, 'user_credits', emailToCheck.toLowerCase().trim()))
@@ -2304,8 +2333,13 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     const d = snap.data();
                     const available = Math.max(0, (d.totalCredits ?? 0) - (d.usedCredits ?? 0));
                     setUserCredits(available);
+                    if (available > 0 && d.plan) {
+                        setCreditPlan(d.plan);
+                        setValue('plan', d.plan);
+                    }
                 } else {
                     setUserCredits(0);
+                    setCreditPlan(null);
                 }
             })
             .catch((err) => console.error('[PaymentStep] erro ao buscar créditos:', err));

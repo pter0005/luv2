@@ -5,12 +5,15 @@ import { getAuth } from 'firebase-admin/auth';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { requireAdmin } from '@/lib/admin-action-guard';
 
+export type CreditPlan = 'basico' | 'avancado' | 'vip';
+
 export type CreditEntry = {
   email: string;
   uid?: string;
   totalCredits: number;
   usedCredits: number;
   availableCredits: number;
+  plan?: CreditPlan;
   createdAt: string;
   updatedAt: string;
   note?: string;
@@ -32,6 +35,7 @@ export async function getAllCredits(): Promise<CreditEntry[]> {
       totalCredits: total,
       usedCredits: used,
       availableCredits: Math.max(0, total - used),
+      plan: d.plan || 'avancado',
       createdAt: d.createdAt?.toDate?.()?.toISOString() ?? '',
       updatedAt: d.updatedAt?.toDate?.()?.toISOString() ?? '',
       note: d.note ?? '',
@@ -44,7 +48,8 @@ export async function getAllCredits(): Promise<CreditEntry[]> {
 export async function addCredits(
   email: string,
   credits: number,
-  note?: string
+  note?: string,
+  plan?: CreditPlan,
 ): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
   if (!email || credits < 1) return { success: false, error: 'Email ou créditos inválidos.' };
@@ -59,9 +64,7 @@ export async function addCredits(
       const auth = getAuth();
       const userRecord = await auth.getUserByEmail(emailClean);
       uid = userRecord.uid;
-    } catch {
-      // Usuário ainda não tem conta, tudo bem
-    }
+    } catch {}
 
     const snap = await ref.get();
     if (snap.exists) {
@@ -70,12 +73,14 @@ export async function addCredits(
         updatedAt: Timestamp.now(),
         ...(uid && { uid }),
         ...(note && { note }),
+        ...(plan && { plan }),
       });
     } else {
       await ref.set({
         email: emailClean,
         totalCredits: credits,
         usedCredits: 0,
+        plan: plan || 'avancado',
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         ...(uid && { uid }),

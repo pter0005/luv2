@@ -5,11 +5,15 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { randomBytes } from 'crypto';
 import { requireAdmin } from '@/lib/admin-action-guard';
 
+export type GiftPlan = 'basico' | 'avancado' | 'vip';
+
 export type GiftToken = {
   token: string;
   credits: number;
+  plan: GiftPlan;
   used: boolean;
   usedAt?: string;
+  usedByEmail?: string;
   note?: string;
   createdAt: string;
   url: string;
@@ -18,6 +22,7 @@ export type GiftToken = {
 export async function createGiftToken(
   credits: number,
   note?: string,
+  plan?: GiftPlan,
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   await requireAdmin();
   const db = getAdminFirestore();
@@ -25,6 +30,7 @@ export async function createGiftToken(
   try {
     await db.collection('gift_tokens').doc(token).set({
       credits,
+      plan: plan || 'avancado',
       used: false,
       note: note || '',
       createdAt: Timestamp.now(),
@@ -45,8 +51,10 @@ export async function getAllGiftTokens(): Promise<GiftToken[]> {
     return {
       token: doc.id,
       credits: d.credits ?? 1,
+      plan: (d.plan || 'avancado') as GiftPlan,
       used: d.used ?? false,
       usedAt: d.usedAt?.toDate?.()?.toISOString(),
+      usedByEmail: d.claimedByEmail,
       note: d.note ?? '',
       createdAt: d.createdAt?.toDate?.()?.toISOString() ?? '',
       url: `${baseUrl}/presente/${doc.id}`,

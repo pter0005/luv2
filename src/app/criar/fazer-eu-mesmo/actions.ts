@@ -1062,15 +1062,17 @@ export async function finalizeWithCredit(
     return { success: false, error: 'Sem créditos disponíveis.' };
   }
 
-  // 2. Lê o plano original antes de sobrescrever, para preservar introType de páscoa
+  // 2. Usa o plano definido no crédito (admin escolhe ao dar crédito)
+  const creditPlan = creditData.plan || 'avancado';
   const intentSnap = await db.collection('payment_intents').doc(intentId).get();
   const originalPlan = intentSnap.data()?.plan;
   try {
-    const updateData: any = { plan: 'avancado', paidAmount: 0, updatedAt: Timestamp.now() };
+    const updateData: any = { plan: creditPlan, paidAmount: 0, updatedAt: Timestamp.now() };
     if (originalPlan === 'pascoa') updateData.introType = 'love';
+    if (creditPlan === 'vip' || creditPlan === 'avancado') updateData.expireAt = null;
     await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {
-    console.warn('[finalizeWithCredit] Não conseguiu forçar plan=avancado no intent:', e);
+    console.warn('[finalizeWithCredit] Não conseguiu forçar plan no intent:', e);
   }
 
   // 3. Finaliza a página
@@ -1133,12 +1135,15 @@ export async function finalizeWithGiftToken(
     return { success: false, error: 'Não foi possível resgatar o presente. Tente novamente.' };
   }
 
-  // ── 2. Atualiza o intent com plan=avancado, guestEmail e flag isGift ──────
+  // ── 2. Atualiza o intent com plano do gift, guestEmail e flag isGift ──────
+  const tokenSnap = await tokenRef.get();
+  const giftPlan = tokenSnap.data()?.plan || 'avancado';
   const intentSnap = await db.collection('payment_intents').doc(intentId).get();
   const originalPlan = intentSnap.data()?.plan;
   try {
-    const updateData: any = { plan: 'avancado', guestEmail: email, isGift: true, paidAmount: 0, updatedAt: Timestamp.now() };
+    const updateData: any = { plan: giftPlan, guestEmail: email, isGift: true, paidAmount: 0, updatedAt: Timestamp.now() };
     if (originalPlan === 'pascoa') updateData.introType = 'love';
+    if (giftPlan === 'vip' || giftPlan === 'avancado') updateData.expireAt = null;
     await db.collection('payment_intents').doc(intentId).update(updateData);
   } catch (e) {
     console.warn('[finalizeWithGiftToken] Falha ao atualizar intent:', e);
