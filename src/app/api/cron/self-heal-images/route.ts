@@ -24,6 +24,21 @@ import { randomUUID } from 'crypto';
 
 const MAX_PAGES_PER_RUN = 50;
 const HOURS_BACK = 72;
+const CONCURRENCY = 2;
+
+async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let idx = 0;
+  const workers = Array(Math.min(limit, items.length)).fill(null).map(async () => {
+    while (true) {
+      const current = idx++;
+      if (current >= items.length) break;
+      results[current] = await fn(items[current]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 async function moveFile(bucket: any, oldPath: string, newPath: string): Promise<{ ok: boolean; url?: string; missing?: boolean; error?: string }> {
   const maxRetries = 5;
@@ -125,8 +140,10 @@ export async function GET(request: NextRequest) {
 
       // Gallery
       if (Array.isArray(data.galleryImages)) {
-        const processed = await Promise.all(
-          data.galleryImages.map((img: any) => processFileField(bucket, img, pageId, 'gallery')),
+        const processed = await mapWithLimit(
+          data.galleryImages,
+          CONCURRENCY,
+          (img: any) => processFileField(bucket, img, pageId, 'gallery'),
         );
         const updatedArr = processed.map(p => p.value);
         processed.forEach(p => { moved += p.moved; missing += p.missing; failed += p.failed; });
@@ -135,7 +152,7 @@ export async function GET(request: NextRequest) {
       // Timeline
       if (Array.isArray(data.timelineEvents)) {
         let changed = false;
-        const updated = await Promise.all(data.timelineEvents.map(async (ev: any) => {
+        const updated = await mapWithLimit(data.timelineEvents, CONCURRENCY, async (ev: any) => {
           if (ev?.image) {
             const r = await processFileField(bucket, ev.image, pageId, 'timeline');
             moved += r.moved; missing += r.missing; failed += r.failed;
@@ -143,13 +160,15 @@ export async function GET(request: NextRequest) {
             return { ...ev, image: r.value };
           }
           return ev;
-        }));
+        });
         if (changed) updates.timelineEvents = updated;
       }
       // Memory game
       if (Array.isArray(data.memoryGameImages)) {
-        const processed = await Promise.all(
-          data.memoryGameImages.map((img: any) => processFileField(bucket, img, pageId, 'memory-game')),
+        const processed = await mapWithLimit(
+          data.memoryGameImages,
+          CONCURRENCY,
+          (img: any) => processFileField(bucket, img, pageId, 'memory-game'),
         );
         const updatedArr = processed.map(p => p.value);
         processed.forEach(p => { moved += p.moved; missing += p.missing; failed += p.failed; });

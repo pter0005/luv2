@@ -587,7 +587,7 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
 // 5. Retorna flag `_moveFailed` no fileObject pro caller poder distinguir
 //    sucesso de fallback (permite recuperação automática mais adiante).
 
-async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 4): Promise<any> {
+async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 6): Promise<any> {
   if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) return fileObject;
 
   const oldPath = fileObject.path;
@@ -602,19 +602,22 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       const sourceFile = bucket.file(oldPath);
       const targetFile = bucket.file(newPath);
 
-      // Tenta copy direto — sem exists() check antes (economiza 2 RTTs por arquivo).
-      // Se target já existe é idempotente (copy sobrescreve com mesmo conteúdo).
-      // Se source não existe, copy lança 404 → capturado no catch → retry ou break.
-      try {
-        await sourceFile.copy(targetFile);
-      } catch (copyErr: any) {
-        const is404 = copyErr?.code === 404 || copyErr?.message?.includes('No such object');
-        if (is404 && attempt >= 3) {
-          console.warn(`[moveFile] Source confirmed missing after ${attempt} tries: ${oldPath}`);
-          lastError = new Error(`source_missing: ${oldPath}`);
-          break;
+      // Verifica se target já existe (idempotência) — evita copy desnecessário.
+      const [targetExists] = await targetFile.exists();
+      if (!targetExists) {
+        try {
+          await sourceFile.copy(targetFile);
+        } catch (copyErr: any) {
+          const is404 = copyErr?.code === 404 || copyErr?.message?.includes('No such object');
+          // Cloud Storage tem eventual consistency — 404 pode ser replica lag.
+          // Só desiste após 5 tentativas confirmadas.
+          if (is404 && attempt >= 5) {
+            console.warn(`[moveFile] Source confirmed missing after ${attempt} tries: ${oldPath}`);
+            lastError = new Error(`source_missing: ${oldPath}`);
+            break;
+          }
+          throw copyErr;
         }
-        throw copyErr;
       }
 
       // Pega o token do target pós-copy (Cloud Storage preserva metadata do source).
@@ -647,10 +650,10 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       lastError = error;
       console.warn(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error?.message);
       if (attempt < maxRetries) {
-        // Backoff: 500ms → 1s → 2s + jitter ±20%
+        // Backoff exponencial: 500ms → 1s → 2s → 4s → 8s + jitter ±20%
         const base = 500 * Math.pow(2, attempt - 1);
         const jitter = base * (0.8 + Math.random() * 0.4);
-        await new Promise(r => setTimeout(r, Math.min(jitter, 3_000)));
+        await new Promise(r => setTimeout(r, Math.min(jitter, 8_000)));
       }
     }
   }

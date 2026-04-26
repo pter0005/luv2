@@ -968,7 +968,7 @@ const IntroStep = React.memo(() => {
     const { user } = useUser();
     const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
     const introType = watch('introType');
-    const introGender = watch('introGender') || 'fem';
+    const introGender = watch('introGender');
     const isLove = introType === 'love';
     const isPoema = introType === 'poema';
 
@@ -3453,8 +3453,8 @@ function WizardInternal() {
             title: "Seu Título Aqui",
             message: "Sua mensagem de amor...",
             messageFontSize: "text-base",
-            backgroundAnimation: "none",
-            galleryStyle: "Coverflow",
+            backgroundAnimation: "",
+            galleryStyle: "",
             galleryImages: [],
             timelineEvents: [],
             enablePuzzle: false,
@@ -3463,7 +3463,7 @@ function WizardInternal() {
             quizQuestions: [],
             enableWordGame: false,
             wordGameQuestions: [],
-            musicOption: 'none',
+            musicOption: '',
             qrCodeDesign: "classic",
         }
     });
