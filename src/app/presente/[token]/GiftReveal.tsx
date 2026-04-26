@@ -19,7 +19,7 @@ export default function GiftReveal({ token, credits, plan }: { token: string; cr
     setStarting(true);
     localStorage.setItem('mycupid_gift_token', token);
     setTimeout(() => {
-      router.push(`/criar/fazer-eu-mesmo?plan=${plan}&new=true&gift=${token}`);
+      router.push(`/chat?plan=${plan}&new=true&gift=${token}`);
     }, 500);
   };
 

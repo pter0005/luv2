@@ -17,8 +17,8 @@ export default async function DescontoPage({ params }: { params: { code: string 
   } catch (_) {}
 
   if (isValid) {
-    redirect(`/criar/fazer-eu-mesmo?plan=avancado&new=true&discount=${code}`);
+    redirect(`/chat?plan=avancado&new=true&discount=${code}`);
   }
 
-  redirect('/criar/fazer-eu-mesmo?plan=avancado&new=true');
+  redirect('/chat?plan=avancado&new=true');
 }

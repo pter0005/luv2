@@ -67,14 +67,10 @@ export default function PlanField() {
   // Ao sair de VIP: NÃO reseta os add-ons — o user pode ter escolhido algum antes.
   const handlePickVip = () => {
     setValue('plan', 'vip', { shouldDirty: true });
-    setValue('introType', 'poema', { shouldDirty: true });
-    setValue('enableWordGame', true, { shouldDirty: true });
   };
 
   const handlePickAvancado = () => {
     setValue('plan', 'avancado', { shouldDirty: true });
-    setValue('introType', 'poema', { shouldDirty: true });
-    setValue('enableWordGame', true, { shouldDirty: true });
   };
 
   return (
