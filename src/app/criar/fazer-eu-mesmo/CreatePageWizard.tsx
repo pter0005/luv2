@@ -344,8 +344,20 @@ const SpecialDateStep = React.memo(() => {
 SpecialDateStep.displayName = 'SpecialDateStep';
 
 // Helper: upload a file to Firebase Storage
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB — must match storage.rules
+
+const deleteFileWithRetry = (storage: any, path: string) => {
+    const attempt = (n: number) => {
+        deleteObject(storageRef(storage, path)).catch(() => {
+            if (n > 0) setTimeout(() => attempt(n - 1), 2000);
+        });
+    };
+    attempt(2);
+};
+
 const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
     if (!userId) throw new Error("Usuário não identificado para upload.");
+    if (file.size > MAX_FILE_SIZE) throw new Error(`file_too_large:${Math.round(file.size / 1024 / 1024)}MB`);
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 8);
     const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
@@ -410,26 +422,29 @@ const GalleryStep = React.memo(() => {
         setIsUploading(true);
         setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
-            const uploadPromises = uniqueFiles.map(async file => {
-                const compressedFile = await compressImage(file, 1280, 0.9);
-                return uploadFile(storage, user.uid, compressedFile, 'gallery');
-            });
-            const newImageObjects = await Promise.all(uploadPromises);
-            append(newImageObjects);
-            toast({ title: 'Imagens enviadas!', description: `${newImageObjects.length} foto${newImageObjects.length > 1 ? 's' : ''} adicionada${newImageObjects.length > 1 ? 's' : ''}.` });
+            const results = await Promise.allSettled(
+                uniqueFiles.map(async file => {
+                    const compressedFile = await compressImage(file, 1280, 0.9);
+                    return uploadFile(storage, user.uid, compressedFile, 'gallery');
+                }),
+            );
+            const succeeded = results.filter((r): r is PromiseFulfilledResult<FileWithPreview> => r.status === 'fulfilled').map(r => r.value);
+            const failed = results.filter(r => r.status === 'rejected');
+            if (succeeded.length > 0) append(succeeded);
+            if (failed.length > 0) {
+                const reason = (failed[0] as PromiseRejectedResult).reason;
+                const isTooLarge = reason?.message?.includes('file_too_large');
+                toast({
+                    variant: 'destructive',
+                    title: succeeded.length > 0 ? `${succeeded.length} enviada${succeeded.length > 1 ? 's' : ''}, ${failed.length} falhou` : 'Erro no Upload',
+                    description: isTooLarge ? 'Uma ou mais imagens são muito grandes (máx 5MB). Tente fotos menores.' : `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
+                });
+            } else {
+                toast({ title: 'Imagens enviadas!', description: `${succeeded.length} foto${succeeded.length > 1 ? 's' : ''} adicionada${succeeded.length > 1 ? 's' : ''}.` });
+            }
         } catch (error: any) {
             console.error("Error uploading files:", error);
-            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Upload',
-                description: (
-                    <div>
-                        <p>Não foi possível enviar as imagens.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                    </div>
-                )
-            });
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar as imagens.' });
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
@@ -441,8 +456,7 @@ const GalleryStep = React.memo(() => {
     const removeImage = (index: number) => {
         const imageToRemove = fields[index];
         if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
-            const imageRef = storageRef(storage, (imageToRemove as any).path);
-            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+            deleteFileWithRetry(storage, (imageToRemove as any).path);
         }
         remove(index);
     };
@@ -586,34 +600,30 @@ const TimelineStep = React.memo(() => {
         setIsUploading(true);
         setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
-            const uploadPromises = filesToUpload.map(async (file) => {
-                const compressedFile = await compressImage(file, 1280, 0.85);
-                return uploadFile(storage, user.uid, compressedFile, 'timeline');
-            });
-            const uploadedFiles = await Promise.all(uploadPromises);
-            const newEvents: TimelineEvent[] = uploadedFiles.map(fileData => ({
-                image: fileData,
-                description: '',
-                date: undefined,
-            }));
-            append(newEvents);
-            toast({
-                title: `${uploadedFiles.length} foto${uploadedFiles.length > 1 ? 's' : ''} adicionada${uploadedFiles.length > 1 ? 's' : ''}!`,
-                description: 'Adicione uma descrição e data para cada momento.',
-            });
+            const results = await Promise.allSettled(
+                filesToUpload.map(async (file) => {
+                    const compressedFile = await compressImage(file, 1280, 0.85);
+                    return uploadFile(storage, user.uid, compressedFile, 'timeline');
+                }),
+            );
+            const succeeded = results.filter((r): r is PromiseFulfilledResult<FileWithPreview> => r.status === 'fulfilled').map(r => r.value);
+            const failed = results.filter(r => r.status === 'rejected');
+            if (succeeded.length > 0) {
+                const newEvents: TimelineEvent[] = succeeded.map(fileData => ({ image: fileData, description: '', date: undefined }));
+                append(newEvents);
+            }
+            if (failed.length > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: succeeded.length > 0 ? `${succeeded.length} enviada${succeeded.length > 1 ? 's' : ''}, ${failed.length} falhou` : 'Erro no Upload',
+                    description: `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
+                });
+            } else {
+                toast({ title: `${succeeded.length} foto${succeeded.length > 1 ? 's' : ''} adicionada${succeeded.length > 1 ? 's' : ''}!`, description: 'Adicione uma descrição e data para cada momento.' });
+            }
         } catch (error: any) {
             console.error("Erro no upload da timeline:", error);
-            const errorCode = error instanceof FirebaseError ? error.code : (error?.message || 'unknown');
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Upload',
-                description: (
-                    <div>
-                        <p>Não foi possível enviar as imagens.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">ERR: {errorCode}</p>
-                    </div>
-                )
-            });
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar as imagens.' });
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
@@ -624,8 +634,7 @@ const TimelineStep = React.memo(() => {
     const handleRemove = (index: number) => {
         const eventToRemove = fields[index];
         if ((eventToRemove as any).image?.path && storage) {
-            const imageRef = storageRef(storage, (eventToRemove as any).image.path);
-            deleteObject(imageRef).catch(err => console.error("Erro ao deletar imagem do storage:", err));
+            deleteFileWithRetry(storage, (eventToRemove as any).image.path);
         }
         remove(index);
     };
@@ -1215,16 +1224,11 @@ const VoiceMessageStep = React.memo(() => {
         } catch (error: any) {
             console.error("Error uploading audio:", error);
             setStatus('idle');
-            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+            const isTooLarge = error?.message?.includes('file_too_large');
             toast({
                 variant: 'destructive',
                 title: 'Erro no Upload',
-                description: (
-                    <div>
-                        <p>Não foi possível salvar sua gravação.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                    </div>
-                )
+                description: isTooLarge ? 'Gravação muito grande (máx 5MB). Tente gravar uma mensagem mais curta.' : 'Não foi possível salvar sua gravação. Tente novamente.',
             });
         } finally {
             setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
@@ -1435,16 +1439,11 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 toast({ title: 'Imagem enviada!', description: 'Sua foto foi adicionada.' });
             } catch (error: any) {
                 console.error("Error processing puzzle image:", error);
-                const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
+                const isTooLarge = error?.message?.includes('file_too_large');
                 toast({
                     variant: 'destructive',
                     title: 'Erro no Upload',
-                    description: (
-                        <div>
-                            <p>Não foi possível enviar a imagem.</p>
-                            <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                        </div>
-                    )
+                    description: isTooLarge ? 'Imagem muito grande (máx 5MB). Tente uma foto menor.' : 'Não foi possível enviar a imagem. Tente novamente.',
                 });
             } finally {
                 setIsProcessing(false);
@@ -1455,8 +1454,7 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
 
     const removePuzzleImage = async () => {
         if (puzzleImage?.path && storage) {
-            const imageRef = storageRef(storage, puzzleImage.path);
-            deleteObject(imageRef).catch(err => console.error("Failed to delete puzzle image from storage:", err));
+            deleteFileWithRetry(storage, puzzleImage.path);
         }
         setValue("puzzleImage", undefined, { shouldValidate: true, shouldDirty: true });
         await handleAutosave?.();
@@ -1564,26 +1562,27 @@ const MemoryGameStep = React.memo(() => {
         setIsUploading(true);
         setValue('_uploadingCount', (getValues('_uploadingCount') || 0) + 1);
         try {
-            const uploadPromises = uniqueFiles.map(async file => {
-                const compressedFile = await compressImage(file, 400, 0.8);
-                return uploadFile(storage, user.uid, compressedFile, 'memory-game');
-            });
-            const newImageObjects = await Promise.all(uploadPromises);
-            append(newImageObjects);
-            toast({ title: 'Imagens enviadas!', description: `${newImageObjects.length} foto${newImageObjects.length > 1 ? 's' : ''} adicionada${newImageObjects.length > 1 ? 's' : ''}.` });
+            const results = await Promise.allSettled(
+                uniqueFiles.map(async file => {
+                    const compressedFile = await compressImage(file, 400, 0.8);
+                    return uploadFile(storage, user.uid, compressedFile, 'memory-game');
+                }),
+            );
+            const succeeded = results.filter((r): r is PromiseFulfilledResult<FileWithPreview> => r.status === 'fulfilled').map(r => r.value);
+            const failed = results.filter(r => r.status === 'rejected');
+            if (succeeded.length > 0) append(succeeded);
+            if (failed.length > 0) {
+                toast({
+                    variant: 'destructive',
+                    title: succeeded.length > 0 ? `${succeeded.length} enviada${succeeded.length > 1 ? 's' : ''}, ${failed.length} falhou` : 'Erro no Upload',
+                    description: `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
+                });
+            } else {
+                toast({ title: 'Imagens enviadas!', description: `${succeeded.length} foto${succeeded.length > 1 ? 's' : ''} adicionada${succeeded.length > 1 ? 's' : ''}.` });
+            }
         } catch (error: any) {
             console.error("Error uploading memory game files:", error);
-            const errorCode = error instanceof FirebaseError ? error.code : 'unknown';
-            toast({
-                variant: 'destructive',
-                title: 'Erro no Upload',
-                description: (
-                    <div>
-                        <p>Não foi possível enviar as imagens.</p>
-                        <p className="font-mono text-xs mt-2 opacity-80">CMD_LOG: {errorCode}</p>
-                    </div>
-                )
-            });
+            toast({ variant: 'destructive', title: 'Erro no Upload', description: 'Não foi possível enviar as imagens.' });
         } finally {
             setIsUploading(false);
             uploadingRef.current = false;
@@ -1595,8 +1594,7 @@ const MemoryGameStep = React.memo(() => {
     const removeImage = (index: number) => {
         const imageToRemove = fields[index];
         if ('path' in imageToRemove && typeof (imageToRemove as any).path === 'string' && storage) {
-            const imageRef = storageRef(storage, (imageToRemove as any).path);
-            deleteObject(imageRef).catch(err => console.error("Failed to delete image from storage:", err));
+            deleteFileWithRetry(storage, (imageToRemove as any).path);
         }
         remove(index);
     };
@@ -3539,7 +3537,9 @@ function WizardInternal() {
 
     const handleAutosave = useCallback(async () => {
         if (!user || isUserLoading) return;
-        if (autosaveInFlightRef.current) return; // evita writes concorrentes
+        if (autosaveInFlightRef.current) return;
+        const uploadingCount = getValues('_uploadingCount') || 0;
+        if (uploadingCount > 0) return;
         const data = getValues();
         const utmSource = sessionStorage.getItem('last_utm_source');
         const dataToSave = { ...data, userId: user.uid, utmSource: utmSource || undefined };

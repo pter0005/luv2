@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
     const bucket = getAdminStorage();
     const ref = db.collection('lovepages').doc(pageId);
     const snap = await ref.get();
-    if (!snap.exists) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (!snap.exists) return NextResponse.json({ ok: true, healed: 0 });
 
     const data = snap.data()!;
     const updates: any = {};

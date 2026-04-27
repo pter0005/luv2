@@ -1343,24 +1343,27 @@ export async function updateLovePage(
 
   try {
     if (Array.isArray(cleaned.galleryImages)) {
-      cleaned.galleryImages = await Promise.all(
-        cleaned.galleryImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'gallery', pageId)),
+      cleaned.galleryImages = await mapWithLimit(
+        cleaned.galleryImages, 2,
+        (img: any) => moveFileWithRetry(bucket, db, img, 'gallery', pageId),
       );
     }
     if (Array.isArray(cleaned.timelineEvents)) {
-      cleaned.timelineEvents = await Promise.all(
-        cleaned.timelineEvents.map(async (event: any) => {
+      cleaned.timelineEvents = await mapWithLimit(
+        cleaned.timelineEvents, 2,
+        async (event: any) => {
           if (event?.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', pageId);
           return { ...event, date: ensureTimestamp(event.date) };
-        }),
+        },
       );
     }
     if (cleaned.puzzleImage) cleaned.puzzleImage = await moveFileWithRetry(bucket, db, cleaned.puzzleImage, 'puzzle', pageId);
     if (cleaned.audioRecording) cleaned.audioRecording = await moveFileWithRetry(bucket, db, cleaned.audioRecording, 'audio', pageId);
     if (cleaned.backgroundVideo) cleaned.backgroundVideo = await moveFileWithRetry(bucket, db, cleaned.backgroundVideo, 'video', pageId);
     if (Array.isArray(cleaned.memoryGameImages)) {
-      cleaned.memoryGameImages = await Promise.all(
-        cleaned.memoryGameImages.map((img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', pageId)),
+      cleaned.memoryGameImages = await mapWithLimit(
+        cleaned.memoryGameImages, 2,
+        (img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', pageId),
       );
     }
     if (cleaned.specialDate) cleaned.specialDate = ensureTimestamp(cleaned.specialDate);
