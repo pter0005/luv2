@@ -55,14 +55,21 @@ type PreviewContentProps = {
 };
 
 const MemoizedSwiper = React.memo(({ galleryImages, galleryStyle }: { galleryImages: any[], galleryStyle: string }) => {
+    const style = (galleryStyle || 'coverflow').toLowerCase();
+    const isSingleSlide = style === 'cards' || style === 'flip' || style === 'cube';
     return (
         <Swiper
             key={galleryStyle}
-            effect={(galleryStyle || 'coverflow').toLowerCase() as 'coverflow' | 'cards' | 'flip' | 'cube'}
+            effect={style as 'coverflow' | 'cards' | 'flip' | 'cube'}
             grabCursor={true}
-            centeredSlides={galleryStyle === 'Coverflow'}
-            slidesPerView={'auto'}
+            centeredSlides={true}
+            slidesPerView={isSingleSlide ? 1 : 'auto'}
+            spaceBetween={isSingleSlide ? 0 : 20}
             autoplay={{ delay: 3000, disableOnInteraction: false }}
+            coverflowEffect={{ rotate: 25, stretch: 0, depth: 120, modifier: 1, slideShadows: true }}
+            cardsEffect={{ slideShadows: true, perSlideOffset: 8, perSlideRotate: 2, rotate: true }}
+            flipEffect={{ slideShadows: true, limitRotation: true }}
+            cubeEffect={{ shadow: true, slideShadows: true, shadowOffset: 30, shadowScale: 0.88 }}
             pagination={{ clickable: true }}
             modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
             className="mySwiper-small"

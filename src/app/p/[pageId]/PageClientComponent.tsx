@@ -487,29 +487,35 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
             </div>
           )}
 
-          {pageData.galleryImages?.length > 0 && (
-            <div className="w-full max-w-[90vw] md:max-w-md mx-auto relative z-10">
-              <Swiper
-                effect={(pageData.galleryStyle || 'coverflow').toLowerCase() as any}
-                grabCursor={true}
-                centeredSlides={true}
-                slidesPerView={'auto'} 
-                spaceBetween={30}
-                autoplay={{ delay: 4000, disableOnInteraction: false }}
-                coverflowEffect={{ rotate: 30, stretch: 0, depth: 100, modifier: 1, slideShadows: true }}
-                cubeEffect={{ shadow: true, slideShadows: true, shadowOffset: 20, shadowScale: 0.94 }}
-                pagination={{ clickable: true, dynamicBullets: true }}
-                modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
-                className="mySwiper w-full aspect-square !overflow-visible py-8"
-              >
-                {pageData.galleryImages.map((img: any, i: number) => (
-                  <SwiperSlide key={img.url || i} className='!w-full !h-full rounded-2xl'>
-                      <GalleryImage img={img} index={i} />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          )}
+          {pageData.galleryImages?.length > 0 && (() => {
+            const style = (pageData.galleryStyle || 'coverflow').toLowerCase();
+            const isSingleSlide = style === 'cards' || style === 'flip' || style === 'cube';
+            return (
+              <div className="w-full max-w-[90vw] md:max-w-md mx-auto relative z-10">
+                <Swiper
+                  effect={style as any}
+                  grabCursor={true}
+                  centeredSlides={true}
+                  slidesPerView={isSingleSlide ? 1 : 'auto'}
+                  spaceBetween={isSingleSlide ? 0 : 30}
+                  autoplay={{ delay: 4000, disableOnInteraction: false }}
+                  coverflowEffect={{ rotate: 25, stretch: 0, depth: 120, modifier: 1, slideShadows: true }}
+                  cardsEffect={{ slideShadows: true, perSlideOffset: 8, perSlideRotate: 2, rotate: true }}
+                  flipEffect={{ slideShadows: true, limitRotation: true }}
+                  cubeEffect={{ shadow: true, slideShadows: true, shadowOffset: 30, shadowScale: 0.88 }}
+                  pagination={{ clickable: true, dynamicBullets: true }}
+                  modules={[EffectCoverflow, Pagination, EffectCards, EffectFlip, EffectCube, Autoplay]}
+                  className="mySwiper w-full aspect-square !overflow-visible py-8"
+                >
+                  {pageData.galleryImages.map((img: any, i: number) => (
+                    <SwiperSlide key={img.url || i} className='!w-full !h-full rounded-2xl'>
+                        <GalleryImage img={img} index={i} />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            );
+          })()}
           
           {(hasMemoryGame || hasQuiz || hasWordGame) && (
               <div className="text-center w-full">
