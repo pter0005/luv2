@@ -54,7 +54,7 @@ import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { signInAnonymously } from 'firebase/auth';
 import { useCreatingPresence } from '@/hooks/usePresence';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
 import { collection, query, where, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -364,14 +364,24 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
     const fileName = `${timestamp}-${random}-${safeName}`;
     const fullPath = `temp/${userId}/${folderName}/${fileName}`;
     const fileRef = storageRef(storage, fullPath);
-    try {
-        await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(fileRef);
-        return { url: downloadURL, path: fullPath };
-    } catch (error: any) {
-        console.error("Erro detalhado no upload:", error);
-        throw error;
+    const MAX_RETRIES = 3;
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            await uploadBytes(fileRef, file);
+            await getMetadata(fileRef);
+            const downloadURL = await getDownloadURL(fileRef);
+            return { url: downloadURL, path: fullPath };
+        } catch (error: any) {
+            lastError = error;
+            console.warn(`[upload] Attempt ${attempt}/${MAX_RETRIES} failed for ${folderName}:`, error?.message);
+            if (attempt < MAX_RETRIES) {
+                await new Promise(r => setTimeout(r, 1000 * attempt));
+            }
+        }
     }
+    console.error("Erro no upload após retries:", lastError);
+    throw lastError;
 };
 
 // ─────────────────────────────────────────────
@@ -3433,6 +3443,7 @@ function WizardInternal() {
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const autosaveLastSnapshotRef = useRef<string>('');
     const autosaveInFlightRef = useRef<boolean>(false);
+    const autosaveEverSucceededRef = useRef<boolean>(false);
     const stepEnterTimeRef = useRef<number>(Date.now());
     const [pageId, setPageId] = useState<string | null>(null);
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
@@ -3556,6 +3567,7 @@ function WizardInternal() {
             const result = await createOrUpdatePaymentIntent(dataToSave);
             if (result.success) {
                 autosaveLastSnapshotRef.current = snapshotKey;
+                autosaveEverSucceededRef.current = true;
                 localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
                 if (result.intentId && !dataToSave.intentId) {
                     setValue('intentId', result.intentId, { shouldDirty: false });

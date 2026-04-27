@@ -303,7 +303,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   }, [pageData.puzzleImage]);
 
   const hasPuzzle = useMemo(() => {
-    return !!(pageData.enablePuzzle && puzzleImageSrc);
+    if (!pageData.enablePuzzle || !puzzleImageSrc) return false;
+    const isBroken = puzzleImageSrc.includes('/temp/') || puzzleImageSrc.includes('%2Ftemp%2F');
+    return !isBroken;
   }, [pageData.enablePuzzle, puzzleImageSrc]);
 
   const hasEasterIntro = useMemo(() => {

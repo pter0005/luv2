@@ -36,7 +36,8 @@
       "Bash(curl -s -c /tmp/cookies.txt -b /tmp/cookies.txt -o /tmp/step1.html -w \"step1: %{http_code}\\\\n\" \"http://localhost:9003/admin/login?next=/chat\" --max-time 60)",
       "Bash(curl -s -I -w \"redir->%{redirect_url}\\\\n\" --max-redirs 0 http://localhost:9003/chat --max-time 60)",
       "Bash(curl -s -I -w \"\\\\nredir->%{redirect_url}\\\\n\" --max-redirs 0 http://localhost:9003/chat --max-time 60)",
-      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64url'\\)\\)\")"
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64url'\\)\\)\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ],
     "additionalDirectories": [
       "/tmp"

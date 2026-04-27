@@ -400,6 +400,41 @@ export async function processPixPayment(
     const firstName = rawName.split(' ')[0];
     const lastName = rawName.split(' ').slice(1).join(' ') || 'Cliente';
 
+    // ── PRE-PAYMENT FILE CHECK ──
+    // Verifica se todos os arquivos temp/ do intent existem no Storage ANTES
+    // de gerar o PIX. Se algum sumiu, bloqueia — melhor o user re-enviar agora
+    // do que pagar e ficar com página quebrada.
+    const bucket = getAdminStorage();
+    const collectPaths = (v: any, paths: string[] = []): string[] => {
+      if (Array.isArray(v)) { v.forEach(it => collectPaths(it, paths)); return paths; }
+      if (v && typeof v === 'object') {
+        if (typeof v.path === 'string' && v.path.startsWith('temp/')) paths.push(v.path);
+        for (const k in v) if (k !== 'path') collectPaths(v[k], paths);
+      }
+      return paths;
+    };
+    const tempPaths = [
+      ...collectPaths(intentData?.galleryImages),
+      ...collectPaths(intentData?.timelineEvents),
+      ...collectPaths(intentData?.memoryGameImages),
+      ...collectPaths(intentData?.puzzleImage),
+      ...collectPaths(intentData?.audioRecording),
+      ...collectPaths(intentData?.backgroundVideo),
+    ];
+    if (tempPaths.length > 0) {
+      const checks = await Promise.all(
+        tempPaths.map(async (p) => {
+          try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
+        }),
+      );
+      const missingCount = checks.filter(e => !e).length;
+      if (missingCount > 0) {
+        const missingFiles = tempPaths.filter((_, i) => !checks[i]);
+        console.error(`[PIX] ${missingCount} files missing in Storage before payment:`, missingFiles);
+        return { error: 'Algumas imagens ainda estão sendo processadas. Aguarde alguns segundos e tente novamente.' };
+      }
+    }
+
     const client = new MercadoPagoConfig({ accessToken: token });
     const payment = new Payment(client);
 
@@ -763,6 +798,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   if (allTempPaths.length > 0) {
     const MAX_WAIT_ROUNDS = 6;
     const WAIT_DELAY = 5_000;
+    let missingAfterWait = 0;
+    let missingPaths: string[] = [];
     for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {
       const checks = await Promise.all(
         allTempPaths.map(async (p) => {
@@ -770,14 +807,25 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
           catch { return false; }
         }),
       );
-      const missing = checks.filter(e => !e).length;
-      if (missing === 0) break;
+      missingAfterWait = checks.filter(e => !e).length;
+      missingPaths = allTempPaths.filter((_, i) => !checks[i]);
+      if (missingAfterWait === 0) break;
       if (round < MAX_WAIT_ROUNDS - 1) {
-        console.log(`[finalize] Pre-flight round ${round + 1}: ${missing}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
+        console.log(`[finalize] Pre-flight round ${round + 1}: ${missingAfterWait}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
         await new Promise(r => setTimeout(r, WAIT_DELAY));
-      } else {
-        console.warn(`[finalize] Pre-flight: ${missing} files still missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s, proceeding anyway`);
       }
+    }
+    if (missingAfterWait > 0) {
+      const finalizeAttempts = (data._finalizeAttempts || 0) + 1;
+      await intentRef.update({ _finalizeAttempts: finalizeAttempts });
+      // Após 3 tentativas (~90s+ de espera total contando retries do webhook),
+      // prossegue mesmo com arquivos faltando pra não bloquear a página
+      // indefinidamente — self-heal/admin resolve depois.
+      if (finalizeAttempts < 3) {
+        console.error(`[finalize] BLOCKED: ${missingAfterWait} files missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s (attempt ${finalizeAttempts}):`, missingPaths);
+        return { success: false, error: `files_not_ready: ${missingAfterWait} arquivos ainda não visíveis no Storage` };
+      }
+      console.warn(`[finalize] Attempt ${finalizeAttempts}: ${missingAfterWait} files STILL missing, proceeding to avoid permanent block`);
     }
   }
 
