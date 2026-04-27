@@ -587,7 +587,7 @@ export async function capturePaypalOrder(orderId: string, intentId: string): Pro
 // 5. Retorna flag `_moveFailed` no fileObject pro caller poder distinguir
 //    sucesso de fallback (permite recuperação automática mais adiante).
 
-async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 6): Promise<any> {
+async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFolder: string, newPageId: string, maxRetries = 8): Promise<any> {
   if (!fileObject || !fileObject.path || !fileObject.path.startsWith('temp/')) return fileObject;
 
   const oldPath = fileObject.path;
@@ -611,8 +611,9 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
         if (!sourceExists) {
           source404Count++;
           // Eventual consistency: exists() pode dar false em replica atrasada.
-          // Só confirma missing após 3 checks negativos consecutivos.
-          if (source404Count >= 3) {
+          // Só confirma missing após 5 checks negativos consecutivos com delays
+          // de ~3-8s entre cada (total ~20-40s de espera).
+          if (source404Count >= 5) {
             console.warn(`[moveFile] Source confirmed missing after ${source404Count} checks: ${oldPath}`);
             lastError = new Error(`source_missing: ${oldPath}`);
             break;
@@ -650,12 +651,14 @@ async function moveFileWithRetry(bucket: any, db: any, fileObject: any, targetFo
       lastError = error;
       console.warn(`[moveFile] Attempt ${attempt}/${maxRetries} failed for ${oldPath}:`, error?.message);
       if (attempt < maxRetries) {
-        // Backoff: 429/503 (rate limit) usa wait mais longo que outros erros.
         const isRateLimit = error?.code === 429 || error?.code === 503
           || error?.message?.includes('429') || error?.message?.includes('503')
           || error?.message?.includes('rate') || error?.message?.includes('Too Many');
-        const base = isRateLimit ? 2000 * Math.pow(2, attempt - 1) : 500 * Math.pow(2, attempt - 1);
-        const cap = isRateLimit ? 15_000 : 8_000;
+        const isSourceNotFound = error?.message?.includes('source_not_found');
+        const base = isRateLimit ? 2000 * Math.pow(2, attempt - 1)
+          : isSourceNotFound ? 3000 * Math.pow(1.5, attempt - 1)
+          : 500 * Math.pow(2, attempt - 1);
+        const cap = isRateLimit ? 15_000 : isSourceNotFound ? 10_000 : 8_000;
         const jitter = base * (0.8 + Math.random() * 0.4);
         await new Promise(r => setTimeout(r, Math.min(jitter, cap)));
       }
@@ -737,12 +740,47 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const newPageId = db.collection('lovepages').doc().id;
   const sanitizedData = sanitizeForFirebase(data);
 
-  // Concurrency limit = 2. Anterior era 3, mas com páginas VIP tendo 30-40
-  // arquivos (galeria + timeline + memory + puzzle + audio + vídeo) o burst
-  // era grande demais — memory-game especificamente dava 55 falhas/dia pra 8
-  // páginas. Diminui velocidade (10 fotos: ~6-8s em vez de ~4-6s) mas
-  // praticamente zera taxa de falha. Latência aceitável porque é server-side,
-  // user não espera.
+  // ── PRE-FLIGHT: espera todos os source files existirem no Storage ──
+  // Upload pode terminar no client mas GCS eventual consistency pode demorar
+  // até ~30s pra propagar. Coletamos todos os paths temp/ e fazemos polling
+  // antes de iniciar qualquer copy.
+  const collectTempPaths = (v: any, paths: string[] = []): string[] => {
+    if (Array.isArray(v)) { v.forEach(it => collectTempPaths(it, paths)); return paths; }
+    if (v && typeof v === 'object') {
+      if (typeof v.path === 'string' && v.path.startsWith('temp/')) paths.push(v.path);
+      for (const k in v) if (k !== 'path') collectTempPaths(v[k], paths);
+    }
+    return paths;
+  };
+  const allTempPaths = [
+    ...collectTempPaths(sanitizedData.galleryImages),
+    ...collectTempPaths(sanitizedData.timelineEvents),
+    ...collectTempPaths(sanitizedData.memoryGameImages),
+    ...collectTempPaths(sanitizedData.puzzleImage),
+    ...collectTempPaths(sanitizedData.audioRecording),
+    ...collectTempPaths(sanitizedData.backgroundVideo),
+  ];
+  if (allTempPaths.length > 0) {
+    const MAX_WAIT_ROUNDS = 6;
+    const WAIT_DELAY = 5_000;
+    for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {
+      const checks = await Promise.all(
+        allTempPaths.map(async (p) => {
+          try { const [exists] = await bucket.file(p).exists(); return exists; }
+          catch { return false; }
+        }),
+      );
+      const missing = checks.filter(e => !e).length;
+      if (missing === 0) break;
+      if (round < MAX_WAIT_ROUNDS - 1) {
+        console.log(`[finalize] Pre-flight round ${round + 1}: ${missing}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
+        await new Promise(r => setTimeout(r, WAIT_DELAY));
+      } else {
+        console.warn(`[finalize] Pre-flight: ${missing} files still missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s, proceeding anyway`);
+      }
+    }
+  }
+
   const CONCURRENCY = 2;
   if (sanitizedData.galleryImages?.length) {
     sanitizedData.galleryImages = await mapWithLimit(
