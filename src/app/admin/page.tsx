@@ -168,6 +168,7 @@ async function getAllData() {
           isGift,
           title: (d.title as string) || undefined,
           addOns,
+          whatsappNumber: (d.whatsappNumber as string) || undefined,
         });
       }
 

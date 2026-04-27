@@ -41,6 +41,7 @@ export type SaleRecord = {
   createdAt: string; ownerEmail: string; isGift?: boolean;
   title?: string;
   addOns?: string[];
+  whatsappNumber?: string;
 };
 export type ErrorLog = {
   id: string; message: string; url: string; createdAt: string; resolved: boolean;
@@ -901,11 +902,13 @@ function GoalProgressRing({
 // ─────────────────────────────────────────────────────────────────────────────
 function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
   const [open, setOpen] = useState(false);
-  const planColor = sale.plan === 'avancado'
-    ? { bg: 'rgba(168,85,247,0.12)', text: '#c084fc', border: 'rgba(168,85,247,0.25)' }
-    : sale.plan === 'basico'
-      ? { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' }
-      : { bg: 'rgba(255,255,255,0.06)', text: '#71717a', border: 'rgba(255,255,255,0.08)' };
+  const planColor = sale.plan === 'vip'
+    ? { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', border: 'rgba(245,158,11,0.25)' }
+    : sale.plan === 'avancado'
+      ? { bg: 'rgba(168,85,247,0.12)', text: '#c084fc', border: 'rgba(168,85,247,0.25)' }
+      : sale.plan === 'basico'
+        ? { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' }
+        : { bg: 'rgba(255,255,255,0.06)', text: '#71717a', border: 'rgba(255,255,255,0.08)' };
 
   return (
     <>
@@ -914,6 +917,12 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
         <td className="px-6 py-3">
           <p className="text-xs font-medium text-zinc-200">{sale.ownerEmail}</p>
           {sale.title && <p className="text-[10px] text-zinc-500 truncate max-w-[180px]">"{sale.title}"</p>}
+          {sale.whatsappNumber && (
+            <a href={`https://wa.me/55${sale.whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+              className="text-[10px] text-green-400 hover:text-green-300 transition-colors">
+              📱 {sale.whatsappNumber}
+            </a>
+          )}
           <p className="text-[10px] text-zinc-700 font-mono">#{sale.id.slice(0, 10)}</p>
         </td>
         <td className="px-6 py-3">
