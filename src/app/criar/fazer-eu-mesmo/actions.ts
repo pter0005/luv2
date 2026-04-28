@@ -792,28 +792,31 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const newPageId = db.collection('lovepages').doc().id;
   const sanitizedData = sanitizeForFirebase(data);
 
-  // ── PRE-FLIGHT: quick check for GCS eventual consistency ──
-  // Wait up to ~15s for files to appear. If still missing, strip them and
-  // proceed — the customer paid, we MUST create the page. Missing images
-  // are recoverable (self-heal cron); a missing page is not.
-  const collectTempPaths = (v: any, paths: string[] = []): string[] => {
-    if (Array.isArray(v)) { v.forEach(it => collectTempPaths(it, paths)); return paths; }
+  // ── PRE-FLIGHT: check files exist, recover missing ones ──
+  // 1. Wait up to ~15s for GCS eventual consistency
+  // 2. For any still missing: try to re-download from the saved URL and re-upload
+  // 3. Only strip files that are truly unrecoverable
+  const collectFileEntries = (v: any, entries: Array<{ path: string; url: string }> = []): typeof entries => {
+    if (Array.isArray(v)) { v.forEach(it => collectFileEntries(it, entries)); return entries; }
     if (v && typeof v === 'object') {
-      if (typeof v.path === 'string' && v.path.startsWith('temp/')) paths.push(v.path);
-      for (const k in v) if (k !== 'path') collectTempPaths(v[k], paths);
+      if (typeof v.path === 'string' && v.path.startsWith('temp/') && typeof v.url === 'string') {
+        entries.push({ path: v.path, url: v.url });
+      }
+      for (const k in v) if (k !== 'path' && k !== 'url') collectFileEntries(v[k], entries);
     }
-    return paths;
+    return entries;
   };
-  const allTempPaths = [
-    ...collectTempPaths(sanitizedData.galleryImages),
-    ...collectTempPaths(sanitizedData.timelineEvents),
-    ...collectTempPaths(sanitizedData.memoryGameImages),
-    ...collectTempPaths(sanitizedData.puzzleImage),
-    ...collectTempPaths(sanitizedData.audioRecording),
-    ...collectTempPaths(sanitizedData.backgroundVideo),
+  const allFileEntries = [
+    ...collectFileEntries(sanitizedData.galleryImages),
+    ...collectFileEntries(sanitizedData.timelineEvents),
+    ...collectFileEntries(sanitizedData.memoryGameImages),
+    ...collectFileEntries(sanitizedData.puzzleImage),
+    ...collectFileEntries(sanitizedData.audioRecording),
+    ...collectFileEntries(sanitizedData.backgroundVideo),
   ];
+  const allTempPaths = allFileEntries.map(e => e.path);
   let strippedFiles: string[] = [];
-  if (allTempPaths.length > 0) {
+  if (allFileEntries.length > 0) {
     const MAX_WAIT_ROUNDS = 3;
     const WAIT_DELAY = 5_000;
     let missingPaths: string[] = [];
@@ -827,29 +830,63 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
       missingPaths = allTempPaths.filter((_, i) => !checks[i]);
       if (missingPaths.length === 0) break;
       if (round < MAX_WAIT_ROUNDS - 1) {
-        console.log(`[finalize] Pre-flight round ${round + 1}: ${missingPaths.length}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
+        console.log(`[finalize] Pre-flight round ${round + 1}: ${missingPaths.length}/${allFileEntries.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
         await new Promise(r => setTimeout(r, WAIT_DELAY));
       }
     }
+
+    // Recovery: for files still missing, try to re-download from URL and re-upload
     if (missingPaths.length > 0) {
-      strippedFiles = missingPaths;
-      console.warn(`[finalize] ${missingPaths.length}/${allTempPaths.length} files missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s — stripping and proceeding. Intent: ${intentId}`, missingPaths);
+      console.warn(`[finalize] ${missingPaths.length} files missing after polling. Attempting URL recovery...`);
       const missingSet = new Set(missingPaths);
-      if (Array.isArray(sanitizedData.galleryImages)) {
-        sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => img?.path && !missingSet.has(img.path));
+      const urlByPath = new Map(allFileEntries.map(e => [e.path, e.url]));
+      const recovered: string[] = [];
+      const unrecoverable: string[] = [];
+
+      for (const path of missingPaths) {
+        const url = urlByPath.get(path);
+        if (!url) { unrecoverable.push(path); continue; }
+        try {
+          const resp = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const buffer = Buffer.from(await resp.arrayBuffer());
+          if (buffer.length < 100) throw new Error(`Too small: ${buffer.length}b`);
+          const contentType = resp.headers.get('content-type') || 'application/octet-stream';
+          await bucket.file(path).save(buffer, { metadata: { contentType } });
+          recovered.push(path);
+          missingSet.delete(path);
+          console.log(`[finalize] Recovered ${path} (${(buffer.length / 1024).toFixed(0)}KB)`);
+        } catch (err: any) {
+          console.error(`[finalize] Recovery failed for ${path}:`, err?.message);
+          unrecoverable.push(path);
+        }
       }
-      if (Array.isArray(sanitizedData.timelineEvents)) {
-        sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((ev: any) => {
-          if (ev?.image && missingSet.has(ev.image.path)) return { ...ev, image: undefined };
-          return ev;
-        });
+
+      if (recovered.length > 0) {
+        console.log(`[finalize] Recovered ${recovered.length}/${missingPaths.length} files`);
       }
-      if (Array.isArray(sanitizedData.memoryGameImages)) {
-        sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => img?.path && !missingSet.has(img.path));
+
+      // Only strip truly unrecoverable files
+      if (unrecoverable.length > 0) {
+        strippedFiles = unrecoverable;
+        console.warn(`[finalize] ${unrecoverable.length} files unrecoverable — stripping. Intent: ${intentId}`, unrecoverable);
+        const unrec = new Set(unrecoverable);
+        if (Array.isArray(sanitizedData.galleryImages)) {
+          sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => img?.path && !unrec.has(img.path));
+        }
+        if (Array.isArray(sanitizedData.timelineEvents)) {
+          sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((ev: any) => {
+            if (ev?.image && unrec.has(ev.image.path)) return { ...ev, image: undefined };
+            return ev;
+          });
+        }
+        if (Array.isArray(sanitizedData.memoryGameImages)) {
+          sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => img?.path && !unrec.has(img.path));
+        }
+        if (sanitizedData.puzzleImage && unrec.has(sanitizedData.puzzleImage.path)) sanitizedData.puzzleImage = undefined;
+        if (sanitizedData.audioRecording && unrec.has(sanitizedData.audioRecording.path)) sanitizedData.audioRecording = undefined;
+        if (sanitizedData.backgroundVideo && unrec.has(sanitizedData.backgroundVideo.path)) sanitizedData.backgroundVideo = undefined;
       }
-      if (sanitizedData.puzzleImage && missingSet.has(sanitizedData.puzzleImage.path)) sanitizedData.puzzleImage = undefined;
-      if (sanitizedData.audioRecording && missingSet.has(sanitizedData.audioRecording.path)) sanitizedData.audioRecording = undefined;
-      if (sanitizedData.backgroundVideo && missingSet.has(sanitizedData.backgroundVideo.path)) sanitizedData.backgroundVideo = undefined;
     }
   }
 
