@@ -139,6 +139,7 @@ export default function Puzzle({ imageSrc, onReveal }: PuzzleProps) {
           }}
           onError={() => {
             setError("Não foi possível carregar a imagem. Verifique o link ou tente novamente.");
+            setTimeout(() => { if (onReveal) onReveal(); }, 2500);
           }}
         />
       )}

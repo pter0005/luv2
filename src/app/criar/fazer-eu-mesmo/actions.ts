@@ -422,16 +422,21 @@ export async function processPixPayment(
       ...collectPaths(intentData?.backgroundVideo),
     ];
     if (tempPaths.length > 0) {
-      const checks = await Promise.all(
-        tempPaths.map(async (p) => {
-          try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
-        }),
-      );
-      const missingCount = checks.filter(e => !e).length;
-      if (missingCount > 0) {
-        const missingFiles = tempPaths.filter((_, i) => !checks[i]);
-        console.error(`[PIX] ${missingCount} files missing in Storage before payment:`, missingFiles);
-        return { error: 'Algumas imagens ainda estão sendo processadas. Aguarde alguns segundos e tente novamente.' };
+      let missingFiles: string[] = [];
+      for (let round = 0; round < 2; round++) {
+        const pathsToCheck = round === 0 ? tempPaths : missingFiles;
+        const checks = await Promise.all(
+          pathsToCheck.map(async (p) => {
+            try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
+          }),
+        );
+        missingFiles = pathsToCheck.filter((_, i) => !checks[i]);
+        if (missingFiles.length === 0) break;
+        if (round === 0) await new Promise(r => setTimeout(r, 2000));
+      }
+      if (missingFiles.length > 0) {
+        console.error(`[PIX] ${missingFiles.length} files missing in Storage before payment:`, missingFiles);
+        return { error: 'Algumas imagens não foram encontradas no servidor. Tente remover e enviar novamente as imagens antes de pagar.' };
       }
     }
 

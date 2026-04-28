@@ -54,7 +54,7 @@ import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { signInAnonymously } from 'firebase/auth';
 import { useCreatingPresence } from '@/hooks/usePresence';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject, getMetadata } from 'firebase/storage';
 import { collection, query, where, doc as firestoreDoc, getDoc } from 'firebase/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -364,24 +364,19 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
     const fileName = `${timestamp}-${random}-${safeName}`;
     const fullPath = `temp/${userId}/${folderName}/${fileName}`;
     const fileRef = storageRef(storage, fullPath);
-    const MAX_RETRIES = 3;
-    let lastError: any = null;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-            await uploadBytes(fileRef, file);
-            await getMetadata(fileRef);
-            const downloadURL = await getDownloadURL(fileRef);
-            return { url: downloadURL, path: fullPath };
-        } catch (error: any) {
-            lastError = error;
-            console.warn(`[upload] Attempt ${attempt}/${MAX_RETRIES} failed for ${folderName}:`, error?.message);
-            if (attempt < MAX_RETRIES) {
-                await new Promise(r => setTimeout(r, 1000 * attempt));
-            }
-        }
-    }
-    console.error("Erro no upload após retries:", lastError);
-    throw lastError;
+    // uploadBytesResumable retoma do ponto que parou se a conexão cair.
+    // O Firebase SDK já faz retry interno em erros de rede — wrappamos
+    // com uma Promise que resolve no 'state_changed' complete.
+    await new Promise<void>((resolve, reject) => {
+        const task = uploadBytesResumable(fileRef, file);
+        task.on('state_changed', null,
+            (err) => reject(err),
+            () => resolve(),
+        );
+    });
+    await getMetadata(fileRef);
+    const downloadURL = await getDownloadURL(fileRef);
+    return { url: downloadURL, path: fullPath };
 };
 
 // ─────────────────────────────────────────────
@@ -1445,10 +1440,12 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 const compressedBlob = await compressImage(file, 1280, 0.9);
                 const fileData = await uploadFile(storage, user.uid, compressedBlob, 'puzzle');
                 setValue("puzzleImage", fileData, { shouldValidate: true, shouldDirty: true });
+                setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
                 await handleAutosave?.();
                 toast({ title: 'Imagem enviada!', description: 'Sua foto foi adicionada.' });
             } catch (error: any) {
                 console.error("Error processing puzzle image:", error);
+                setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
                 const isTooLarge = error?.message?.includes('file_too_large');
                 toast({
                     variant: 'destructive',
@@ -1457,7 +1454,6 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
                 });
             } finally {
                 setIsProcessing(false);
-                setValue('_uploadingCount', Math.max(0, (getValues('_uploadingCount') || 0) - 1));
             }
         }
     };
@@ -3443,7 +3439,7 @@ function WizardInternal() {
     const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const autosaveLastSnapshotRef = useRef<string>('');
     const autosaveInFlightRef = useRef<boolean>(false);
-    const autosaveEverSucceededRef = useRef<boolean>(false);
+    const autosaveInflightPromiseRef = useRef<Promise<void> | null>(null);
     const stepEnterTimeRef = useRef<number>(Date.now());
     const [pageId, setPageId] = useState<string | null>(null);
     const [previewPuzzleRevealed, setPreviewPuzzleRevealed] = useState(false);
@@ -3546,16 +3542,13 @@ function WizardInternal() {
     const formData = watch();
     const intentId = watch('intentId');
 
-    const handleAutosave = useCallback(async () => {
+    const doAutosave = useCallback(async () => {
         if (!user || isUserLoading) return;
-        if (autosaveInFlightRef.current) return;
         const uploadingCount = getValues('_uploadingCount') || 0;
         if (uploadingCount > 0) return;
         const data = getValues();
         const utmSource = sessionStorage.getItem('last_utm_source');
         const dataToSave = { ...data, userId: user.uid, utmSource: utmSource || undefined };
-        // Dedup: se o snapshot é idêntico ao último salvo, não grava no Firestore.
-        // Isso corta writes zerados causados por re-renders/watch loops.
         let snapshotKey = '';
         try {
             const { intentId: _iid, _uploadingCount: _uc, ...rest } = dataToSave as any;
@@ -3563,43 +3556,62 @@ function WizardInternal() {
         } catch { snapshotKey = String(Date.now()); }
         if (snapshotKey && snapshotKey === autosaveLastSnapshotRef.current) return;
         autosaveInFlightRef.current = true;
-        try {
-            const result = await createOrUpdatePaymentIntent(dataToSave);
-            if (result.success) {
-                autosaveLastSnapshotRef.current = snapshotKey;
-                autosaveEverSucceededRef.current = true;
-                localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
-                if (result.intentId && !dataToSave.intentId) {
-                    setValue('intentId', result.intentId, { shouldDirty: false });
-                }
-            } else {
-                console.error("Autosave failed:", result);
-                toast({
-                    variant: 'destructive',
-                    title: "Erro ao Salvar Rascunho",
-                    description: (
-                        <div>
-                            <p>{result.error}</p>
-                            <div className="mt-2 p-2 bg-black/30 rounded-md">
-                                <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
-                                    {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
-                                </pre>
+        const p = (async () => {
+            try {
+                const result = await createOrUpdatePaymentIntent(dataToSave);
+                if (result.success) {
+                    autosaveLastSnapshotRef.current = snapshotKey;
+                    localStorage.setItem('amore-pages-autosave', JSON.stringify({ ...dataToSave, intentId: result.intentId }));
+                    if (result.intentId && !dataToSave.intentId) {
+                        setValue('intentId', result.intentId, { shouldDirty: false });
+                    }
+                } else {
+                    console.error("Autosave failed:", result);
+                    toast({
+                        variant: 'destructive',
+                        title: "Erro ao Salvar Rascunho",
+                        description: (
+                            <div>
+                                <p>{result.error}</p>
+                                <div className="mt-2 p-2 bg-black/30 rounded-md">
+                                    <pre className="text-xs text-white/80 font-mono whitespace-pre-wrap">
+                                        {JSON.stringify(result.details || { info: "No details from server." }, null, 2)}
+                                    </pre>
+                                </div>
                             </div>
-                        </div>
-                    ),
-                    duration: 20000,
-                });
-                const errorString = (result.error || '').toLowerCase();
-                if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
-                    setValue('intentId', undefined, { shouldDirty: false });
+                        ),
+                        duration: 20000,
+                    });
+                    const errorString = (result.error || '').toLowerCase();
+                    if (errorString.includes("collection") || errorString.includes("500") || errorString.includes("admin")) {
+                        setValue('intentId', undefined, { shouldDirty: false });
+                    }
                 }
+            } catch (e) {
+                console.error("Error during autosave:", e);
+            } finally {
+                autosaveInFlightRef.current = false;
+                autosaveInflightPromiseRef.current = null;
             }
-        } catch (e) {
-            console.error("Error during autosave:", e);
-        } finally {
-            autosaveInFlightRef.current = false;
-        }
+        })();
+        autosaveInflightPromiseRef.current = p;
+        await p;
     }, [user, isUserLoading, getValues, setValue, toast]);
+
+    // Debounce: descarta se já tem um em flight (fire-and-forget do watch).
+    const handleAutosave = useCallback(async () => {
+        if (autosaveInFlightRef.current) return;
+        await doAutosave();
+    }, [doAutosave]);
+
+    // Chamada explícita pós-upload: espera o in-flight terminar e roda de novo
+    // com dados frescos. Garante que o upload recém-feito está no Firestore.
+    const flushAutosave = useCallback(async () => {
+        if (autosaveInflightPromiseRef.current) {
+            await autosaveInflightPromiseRef.current;
+        }
+        await doAutosave();
+    }, [doAutosave]);
 
     const restoreFromLocalStorage = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -3775,7 +3787,7 @@ function WizardInternal() {
 
         if (nextStepId === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
-            await handleAutosave();
+            await flushAutosave();
             const planVal = getValues('plan');
             trackEvent('InitiateCheckout', {
                 value: estimateValue(),
@@ -3828,7 +3840,7 @@ function WizardInternal() {
         const Comp = stepComponents[currentStep];
         if (Comp) {
             const props: any = { isVisible: currentStepId === 'background' };
-            if (currentStepId === 'puzzle') props.handleAutosave = handleAutosave;
+            if (currentStepId === 'puzzle') props.handleAutosave = flushAutosave;
             if (currentStepId === 'title') props.titlePlaceholder = segCfg.titlePlaceholder;
             if (currentStepId === 'message') props.messagePlaceholder = segCfg.messagePlaceholder;
             StepComponent = <Comp {...props} />;

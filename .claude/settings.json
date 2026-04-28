@@ -37,7 +37,8 @@
       "Bash(curl -s -I -w \"redir->%{redirect_url}\\\\n\" --max-redirs 0 http://localhost:9003/chat --max-time 60)",
       "Bash(curl -s -I -w \"\\\\nredir->%{redirect_url}\\\\n\" --max-redirs 0 http://localhost:9003/chat --max-time 60)",
       "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64url'\\)\\)\")",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(npx next *)"
     ],
     "additionalDirectories": [
       "/tmp"
