@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { createUpgradePayment, verifyUpgradePayment } from './upgradeActions';
-import { X, Copy, Check, Infinity, Sparkles, Clock, Shield, Heart } from 'lucide-react';
+import { createUpgradePayment, verifyUpgradePayment, createUpgradeStripeSession } from './upgradeActions';
+import { X, Copy, Check, Infinity, Sparkles, Clock, Shield, Heart, CreditCard } from 'lucide-react';
 
 function getTimeLeft(expireAt: any): { h: number; m: number; s: number } | null {
   if (!expireAt) return null;
@@ -35,11 +35,11 @@ export default function UpgradeModal({ pageId, expireAt }: { pageId: string; exp
   const [email, setEmail] = useState('');
   const [polling, setPolling] = useState(false);
 
-  // Mostra depois de 4 segundos, só uma vez por sessão
+  // Mostra depois de 60 segundos, só uma vez por sessão
   useEffect(() => {
     const key = `upgrade_dismissed_${pageId}`;
     if (sessionStorage.getItem(key)) return;
-    const t = setTimeout(() => setVisible(true), 4000);
+    const t = setTimeout(() => setVisible(true), 60000);
     return () => clearTimeout(t);
   }, [pageId]);
 
@@ -102,6 +102,16 @@ export default function UpgradeModal({ pageId, expireAt }: { pageId: string; exp
     setPaymentId(result.paymentId);
     setStep('pix');
     pollPayment(result.paymentId);
+  };
+
+  const handlePayCard = async () => {
+    if (!email || !email.includes('@')) { setError('Enter your email for the receipt.'); return; }
+    setLoading(true);
+    setError('');
+    const result = await createUpgradeStripeSession(pageId, email);
+    setLoading(false);
+    if ('error' in result) { setError(result.error); return; }
+    window.location.href = result.url;
   };
 
   const handleCopy = () => {
@@ -200,19 +210,29 @@ export default function UpgradeModal({ pageId, expireAt }: { pageId: string; exp
                     {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
                   </div>
 
-                  {/* CTA */}
-                  <button onClick={handlePay} disabled={loading}
-                    className="w-full py-4 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
-                    style={{
-                      background: 'linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)',
-                      boxShadow: '0 0 40px rgba(168,85,247,0.5), 0 4px 20px rgba(0,0,0,0.4)',
-                    }}>
-                    {loading
-                      ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Gerando PIX...</>
-                      : <><Sparkles size={18} /> Tornar permanente por R$9,99</>}
-                  </button>
+                  {/* CTA — PIX + Cartão */}
+                  <div className="space-y-2">
+                    <button onClick={handlePay} disabled={loading}
+                      className="w-full py-4 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
+                      style={{
+                        background: 'linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)',
+                        boxShadow: '0 0 40px rgba(168,85,247,0.5), 0 4px 20px rgba(0,0,0,0.4)',
+                      }}>
+                      {loading
+                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Gerando PIX...</>
+                        : <><Sparkles size={18} /> PIX · R$9,99</>}
+                    </button>
+                    <button onClick={handlePayCard} disabled={loading}
+                      className="w-full py-3.5 rounded-2xl font-bold text-white/90 text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60"
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(168,85,247,0.3)',
+                      }}>
+                      <CreditCard size={16} /> Card · $2.99
+                    </button>
+                  </div>
 
-                  <p className="text-center text-[10px] text-white/25">Pagamento único via PIX · Sem mensalidade</p>
+                  <p className="text-center text-[10px] text-white/25">Pagamento único · Sem mensalidade</p>
                 </motion.div>
               )}
 

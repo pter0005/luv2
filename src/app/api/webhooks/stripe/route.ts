@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { finalizeLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
+import { applyUpgrade } from '@/app/p/[pageId]/upgradeActions';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -46,17 +47,27 @@ export async function POST(req: NextRequest) {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      const intentId = session.metadata?.intentId;
-      if (!intentId) {
-        console.error('[stripe-webhook] missing intentId in metadata', session.id);
-      } else if (session.payment_status === 'paid') {
-        // paymentId = session.id (string UUID) → admin classifica como USD
-        // via isNaN(Number(paymentId)) check existente.
-        const result = await finalizeLovePage(intentId, session.id);
-        if (!result.success) {
-          console.error('[stripe-webhook] finalizeLovePage failed', {
-            intentId, sessionId: session.id, error: result.error,
-          });
+
+      if (session.metadata?.type === 'upgrade' && session.metadata?.pageId) {
+        if (session.payment_status === 'paid') {
+          const result = await applyUpgrade(session.metadata.pageId, session.id);
+          if (!result.success) {
+            console.error('[stripe-webhook] applyUpgrade failed', {
+              pageId: session.metadata.pageId, sessionId: session.id, error: result.error,
+            });
+          }
+        }
+      } else {
+        const intentId = session.metadata?.intentId;
+        if (!intentId) {
+          console.error('[stripe-webhook] missing intentId in metadata', session.id);
+        } else if (session.payment_status === 'paid') {
+          const result = await finalizeLovePage(intentId, session.id);
+          if (!result.success) {
+            console.error('[stripe-webhook] finalizeLovePage failed', {
+              intentId, sessionId: session.id, error: result.error,
+            });
+          }
         }
       }
     }

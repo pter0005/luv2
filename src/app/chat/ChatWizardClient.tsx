@@ -40,6 +40,8 @@ const NON_PERSISTABLE_KEYS: (keyof PageData)[] = [
   'timelineEvents',
   'memoryGameImages',
   'audioRecording',
+  'puzzleImage',
+  'backgroundVideo',
 ];
 
 function stripNonPersistable(values: PageData): Partial<PageData> {

@@ -1,41 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const STORAGE_KEY = 'mycupid_scarcity';
-
-function getInitialCount(): number {
-    if (typeof window === 'undefined') return 12;
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            const { count, ts } = JSON.parse(stored);
-            // Reset if older than 6 hours
-            if (Date.now() - ts < 6 * 3600 * 1000) return count;
-        }
-    } catch { /* ignore */ }
-    return 7 + Math.floor(Math.random() * 9); // 7–15
-}
+import { getRemainingSpots } from '@/lib/scarcity';
 
 export default function ScarcityIndicator() {
-    const [count, setCount] = useState(12);
-    const initialized = useRef(false);
+    const [count, setCount] = useState(getRemainingSpots());
 
     useEffect(() => {
-        if (initialized.current) return;
-        initialized.current = true;
-        setCount(getInitialCount());
-    }, []);
+        setCount(getRemainingSpots());
 
-    useEffect(() => {
         const tick = () => {
             setCount(prev => {
-                const next = Math.max(2, prev - 1);
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ count: next, ts: Date.now() }));
-                } catch { /* ignore */ }
-                return next;
+                if (prev <= 2) return prev;
+                return prev - 1;
             });
             timeout = setTimeout(tick, 30000 + Math.random() * 90000); // 30–120s
         };

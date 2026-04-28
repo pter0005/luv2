@@ -127,6 +127,10 @@ const HeroSection = () => {
             </Link>
           </div>
 
+          <p className="mt-3 text-sm text-white/50 font-medium">
+            {isEN ? 'Starting at $4.99' : 'A partir de R$19,90'}
+          </p>
+
           <div className="flex items-center justify-center lg:justify-start gap-3 mt-4 text-xs text-white/40">
             <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-emerald-400" /> {isEN ? 'Secure payment' : 'Pagamento seguro'}</span>
             <span className="text-white/15">·</span>

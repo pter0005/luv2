@@ -68,6 +68,13 @@ function formatPhoneBR(raw: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+function formatPhoneUS(raw: string) {
+  const d = raw.replace(/\D/g, '').slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 // Mensagens de erro locale-aware. Centraliza pra evitar PT vazando no US.
 const ERR = {
   emailInvalid: { pt: 'Preenche um email válido pra continuar.', en: 'Please enter a valid email.' },
@@ -438,15 +445,15 @@ export default function PaymentField() {
           whatsappNumber: whatsappDigits,
           guestEmail: cleanEmail,
         });
-        if (!saveRes.success) { setError(saveRes.error || 'Erro ao salvar rascunho.'); return; }
+        if (!saveRes.success) { setError(saveRes.error || (isUS ? 'Failed to save draft.' : 'Erro ao salvar rascunho.')); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
         const res = await finalizeWithGiftToken(saveRes.intentId, activeUser.uid, giftToken, cleanEmail);
-        if (!res.success) { setError(res.error || 'Erro ao resgatar presente.'); return; }
+        if (!res.success) { setError(res.error || (isUS ? 'Failed to redeem gift.' : 'Erro ao resgatar presente.')); return; }
         try { localStorage.removeItem('mycupid_gift_token'); } catch {}
         setGiftToken(null);
         setPaid({ pageId: res.pageId, isGift: true });
       } catch (e: any) {
-        setError(e?.message || 'Erro ao resgatar presente.');
+        setError(e?.message || (isUS ? 'Failed to redeem gift.' : 'Erro ao resgatar presente.'));
       }
     });
   }, [giftToken, emailInput, phone, getValues, setValue, isUS, ensureUser]);
@@ -632,10 +639,10 @@ export default function PaymentField() {
     startAdminAction(async () => {
       try {
         const res = await adminFinalizePage(intentId, user.uid);
-        if (!res.success) { setError(res.error || 'Falha ao finalizar como admin.'); return; }
+        if (!res.success) { setError(res.error || (isUS ? 'Failed to finalize as admin.' : 'Falha ao finalizar como admin.')); return; }
         setPaid({ pageId: res.pageId });
       } catch (e: any) {
-        setError(e?.message || 'Erro ao finalizar.');
+        setError(e?.message || (isUS ? 'Failed to finalize.' : 'Erro ao finalizar.'));
       }
     });
   }, [user, intentId, isAdmin]);
@@ -816,7 +823,7 @@ export default function PaymentField() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-white/50">
             <Sparkles className="w-3 h-3" />
-            <span>Seu pedido</span>
+            <span>{isUS ? 'Your order' : 'Seu pedido'}</span>
           </div>
           <span className="text-[11px] text-white/45">{isUS ? 'One-time payment' : 'Pagamento único'}</span>
         </div>
@@ -869,7 +876,7 @@ export default function PaymentField() {
       {/* Contato — email + whatsapp (obrigatórios) */}
       <div className="space-y-3 rounded-xl p-4 bg-white/[0.03] ring-1 ring-white/10">
         <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
-          <span>Seus dados de contato</span>
+          <span>{isUS ? 'Your contact info' : 'Seus dados de contato'}</span>
         </div>
         <div className="space-y-1.5">
           <label className="text-[11px] text-white/55 font-medium">Email</label>
@@ -887,7 +894,7 @@ export default function PaymentField() {
               const cleaned = e.target.value.normalize('NFKC').replace(/[​-‏⁠﻿]/g, '');
               setEmailInput(cleaned);
             }}
-            placeholder="seu@email.com"
+            placeholder={isUS ? 'you@email.com' : 'seu@email.com'}
             className={cn(
               'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition',
               emailInput && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())
@@ -900,14 +907,14 @@ export default function PaymentField() {
           )}
         </div>
         <div className="space-y-1.5">
-          <label className="text-[11px] text-white/55 font-medium">WhatsApp</label>
+          <label className="text-[11px] text-white/55 font-medium">{isUS ? 'Phone' : 'WhatsApp'}</label>
           <input
             type="tel"
             inputMode="numeric"
             autoComplete="tel"
-            value={formatPhoneBR(phone)}
+            value={isUS ? formatPhoneUS(phone) : formatPhoneBR(phone)}
             onChange={(e) => setValue('whatsappNumber', e.target.value.replace(/\D/g, ''), { shouldDirty: true })}
-            placeholder="(11) 99999-9999"
+            placeholder={isUS ? '(555) 123-4567' : '(11) 99999-9999'}
             className={cn(
               'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition tabular-nums',
               phone && phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < 10
@@ -1411,12 +1418,12 @@ export default function PaymentField() {
       <div className="flex items-center justify-center gap-4 pt-2 text-[11px] text-white/40">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Pagamento seguro</span>
+          <span>{isUS ? 'Secure payment' : 'Pagamento seguro'}</span>
         </div>
         <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
         <div className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5" />
-          <span>Entrega imediata</span>
+          <span>{isUS ? 'Instant delivery' : 'Entrega imediata'}</span>
         </div>
       </div>
     </div>

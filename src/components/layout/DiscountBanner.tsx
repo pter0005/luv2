@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { X, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getRemainingSpots } from '@/lib/scarcity';
 
 const TIMER_KEY = 'mycupid_offer_deadline';
 const INITIAL_SECONDS = 24 * 3600; // 24 horas
@@ -60,11 +61,7 @@ function useScarcitySpots() {
   const [spots, setSpots] = useState(0);
 
   useEffect(() => {
-    const now = new Date();
-    const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-    const hourBlock = Math.floor(now.getHours() / 2);
-    const base = ((seed * 7 + hourBlock * 13) % 7) + 3;
-    setSpots(base);
+    setSpots(getRemainingSpots());
 
     const interval = setInterval(() => {
       setSpots(prev => {

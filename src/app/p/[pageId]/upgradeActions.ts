@@ -6,8 +6,10 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rate-limit';
 import { logCriticalError } from '@/lib/log-critical-error';
+import Stripe from 'stripe';
 
 const UPGRADE_PRICE = 9.99;
+const UPGRADE_PRICE_USD = 2.99;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function getClientIp(): string {
@@ -124,6 +126,59 @@ export async function verifyUpgradePayment(
     return await applyUpgrade(pageId, paymentId);
   } catch (e: any) {
     return { success: false, error: e.message };
+  }
+}
+
+export async function createUpgradeStripeSession(
+  pageId: string,
+  email: string,
+): Promise<{ url: string } | { error: string }> {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return { error: 'Stripe not configured.' };
+
+  const ip = getClientIp();
+  if (!rateLimit(`upgrade-stripe:${ip}`, 5, 60_000).ok) {
+    return { error: 'Too many attempts. Wait 1 minute.' };
+  }
+
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return { error: 'Invalid email.' };
+
+  try {
+    const db = getAdminFirestore();
+    const pageSnap = await db.collection('lovepages').doc(pageId).get();
+    if (!pageSnap.exists) return { error: 'Page not found.' };
+    if (pageSnap.data()?.plan === 'avancado' && !pageSnap.data()?.expireAt) {
+      return { error: 'Page is already permanent.' };
+    }
+
+    const stripe = new Stripe(key, { apiVersion: '2024-06-20' });
+    const origin = headers().get('origin') || 'https://mycupid.net';
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: cleanEmail,
+      line_items: [{
+        quantity: 1,
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round(UPGRADE_PRICE_USD * 100),
+          product_data: {
+            name: 'MyCupid — Permanent upgrade',
+            description: 'Keep your love page online forever.',
+          },
+        },
+      }],
+      metadata: { pageId, type: 'upgrade' },
+      success_url: `${origin}/p/${pageId}?upgraded=1`,
+      cancel_url: `${origin}/p/${pageId}`,
+    });
+
+    if (!session.url) return { error: 'Failed to create checkout.' };
+    return { url: session.url };
+  } catch (e: any) {
+    return { error: e.message || 'Stripe error.' };
   }
 }
 

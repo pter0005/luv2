@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GuaranteeBadge from '@/components/layout/GuaranteeBadge';
 import ScarcityIndicator from '@/components/layout/ScarcityIndicator';
 import { useLocale } from 'next-intl';
+import { getBuyersToday } from '@/lib/scarcity';
 
 function useOfferExpired() {
   const [expired, setExpired] = useState(false);
@@ -21,9 +22,10 @@ function useOfferExpired() {
 
 /* ─── Contador de compradores (social proof em tempo real falso mas verossímil) ─ */
 function BuyerCount() {
-  const [count, setCount] = useState(134);
+  const [count, setCount] = useState(getBuyersToday());
 
   useEffect(() => {
+    setCount(getBuyersToday());
     // Simula variação orgânica a cada 8–18s
     const tick = () => {
       setCount(c => c + (Math.random() > 0.4 ? 1 : -1) * (Math.random() > 0.7 ? 2 : 1));

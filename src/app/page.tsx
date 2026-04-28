@@ -86,17 +86,17 @@ export default function Home() {
       <AnimatedSection id="demo-section" className="section-padding bg-transparent">
         <DemoSection />
       </AnimatedSection>
-      
-      <AnimatedSection id="avaliacoes" className="py-16 md:py-24 bg-transparent relative">
-        <TestimonialsSection />
-      </AnimatedSection>
-      
-      <AnimatedSection id="faq" className="section-padding bg-transparent">
-        <FAQSection />
-      </AnimatedSection>
 
       <AnimatedSection id="planos" className="section-padding bg-transparent">
         <PlansSection />
+      </AnimatedSection>
+
+      <AnimatedSection id="avaliacoes" className="py-16 md:py-24 bg-transparent relative">
+        <TestimonialsSection />
+      </AnimatedSection>
+
+      <AnimatedSection id="faq" className="section-padding bg-transparent">
+        <FAQSection />
       </AnimatedSection>
     </>
   );
