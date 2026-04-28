@@ -2,6 +2,7 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata, t
 import type { FileWithPreview } from './wizard-schema';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_RETRIES = 2;
 
 export async function uploadFile(
   storage: FirebaseStorage,
@@ -17,11 +18,23 @@ export async function uploadFile(
   const fileName = `${timestamp}-${random}-${safeName}`;
   const fullPath = `temp/${userId}/${folderName}/${fileName}`;
   const fileRef = storageRef(storage, fullPath);
-  await new Promise<void>((resolve, reject) => {
-    const task = uploadBytesResumable(fileRef, file);
-    task.on('state_changed', null, (err) => reject(err), () => resolve());
-  });
-  await getMetadata(fileRef);
-  const downloadURL = await getDownloadURL(fileRef);
-  return { url: downloadURL, path: fullPath };
+
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const task = uploadBytesResumable(fileRef, file);
+        task.on('state_changed', null, (err) => reject(err), () => resolve());
+      });
+      await getMetadata(fileRef);
+      const downloadURL = await getDownloadURL(fileRef);
+      return { url: downloadURL, path: fullPath };
+    } catch (err) {
+      lastErr = err;
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastErr;
 }

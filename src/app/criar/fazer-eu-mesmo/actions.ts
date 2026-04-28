@@ -801,8 +801,8 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     ...collectTempPaths(sanitizedData.backgroundVideo),
   ];
   if (allTempPaths.length > 0) {
-    const MAX_WAIT_ROUNDS = 6;
-    const WAIT_DELAY = 5_000;
+    const MAX_WAIT_ROUNDS = 10;
+    const WAIT_DELAY = 4_000;
     let missingAfterWait = 0;
     let missingPaths: string[] = [];
     for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {
@@ -823,14 +823,32 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     if (missingAfterWait > 0) {
       const finalizeAttempts = (data._finalizeAttempts || 0) + 1;
       await intentRef.update({ _finalizeAttempts: finalizeAttempts });
-      // Após 3 tentativas (~90s+ de espera total contando retries do webhook),
-      // prossegue mesmo com arquivos faltando pra não bloquear a página
-      // indefinidamente — self-heal/admin resolve depois.
       if (finalizeAttempts < 3) {
         console.error(`[finalize] BLOCKED: ${missingAfterWait} files missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s (attempt ${finalizeAttempts}):`, missingPaths);
         return { success: false, error: `files_not_ready: ${missingAfterWait} arquivos ainda não visíveis no Storage` };
       }
-      console.warn(`[finalize] Attempt ${finalizeAttempts}: ${missingAfterWait} files STILL missing, proceeding to avoid permanent block`);
+      console.warn(`[finalize] Attempt ${finalizeAttempts}: ${missingAfterWait} files STILL missing, stripping broken refs and proceeding`);
+      const missingSet = new Set(missingPaths);
+      const stripMissing = (v: any): any => {
+        if (!v) return v;
+        if (typeof v?.path === 'string' && missingSet.has(v.path)) return null;
+        return v;
+      };
+      if (Array.isArray(sanitizedData.galleryImages)) {
+        sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => !stripMissing(img) ? false : true);
+      }
+      if (Array.isArray(sanitizedData.timelineEvents)) {
+        sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((ev: any) => {
+          if (ev?.image && missingSet.has(ev.image.path)) return { ...ev, image: undefined };
+          return ev;
+        });
+      }
+      if (Array.isArray(sanitizedData.memoryGameImages)) {
+        sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => !stripMissing(img) ? false : true);
+      }
+      if (sanitizedData.puzzleImage && missingSet.has(sanitizedData.puzzleImage.path)) sanitizedData.puzzleImage = undefined;
+      if (sanitizedData.audioRecording && missingSet.has(sanitizedData.audioRecording.path)) sanitizedData.audioRecording = undefined;
+      if (sanitizedData.backgroundVideo && missingSet.has(sanitizedData.backgroundVideo.path)) sanitizedData.backgroundVideo = undefined;
     }
   }
 
