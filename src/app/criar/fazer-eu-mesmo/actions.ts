@@ -298,6 +298,18 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
       if (docSnap.exists && docSnap.data()?.status === 'completed') {
         return { success: true, intentId };
       }
+      // When updating an existing intent, don't overwrite file fields with
+      // empty arrays. This prevents a browser reload (which restores the form
+      // from localStorage without file data) from wiping previously uploaded
+      // file references.
+      const FILE_FIELDS = ['galleryImages', 'timelineEvents', 'memoryGameImages', 'puzzleImage', 'audioRecording', 'backgroundVideo'] as const;
+      if (docSnap.exists) {
+        for (const field of FILE_FIELDS) {
+          const val = dataToSave[field];
+          const isEmpty = val === undefined || val === null || (Array.isArray(val) && val.length === 0);
+          if (isEmpty) delete dataToSave[field];
+        }
+      }
       await intentRef.set(dataToSave, { merge: true });
       return { success: true, intentId };
     } else {
@@ -780,10 +792,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const newPageId = db.collection('lovepages').doc().id;
   const sanitizedData = sanitizeForFirebase(data);
 
-  // ── PRE-FLIGHT: espera todos os source files existirem no Storage ──
-  // Upload pode terminar no client mas GCS eventual consistency pode demorar
-  // até ~30s pra propagar. Coletamos todos os paths temp/ e fazemos polling
-  // antes de iniciar qualquer copy.
+  // ── PRE-FLIGHT: quick check for GCS eventual consistency ──
+  // Wait up to ~15s for files to appear. If still missing, strip them and
+  // proceed — the customer paid, we MUST create the page. Missing images
+  // are recoverable (self-heal cron); a missing page is not.
   const collectTempPaths = (v: any, paths: string[] = []): string[] => {
     if (Array.isArray(v)) { v.forEach(it => collectTempPaths(it, paths)); return paths; }
     if (v && typeof v === 'object') {
@@ -800,10 +812,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     ...collectTempPaths(sanitizedData.audioRecording),
     ...collectTempPaths(sanitizedData.backgroundVideo),
   ];
+  let strippedFiles: string[] = [];
   if (allTempPaths.length > 0) {
-    const MAX_WAIT_ROUNDS = 10;
-    const WAIT_DELAY = 4_000;
-    let missingAfterWait = 0;
+    const MAX_WAIT_ROUNDS = 3;
+    const WAIT_DELAY = 5_000;
     let missingPaths: string[] = [];
     for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {
       const checks = await Promise.all(
@@ -812,30 +824,19 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
           catch { return false; }
         }),
       );
-      missingAfterWait = checks.filter(e => !e).length;
       missingPaths = allTempPaths.filter((_, i) => !checks[i]);
-      if (missingAfterWait === 0) break;
+      if (missingPaths.length === 0) break;
       if (round < MAX_WAIT_ROUNDS - 1) {
-        console.log(`[finalize] Pre-flight round ${round + 1}: ${missingAfterWait}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
+        console.log(`[finalize] Pre-flight round ${round + 1}: ${missingPaths.length}/${allTempPaths.length} files not yet visible, waiting ${WAIT_DELAY / 1000}s...`);
         await new Promise(r => setTimeout(r, WAIT_DELAY));
       }
     }
-    if (missingAfterWait > 0) {
-      const finalizeAttempts = (data._finalizeAttempts || 0) + 1;
-      await intentRef.update({ _finalizeAttempts: finalizeAttempts });
-      if (finalizeAttempts < 3) {
-        console.error(`[finalize] BLOCKED: ${missingAfterWait} files missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s (attempt ${finalizeAttempts}):`, missingPaths);
-        return { success: false, error: `files_not_ready: ${missingAfterWait} arquivos ainda não visíveis no Storage` };
-      }
-      console.warn(`[finalize] Attempt ${finalizeAttempts}: ${missingAfterWait} files STILL missing, stripping broken refs and proceeding`);
+    if (missingPaths.length > 0) {
+      strippedFiles = missingPaths;
+      console.warn(`[finalize] ${missingPaths.length}/${allTempPaths.length} files missing after ${MAX_WAIT_ROUNDS * WAIT_DELAY / 1000}s — stripping and proceeding. Intent: ${intentId}`, missingPaths);
       const missingSet = new Set(missingPaths);
-      const stripMissing = (v: any): any => {
-        if (!v) return v;
-        if (typeof v?.path === 'string' && missingSet.has(v.path)) return null;
-        return v;
-      };
       if (Array.isArray(sanitizedData.galleryImages)) {
-        sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => !stripMissing(img) ? false : true);
+        sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => img?.path && !missingSet.has(img.path));
       }
       if (Array.isArray(sanitizedData.timelineEvents)) {
         sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((ev: any) => {
@@ -844,7 +845,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         });
       }
       if (Array.isArray(sanitizedData.memoryGameImages)) {
-        sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => !stripMissing(img) ? false : true);
+        sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => img?.path && !missingSet.has(img.path));
       }
       if (sanitizedData.puzzleImage && missingSet.has(sanitizedData.puzzleImage.path)) sanitizedData.puzzleImage = undefined;
       if (sanitizedData.audioRecording && missingSet.has(sanitizedData.audioRecording.path)) sanitizedData.audioRecording = undefined;
@@ -1074,6 +1075,21 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     `${saleTitle} — Plano ${salePlan}`,
     `https://mycupid.com.br/admin`,
   ).catch(() => {});
+  // If files were stripped during pre-flight, log + alert so admin can investigate.
+  if (strippedFiles.length > 0) {
+    logCriticalError('page_creation', `Página criada com ${strippedFiles.length} arquivos faltando (removidos automaticamente)`, {
+      pageId: newPageId,
+      intentId,
+      strippedFiles,
+      totalFiles: allTempPaths.length,
+    }).catch(() => {});
+    notifyAdmins(
+      `⚠️ Página criada com ${strippedFiles.length} imagem(ns) faltando`,
+      `${(finalData.title as string) || 'Sem título'} — ${strippedFiles.length}/${allTempPaths.length} arquivos não encontrados no Storage`,
+      `https://mycupid.com.br/admin`,
+    ).catch(() => {});
+  }
+
   revalidatePath(`/p/${newPageId}`);
   revalidatePath('/minhas-paginas');
   // Bust the cached admin dashboard snapshot so new sales show up within
