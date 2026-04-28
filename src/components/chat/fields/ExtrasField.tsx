@@ -75,7 +75,7 @@ function TipCallout({ emoji, children }: { emoji: string; children: React.ReactN
 // Sub-form: Puzzle
 // ───────────────────────────────────────────────────
 function PuzzleSubForm() {
-  const { watch, setValue } = useFormContext<PageData>();
+  const { watch, setValue, getValues } = useFormContext<PageData>();
   const img = watch('puzzleImage');
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -93,6 +93,7 @@ function PuzzleSubForm() {
     }
     if (!activeUser) return;
     setUploading(true);
+    setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
     try {
       const compressed = await compressImage(file, 1200, 0.85);
       const uploaded = await uploadFile(firebase.storage, activeUser.uid, compressed, 'puzzle');
@@ -100,6 +101,7 @@ function PuzzleSubForm() {
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro', description: err?.message ?? 'Tente de novo' });
     } finally {
+      setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
@@ -156,7 +158,7 @@ function PuzzleSubForm() {
 // Sub-form: Memory Game
 // ───────────────────────────────────────────────────
 function MemorySubForm() {
-  const { watch, setValue } = useFormContext<PageData>();
+  const { watch, setValue, getValues } = useFormContext<PageData>();
   const imgs = watch('memoryGameImages') ?? [];
   const [pending, setPending] = useState<{ id: string; previewUrl: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -184,12 +186,11 @@ function MemorySubForm() {
     }
     if (!activeUser) { if (fileRef.current) fileRef.current.value = ''; return; }
 
-    // Previews instantâneos
+    setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
+
     const batch = selected.map((file) => ({ id: crypto.randomUUID(), previewUrl: URL.createObjectURL(file) }));
     setPending((prev) => [...prev, ...batch]);
 
-    // Sobe em paralelo mas salva no form em um único setValue por chunk — evita
-    // race (cada upload paralelo liam o mesmo snapshot e sobrescreviam).
     let failed = 0;
     const results = await Promise.all(
       selected.map(async (file, idx) => {
@@ -224,6 +225,8 @@ function MemorySubForm() {
       prev.forEach((p) => { if (settled.has(p.id)) URL.revokeObjectURL(p.previewUrl); });
       return prev.filter((p) => !settled.has(p.id));
     });
+
+    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
 
     if (failed > 0) {
       toast({ variant: 'destructive', title: `${failed} ${failed === 1 ? 'foto falhou' : 'fotos falharam'}`, description: 'Tenta de novo.' });

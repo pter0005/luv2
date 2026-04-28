@@ -20,7 +20,7 @@ type PendingUpload = {
 };
 
 export default function GalleryField() {
-  const { control } = useFormContext<PageData>();
+  const { control, setValue, getValues } = useFormContext<PageData>();
   const { fields, append, remove, move } = useFieldArray({ control, name: 'galleryImages' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -72,7 +72,8 @@ export default function GalleryField() {
     }
     if (!activeUser) return;
 
-    // Cria entradas "pending" com preview local — UX instantânea
+    setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
+
     const batch: PendingUpload[] = selected.map((file) => ({
       id: crypto.randomUUID(),
       previewUrl: URL.createObjectURL(file),
@@ -127,6 +128,8 @@ export default function GalleryField() {
       });
     }
 
+    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
+
     if (failed > 0) {
       toast({
         variant: 'destructive',
@@ -136,7 +139,7 @@ export default function GalleryField() {
         description: isEN ? 'Try re-uploading the ones that failed.' : 'Tenta mandar de novo as que faltaram.',
       });
     }
-  }, [fields.length, pending.length, user, firebase, append, toast]);
+  }, [fields.length, pending.length, user, firebase, append, toast, setValue, getValues]);
 
   const handleSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

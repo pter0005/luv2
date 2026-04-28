@@ -145,6 +145,9 @@ export default function PaymentField() {
 
   const total = serverTotal ?? clientTotal;
 
+  const uploadingCount = useWatch({ control, name: '_uploadingCount' as any }) as number | undefined;
+  const isUploading = (uploadingCount ?? 0) > 0;
+
   // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
   const lineItems = useMemo(() => {
     const prices = getPrices(locale);
@@ -931,7 +934,7 @@ export default function PaymentField() {
           <button
             type="button"
             onClick={handleRedeemGift}
-            disabled={isRedeemingGift}
+            disabled={isRedeemingGift || isUploading}
             className={cn(
               'w-full h-12 rounded-xl font-bold text-white transition flex items-center justify-center gap-2',
               'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',
@@ -1094,7 +1097,7 @@ export default function PaymentField() {
                 <button
                   type="button"
                   onClick={handlePix}
-                  disabled={isProcessing || !isContactValid}
+                  disabled={isProcessing || !isContactValid || isUploading}
                   className={cn(
                     'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                     'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
@@ -1105,6 +1108,10 @@ export default function PaymentField() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" /> Gerando QR...
+                    </>
+                  ) : isUploading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Uploading files…' : 'Enviando arquivos…'}
                     </>
                   ) : !isContactValid ? (
                     <>
@@ -1229,7 +1236,7 @@ export default function PaymentField() {
             <button
               type="button"
               onClick={handleCard}
-              disabled={isProcessing || !isContactValid}
+              disabled={isProcessing || !isContactValid || isUploading}
               className={cn(
                 'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',
@@ -1378,7 +1385,7 @@ export default function PaymentField() {
           <button
             type="button"
             onClick={handleAdminFinalize}
-            disabled={!intentId || isAdminAction}
+            disabled={!intentId || isAdminAction || isUploading}
             className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-100 disabled:opacity-50 transition"
           >
             {isAdminAction ? t('finalizing') : t('finalizeFree')}

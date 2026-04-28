@@ -12,7 +12,7 @@ import type { PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
 
 export default function VoiceField() {
-  const { control, setValue } = useFormContext<PageData>();
+  const { control, setValue, getValues } = useFormContext<PageData>();
   const firebase = useFirebase();
   const { toast } = useToast();
   const locale = useLocale();
@@ -48,6 +48,7 @@ export default function VoiceField() {
       return;
     }
     setStatus('uploading');
+    setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
     try {
       const data = await uploadFile(firebase.storage, activeUser.uid, blob, 'audio');
       setValue('audioRecording', data, { shouldDirty: true, shouldValidate: true });
@@ -56,6 +57,8 @@ export default function VoiceField() {
     } catch {
       setStatus('idle');
       toast({ variant: 'destructive', title: isEN ? 'Upload error' : 'Erro no upload' });
+    } finally {
+      setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
     }
   };
 

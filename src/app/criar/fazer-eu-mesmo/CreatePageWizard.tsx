@@ -364,19 +364,22 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
     const fileName = `${timestamp}-${random}-${safeName}`;
     const fullPath = `temp/${userId}/${folderName}/${fileName}`;
     const fileRef = storageRef(storage, fullPath);
-    // uploadBytesResumable retoma do ponto que parou se a conexão cair.
-    // O Firebase SDK já faz retry interno em erros de rede — wrappamos
-    // com uma Promise que resolve no 'state_changed' complete.
-    await new Promise<void>((resolve, reject) => {
-        const task = uploadBytesResumable(fileRef, file);
-        task.on('state_changed', null,
-            (err) => reject(err),
-            () => resolve(),
-        );
-    });
-    await getMetadata(fileRef);
-    const downloadURL = await getDownloadURL(fileRef);
-    return { url: downloadURL, path: fullPath };
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= 2; attempt++) {
+        try {
+            await new Promise<void>((resolve, reject) => {
+                const task = uploadBytesResumable(fileRef, file);
+                task.on('state_changed', null, (err) => reject(err), () => resolve());
+            });
+            await getMetadata(fileRef);
+            const downloadURL = await getDownloadURL(fileRef);
+            return { url: downloadURL, path: fullPath };
+        } catch (err) {
+            lastErr = err;
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+    }
+    throw lastErr;
 };
 
 // ─────────────────────────────────────────────

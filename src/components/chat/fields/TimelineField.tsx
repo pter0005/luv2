@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { MAX_TIMELINE_IMAGES, type PageData } from '@/lib/wizard-schema';
 
 export default function TimelineField() {
-  const { control } = useFormContext<PageData>();
+  const { control, setValue, getValues } = useFormContext<PageData>();
   const { fields, append, remove } = useFieldArray({ control, name: 'timelineEvents' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingCount, setPendingCount] = useState(0);
@@ -47,11 +47,17 @@ export default function TimelineField() {
 
     let activeUser = user;
     if (!activeUser && firebase.auth) {
-      const cred = await signInAnonymously(firebase.auth);
-      activeUser = cred.user;
+      try {
+        const cred = await signInAnonymously(firebase.auth);
+        activeUser = cred.user;
+      } catch {
+        toast({ variant: 'destructive', title: isEN ? 'Error' : 'Erro', description: isEN ? 'Couldn\'t start the session.' : 'Não foi possível iniciar a sessão.' });
+        return;
+      }
     }
     if (!activeUser) return;
 
+    setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
     setPendingCount(selected.length);
     let failed = 0;
 
@@ -88,11 +94,13 @@ export default function TimelineField() {
       }
     }
 
+    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
+
     if (failed > 0) {
       toast({ variant: 'destructive', title: isEN ? `${failed} ${failed === 1 ? 'moment failed' : 'moments failed'}` : `${failed} ${failed === 1 ? 'momento falhou' : 'momentos falharam'}`, description: isEN ? 'Try again.' : 'Tenta de novo.' });
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [fields.length, user, firebase, append, toast]);
+  }, [fields.length, user, firebase, append, toast, setValue, getValues]);
 
   return (
     <div className="space-y-3">
