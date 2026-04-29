@@ -9,6 +9,7 @@ interface StepFieldProps {
   step: ChatStepKey;
   titlePlaceholder?: string;
   messagePlaceholder?: string;
+  segment?: string;
 }
 
 const Skeleton = () => (
@@ -21,7 +22,7 @@ const lazyField = <P,>(loader: () => Promise<{ default: React.ComponentType<P> }
   dynamic(loader, { ssr: false, loading: Skeleton });
 
 const RecipientNameField = lazyField<{ placeholder?: string }>(() => import('./fields/RecipientNameField'));
-const TitleField = lazyField<{ placeholder?: string }>(() => import('./fields/TitleField'));
+const TitleField = lazyField<{ placeholder?: string; segment?: string }>(() => import('./fields/TitleField'));
 const MessageField = lazyField<{ placeholder?: string }>(() => import('./fields/MessageField'));
 const DateField = lazyField<{}>(() => import('./fields/DateField'));
 const GalleryField = lazyField<{}>(() => import('./fields/GalleryField'));
@@ -34,12 +35,12 @@ const ExtrasField = lazyField<{}>(() => import('./fields/ExtrasField'));
 const PlanField = lazyField<{}>(() => import('./fields/PlanField'));
 const PaymentField = lazyField<{}>(() => import('./fields/PaymentField'));
 
-export default function StepField({ step, titlePlaceholder, messagePlaceholder }: StepFieldProps) {
+export default function StepField({ step, titlePlaceholder, messagePlaceholder, segment }: StepFieldProps) {
   switch (step) {
     case 'recipient':
       return <RecipientNameField />;
     case 'title':
-      return <TitleField placeholder={titlePlaceholder} />;
+      return <TitleField placeholder={titlePlaceholder} segment={segment} />;
     case 'message':
       return <MessageField placeholder={messagePlaceholder} />;
     case 'specialDate':

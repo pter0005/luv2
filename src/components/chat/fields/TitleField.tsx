@@ -8,10 +8,20 @@ import { useLocale } from 'next-intl';
 
 interface TitleFieldProps {
   placeholder?: string;
+  segment?: string;
 }
 
-// Paleta curada — escolhidas pra contrastar em fundos escuros (default do site)
-// e dark-mode pages. Ordem segue: branco, pastéis, vibrantes, acento dourado.
+const TITLE_SUGGESTIONS: Record<string, string[]> = {
+  namorade: ['Para o amor da minha vida', 'Pra sempre nós dois 💜', 'Meu mundo é você'],
+  mae: ['Para a melhor mãe do mundo', 'Mãe, te amo 🌸', 'Pra quem me deu a vida'],
+  pai: ['Pro melhor pai do mundo', 'Pai, meu herói 💙', 'Pro cara que me ensinou tudo'],
+  espouse: ['Meu amor pra sempre', 'Pra minha metade 💍', 'Nossa história de amor'],
+  amige: ['Pra minha melhor amiga', 'Amizade que vale ouro ✨', 'Pra quem me conhece de verdade'],
+  avo: ['Pro(a) melhor avô(ó) do mundo', 'Vó/Vô, te amo 🌻', 'Uma homenagem especial'],
+  filho: ['Pro meu maior presente', 'Meu orgulho 💛', 'Pra quem ilumina minha vida'],
+};
+const DEFAULT_SUGGESTIONS = ['Para o amor da minha vida', 'Uma homenagem especial ✨', 'Pra você que é tudo'];
+
 const COLOR_SWATCHES: { hex: string; label: { pt: string; en: string } }[] = [
   { hex: '#FFFFFF', label: { pt: 'Branco', en: 'White' } },
   { hex: '#FFD6E7', label: { pt: 'Rosé', en: 'Blush' } },
@@ -25,17 +35,37 @@ const COLOR_SWATCHES: { hex: string; label: { pt: string; en: string } }[] = [
   { hex: '#D4AF37', label: { pt: 'Dourado', en: 'Gold' } },
 ];
 
-export default function TitleField({ placeholder = 'Ex: Para o amor da minha vida' }: TitleFieldProps) {
+export default function TitleField({ placeholder = 'Ex: Para o amor da minha vida', segment }: TitleFieldProps) {
   const { register, watch, setValue, formState: { errors } } = useFormContext<PageData>();
   const value = watch('title');
   const titleColor = watch('titleColor') || '#FFFFFF';
   const err = errors.title?.message;
   const locale = useLocale();
   const isEN = locale === 'en';
+  const suggestions = TITLE_SUGGESTIONS[segment || ''] || DEFAULT_SUGGESTIONS;
 
   return (
     <div className="space-y-4">
-      {/* Input do título — preview da cor escolhida via style inline */}
+      {/* Sugestões clicáveis */}
+      <div className="flex flex-wrap gap-1.5">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setValue('title', s, { shouldDirty: true })}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-[12px] font-medium transition active:scale-95',
+              value === s
+                ? 'bg-pink-500/25 text-pink-200 ring-1 ring-pink-400/50'
+                : 'bg-white/[0.04] hover:bg-white/[0.08] text-white/75 ring-1 ring-white/10 hover:ring-white/20'
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Input do título */}
       <div className="space-y-2">
         <div className="relative">
           <input

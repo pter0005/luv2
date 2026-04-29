@@ -292,32 +292,56 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
       expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000),
     };
 
+    const countFiles = (d: any, field: string) => {
+      const v = d[field];
+      if (Array.isArray(v)) return v.length;
+      if (v && typeof v === 'object' && v.path) return 1;
+      return 0;
+    };
+    const fileSnapshot = (label: string, d: any) => {
+      const counts: Record<string, number> = {};
+      for (const f of ['galleryImages', 'timelineEvents', 'memoryGameImages', 'puzzleImage', 'audioRecording', 'backgroundVideo']) {
+        counts[f] = countFiles(d, f);
+      }
+      console.log(`[intent-files] ${label}:`, JSON.stringify(counts));
+    };
+
+    fileSnapshot('client-sent', dataToSave);
+
     if (intentId) {
       const intentRef = db.collection('payment_intents').doc(intentId);
       const docSnap = await intentRef.get();
       if (docSnap.exists && docSnap.data()?.status === 'completed') {
         return { success: true, intentId };
       }
-      // When updating an existing intent, don't overwrite file fields with
-      // empty arrays. This prevents a browser reload (which restores the form
-      // from localStorage without file data) from wiping previously uploaded
-      // file references.
       const FILE_FIELDS = ['galleryImages', 'timelineEvents', 'memoryGameImages', 'puzzleImage', 'audioRecording', 'backgroundVideo'] as const;
       if (docSnap.exists) {
+        const existing = docSnap.data() || {};
+        fileSnapshot(`server-existing (${intentId})`, existing);
         for (const field of FILE_FIELDS) {
-          const val = dataToSave[field];
-          const isEmpty = val === undefined || val === null || (Array.isArray(val) && val.length === 0);
-          if (isEmpty) delete dataToSave[field];
+          const serverVal = existing[field];
+          const serverHasData = Array.isArray(serverVal) ? serverVal.length > 0 : (serverVal != null && serverVal !== undefined);
+          if (serverHasData) {
+            delete dataToSave[field];
+          } else {
+            const clientVal = dataToSave[field];
+            const clientEmpty = clientVal === undefined || clientVal === null || (Array.isArray(clientVal) && clientVal.length === 0);
+            if (clientEmpty) delete dataToSave[field];
+          }
         }
+        fileSnapshot(`after-protection (${intentId})`, dataToSave);
       }
       await intentRef.set(dataToSave, { merge: true });
+      console.log(`[intent-files] SAVED intent ${intentId} (update, merge:true)`);
       return { success: true, intentId };
     } else {
+      fileSnapshot('new-intent-create', dataToSave);
       const intentDoc = await db.collection('payment_intents').add({
         ...dataToSave,
         status: 'pending',
         createdAt: Timestamp.now(),
       });
+      console.log(`[intent-files] CREATED new intent ${intentDoc.id}`);
       return { success: true, intentId: intentDoc.id };
     }
   } catch (error: any) {
@@ -791,6 +815,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const bucket = getAdminStorage();
   const newPageId = db.collection('lovepages').doc().id;
   const sanitizedData = sanitizeForFirebase(data);
+
+  // Log file state at finalization time
+  const _fc = (d: any, f: string) => { const v = d[f]; if (Array.isArray(v)) return v.length; if (v && typeof v === 'object' && v.path) return 1; return 0; };
+  console.log(`[finalize-files] intent=${intentId} gallery=${_fc(sanitizedData,'galleryImages')} timeline=${_fc(sanitizedData,'timelineEvents')} memory=${_fc(sanitizedData,'memoryGameImages')} puzzle=${_fc(sanitizedData,'puzzleImage')} audio=${_fc(sanitizedData,'audioRecording')} video=${_fc(sanitizedData,'backgroundVideo')}`);
 
   // ── PRE-FLIGHT: check files exist, recover missing ones ──
   // 1. Wait up to ~15s for GCS eventual consistency

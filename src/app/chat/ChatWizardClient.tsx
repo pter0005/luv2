@@ -433,6 +433,7 @@ function Inner() {
                   step={currentStep}
                   titlePlaceholder={titlePlaceholder}
                   messagePlaceholder={messagePlaceholder}
+                  segment={segment}
                 />
               </motion.div>
             </AnimatePresence>

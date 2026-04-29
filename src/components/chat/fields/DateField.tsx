@@ -105,6 +105,18 @@ export default function DateField() {
 
   return (
     <div className="space-y-4">
+      {/* Aviso de opcional + pular */}
+      {!currentDate && (
+        <div className="flex items-center justify-between rounded-xl bg-white/[0.03] ring-1 ring-white/10 px-4 py-3">
+          <span className="text-[12px] text-white/55">
+            {isEN ? 'This step is optional' : 'Essa etapa é opcional'}
+          </span>
+          <span className="text-[11px] text-white/40">
+            {isEN ? '👇 or just tap Next to skip' : '👇 ou só aperta Próximo pra pular'}
+          </span>
+        </div>
+      )}
+
       {/* Presets rápidos — "há quanto tempo" — no TOPO pra facilitar */}
       <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
