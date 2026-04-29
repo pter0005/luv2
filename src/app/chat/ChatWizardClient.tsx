@@ -35,18 +35,9 @@ const STEP_KEY_STORAGE = 'chat-wizard-step-v1';
 const SEGMENT_STORAGE = 'chat-wizard-segment-v1';
 const PERSIST_DEBOUNCE_MS = 600;
 
-const NON_PERSISTABLE_KEYS: (keyof PageData)[] = [
-  'galleryImages',
-  'timelineEvents',
-  'memoryGameImages',
-  'audioRecording',
-  'puzzleImage',
-  'backgroundVideo',
-];
-
 function stripNonPersistable(values: PageData): Partial<PageData> {
   const clone: any = { ...values };
-  for (const k of NON_PERSISTABLE_KEYS) delete clone[k];
+  delete clone._uploadingCount;
   return clone;
 }
 

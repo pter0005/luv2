@@ -24,6 +24,7 @@ import { compressImage } from '@/lib/image-utils';
 import { useToast } from '@/hooks/use-toast';
 import type { PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 
 interface ExtraConfig {
   key: 'enablePuzzle' | 'enableMemoryGame' | 'enableQuiz' | 'enableWordGame';
@@ -601,11 +602,30 @@ function SubForm({ k }: { k: ExtraConfig['key'] }) {
   );
 }
 
+const NON_ROMANTIC_SEGMENTS = new Set(['mae', 'pai', 'avo', 'filho', 'amige']);
+
+function getSegmentExtras(base: ExtraConfig[], segment: string | null): ExtraConfig[] {
+  if (!segment || !NON_ROMANTIC_SEGMENTS.has(segment)) return base;
+  return base.map(e => {
+    if (e.key === 'enableQuiz') {
+      if (segment === 'mae') return { ...e, label: 'Quanto ela te conhece?', desc: 'Perguntas sobre a mãe' };
+      if (segment === 'pai') return { ...e, label: 'Quanto ele te conhece?', desc: 'Perguntas sobre o pai' };
+      return { ...e, label: 'Quiz especial', desc: 'Perguntas que só essa pessoa sabe' };
+    }
+    if (e.key === 'enableWordGame') {
+      return { ...e, desc: 'Forca — descobre a palavra' };
+    }
+    return e;
+  });
+}
+
 export default function ExtrasField() {
   const { control, watch } = useFormContext<PageData>();
   const locale = useLocale();
   const isEN = locale === 'en';
-  const EXTRAS = isEN ? EXTRAS_EN : EXTRAS_PT;
+  const searchParams = useSearchParams();
+  const segment = searchParams.get('segment');
+  const EXTRAS = isEN ? EXTRAS_EN : getSegmentExtras(EXTRAS_PT, segment);
 
   return (
     <div className="space-y-2.5">
