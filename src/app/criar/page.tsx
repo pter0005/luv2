@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ChevronRight, Heart, MessageCircleHeart, Sparkles, Users } from 'lucide-react';
+import { ChevronRight, Heart, MessageCircleHeart, Sparkles, Users, Flower2 } from 'lucide-react';
+
+function isMothersDayPeriod() {
+  const now = new Date();
+  const m = now.getMonth() + 1, d = now.getDate();
+  return (m === 4 && d >= 25) || (m === 5 && d <= 11);
+}
 
 type ChipOpt = { key: string; emoji: string; label: string };
 const CHIPS: ChipOpt[] = [
@@ -20,6 +26,9 @@ export default function CriarPage() {
 
   const [liveCount, setLiveCount] = useState(0);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [mothersDay, setMothersDay] = useState(false);
+
+  useEffect(() => { setMothersDay(isMothersDayPeriod()); }, []);
 
   // ── Fake live counter — random between 6 and 23 ──
   useEffect(() => {
@@ -87,6 +96,54 @@ export default function CriarPage() {
 
       {/* MAIN CARDS */}
       <div className="w-full max-w-xl space-y-3">
+
+        {/* Presente pra Mãe — Dia das Mães */}
+        {mothersDay && (
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.05 }}
+            onClick={() => go('mae')}
+            disabled={!!loadingKey}
+            className="w-full relative text-left rounded-2xl p-5 sm:p-6 transition-all active:scale-[0.99] group"
+            style={{
+              background: 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(244,114,182,0.08) 100%)',
+              border: '2px solid rgba(236,72,153,0.45)',
+              boxShadow: '0 0 40px rgba(236,72,153,0.15)',
+            }}
+          >
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-bold text-white tracking-wider uppercase flex items-center gap-1"
+              style={{
+                background: 'linear-gradient(135deg, #ec4899, #f43f5e)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 2px 12px rgba(236,72,153,0.5)',
+              }}>
+              <Flower2 className="w-2.5 h-2.5" />
+              Dia das Mães · até 40% OFF
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(236,72,153,0.35), rgba(244,114,182,0.2))',
+                  border: '1px solid rgba(236,72,153,0.5)',
+                }}>
+                <span className="text-3xl sm:text-4xl">🌸</span>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight leading-tight">
+                  Presente pra Mãe
+                </h2>
+                <p className="text-xs sm:text-sm text-white/55 mt-0.5">
+                  Homenageie quem sempre esteve por você
+                </p>
+              </div>
+
+              <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </div>
+          </motion.button>
+        )}
 
         {/* Presente de Amor */}
         <motion.button

@@ -12,15 +12,31 @@ import { useLocale } from 'next-intl';
 function UrgencyBadge() {
   const locale = useLocale();
   const isEN = locale === 'en';
-  const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines'>('default');
+  const [badge, setBadge] = useState<'default' | 'womens-day' | 'valentines' | 'mothers-day'>('default');
   useEffect(() => {
     const now = new Date();
     const month = now.getMonth() + 1;
     const day = now.getDate();
-    if (month === 3 && day >= 6 && day <= 9) setBadge('womens-day');
+    if ((month === 4 && day >= 25) || (month === 5 && day <= 11)) setBadge('mothers-day');
+    else if (month === 3 && day >= 6 && day <= 9) setBadge('womens-day');
     else if (month === 6 && day >= 10 && day <= 13) setBadge('valentines');
   }, []);
 
+  if (badge === 'mothers-day') {
+    return (
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+        className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500/20 to-rose-500/20 border border-pink-500/40 rounded-full py-2 px-4 mb-6 shadow-[0_0_24px_rgba(236,72,153,0.25)]">
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500" />
+        </span>
+        <span className="text-sm">🌸</span>
+        <span className="text-xs font-bold text-pink-300 uppercase tracking-wider">{isEN ? "Mother's Day" : 'Dia das Mães'}</span>
+        <span className="text-white/20">·</span>
+        <span className="text-xs text-yellow-300 font-bold">{isEN ? 'up to 40% off' : 'até 40% OFF'}</span>
+      </motion.div>
+    );
+  }
   if (badge === 'womens-day') {
     return (
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
@@ -62,10 +78,18 @@ function UrgencyBadge() {
   );
 }
 
+function isMothersDayPeriod() {
+  const now = new Date();
+  const m = now.getMonth() + 1, d = now.getDate();
+  return (m === 4 && d >= 25) || (m === 5 && d <= 11);
+}
+
 const HeroSection = () => {
   const locale = useLocale();
   const isEN = locale === 'en';
   const heroRef = useRef(null);
+  const [isMothersDay, setIsMothersDay] = useState(false);
+  useEffect(() => { setIsMothersDay(isMothersDayPeriod()); }, []);
   const phrases = useMemo(
     () => isEN
       ? ['for someone special!', 'in a unique way!', 'to the one you love!']
@@ -102,7 +126,7 @@ const HeroSection = () => {
           <UrgencyBadge />
 
           <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-white font-display leading-[1.1] mb-8 min-h-[120px] lg:min-h-[auto]">
-            {isEN ? 'Declare your love' : 'Declare seu amor'} <br />
+            {isEN ? 'Declare your love' : isMothersDay ? 'Surpreenda sua mãe' : 'Declare seu amor'} <br />
             <span className="relative inline-block mt-2">
               <span className="font-handwriting text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 text-5xl lg:text-7xl pb-4">
                 {typedPhrase}
@@ -128,7 +152,9 @@ const HeroSection = () => {
           </div>
 
           <p className="mt-3 text-sm text-white/50 font-medium">
-            {isEN ? 'Starting at $4.99' : 'A partir de R$19,90'}
+            {isEN ? 'Starting at $4.99' : isMothersDay
+              ? <><span className="line-through text-white/30">R$34,90</span>{' '}<span className="text-pink-300 font-bold">R$19,90</span></>
+              : 'A partir de R$19,90'}
           </p>
 
           <div className="flex items-center justify-center lg:justify-start gap-3 mt-4 text-xs text-white/40">

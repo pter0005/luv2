@@ -75,11 +75,19 @@ function useScarcitySpots() {
   return spots;
 }
 
+function isMothersDayPeriod() {
+  const now = new Date();
+  const m = now.getMonth() + 1, d = now.getDate();
+  return (m === 4 && d >= 25) || (m === 5 && d <= 11);
+}
+
 export default function DiscountBanner() {
   const [visible, setVisible] = useState(false);
   const [showScarcity, setShowScarcity] = useState(false);
   const { formatted, expired } = useBannerTimer();
   const spots = useScarcitySpots();
+  const [mothersDay, setMothersDay] = useState(false);
+  useEffect(() => { setMothersDay(isMothersDayPeriod()); }, []);
 
   useEffect(() => {
     const BANNER_ACTIVE = true;
@@ -114,7 +122,9 @@ export default function DiscountBanner() {
           style={{
             background: expired
               ? 'linear-gradient(90deg, #1a0505 0%, #3b0a0a 50%, #1a0505 100%)'
-              : 'linear-gradient(90deg, #3b0764 0%, #6b21a8 40%, #7c3aed 60%, #4c1d95 100%)',
+              : mothersDay
+                ? 'linear-gradient(90deg, #831843 0%, #be185d 40%, #db2777 60%, #9d174d 100%)'
+                : 'linear-gradient(90deg, #3b0764 0%, #6b21a8 40%, #7c3aed 60%, #4c1d95 100%)',
           }}
         >
           {/* shimmer */}
@@ -139,15 +149,15 @@ export default function DiscountBanner() {
               <p className="text-xs font-bold text-white flex items-center justify-center gap-2 transition-opacity duration-500">
                 <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
                 <span>
-                  Restam <span className="text-yellow-300 tabular-nums">{spots}</span> páginas com preço promocional hoje
+                  Restam <span className="text-yellow-300 tabular-nums">{spots}</span> {mothersDay ? 'páginas com desconto de Dia das Mães' : 'páginas com preço promocional hoje'}
                 </span>
                 <Flame className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
               </p>
             ) : (
               <p className="text-sm text-white leading-none transition-opacity duration-500">
-                🔥 <span className="font-black">312 páginas criadas essa semana</span>
+                {mothersDay ? '🌸' : '🔥'} <span className="font-black">{mothersDay ? 'Dia das Mães — até 40% OFF' : '312 páginas criadas essa semana'}</span>
                 <span className="mx-2 opacity-40">—</span>
-                <span className="text-pink-200 font-semibold">Oferta especial por mais </span>
+                <span className="text-pink-200 font-semibold">{mothersDay ? 'Oferta acaba em ' : 'Oferta especial por mais '}</span>
                 <span className="font-black text-yellow-300 tabular-nums">{formatted}</span>
               </p>
             )}

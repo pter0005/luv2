@@ -10,6 +10,12 @@ import ScarcityIndicator from '@/components/layout/ScarcityIndicator';
 import { useLocale } from 'next-intl';
 import { getBuyersToday } from '@/lib/scarcity';
 
+function isMothersDayPeriod() {
+  const now = new Date();
+  const m = now.getMonth() + 1, d = now.getDate();
+  return (m === 4 && d >= 25) || (m === 5 && d <= 11);
+}
+
 function useOfferExpired() {
   const [expired, setExpired] = useState(false);
   useEffect(() => {
@@ -76,13 +82,13 @@ function UrgencyBadge() {
 function VipCard() {
   const locale = useLocale();
   const isEN = locale === 'en';
+  const [md, setMd] = useState(false);
+  useEffect(() => { setMd(isMothersDayPeriod()); }, []);
   const price = '34';
   const cents = isEN ? '.99' : ',99';
   const currency = isEN ? '$' : 'R$';
-  // Preço "riscado" — ancoragem de "quanto custaria comprar avançado + todos
-  // os add-ons separados" pra destacar o valor do bundle VIP.
-  const strikePrice = isEN ? '$49.90' : 'R$49,90';
-  const savings = isEN ? '$14.91' : 'R$14,91';
+  const strikePrice = isEN ? '$49.90' : md ? 'R$59,90' : 'R$49,90';
+  const savings = isEN ? '$14.91' : md ? 'R$24,91' : 'R$14,91';
 
   return (
     <motion.div
@@ -196,6 +202,8 @@ function AdvancedCard() {
   const offerExpired = useOfferExpired();
   const locale = useLocale();
   const isEN = locale === 'en';
+  const [md, setMd] = useState(false);
+  useEffect(() => { setMd(isMothersDayPeriod()); }, []);
   const price = offerExpired ? '29' : '24';
   const cents = isEN ? '.90' : ',90';
   const currency = isEN ? '$' : 'R$';
@@ -240,7 +248,7 @@ function AdvancedCard() {
         <div className="mb-6 p-4 rounded-2xl" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div className="flex items-start gap-3 justify-center">
             <div className="text-center">
-              <p className="text-zinc-500 text-lg line-through font-medium">{isEN ? 'From $39.90' : 'De R$39,90'}</p>
+              <p className="text-zinc-500 text-lg line-through font-medium">{isEN ? 'From $39.90' : md ? 'De R$44,90' : 'De R$39,90'}</p>
               <div className="flex items-baseline gap-1 justify-center">
                 <span className="text-zinc-400 text-lg font-bold">{currency}</span>
                 <span className="text-5xl font-black text-white leading-none">{price}</span>
@@ -311,6 +319,8 @@ function AdvancedCard() {
 function EconomicCard() {
   const locale = useLocale();
   const isEN = locale === 'en';
+  const [md, setMd] = useState(false);
+  useEffect(() => { setMd(isMothersDayPeriod()); }, []);
   const price = '19';
   const cents = isEN ? '.90' : ',90';
   const currency = isEN ? '$' : 'R$';
@@ -334,6 +344,7 @@ function EconomicCard() {
 
         {/* Preço */}
         <div className="mb-6 text-center">
+          {md && !isEN && <p className="text-zinc-500 text-sm line-through font-medium mb-1">De R$34,90</p>}
           <div className="flex items-baseline gap-1 justify-center">
             <span className="text-zinc-500 text-base font-bold">{currency}</span>
             <span className="text-4xl font-black text-zinc-300 leading-none">{price}</span>
@@ -379,6 +390,8 @@ function EconomicCard() {
 const PlansSection = () => {
   const locale = useLocale();
   const isEN = locale === 'en';
+  const [md, setMd] = useState(false);
+  useEffect(() => { setMd(isMothersDayPeriod()); }, []);
   return (
     <div className="container max-w-5xl relative z-10">
       {/* Header */}
@@ -394,16 +407,18 @@ const PlansSection = () => {
         </div>
 
         <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white leading-tight">
-          {isEN ? 'Immortalize your story' : 'Eternize sua história'}{' '}
+          {isEN ? 'Immortalize your story' : md ? 'Dia das Mães com' : 'Eternize sua história'}{' '}
           <span className="text-transparent bg-clip-text"
-            style={{ backgroundImage: 'linear-gradient(135deg, #a855f7, #ec4899)' }}>
-            {isEN ? 'for less than a meal' : 'por menos de um lanche'}
+            style={{ backgroundImage: md ? 'linear-gradient(135deg, #ec4899, #f43f5e)' : 'linear-gradient(135deg, #a855f7, #ec4899)' }}>
+            {isEN ? 'for less than a meal' : md ? 'até 40% OFF' : 'por menos de um lanche'}
           </span>
         </h2>
         <p className="mt-4 text-base text-zinc-400">
           {isEN
             ? 'Pick the right plan and build a page that will move them — in minutes.'
-            : 'Escolha o plano certo e crie uma página que vai emocionar — em minutos.'}
+            : md
+              ? 'Faça sua mãe chorar de emoção com uma homenagem que ela nunca vai esquecer.'
+              : 'Escolha o plano certo e crie uma página que vai emocionar — em minutos.'}
         </p>
       </motion.div>
 
