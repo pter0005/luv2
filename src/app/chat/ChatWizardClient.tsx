@@ -161,6 +161,7 @@ function Inner() {
     try { localStorage.setItem(STEP_KEY_STORAGE, currentStep); } catch { /* ignore */ }
   }, [currentStep, hydrated]);
 
+
   // Attribution capture — roda 1x no mount, lê UTMs+fbclid+ttclid da URL
   // e cookies do browser. Primeiro-touch vence (não sobrescreve captura anterior).
   useEffect(() => {
