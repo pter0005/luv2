@@ -1069,6 +1069,33 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
   });
 
+  // ── AUDIT: snapshot do que foi salvo, pra reconstruir se algo sumir.
+  // Best-effort, fora da transaction (não bloqueia venda se falhar).
+  try {
+    const auditSnap: any = {
+      pageId: newPageId,
+      intentId,
+      createdAt: Timestamp.now(),
+      paymentId,
+      title: finalData.title,
+      gallerySize: Array.isArray(finalData.galleryImages) ? finalData.galleryImages.length : 0,
+      timelineSize: Array.isArray(finalData.timelineEvents) ? finalData.timelineEvents.length : 0,
+      memorySize: Array.isArray(finalData.memoryGameImages) ? finalData.memoryGameImages.length : 0,
+      hasPuzzle: !!finalData.puzzleImage,
+      hasAudio: !!finalData.audioRecording,
+      hasVideo: !!finalData.backgroundVideo,
+      enableQuiz: !!finalData.enableQuiz,
+      quizQuestionsCount: Array.isArray(finalData.quizQuestions) ? finalData.quizQuestions.length : 0,
+      enableWordGame: !!finalData.enableWordGame,
+      wordGameQuestionsCount: Array.isArray(finalData.wordGameQuestions) ? finalData.wordGameQuestions.length : 0,
+      pendingFiles: strippedFiles,
+      totalFilesExpected: allTempPaths.length,
+    };
+    await db.collection('finalize_audit').doc(newPageId).set(auditSnap);
+  } catch (err: any) {
+    console.warn('[finalize] audit snapshot falhou (não bloqueia):', err?.message);
+  }
+
   // ── 7. Post-finalization side-effects ─────────────────────────────────────
   const userEmail = (data.guestEmail || data.userEmail) as string | undefined;
   if (data.guestEmail) {
