@@ -16,18 +16,23 @@ import { resolveLocale } from '@/i18n/request';
 import { getSiteConfig, getAllSiteConfigs } from '@/lib/site-config';
 import type { Locale } from '@/i18n/config';
 
+// Poppins é a fonte principal — preload TRUE pra não dar FOIT no above-the-fold.
 const poppins = Poppins({
   subsets: ['latin'],
   display: 'swap',
   weight: ['400', '600', '700', '900'],
   variable: '--font-poppins',
+  preload: true,
 });
 
+// Fontes secundárias (display fonts pra títulos decorativos) — preload FALSE
+// pra não bloquear LCP. Carregam under demand quando o componente renderiza.
 const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
   display: 'swap',
   weight: ['700', '900'],
   variable: '--font-playfair-display',
+  preload: false,
 });
 
 const dancingScript = Dancing_Script({
@@ -35,6 +40,7 @@ const dancingScript = Dancing_Script({
   display: 'swap',
   weight: '700',
   variable: '--font-dancing-script',
+  preload: false,
 });
 
 const instrumentSerif = Instrument_Serif({
@@ -43,6 +49,7 @@ const instrumentSerif = Instrument_Serif({
   weight: '400',
   style: ['normal', 'italic'],
   variable: '--font-instrument-serif',
+  preload: false,
 });
 
 const headerLogoUrl = 'https://i.imgur.com/InmbjFb.png';
