@@ -51,8 +51,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Páginas', href: '/admin/pages', Icon: FileText, color: '#60a5fa' },
       { label: 'Imagens', href: '/admin/fix-images', Icon: ImageOff, color: '#fb923c' },
       { label: 'Diagnóstico', href: '/admin/diagnostico-uploads', Icon: FileWarning, color: '#ef4444' },
-      { label: 'QR Code', href: '/admin/qrcode', Icon: QrCode, color: '#e879f9' },
-      { label: 'Notificações', href: '/admin/notificacoes', Icon: Bell, color: '#facc15' },
+      { label: 'QR', href: '/admin/qrcode', Icon: QrCode, color: '#e879f9' },
+      { label: 'Push', href: '/admin/notificacoes', Icon: Bell, color: '#facc15' },
     ],
   },
 ];
@@ -127,7 +127,7 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
           <div className="w-px h-8 bg-white/[0.06] shrink-0" />
 
           {/* Nav — horizontal scroll se não couber (raramente acontece em desktop wide) */}
-          <nav className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none' } as any}>
+          <nav className="flex-1 flex items-center gap-0.5 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none' } as any}>
             {FLAT_NAV.map(({ label, href, Icon, color }) => {
               const active = isActive(pathname, href);
               return (
@@ -135,7 +135,7 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
                   key={href}
                   href={href}
                   className={cn(
-                    'shrink-0 group relative flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12.5px] font-semibold transition-all',
+                    'shrink-0 group relative flex items-center gap-1 h-9 px-2 rounded-lg text-[12px] font-semibold transition-all',
                     active
                       ? 'text-white bg-white/[0.06] ring-1 ring-white/10 shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]',

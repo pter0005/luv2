@@ -437,9 +437,9 @@ export async function processPixPayment(
     const lastName = rawName.split(' ').slice(1).join(' ') || 'Cliente';
 
     // ── PRE-PAYMENT FILE CHECK ──
-    // Verifica se todos os arquivos temp/ do intent existem no Storage ANTES
-    // de gerar o PIX. Se algum sumiu, bloqueia — melhor o user re-enviar agora
-    // do que pagar e ficar com página quebrada.
+    // NUNCA bloqueia venda — só loga arquivos não-visíveis pra telemetria.
+    // Se algum sumiu, finalizeLovePage tem 30s de pre-flight + URL recovery;
+    // se nem isso recuperar, cron self-heal pega depois. Perder venda > perder foto.
     const bucket = getAdminStorage();
     const collectPaths = (v: any, paths: string[] = []): string[] => {
       if (Array.isArray(v)) { v.forEach(it => collectPaths(it, paths)); return paths; }
@@ -458,25 +458,18 @@ export async function processPixPayment(
       ...collectPaths(intentData?.backgroundVideo),
     ];
     if (tempPaths.length > 0) {
-      // 4 rounds × 5s = ~20s de janela pra GCS propagar antes de bloquear o
-      // pagamento. Antes era 2×2s (~4s) — curto demais em 4G mobile, deixava
-      // PIX gerar com arquivos não-visíveis e finalize estripava depois.
-      let missingFiles: string[] = [];
-      for (let round = 0; round < 4; round++) {
-        const pathsToCheck = round === 0 ? tempPaths : missingFiles;
+      // Best-effort: 1 check rápido, só pra telemetria. Não bloqueia.
+      try {
         const checks = await Promise.all(
-          pathsToCheck.map(async (p) => {
+          tempPaths.map(async (p) => {
             try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
           }),
         );
-        missingFiles = pathsToCheck.filter((_, i) => !checks[i]);
-        if (missingFiles.length === 0) break;
-        if (round < 3) await new Promise(r => setTimeout(r, 5000));
-      }
-      if (missingFiles.length > 0) {
-        console.error(`[PIX] ${missingFiles.length} files missing in Storage before payment:`, missingFiles);
-        return { error: 'Algumas imagens não foram encontradas no servidor. Tente remover e enviar novamente as imagens antes de pagar.' };
-      }
+        const missing = tempPaths.filter((_, i) => !checks[i]);
+        if (missing.length > 0) {
+          console.warn(`[PIX] ${missing.length}/${tempPaths.length} files not yet visible at PIX gen time (não bloqueando, finalize fará retry):`, missing.slice(0, 5));
+        }
+      } catch { /* nunca bloqueia venda */ }
     }
 
     const client = new MercadoPagoConfig({ accessToken: token });
