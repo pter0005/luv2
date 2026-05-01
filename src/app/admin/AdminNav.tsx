@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   ShieldCheck, ShoppingBag, Gift, Link2, Tag, MessageCircle, Bell,
   ImageOff, QrCode, LogOut, Menu, X, LayoutDashboard, BarChart3,
-  Edit3, FileText,
+  Edit3, FileText, FileWarning,
 } from 'lucide-react';
 
 interface AdminNavProps {
@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Páginas', href: '/admin/pages', Icon: FileText, color: '#60a5fa' },
       { label: 'Imagens', href: '/admin/fix-images', Icon: ImageOff, color: '#fb923c' },
+      { label: 'Diagnóstico', href: '/admin/diagnostico-uploads', Icon: FileWarning, color: '#ef4444' },
       { label: 'QR Code', href: '/admin/qrcode', Icon: QrCode, color: '#e879f9' },
       { label: 'Notificações', href: '/admin/notificacoes', Icon: Bell, color: '#facc15' },
     ],
