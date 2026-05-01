@@ -90,19 +90,41 @@ export async function requestEditAccess(
       return { ok: false, error: 'Edição disponível apenas no plano VIP.' };
     }
 
-    // Emails possíveis salvos: guestEmail (checkout via guest) ou ownerEmail
-    // (se migrou pra conta). Normaliza tudo lowercase.
-    const pageEmails: string[] = [data.guestEmail, data.ownerEmail, data.userEmail]
+    // Emails possíveis salvos no doc lovepage. Normaliza tudo lowercase.
+    const pageEmails: string[] = [data.guestEmail, data.ownerEmail, data.userEmail, data.payerEmail]
       .filter(Boolean)
       .map((e: string) => e.toLowerCase().trim());
 
+    // Fallback: páginas antigas (criadas antes do fix) não tinham ownerEmail
+    // salvo no doc — buscamos no payment_intent ligado à página pra recuperar.
+    if (!pageEmails.includes(cleanEmail)) {
+      try {
+        const intentsSnap = await db.collection('payment_intents')
+          .where('lovePageId', '==', pageId)
+          .limit(1)
+          .get();
+        if (!intentsSnap.empty) {
+          const intentData = intentsSnap.docs[0].data();
+          const intentEmails: string[] = [
+            intentData.guestEmail,
+            intentData.userEmail,
+            intentData.ownerEmail,
+            intentData.payerEmail,
+            intentData.payment?.payerEmail,
+          ].filter(Boolean).map((e: string) => e.toLowerCase().trim());
+          for (const e of intentEmails) if (!pageEmails.includes(e)) pageEmails.push(e);
+        }
+      } catch (e: any) {
+        console.warn('[edit-auth] intent lookup failed:', e?.message);
+      }
+    }
+
     if (pageEmails.length === 0) {
-      // Sem email registrado (ex: página admin/test). Só permite via userId logado,
-      // que fica no fluxo antigo. Retornamos erro genérico.
       return { ok: false, error: 'Email não confere.' };
     }
 
     if (!pageEmails.includes(cleanEmail)) {
+      console.warn(`[edit-auth] mismatch pageId=${pageId} tried=${cleanEmail} have=${pageEmails.join(',')}`);
       return { ok: false, error: 'Email não confere.' };
     }
 

@@ -1030,6 +1030,17 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   finalData.paymentId = paymentId;
   finalData.status = 'paid';
   finalData.componentVersion = 'v2';
+
+  // Preserva email do dono pra autenticação de edição (/editar/[pageId]).
+  // O campo guestEmail foi destruído no spread acima, mas precisamos do
+  // email salvo no doc da lovepage pra dono editar depois (ele só lembra
+  // do email que pagou — não do userId guest_xxx). Salvamos em ownerEmail
+  // que é o canonical name pra esse propósito.
+  const rawOwnerEmail = (_ge || (data as any).userEmail || (data as any).ownerEmail || '');
+  const ownerEmail = typeof rawOwnerEmail === 'string' ? rawOwnerEmail.trim().toLowerCase() : '';
+  if (ownerEmail && ownerEmail.includes('@')) {
+    finalData.ownerEmail = ownerEmail;
+  }
   // Propaga locale do intent pro doc final — pageData.locale fica imutável,
   // garantindo que a página seja renderizada no idioma em que foi criada.
   if (!finalData.locale) finalData.locale = (data?.locale === 'en' ? 'en' : 'pt');

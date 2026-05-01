@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save, Check, Loader2, AlertCircle, ExternalLink, Crown, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -14,17 +14,29 @@ import { updateLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
 import { requestEditAccess } from './auth';
 import { useToast } from '@/hooks/use-toast';
 
+// Fields leves (texto simples) carregam direto. Fields pesados (galeria,
+// timeline, jogos, música) carregam SÓ quando o user abre a seção — evita
+// montar 11 forms simultâneos no mount, que travava a página.
 import TitleField from '@/components/chat/fields/TitleField';
 import MessageField from '@/components/chat/fields/MessageField';
 import RecipientNameField from '@/components/chat/fields/RecipientNameField';
 import DateField from '@/components/chat/fields/DateField';
-import GalleryField from '@/components/chat/fields/GalleryField';
-import TimelineField from '@/components/chat/fields/TimelineField';
-import MusicField from '@/components/chat/fields/MusicField';
-import BackgroundField from '@/components/chat/fields/BackgroundField';
 import IntroField from '@/components/chat/fields/IntroField';
-import VoiceField from '@/components/chat/fields/VoiceField';
-import ExtrasField from '@/components/chat/fields/ExtrasField';
+import BackgroundField from '@/components/chat/fields/BackgroundField';
+
+// Skeleton enquanto carrega (sem layout shift)
+const FieldSkeleton = () => (
+  <div className="space-y-2 animate-pulse">
+    <div className="h-10 rounded-lg bg-white/5" />
+    <div className="h-24 rounded-lg bg-white/5" />
+  </div>
+);
+
+const GalleryField = dynamic(() => import('@/components/chat/fields/GalleryField'), { ssr: false, loading: () => <FieldSkeleton /> });
+const TimelineField = dynamic(() => import('@/components/chat/fields/TimelineField'), { ssr: false, loading: () => <FieldSkeleton /> });
+const MusicField = dynamic(() => import('@/components/chat/fields/MusicField'), { ssr: false, loading: () => <FieldSkeleton /> });
+const VoiceField = dynamic(() => import('@/components/chat/fields/VoiceField'), { ssr: false, loading: () => <FieldSkeleton /> });
+const ExtrasField = dynamic(() => import('@/components/chat/fields/ExtrasField'), { ssr: false, loading: () => <FieldSkeleton /> });
 
 interface EditPageClientProps {
   pageId: string;
@@ -85,6 +97,10 @@ export default function EditPageClient({ pageId, ownerId, initialData, pageEmail
   const { toast } = useToast();
   const [isSaving, startSaving] = useTransition();
   const [openIds, setOpenIds] = useState<Set<string>>(new Set(SECTIONS.filter(s => s.defaultOpen).map(s => s.id)));
+  // mountedIds: seções que JÁ FORAM ABERTAS pelo menos uma vez. Continuam
+  // montadas mesmo depois de fechar — preserva estado do RHF e evita
+  // re-fetch ao reabrir. Render inicial fica leve (só defaultOpen monta).
+  const mountedIdsRef = useRef<Set<string>>(new Set(SECTIONS.filter(s => s.defaultOpen).map(s => s.id)));
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   // Hydrate form com dados da página. Merge com defaults pra cobrir campos
@@ -150,7 +166,11 @@ export default function EditPageClient({ pageId, ownerId, initialData, pageEmail
     setOpenIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else next.add(id);
+      else {
+        next.add(id);
+        // Marca como já montado pra evitar desmontar depois
+        mountedIdsRef.current.add(id);
+      }
       return next;
     });
   };
@@ -377,20 +397,16 @@ export default function EditPageClient({ pageId, ownerId, initialData, pageEmail
                       )}
                     />
                   </button>
-                  <AnimatePresence initial={false}>
-                    {open && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
-                      >
-                        <div className="px-5 pb-5 pt-1">
-                          <Comp />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Render só depois que a seção foi aberta pelo menos uma vez.
+                      Depois fica montado pra preservar estado do form. Toggle
+                      visual é via CSS (display:none) — sem custo de remount. */}
+                  {mountedIdsRef.current.has(sec.id) && (
+                    <div className={cn('overflow-hidden transition-all', !open && 'hidden')}>
+                      <div className="px-5 pb-5 pt-1">
+                        <Comp />
+                      </div>
+                    </div>
+                  )}
                 </section>
               );
             })}
