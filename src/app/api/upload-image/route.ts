@@ -3,6 +3,7 @@ import { getAdminStorage } from '@/lib/firebase/admin/config';
 import { getAuth } from 'firebase-admin/auth';
 import { getAdminApp } from '@/lib/firebase/admin/config';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { logCriticalError } from '@/lib/log-critical-error';
 import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
@@ -101,7 +102,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, path: fullPath, url: downloadURL, size: buffer.length });
   } catch (err: any) {
+    // Log centralizado pra aparecer no /admin/diagnostico-uploads e a gente
+    // saber exatamente em que ponto o upload via servidor tá quebrando.
     console.error('[upload-image] error:', err);
+    try {
+      await logCriticalError('api', `Upload via servidor falhou: ${err?.message}`, {
+        stack: err?.stack,
+        name: err?.name,
+        code: err?.code,
+      });
+    } catch { /* best effort */ }
     return NextResponse.json({ error: 'upload_failed', message: err?.message }, { status: 500 });
   }
 }

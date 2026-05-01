@@ -1,13 +1,30 @@
 import { getAuth } from 'firebase/auth';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, getMetadata } from 'firebase/storage';
 import type { FileWithPreview } from './wizard-schema';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const MAX_RETRIES = 2;
+
+async function confirmStorageVisible(downloadURL: string): Promise<boolean> {
+  const MAX_TRIES = 8;
+  const DELAY = 2000;
+  for (let i = 0; i < MAX_TRIES; i++) {
+    try {
+      const res = await fetch(downloadURL, { method: 'HEAD', cache: 'no-store' });
+      if (res.ok) return true;
+    } catch { /* retenta */ }
+    if (i < MAX_TRIES - 1) await new Promise(r => setTimeout(r, DELAY));
+  }
+  return false;
+}
 
 /**
- * Upload via servidor — substitui o upload direto cliente→Storage que perdia
- * bytes silenciosamente. Cliente envia FormData pra /api/upload-image que valida
- * auth com Admin SDK, salva o byte e retorna {path, url} confirmados.
+ * Upload em 2 estratégias:
+ * 1) /api/upload-image (server-side, fonte da verdade)
+ * 2) FALLBACK: SDK direto + HEAD-loop confirmando visibilidade real
+ *
+ * Sem o fallback, qualquer falha do server (Netlify lambda timeout, body too
+ * large, instabilidade) quebraria o produto inteiro. Com fallback, a venda
+ * sempre passa.
  */
 export async function uploadFile(
   storage: any,
@@ -23,13 +40,14 @@ export async function uploadFile(
   if (!currentUser) throw new Error('no_auth_user');
   const idToken = await currentUser.getIdToken();
 
+  // ── ESTRATÉGIA 1: server-side ──
   const fd = new FormData();
   fd.append('file', file as Blob, file instanceof File ? file.name : 'audio.webm');
   fd.append('folder', folderName);
   fd.append('idToken', idToken);
 
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  let serverErr: unknown;
+  for (let attempt = 0; attempt <= 1; attempt++) {
     try {
       const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
       const data = await res.json().catch(() => ({}));
@@ -42,11 +60,37 @@ export async function uploadFile(
       if (!data.ok || !data.path || !data.url) throw new Error('invalid_response');
       return { url: data.url, path: data.path };
     } catch (err: any) {
-      lastErr = err;
+      serverErr = err;
       const msg = String(err?.message || '');
-      if (msg.startsWith('file_too_large') || msg === 'auth_failed' || msg.startsWith('invalid:')) break;
-      if (attempt < MAX_RETRIES) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      if (msg.startsWith('file_too_large') || msg === 'auth_failed' || msg.startsWith('invalid:')) throw err;
+      if (attempt < 1) await new Promise(r => setTimeout(r, 1500));
     }
   }
-  throw lastErr;
+
+  // ── ESTRATÉGIA 2 (FALLBACK): SDK direto + HEAD-loop ──
+  console.warn('[uploadFile] /api/upload-image falhou, usando fallback SDK:', serverErr);
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
+  const fileName = `${timestamp}-${random}-${safeName}`;
+  const fullPath = `temp/${userId}/${folderName}/${fileName}`;
+  const fileRef = storageRef(storage, fullPath);
+  let lastSdkErr: unknown;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const task = uploadBytesResumable(fileRef, file);
+        task.on('state_changed', null, (err) => reject(err), () => resolve());
+      });
+      await getMetadata(fileRef);
+      const downloadURL = await getDownloadURL(fileRef);
+      const visible = await confirmStorageVisible(downloadURL);
+      if (!visible) throw new Error('upload_not_visible_after_polling');
+      return { url: downloadURL, path: fullPath };
+    } catch (err) {
+      lastSdkErr = err;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  throw lastSdkErr || serverErr;
 }
