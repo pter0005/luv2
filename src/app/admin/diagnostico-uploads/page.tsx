@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, FileWarning, Clock, HardDrive, AlertTriangle, Info } from 'lucide-react';
+import { ArrowLeft, FileWarning, Clock, HardDrive, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config';
+import CopyReportButton from './CopyReportButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -312,6 +313,7 @@ export default async function DiagnosticoUploadsPage() {
   }
   const causes = Object.entries(causeBreakdown).sort(([,a],[,b]) => b.count - a.count);
   const totalMissing = diagnostics.reduce((s, d) => s + d.filesMissing, 0);
+  const reportMarkdown = buildReport({ diagnostics, causes, totalMissing, loadError });
 
   return (
     <div className="min-h-screen pb-24" style={{ background: '#09090b' }}>
@@ -333,6 +335,7 @@ export default async function DiagnosticoUploadsPage() {
               <p className="text-[10px] text-zinc-500 leading-tight hidden sm:block">Por que páginas estão sendo criadas com arquivos faltando</p>
             </div>
           </div>
+          <CopyReportButton markdown={reportMarkdown} />
         </div>
       </header>
 
@@ -542,4 +545,149 @@ function Row({ label, value, mono, full }: { label: string; value: string; mono?
       <span className={(mono ? 'font-mono ' : '') + 'text-zinc-300'}>{value}</span>
     </div>
   );
+}
+
+// Gera markdown completo com tudo que o engenheiro precisa pra debugar.
+// Inclui: contexto do app, sumário agregado, breakdown por causa, e por
+// página: timing, paths esperados/presentes/faltando, failed_file_moves.
+function buildReport(args: {
+  diagnostics: Diagnostic[];
+  causes: Array<[string, { label: string; count: number; color: string }]>;
+  totalMissing: number;
+  loadError: string | null;
+}): string {
+  const { diagnostics, causes, totalMissing, loadError } = args;
+  const now = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date());
+
+  const lines: string[] = [];
+  lines.push('# Relatório de Diagnóstico de Uploads — MyCupid');
+  lines.push('');
+  lines.push(`**Gerado em:** ${now} (BRT)`);
+  lines.push(`**Total de páginas afetadas:** ${diagnostics.length}`);
+  lines.push(`**Total de arquivos perdidos:** ${totalMissing}`);
+  if (loadError) {
+    lines.push('');
+    lines.push(`**⚠️ ERRO ao carregar:** \`${loadError}\``);
+  }
+  lines.push('');
+
+  // ── Contexto técnico ──
+  lines.push('## Contexto técnico (pra LLM/engenheiro)');
+  lines.push('');
+  lines.push('Stack: Next.js 14 (app router) + Firebase Admin SDK + Mercado Pago.');
+  lines.push('');
+  lines.push('Pipeline de upload:');
+  lines.push('1. Cliente sobe foto pro Firebase Storage em `temp/{userId}/{folder}/{filename}` direto via SDK do browser.');
+  lines.push('2. Cliente salva `{path, url}` no doc `payment_intents/{intentId}` (Firestore).');
+  lines.push('3. Após pagamento aprovado (Mercado Pago webhook ou polling), `finalizeLovePage()` em `src/app/criar/fazer-eu-mesmo/actions.ts:783` move arquivos pra `lovepages/{pageId}/{folder}/{filename}` via Admin SDK `bucket.file().copy()`.');
+  lines.push('4. Antes de mover, faz pre-flight check: 6 rounds × 5s polling esperando `bucket.file(path).exists()` retornar true (eventual consistency do GCS).');
+  lines.push('5. Se não encontrar após pre-flight, tenta URL recovery: `fetch(url)` da URL salva, re-upload pro mesmo path.');
+  lines.push('6. Se nem isso funcionar, `strippedFiles` lista os perdidos e gera log "Página criada com N arquivos faltando".');
+  lines.push('');
+  lines.push('Camadas de auto-recuperação:');
+  lines.push('- `/api/page-heal` — quando cliente abre página e detecta URLs `temp/`, chama esse endpoint que tenta mover (rate-limit 3×5min).');
+  lines.push('- `/api/cron/self-heal-images` — roda a cada 30min (Netlify cron), varre lovepages das últimas 72h e move qualquer `temp/` restante.');
+  lines.push('- `failed_file_moves` Firestore collection — registro técnico de falhas de move por arquivo.');
+  lines.push('');
+
+  // ── Breakdown agregado ──
+  lines.push('## Breakdown por causa raiz (heurística)');
+  lines.push('');
+  if (causes.length === 0) {
+    lines.push('_Nenhum erro encontrado._');
+  } else {
+    lines.push('| Causa | Páginas | % |');
+    lines.push('|---|---|---|');
+    for (const [tag, c] of causes) {
+      const pct = Math.round((c.count / diagnostics.length) * 100);
+      lines.push(`| **${c.label}** \`(${tag})\` | ${c.count} | ${pct}% |`);
+    }
+  }
+  lines.push('');
+
+  // ── Por página ──
+  if (diagnostics.length > 0) {
+    lines.push('## Detalhe por página afetada');
+    lines.push('');
+    diagnostics.forEach((d, idx) => {
+      lines.push(`### ${idx + 1}. \`${d.intentId}\` — ${d.rootCauseGuess.label}`);
+      lines.push('');
+      lines.push(`- **Quando:** ${d.loggedAt}`);
+      lines.push(`- **Email:** ${d.email}`);
+      lines.push(`- **userId:** \`${d.userId}\``);
+      lines.push(`- **pageId:** ${d.pageId ? `\`${d.pageId}\`` : '—'}`);
+      lines.push(`- **Plano:** ${d.plan}`);
+      lines.push(`- **Pago:** ${d.paidAmount != null ? `R$ ${d.paidAmount.toFixed(2)}` : '—'}`);
+      lines.push(`- **Tentativas de finalize:** ${d.finalizeAttempts}`);
+      lines.push(`- **Intent criado em:** ${d.intentCreatedAt || '—'}`);
+      lines.push(`- **Page finalizada em:** ${d.finalizedAt || '—'}`);
+      lines.push(`- **GAP intent→finalize:** ${d.gapMinutes != null ? `${d.gapMinutes} min` : '—'}`);
+      lines.push(`- **Arquivos esperados:** ${d.totalExpected} · **em temp/ visíveis:** ${d.filesInTemp} · **faltando:** ${d.filesMissing} · **em lovepages/:** ${d.filesInLovepage}`);
+      lines.push('');
+      lines.push(`**Diagnóstico heurístico:** ${d.rootCauseGuess.explanation}`);
+      lines.push('');
+
+      if (d.strippedFromIntent.length > 0) {
+        lines.push('**Paths stripados pelo finalize:**');
+        lines.push('```');
+        d.strippedFromIntent.slice(0, 30).forEach(p => lines.push(p));
+        if (d.strippedFromIntent.length > 30) lines.push(`... +${d.strippedFromIntent.length - 30} mais`);
+        lines.push('```');
+        lines.push('');
+      }
+
+      if (d.fileSlots.length > 0) {
+        const missingSlots = d.fileSlots.filter(s => !s.pathExists);
+        if (missingSlots.length > 0) {
+          lines.push('**Arquivos faltando no Storage agora:**');
+          lines.push('```');
+          missingSlots.slice(0, 20).forEach(s => {
+            const flags = [
+              s.isStripped ? 'STRIPADO' : null,
+              s.path.startsWith('temp/') ? 'temp/' : null,
+              s.path.startsWith('lovepages/') ? 'lovepages/' : null,
+            ].filter(Boolean).join(' ');
+            lines.push(`[${s.field}] ${s.path} (${flags})`);
+          });
+          if (missingSlots.length > 20) lines.push(`... +${missingSlots.length - 20} mais`);
+          lines.push('```');
+          lines.push('');
+        }
+      }
+
+      if (d.failedMoves.length > 0) {
+        lines.push(`**failed_file_moves (${d.failedMoves.length} entries):**`);
+        const byClass: Record<string, number> = {};
+        d.failedMoves.forEach(fm => { byClass[fm.errorClass] = (byClass[fm.errorClass] || 0) + 1; });
+        Object.entries(byClass).forEach(([k, v]) => lines.push(`- \`${k}\`: ${v}`));
+        lines.push('');
+        lines.push('Sample (max 10):');
+        lines.push('```');
+        d.failedMoves.slice(0, 10).forEach(fm => {
+          lines.push(`[${fm.errorClass}] ${fm.oldPath} → ${fm.newPath}`);
+          lines.push(`  ERROR: ${fm.error.slice(0, 200)}`);
+        });
+        lines.push('```');
+        lines.push('');
+      }
+
+      lines.push('---');
+      lines.push('');
+    });
+  }
+
+  // ── Pedido pra LLM ──
+  lines.push('## Pedido');
+  lines.push('');
+  lines.push('Com base no breakdown acima, identifica:');
+  lines.push('1. A causa raiz dominante (eventual consistency? lifecycle do bucket? rate limit? race condition no client?).');
+  lines.push('2. O fix cirúrgico no código com path:linha.');
+  lines.push('3. Se for problema de config (lifecycle do bucket, regras de Storage, índice Firestore), descreve o que ajustar e onde.');
+  lines.push('');
+
+  return lines.join('\n');
 }
