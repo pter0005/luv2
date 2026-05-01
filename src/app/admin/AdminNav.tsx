@@ -157,18 +157,11 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
             })}
           </nav>
 
-          {/* Direita: data + chat link + sair */}
+          {/* Direita: data + sair (Criar página fica só no drawer mobile) */}
           <div className="flex items-center gap-2 shrink-0">
             {today && (
               <span className="hidden xl:block text-[11px] text-zinc-500 tabular-nums">{today}</span>
             )}
-            <Link
-              href="/chat"
-              className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-bold text-pink-200 bg-pink-500/10 ring-1 ring-pink-500/30 hover:bg-pink-500/20 hover:text-pink-100 transition"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-              Criar página
-            </Link>
             <form action={logoutAction}>
               <button
                 type="submit"

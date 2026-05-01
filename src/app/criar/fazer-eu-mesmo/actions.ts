@@ -458,8 +458,11 @@ export async function processPixPayment(
       ...collectPaths(intentData?.backgroundVideo),
     ];
     if (tempPaths.length > 0) {
+      // 4 rounds × 5s = ~20s de janela pra GCS propagar antes de bloquear o
+      // pagamento. Antes era 2×2s (~4s) — curto demais em 4G mobile, deixava
+      // PIX gerar com arquivos não-visíveis e finalize estripava depois.
       let missingFiles: string[] = [];
-      for (let round = 0; round < 2; round++) {
+      for (let round = 0; round < 4; round++) {
         const pathsToCheck = round === 0 ? tempPaths : missingFiles;
         const checks = await Promise.all(
           pathsToCheck.map(async (p) => {
@@ -468,7 +471,7 @@ export async function processPixPayment(
         );
         missingFiles = pathsToCheck.filter((_, i) => !checks[i]);
         if (missingFiles.length === 0) break;
-        if (round === 0) await new Promise(r => setTimeout(r, 2000));
+        if (round < 3) await new Promise(r => setTimeout(r, 5000));
       }
       if (missingFiles.length > 0) {
         console.error(`[PIX] ${missingFiles.length} files missing in Storage before payment:`, missingFiles);
@@ -845,7 +848,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const allTempPaths = allFileEntries.map(e => e.path);
   let strippedFiles: string[] = [];
   if (allFileEntries.length > 0) {
-    const MAX_WAIT_ROUNDS = 3;
+    // 6 rounds × 5s = ~30s. Era 3×5s — quando o arquivo demorava mais de 15s
+    // pra propagar (4G mobile, momento de pico), o pre-flight desistia, ia
+    // pra recovery via URL fetch (que também 404), e finalmente estripava.
+    const MAX_WAIT_ROUNDS = 6;
     const WAIT_DELAY = 5_000;
     let missingPaths: string[] = [];
     for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {

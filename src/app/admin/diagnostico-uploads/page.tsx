@@ -141,25 +141,28 @@ async function loadDiagnostics(): Promise<Diagnostic[]> {
   const db = getAdminFirestore();
   const bucket = getAdminStorage();
 
-  // Pega todos error_logs com a mensagem de "arquivos faltando" — não-resolvidos
-  // primeiro, depois resolvidos pra ter histórico. Cap de 30 pra não estourar
-  // request budget do server component.
+  // Query SÓ com orderBy — combinar where + orderBy num campo diferente exigiria
+  // índice composto (que pode não existir em prod e crasha tudo). Filtramos em
+  // memória, que pra 150 docs é trivial.
   const snap = await db.collection('error_logs')
-    .where('category', '==', 'page_creation')
     .orderBy('createdAt', 'desc')
-    .limit(80)
+    .limit(150)
     .get();
 
   const stripErrors = snap.docs
     .filter(d => {
-      const msg = (d.data().message || '') as string;
-      return msg.includes('arquivos faltando') || msg.includes('arquivos faltando (removidos automaticamente)');
+      const data = d.data();
+      const msg = String(data.message || '');
+      const isPageCreation = data.category === 'page_creation';
+      const isStripMsg = msg.includes('arquivos faltando');
+      return isPageCreation && isStripMsg;
     })
     .slice(0, 30);
 
   const results: Diagnostic[] = [];
 
   for (const errDoc of stripErrors) {
+    try {
     const err = errDoc.data();
     let parsedExtra: any = null;
     try { parsedExtra = err.extra ? JSON.parse(err.extra) : null; } catch { /* ignore */ }
@@ -282,13 +285,23 @@ async function loadDiagnostics(): Promise<Diagnostic[]> {
       failedMoves,
       rootCauseGuess,
     });
+    } catch (e) {
+      console.error('[diagnostico-uploads] failed to process error log', errDoc.id, e);
+    }
   }
 
   return results;
 }
 
 export default async function DiagnosticoUploadsPage() {
-  const diagnostics = await loadDiagnostics();
+  let diagnostics: Diagnostic[] = [];
+  let loadError: string | null = null;
+  try {
+    diagnostics = await loadDiagnostics();
+  } catch (e: any) {
+    loadError = e?.message || 'Erro desconhecido ao carregar diagnósticos';
+    console.error('[diagnostico-uploads]', e);
+  }
 
   // Agrega root causes pra sumário
   const causeBreakdown: Record<string, { label: string; count: number; color: string }> = {};
@@ -324,6 +337,15 @@ export default async function DiagnosticoUploadsPage() {
       </header>
 
       <main className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-6 max-w-5xl">
+
+        {/* Erro de carregamento */}
+        {loadError && (
+          <div className="rounded-xl mb-5 p-4" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1.5">Erro ao carregar</p>
+            <p className="text-[12px] text-red-200 font-mono break-all">{loadError}</p>
+            <p className="text-[11px] text-zinc-500 mt-2">Se for "requires an index", abre o link do erro no console do servidor pra criar o índice no Firestore.</p>
+          </div>
+        )}
 
         {/* Sumário agregado */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">

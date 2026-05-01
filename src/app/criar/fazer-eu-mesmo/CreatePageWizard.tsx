@@ -355,6 +355,23 @@ const deleteFileWithRetry = (storage: any, path: string) => {
     attempt(2);
 };
 
+// Confirma que o byte tá REALMENTE no Storage fazendo HEAD na URL pública —
+// é o mesmo caminho que o server usa pra ler depois. Sem essa checagem, o
+// SDK retorna URL "fantasma" (cache local) que funciona no client mas dá 404
+// quando o bucket.file(path).exists() roda no Admin SDK.
+const confirmStorageVisible = async (downloadURL: string): Promise<boolean> => {
+    const MAX_TRIES = 6;
+    const DELAY = 1500;
+    for (let i = 0; i < MAX_TRIES; i++) {
+        try {
+            const res = await fetch(downloadURL, { method: 'HEAD', cache: 'no-store' });
+            if (res.ok) return true;
+        } catch { /* retenta */ }
+        if (i < MAX_TRIES - 1) await new Promise(r => setTimeout(r, DELAY));
+    }
+    return false;
+};
+
 const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
     if (!userId) throw new Error("Usuário não identificado para upload.");
     if (file.size > MAX_FILE_SIZE) throw new Error(`file_too_large:${Math.round(file.size / 1024 / 1024)}MB`);
@@ -373,6 +390,10 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
             });
             await getMetadata(fileRef);
             const downloadURL = await getDownloadURL(fileRef);
+            // Bloqueia até o byte ser HEAD-able publicamente. Se nem após
+            // ~9s ficou visível, joga erro pro retry externo tentar de novo.
+            const visible = await confirmStorageVisible(downloadURL);
+            if (!visible) throw new Error('upload_not_visible_after_polling');
             return { url: downloadURL, path: fullPath };
         } catch (err) {
             lastErr = err;

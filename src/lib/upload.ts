@@ -4,6 +4,22 @@ import type { FileWithPreview } from './wizard-schema';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_RETRIES = 2;
 
+// HEAD na URL pública até confirmar que o byte tá visível pro server. Sem isso,
+// SDK retorna URL "fantasma" que dá 404 no Admin SDK depois (causa raiz dos
+// "arquivos faltando" que apareciam no widget).
+async function confirmStorageVisible(downloadURL: string): Promise<boolean> {
+  const MAX_TRIES = 6;
+  const DELAY = 1500;
+  for (let i = 0; i < MAX_TRIES; i++) {
+    try {
+      const res = await fetch(downloadURL, { method: 'HEAD', cache: 'no-store' });
+      if (res.ok) return true;
+    } catch { /* retenta */ }
+    if (i < MAX_TRIES - 1) await new Promise(r => setTimeout(r, DELAY));
+  }
+  return false;
+}
+
 export async function uploadFile(
   storage: FirebaseStorage,
   userId: string,
@@ -28,6 +44,8 @@ export async function uploadFile(
       });
       await getMetadata(fileRef);
       const downloadURL = await getDownloadURL(fileRef);
+      const visible = await confirmStorageVisible(downloadURL);
+      if (!visible) throw new Error('upload_not_visible_after_polling');
       return { url: downloadURL, path: fullPath };
     } catch (err) {
       lastErr = err;
