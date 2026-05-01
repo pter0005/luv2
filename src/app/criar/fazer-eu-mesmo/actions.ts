@@ -1529,35 +1529,115 @@ export async function updateLovePage(
     cleaned[k] = sanitizeForFirebase(partialData[k]);
   }
 
+  // ── PRE-CLEAN: filtra entradas inválidas antes de salvar ──────────────────
+  // 1. FileObjects (galleryImages, timelineEvents.image, etc.) com url ou
+  //    path vazios — não podem ir pro Firestore (quebrariam o viewer)
+  // 2. Quiz questions completamente em branco (questionText vazio E todas
+  //    options vazias) — viewer mostraria UI quebrada
+  // 3. WordGame questions completamente em branco
+  const isValidFileObj = (f: any): boolean =>
+    !!f && typeof f === 'object' && typeof f.url === 'string' && f.url.length > 0
+    && typeof f.path === 'string' && f.path.length > 0;
+
+  if (Array.isArray(cleaned.galleryImages)) {
+    cleaned.galleryImages = cleaned.galleryImages.filter(isValidFileObj);
+  }
+  if (Array.isArray(cleaned.memoryGameImages)) {
+    cleaned.memoryGameImages = cleaned.memoryGameImages.filter(isValidFileObj);
+  }
+  if (Array.isArray(cleaned.timelineEvents)) {
+    cleaned.timelineEvents = cleaned.timelineEvents
+      .map((ev: any) => {
+        if (ev?.image && !isValidFileObj(ev.image)) {
+          const { image, ...rest } = ev;
+          return rest;
+        }
+        return ev;
+      })
+      // Remove eventos completamente vazios (sem imagem, sem texto, sem data)
+      .filter((ev: any) => ev?.image || (ev?.description && ev.description.trim()) || ev?.date);
+  }
+  if (cleaned.puzzleImage && !isValidFileObj(cleaned.puzzleImage)) cleaned.puzzleImage = null;
+  if (cleaned.audioRecording && !isValidFileObj(cleaned.audioRecording)) cleaned.audioRecording = null;
+  if (cleaned.backgroundVideo && !isValidFileObj(cleaned.backgroundVideo)) cleaned.backgroundVideo = null;
+
+  if (Array.isArray(cleaned.quizQuestions)) {
+    cleaned.quizQuestions = cleaned.quizQuestions.filter((q: any) => {
+      const hasText = q?.questionText && q.questionText.trim().length > 0;
+      const hasOptions = Array.isArray(q?.options) && q.options.some((o: any) => o?.text && o.text.trim().length > 0);
+      return hasText && hasOptions;
+    });
+  }
+  if (Array.isArray(cleaned.wordGameQuestions)) {
+    cleaned.wordGameQuestions = cleaned.wordGameQuestions.filter((q: any) =>
+      q?.question && q.question.trim() && q?.answer && q.answer.trim()
+    );
+  }
+
   // Move arquivos temp/ pra lovepages/{pageId}/... (novos uploads durante edit).
   // Arquivos já persistidos em lovepages/... não se movem (moveFileWithRetry
   // tem guard `startsWith('temp/')`).
   const bucket = getAdminStorage();
 
+  // Helpers pra limpar flags do moveFileWithRetry e estripar refs com source missing
+  const cleanMoveResult = (f: any): any | null => {
+    if (!f) return null;
+    if (f._moveFailed && String(f._moveError || '').includes('source_missing')) {
+      // Source confirmado deletado — não dá pra recuperar, estripa a ref
+      return null;
+    }
+    if (f._moveFailed || f._moveError || f._targetFolder) {
+      const { _moveFailed, _moveError, _targetFolder, ...rest } = f;
+      return rest;
+    }
+    return f;
+  };
+
   try {
     if (Array.isArray(cleaned.galleryImages)) {
-      cleaned.galleryImages = await mapWithLimit(
+      const moved = await mapWithLimit(
         cleaned.galleryImages, 2,
         (img: any) => moveFileWithRetry(bucket, db, img, 'gallery', pageId),
       );
+      cleaned.galleryImages = moved.map(cleanMoveResult).filter(Boolean);
     }
     if (Array.isArray(cleaned.timelineEvents)) {
-      cleaned.timelineEvents = await mapWithLimit(
+      const moved = await mapWithLimit(
         cleaned.timelineEvents, 2,
         async (event: any) => {
           if (event?.image) event.image = await moveFileWithRetry(bucket, db, event.image, 'timeline', pageId);
           return { ...event, date: ensureTimestamp(event.date) };
         },
       );
+      // Se a foto sumiu, mantém o evento sem imagem (preserva texto/data)
+      cleaned.timelineEvents = moved.map((ev: any) => {
+        if (!ev?.image) return ev;
+        const cleanImg = cleanMoveResult(ev.image);
+        if (!cleanImg) {
+          const { image, ...rest } = ev;
+          return rest;
+        }
+        return { ...ev, image: cleanImg };
+      });
     }
-    if (cleaned.puzzleImage) cleaned.puzzleImage = await moveFileWithRetry(bucket, db, cleaned.puzzleImage, 'puzzle', pageId);
-    if (cleaned.audioRecording) cleaned.audioRecording = await moveFileWithRetry(bucket, db, cleaned.audioRecording, 'audio', pageId);
-    if (cleaned.backgroundVideo) cleaned.backgroundVideo = await moveFileWithRetry(bucket, db, cleaned.backgroundVideo, 'video', pageId);
+    if (cleaned.puzzleImage) {
+      const moved = await moveFileWithRetry(bucket, db, cleaned.puzzleImage, 'puzzle', pageId);
+      cleaned.puzzleImage = cleanMoveResult(moved);
+    }
+    if (cleaned.audioRecording) {
+      const moved = await moveFileWithRetry(bucket, db, cleaned.audioRecording, 'audio', pageId);
+      cleaned.audioRecording = cleanMoveResult(moved);
+    }
+    if (cleaned.backgroundVideo) {
+      const moved = await moveFileWithRetry(bucket, db, cleaned.backgroundVideo, 'video', pageId);
+      cleaned.backgroundVideo = cleanMoveResult(moved);
+    }
     if (Array.isArray(cleaned.memoryGameImages)) {
-      cleaned.memoryGameImages = await mapWithLimit(
+      const moved = await mapWithLimit(
         cleaned.memoryGameImages, 2,
         (img: any) => moveFileWithRetry(bucket, db, img, 'memory-game', pageId),
       );
+      cleaned.memoryGameImages = moved.map(cleanMoveResult).filter(Boolean);
     }
     if (cleaned.specialDate) cleaned.specialDate = ensureTimestamp(cleaned.specialDate);
   } catch (err) {
