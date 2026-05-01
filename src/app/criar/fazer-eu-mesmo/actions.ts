@@ -1501,11 +1501,36 @@ export async function updateLovePage(
         const { verifyEditToken } = await import('@/app/editar/[pageId]/auth');
         const r = await verifyEditToken(pageId);
         if (r.ok && r.email) {
-          // Confirma que o email do token ainda bate com o doc (defesa extra)
-          const pageEmails = [existing.guestEmail, existing.ownerEmail, existing.userEmail]
+          // Confirma que o email do token bate com o doc OU com o intent ligado.
+          // Páginas antigas (criadas antes do fix do email) não tinham email no
+          // doc lovepage — buscamos no payment_intent que sempre teve.
+          const pageEmails = [existing.guestEmail, existing.ownerEmail, existing.userEmail, existing.payerEmail]
             .filter(Boolean)
             .map((e: string) => e.toLowerCase().trim());
-          if (pageEmails.includes(r.email)) authorized = true;
+          if (pageEmails.includes(r.email)) {
+            authorized = true;
+          } else {
+            // Fallback: busca emails do payment_intent ligado a essa página
+            try {
+              const intentsSnap = await db.collection('payment_intents')
+                .where('lovePageId', '==', pageId)
+                .limit(1)
+                .get();
+              if (!intentsSnap.empty) {
+                const intentData = intentsSnap.docs[0].data();
+                const intentEmails: string[] = [
+                  intentData.guestEmail,
+                  intentData.userEmail,
+                  intentData.ownerEmail,
+                  intentData.payerEmail,
+                  intentData.payment?.payerEmail,
+                ].filter(Boolean).map((e: string) => e.toLowerCase().trim());
+                if (intentEmails.includes(r.email)) authorized = true;
+              }
+            } catch (e: any) {
+              console.warn('[updateLovePage] intent fallback failed:', e?.message);
+            }
+          }
         }
       }
     } catch (e: any) {
@@ -1514,6 +1539,8 @@ export async function updateLovePage(
   }
 
   if (!authorized) {
+    // Log defensivo — quero saber por que falhou pra investigar
+    console.warn(`[updateLovePage] DENY pageId=${pageId} userId=${userId || 'none'} hasEditToken=${!!cookies().get('edit_token_' + pageId)?.value} existingPlan=${existing.plan} hasPageEmails=${[existing.guestEmail, existing.ownerEmail, existing.userEmail, existing.payerEmail].filter(Boolean).length}`);
     return { success: false, error: 'Você não tem permissão para editar esta página.' };
   }
   // 'vip' (chat) e 'avancado' (wizard /criar) — ambos top-tier dão direito a editar.
