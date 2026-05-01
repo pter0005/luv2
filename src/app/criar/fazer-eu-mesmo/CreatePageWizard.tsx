@@ -355,13 +355,32 @@ const deleteFileWithRetry = (storage: any, path: string) => {
     attempt(2);
 };
 
-// Upload com 2 estratégias em cascata:
-// 1) /api/upload-image (server-side, fonte da verdade, valida auth + size).
-// 2) FALLBACK: se o server falhar (Netlify down, rede ruim, body too large),
-//    cai no SDK direto MAS valida HEAD na URL pública antes de retornar.
-//    Sem isso, o cliente fica refém de qualquer bug do server e perde venda.
-// Server-side check (Admin SDK) — HEAD direto da URL pública não funciona
-// no browser por causa do CORS do bucket Firebase Storage.
+// Best-effort log pra eu ver no /admin/diagnostico-uploads quando ambas
+// estratégias falham. Sem isso, erro fica só no console do client.
+const logUploadFailure = async (reason: string, fileName: string, fileSize: number, folder: string, serverErr?: unknown, sdkErr?: unknown) => {
+    try {
+        await fetch('/api/error-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: `Upload falhou completamente: ${reason}`,
+                url: typeof window !== 'undefined' ? window.location.href : 'server',
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+                extra: {
+                    fileName, fileSize, folder,
+                    serverErr: serverErr instanceof Error ? serverErr.message : String(serverErr || ''),
+                    sdkErr: sdkErr instanceof Error ? sdkErr.message : String(sdkErr || ''),
+                },
+            }),
+        });
+    } catch { /* best effort */ }
+};
+
+// Upload com 2 estratégias em cascata + retry inteligente:
+// 1) /api/upload-image (server-side, fonte da verdade)
+//    - Token refresh em 401, empty_file retryable, 5xx/429 retryable
+// 2) FALLBACK: SDK direto + storage-check pra confirmar visibilidade real
+// 3) Se ambas falham: loga central pra observabilidade
 const confirmStorageVisible = async (path: string, idToken: string): Promise<boolean> => {
     const MAX_TRIES = 6;
     const DELAY = 2000;
@@ -388,45 +407,69 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
     const auth = authMod.getAuth(storage.app);
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error('no_auth_user');
-    const idToken = await currentUser.getIdToken();
 
-    // ── ESTRATÉGIA 1: /api/upload-image (server-side, validação completa) ──
-    const fd = new FormData();
-    fd.append('file', file as Blob, file instanceof File ? file.name : 'audio.webm');
-    fd.append('folder', folderName);
-    fd.append('idToken', idToken);
+    const origFileName = file instanceof File ? file.name : 'audio.webm';
+    const fileSize = file.size;
 
+    // ── ESTRATÉGIA 1: server-side com retry inteligente ──
     let serverErr: unknown;
-    for (let attempt = 0; attempt <= 1; attempt++) {
+    let idToken = await currentUser.getIdToken();
+
+    for (let attempt = 0; attempt <= 2; attempt++) {
         try {
+            const fd = new FormData();
+            fd.append('file', file as Blob, origFileName);
+            fd.append('folder', folderName);
+            fd.append('idToken', idToken);
+
             const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                if (res.status === 413) throw new Error(`file_too_large:${data.sizeMB || '?'}MB`);
-                if (res.status === 401) throw new Error('auth_failed');
-                if (res.status === 400) throw new Error(`invalid:${data.error || 'unknown'}`);
-                throw new Error(data?.error || `http_${res.status}`);
+
+            if (res.ok) {
+                if (!data.ok || !data.path || !data.url) throw new Error('invalid_response');
+                return { url: data.url, path: data.path };
             }
-            if (!data.ok || !data.path || !data.url) throw new Error('invalid_response');
-            return { url: data.url, path: data.path };
+
+            if (res.status === 413) throw new Error(`file_too_large:${data.sizeMB || '?'}MB`);
+
+            // 401: força refresh do token e tenta novamente uma vez.
+            if (res.status === 401) {
+                if (attempt === 0) {
+                    idToken = await currentUser.getIdToken(true);
+                    serverErr = new Error(`auth_refreshing (was ${data.error || res.status})`);
+                    continue;
+                }
+                throw new Error('auth_failed');
+            }
+
+            // 400: empty_file pode ser FormData corrompido em mobile, retenta
+            if (res.status === 400) {
+                const e = String(data?.error || '');
+                if (e === 'empty_file' && attempt < 2) {
+                    serverErr = new Error('empty_file_retry');
+                    await new Promise(r => setTimeout(r, 800));
+                    continue;
+                }
+                throw new Error(`invalid:${e || 'unknown'}`);
+            }
+
+            // 429, 5xx, network errors → retryable
+            throw new Error(data?.error || `http_${res.status}`);
         } catch (err: any) {
             serverErr = err;
             const msg = String(err?.message || '');
-            // Erros fatais não tentam SDK fallback:
             if (msg.startsWith('file_too_large') || msg === 'auth_failed' || msg.startsWith('invalid:')) throw err;
-            if (attempt < 1) await new Promise(r => setTimeout(r, 1500));
+            if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         }
     }
 
-    // ── ESTRATÉGIA 2 (FALLBACK): SDK direto cliente→Storage + HEAD-loop ──
-    // Server-side falhou. Usa SDK direto MAS confirma visibilidade real
-    // antes de retornar (HEAD na URL pública 8x×2s = 16s margem).
-    console.warn('[uploadFile] /api/upload-image falhou, usando fallback SDK:', serverErr);
+    // ── ESTRATÉGIA 2 (FALLBACK): SDK direto + storage-check ──
+    console.warn('[uploadFile] /api/upload-image falhou após 3 tentativas, fallback SDK:', serverErr);
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 8);
-    const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
-    const fileName = `${timestamp}-${random}-${safeName}`;
-    const fullPath = `temp/${userId}/${folderName}/${fileName}`;
+    const safeName = origFileName.replace(/[^a-zA-Z0-9.]/g, "_");
+    const sdkFileName = `${timestamp}-${random}-${safeName}`;
+    const fullPath = `temp/${userId}/${folderName}/${sdkFileName}`;
     const fileRef = storageRef(storage, fullPath);
     let lastSdkErr: unknown;
     for (let attempt = 0; attempt <= 2; attempt++) {
@@ -445,6 +488,14 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
             if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         }
     }
+
+    // Ambas falharam: loga central pra observabilidade. Sem isso o erro
+    // só aparece no console do user — invisível pro admin.
+    await logUploadFailure(
+        'server + fallback SDK falharam',
+        origFileName, fileSize, folderName,
+        serverErr, lastSdkErr,
+    );
     throw lastSdkErr || serverErr;
 };
 
@@ -687,10 +738,12 @@ const TimelineStep = React.memo(() => {
                 append(newEvents);
             }
             if (failed.length > 0) {
+                const reason = (failed[0] as PromiseRejectedResult).reason;
+                const isTooLarge = reason?.message?.includes('file_too_large');
                 toast({
                     variant: 'destructive',
                     title: succeeded.length > 0 ? `${succeeded.length} enviada${succeeded.length > 1 ? 's' : ''}, ${failed.length} falhou` : 'Erro no Upload',
-                    description: `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
+                    description: isTooLarge ? 'Uma ou mais imagens são muito grandes (máx 5MB). Tente fotos menores.' : `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
                 });
             } else {
                 toast({ title: `${succeeded.length} foto${succeeded.length > 1 ? 's' : ''} adicionada${succeeded.length > 1 ? 's' : ''}!`, description: 'Adicione uma descrição e data para cada momento.' });
@@ -1736,10 +1789,12 @@ const MemoryGameStep = React.memo(() => {
             const failed = results.filter(r => r.status === 'rejected');
             if (succeeded.length > 0) append(succeeded);
             if (failed.length > 0) {
+                const reason = (failed[0] as PromiseRejectedResult).reason;
+                const isTooLarge = reason?.message?.includes('file_too_large');
                 toast({
                     variant: 'destructive',
                     title: succeeded.length > 0 ? `${succeeded.length} enviada${succeeded.length > 1 ? 's' : ''}, ${failed.length} falhou` : 'Erro no Upload',
-                    description: `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
+                    description: isTooLarge ? 'Uma ou mais imagens são muito grandes (máx 5MB). Tente fotos menores.' : `${failed.length} imagem(ns) não puderam ser enviadas. Tente novamente.`,
                 });
             } else {
                 toast({ title: 'Imagens enviadas!', description: `${succeeded.length} foto${succeeded.length > 1 ? 's' : ''} adicionada${succeeded.length > 1 ? 's' : ''}.` });

@@ -91,10 +91,25 @@ export async function POST(req: NextRequest) {
       resumable: false, // arquivos < 10MB fazem upload single-shot, mais rápido
     });
 
-    // CONFIRMA — getMetadata só retorna se o byte está realmente persistido
-    const [meta] = await targetFile.getMetadata();
+    // CONFIRMA — getMetadata só retorna se o byte está realmente persistido.
+    // Pequeno retry pra cobrir transient eventual consistency do GCS logo após save.
+    let meta: any = null;
+    let metaErr: any = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const [m] = await targetFile.getMetadata();
+        meta = m;
+        if (meta && Number(meta.size) === buffer.length) break;
+      } catch (e) { metaErr = e; }
+      if (i < 2) await new Promise(r => setTimeout(r, 500));
+    }
     if (!meta || Number(meta.size) !== buffer.length) {
-      return NextResponse.json({ error: 'upload_size_mismatch', expected: buffer.length, got: Number(meta?.size) || 0 }, { status: 500 });
+      return NextResponse.json({
+        error: 'upload_size_mismatch',
+        expected: buffer.length,
+        got: Number(meta?.size) || 0,
+        metaErr: metaErr?.message,
+      }, { status: 500 });
     }
 
     const encodedPath = encodeURIComponent(fullPath);
