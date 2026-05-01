@@ -9,6 +9,7 @@ import { useUser, useFirebase } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { uploadFile } from '@/lib/upload';
 import { compressImage } from '@/lib/image-utils';
+import { reportWizardStuck } from '@/lib/wizard-stuck';
 import { useToast } from '@/hooks/use-toast';
 import { MAX_GALLERY_IMAGES, type PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
@@ -32,6 +33,21 @@ export default function GalleryField() {
   const { toast } = useToast();
   const locale = useLocale();
   const isEN = locale === 'en';
+
+  // Watchdog: se pending grudou >60s, loga pro admin investigar
+  useEffect(() => {
+    if (pending.length === 0) return;
+    const startedAt = Date.now();
+    const timer = setTimeout(() => {
+      reportWizardStuck({
+        kind: 'button_stuck',
+        step: 'gallery',
+        detail: `pending=${pending.length} stuck>60s elapsed=${Math.round((Date.now() - startedAt) / 1000)}s`,
+        userId: user?.uid,
+      });
+    }, 60_000);
+    return () => clearTimeout(timer);
+  }, [pending.length, user?.uid]);
 
   const totalCount = fields.length + pending.length;
   const remainingSlots = MAX_GALLERY_IMAGES - totalCount;

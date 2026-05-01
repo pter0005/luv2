@@ -42,21 +42,33 @@ async function getAccessToken(): Promise<string> {
   return t.access_token;
 }
 
+function parseTimestamp(v: any): number | null {
+  if (!v) return null;
+  if (typeof v === 'number') return v < 1e12 ? v * 1000 : v;
+  if (typeof v === 'string') {
+    const ms = Date.parse(v);
+    if (!isNaN(ms)) return ms;
+    const num = Number(v);
+    if (!isNaN(num)) return num < 1e12 ? num * 1000 : num;
+  }
+  return null;
+}
+
 async function listSoftDeleted(
   bucket: string,
   prefix: string,
   token: string,
   deletedAfterMs: number | null,
-): Promise<Array<{ name: string; generation: string; size: string }>> {
-  const all: Array<{ name: string; generation: string; size: string }> = [];
+): Promise<Array<{ name: string; generation: string; size: string; timeDeleted: number | null }>> {
+  const all: Array<{ name: string; generation: string; size: string; timeDeleted: number | null }> = [];
   let pageToken = '';
+  // Sem fields= filter — GCS pode omitir timeDeleted se não for fields-friendly.
+  // Pegamos o objeto inteiro (default response) e extraímos o que precisamos.
   for (let i = 0; i < 200; i++) {
     const url = new URL(`https://storage.googleapis.com/storage/v1/b/${bucket}/o`);
     url.searchParams.set('softDeleted', 'true');
     url.searchParams.set('prefix', prefix);
     url.searchParams.set('maxResults', '1000');
-    // Pede timeDeleted explicitamente — sem isso GCS pode omitir do payload.
-    url.searchParams.set('fields', 'nextPageToken,items(name,generation,size,timeDeleted)');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
 
     const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
@@ -68,11 +80,11 @@ async function listSoftDeleted(
     if (Array.isArray(data.items)) {
       for (const it of data.items) {
         if (!it?.name || !it?.generation) continue;
-        if (deletedAfterMs !== null) {
-          const t = it.timeDeleted ? Date.parse(it.timeDeleted) : 0;
-          if (!t || t < deletedAfterMs) continue;
-        }
-        all.push({ name: it.name, generation: String(it.generation), size: String(it.size || 0) });
+        // softDeleteTime é o nome novo, timeDeleted é legacy — aceita ambos.
+        const t = parseTimestamp(it.softDeleteTime || it.timeDeleted || it.updated);
+        if (deletedAfterMs !== null && t !== null && t < deletedAfterMs) continue;
+        // Se NÃO tem timestamp, INCLUI por padrão (não filtra fora).
+        all.push({ name: it.name, generation: String(it.generation), size: String(it.size || 0), timeDeleted: t });
       }
     }
     if (!data.nextPageToken) break;
@@ -96,7 +108,10 @@ async function runJob(jobId: string, prefix: string, deletedAfterMs: number | nu
   try {
     const token = await getAccessToken();
     const bucket = getAdminStorage().name;
-    const items = await listSoftDeleted(bucket, prefix, token, deletedAfterMs);
+    const allItems = await listSoftDeleted(bucket, prefix, token, null);
+    const items = deletedAfterMs !== null
+      ? allItems.filter(it => it.timeDeleted === null || it.timeDeleted >= deletedAfterMs)
+      : allItems;
     job.totalFound = items.length;
     if (items.length === 0) {
       job.status = 'done';
@@ -147,9 +162,26 @@ export async function POST(req: NextRequest) {
     try {
       const token = await getAccessToken();
       const bucket = getAdminStorage().name;
-      const items = await listSoftDeleted(bucket, prefix, token, deletedAfterMs);
-      const totalSize = items.reduce((sum, it) => sum + Number(it.size || 0), 0);
-      return NextResponse.json({ ok: true, dryRun: true, count: items.length, totalSizeMB: Math.round(totalSize / 1024 / 1024), sample: items.slice(0, 5).map(i => i.name) });
+      // Sempre lista TUDO (sem filtro server) e filtra na memória pra dar diagnóstico
+      const allItems = await listSoftDeleted(bucket, prefix, token, null);
+      const filteredItems = deletedAfterMs !== null
+        ? allItems.filter(it => it.timeDeleted === null || it.timeDeleted >= deletedAfterMs)
+        : allItems;
+      const withTimestamp = allItems.filter(it => it.timeDeleted !== null).length;
+      const totalSize = filteredItems.reduce((sum, it) => sum + Number(it.size || 0), 0);
+      return NextResponse.json({
+        ok: true, dryRun: true,
+        count: filteredItems.length,
+        totalSizeMB: Math.round(totalSize / 1024 / 1024),
+        sample: filteredItems.slice(0, 5).map(i => i.name),
+        diagnostic: {
+          totalInBucket: allItems.length,
+          withTimestamp,
+          withoutTimestamp: allItems.length - withTimestamp,
+          filterApplied: deletedAfterMs !== null,
+          cutoffMs: deletedAfterMs,
+        },
+      });
     } catch (err: any) {
       return NextResponse.json({ error: 'list_failed', message: err?.message }, { status: 500 });
     }

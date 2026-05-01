@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
+import { reportWizardStuck } from '@/lib/wizard-stuck';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
 import { getLatestPageForUser } from '@/app/chat/latest-page';
 import { useUser } from '@/firebase';
@@ -267,6 +268,17 @@ function Inner() {
     const valid = fields.length === 0 ? true : await methods.trigger(fields as any, { shouldFocus: true });
     if (!valid) {
       haptic('error');
+      // Log defensivo: queremos saber EXATAMENTE em qual campo a validação reprovou
+      try {
+        const errs = methods.formState.errors as any;
+        const failedFields = fields.filter(f => errs?.[f as any]).map(f => `${String(f)}:${errs[f as any]?.message || 'invalid'}`);
+        reportWizardStuck({
+          kind: 'next_blocked',
+          step: currentStep,
+          detail: failedFields.join(' | ').slice(0, 400),
+          userId: user?.uid,
+        });
+      } catch { /* silencioso */ }
       return;
     }
     if (isLast) return;
@@ -274,7 +286,7 @@ function Inner() {
     setDirection(1);
     setCurrentStep(CHAT_STEP_ORDER[stepIndex + 1]);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep, isLast, stepIndex, methods]);
+  }, [currentStep, isLast, stepIndex, methods, user?.uid]);
 
   useEffect(() => {
     if (!ENTER_TO_CONTINUE_STEPS.has(currentStep)) return;

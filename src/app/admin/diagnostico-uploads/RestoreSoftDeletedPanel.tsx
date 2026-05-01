@@ -28,7 +28,7 @@ const WINDOW_OPTIONS: Array<{ label: string; hours: number | null }> = [
 export default function RestoreSoftDeletedPanel() {
   const [prefix, setPrefix] = useState('temp/');
   const [hoursWindow, setHoursWindow] = useState<number | null>(48);
-  const [scanResult, setScanResult] = useState<{ count: number; totalSizeMB: number; sample: string[] } | null>(null);
+  const [scanResult, setScanResult] = useState<{ count: number; totalSizeMB: number; sample: string[]; diagnostic?: any } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
   const [job, setJob] = useState<Job | null>(null);
@@ -50,7 +50,7 @@ export default function RestoreSoftDeletedPanel() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || `http_${res.status}`);
-      setScanResult({ count: data.count, totalSizeMB: data.totalSizeMB, sample: data.sample || [] });
+      setScanResult({ count: data.count, totalSizeMB: data.totalSizeMB, sample: data.sample || [], diagnostic: data.diagnostic });
     } catch (err: any) {
       setScanError(err?.message || 'erro desconhecido');
     } finally {
@@ -155,6 +155,13 @@ export default function RestoreSoftDeletedPanel() {
           <p className="text-[12px] text-white font-bold mb-1">
             {scanResult.count.toLocaleString('pt-BR')} arquivos encontrados ({scanResult.totalSizeMB} MB)
           </p>
+          {scanResult.diagnostic && (
+            <div className="text-[10px] text-zinc-500 font-mono mb-2">
+              total no bucket: {scanResult.diagnostic.totalInBucket?.toLocaleString('pt-BR')} ·
+              com timestamp: {scanResult.diagnostic.withTimestamp?.toLocaleString('pt-BR')} ·
+              sem timestamp: {scanResult.diagnostic.withoutTimestamp?.toLocaleString('pt-BR')}
+            </div>
+          )}
           {scanResult.sample.length > 0 && (
             <details className="mt-1.5">
               <summary className="text-[10px] text-zinc-400 cursor-pointer">amostra ({scanResult.sample.length})</summary>
