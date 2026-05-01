@@ -63,8 +63,20 @@ function fmtBR(d: Date | null): string {
 
 function tsToDate(ts: any): Date | null {
   if (!ts) return null;
-  if (ts.toDate) return ts.toDate();
+  // Firestore Timestamp (Admin SDK)
+  if (typeof ts.toDate === 'function') {
+    try { return ts.toDate(); } catch { /* fallthrough */ }
+  }
+  // Plain object {_seconds, _nanoseconds} (vem de serverTimestamp serializado)
+  if (typeof ts === 'object' && (typeof ts._seconds === 'number' || typeof ts.seconds === 'number')) {
+    const s = ts._seconds ?? ts.seconds;
+    return new Date(s * 1000);
+  }
   if (typeof ts === 'number') return new Date(ts);
+  if (typeof ts === 'string') {
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d;
+  }
   return null;
 }
 

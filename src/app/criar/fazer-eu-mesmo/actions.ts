@@ -399,7 +399,11 @@ export async function processPixPayment(
     // às vezes colam junto (quebra validação do MP silenciosamente).
     const sanitizeEmail = (v: string) =>
       v.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\s]/g, '').toLowerCase();
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    // Regex mais estrito: parte local não pode terminar em "." nem ter ".."; domínio
+    // não pode começar/terminar em "-" e TLD precisa ser ≥2 letras só. MP rejeita
+    // emails que passam no regex frouxo (ex: "x@y.c.", "x..y@z.com") com erro
+    // "payer.email must be a valid email" — bloqueia ANTES de mandar pro MP.
+    const EMAIL_RE = /^(?!.*\.\.)[A-Za-z0-9_+-]+(?:\.[A-Za-z0-9_+-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
 
     const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
     const contactEmail = sanitizeEmail(contact?.email || '');
