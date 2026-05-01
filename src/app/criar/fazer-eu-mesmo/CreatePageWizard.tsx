@@ -1434,6 +1434,70 @@ VoiceMessageStep.displayName = "VoiceMessageStep";
 // ─────────────────────────────────────────────
 // PUZZLE STEP — FIX #5: toast quando !user || !storage
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// FEATURE HEADER — destaca jogos/extras com tag de preço, ícone e copy persuasivo
+// ─────────────────────────────────────────────
+type FeatureHeaderProps = {
+  icon: React.ReactNode;
+  title: string;
+  hook: string;          // copy de uma linha que vende a feature
+  bullets?: string[];    // 2-3 motivos pra ativar
+  badge: 'free' | 'paid' | 'vip-included';
+  badgePrice?: string;   // ex: "+R$ 2,00"
+  accent: string;        // hex pra colorir
+  enabled: boolean;
+};
+const FeatureHeader = ({ icon, title, hook, bullets, badge, badgePrice, accent, enabled }: FeatureHeaderProps) => {
+  const badgeText = badge === 'free' ? 'GRÁTIS'
+    : badge === 'vip-included' ? 'INCLUÍDO NO VIP'
+    : `EXTRA ${badgePrice ?? ''}`.trim();
+  const badgeColor = badge === 'free' ? '#22c55e'
+    : badge === 'vip-included' ? '#a855f7'
+    : '#fbbf24';
+  return (
+    <div className="rounded-2xl overflow-hidden mb-2" style={{
+      background: enabled
+        ? `linear-gradient(135deg, ${accent}1f, ${accent}08)`
+        : 'rgba(255,255,255,0.02)',
+      border: `1px solid ${enabled ? accent + '50' : 'rgba(255,255,255,0.07)'}`,
+      boxShadow: enabled ? `0 8px 28px -12px ${accent}60` : undefined,
+      transition: 'all 0.3s',
+    }}>
+      <div className="px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{
+            background: `${accent}20`,
+            border: `1px solid ${accent}50`,
+          }}>
+            <div style={{ color: accent }}>{icon}</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="text-[15px] font-black text-foreground leading-tight">{title}</h3>
+              <span className="text-[9.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full whitespace-nowrap" style={{
+                background: `${badgeColor}20`,
+                color: badgeColor,
+                border: `1px solid ${badgeColor}50`,
+              }}>{badgeText}</span>
+            </div>
+            <p className="text-[12px] text-muted-foreground leading-snug">{hook}</p>
+          </div>
+        </div>
+        {bullets && bullets.length > 0 && (
+          <ul className="space-y-1 pl-1">
+            {bullets.map((b, i) => (
+              <li key={i} className="text-[11.5px] text-muted-foreground/90 flex items-start gap-1.5">
+                <span style={{ color: accent }} className="mt-[3px] shrink-0">•</span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Promise<void> }) => {
     const { control, setValue, getValues, watch } = useFormContext<PageData>();
     const { user, storage, isUserLoading } = useFirebase();
@@ -1489,7 +1553,20 @@ const PuzzleStep = React.memo(({ handleAutosave }: { handleAutosave?: () => Prom
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <FeatureHeader
+                icon={<Puzzle className="w-6 h-6" />}
+                title="Quebra-cabeça surpresa 🧩"
+                hook="A pessoa precisa montar um quebra-cabeça pra ver a página. É a entrada inesquecível que faz a surpresa começar com emoção."
+                bullets={[
+                    'Cria expectativa: a pessoa vai montando peça por peça',
+                    'Toca a música assim que ele é resolvido',
+                    'Bem mais marcante que abrir um link normal',
+                ]}
+                badge="free"
+                accent="#a855f7"
+                enabled={!!enablePuzzle}
+            />
             <FormField
                 control={control}
                 name="enablePuzzle"
@@ -1627,7 +1704,20 @@ const MemoryGameStep = React.memo(() => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <FeatureHeader
+                icon={<Heart className="w-6 h-6" />}
+                title="Jogo da memória de vocês 💝"
+                hook="Suas fotos viram cartas de um jogo da memória. Fofo, divertido, e a pessoa vira pra te mostrar as combinações."
+                bullets={[
+                    'Use de 2 a 8 fotos especiais',
+                    'Cada par revela uma lembrança',
+                    'Hit certo pra páginas de aniversário e namoro',
+                ]}
+                badge="free"
+                accent="#ec4899"
+                enabled={!!enableMemoryGame}
+            />
             <FormField
                 control={control}
                 name="enableMemoryGame"
@@ -1758,7 +1848,20 @@ const QuizStep = React.memo(() => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <FeatureHeader
+                icon={<HelpCircle className="w-6 h-6" />}
+                title="Quiz do casal 🤔"
+                hook="Perguntas que só vocês dois saberiam responder. Divertido, íntimo, e descobre quanto a pessoa te conhece de verdade."
+                bullets={[
+                    'Até 5 perguntas com múltipla escolha',
+                    'A pessoa joga e vê o resultado no fim',
+                    'Funciona muito bem pra mãe, pai, melhor amigo também',
+                ]}
+                badge="free"
+                accent="#06b6d4"
+                enabled={!!enableQuiz}
+            />
             <FormField
                 control={control}
                 name="enableQuiz"
@@ -1810,7 +1913,21 @@ const WordGameStep = React.memo(() => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
+            <FeatureHeader
+                icon={<Sparkles className="w-6 h-6" />}
+                title="Adivinhe a palavra 💘"
+                hook="Tipo Forca: a pessoa descobre palavras secretas suas, letra por letra. Cada uma é uma pista íntima do que vocês têm."
+                bullets={[
+                    'Até 4 palavras com dica personalizada',
+                    'Mais íntimo que quiz — letra por letra',
+                    'Combina muito com plano avançado/VIP',
+                ]}
+                badge="paid"
+                badgePrice={`+R$ ${PRICES.wordGame.toFixed(2).replace('.', ',')}`}
+                accent="#fbbf24"
+                enabled={!!enableWordGame}
+            />
             <FormField
                 control={control}
                 name="enableWordGame"
