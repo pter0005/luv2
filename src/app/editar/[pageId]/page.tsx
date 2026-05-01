@@ -37,7 +37,10 @@ export default async function EditarPaginaPage({ params }: { params: { pageId: s
   if (!snap.exists) redirect('/');
 
   const data = snap.data();
-  if (data?.plan !== 'vip') {
+  // Aceita 'vip' (chat) e 'avancado' (wizard /criar) — ambos são planos pagos
+  // top-tier que dão direito a editar. Só 'basico' fica de fora.
+  const editablePlans = new Set(['vip', 'avancado']);
+  if (!data?.plan || !editablePlans.has(data.plan)) {
     redirect(`/p/${pageId}`);
   }
 

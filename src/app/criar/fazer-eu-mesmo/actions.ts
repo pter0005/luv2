@@ -1505,7 +1505,8 @@ export async function updateLovePage(
   if (!authorized) {
     return { success: false, error: 'Você não tem permissão para editar esta página.' };
   }
-  if (!isAdmin && existing.plan !== 'vip') {
+  // 'vip' (chat) e 'avancado' (wizard /criar) — ambos top-tier dão direito a editar.
+  if (!isAdmin && existing.plan !== 'vip' && existing.plan !== 'avancado') {
     return { success: false, error: 'Edição disponível apenas no plano VIP.' };
   }
 

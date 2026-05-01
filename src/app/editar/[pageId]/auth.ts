@@ -85,7 +85,8 @@ export async function requestEditAccess(
     if (!snap.exists) return { ok: false, error: 'Página não encontrada.' };
     const data = snap.data()!;
 
-    if (data.plan !== 'vip') {
+    // 'vip' (chat) e 'avancado' (wizard /criar) — ambos top-tier. Só basico fica fora.
+    if (data.plan !== 'vip' && data.plan !== 'avancado') {
       return { ok: false, error: 'Edição disponível apenas no plano VIP.' };
     }
 

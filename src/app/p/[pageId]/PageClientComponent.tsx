@@ -570,7 +570,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               // A autenticação real (verificação do email do dono) acontece
               // no /editar/[pageId]. Assim o dono consegue editar em QUALQUER
               // device (celular novo, trocou navegador) só lembrando do email.
-              const canEdit = !isDemoPage && pageData.plan === 'vip';
+              // Aceita 'vip' (chat) e 'avancado' (wizard /criar) — ambos top-tier.
+              const canEdit = !isDemoPage && (pageData.plan === 'vip' || pageData.plan === 'avancado');
               return (
                 <div className="relative rounded-2xl p-6 bg-gradient-to-br from-purple-900/30 via-pink-900/20 to-purple-900/30 border border-purple-500/20 backdrop-blur-sm text-center">
                     {/* Edit panel (VIP + dono): banner dourado no topo do card, separado
