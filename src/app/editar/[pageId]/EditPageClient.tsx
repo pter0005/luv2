@@ -9,7 +9,7 @@ import { ArrowLeft, Save, Check, Loader2, AlertCircle, ExternalLink, Crown, Chev
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
-import { pageSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
+import { pageSchema, pageEditSchema, chatDefaultValues, type PageData } from '@/lib/wizard-schema';
 import { updateLovePage } from '@/app/criar/fazer-eu-mesmo/actions';
 import { requestEditAccess } from './auth';
 import { useToast } from '@/hooks/use-toast';
@@ -112,7 +112,11 @@ export default function EditPageClient({ pageId, ownerId, initialData, pageEmail
   );
 
   const methods = useForm<PageData>({
-    resolver: zodResolver(pageSchema),
+    // Edição usa schema permissivo — páginas antigas podem ter campos com
+    // formatos que não passariam na validação strict de criação (URLs estranhas,
+    // mensagem vazia, quiz com opções em branco). User editando uma foto não
+    // deve ser bloqueado por isso.
+    resolver: zodResolver(pageEditSchema as any),
     mode: 'onBlur',
     defaultValues,
     shouldUnregister: false,
@@ -201,7 +205,34 @@ export default function EditPageClient({ pageId, ownerId, initialData, pageEmail
       },
       (errors) => {
         console.warn('[edit] form invalid', errors);
-        toast({ variant: 'destructive', title: 'Campos inválidos', description: 'Revise os campos destacados.' });
+        // Mostra QUAL campo falhou — antes era "Revise os campos destacados"
+        // genérico que deixava user sem saber o que fazer.
+        const flat: string[] = [];
+        const walk = (obj: any, prefix = '') => {
+          if (!obj || typeof obj !== 'object') return;
+          for (const k in obj) {
+            const v = obj[k];
+            if (v?.message) flat.push(`${prefix}${k}: ${v.message}`);
+            else if (typeof v === 'object') walk(v, `${prefix}${k}.`);
+          }
+        };
+        walk(errors);
+        const detail = flat.slice(0, 3).join(' | ') || 'erro desconhecido';
+        toast({
+          variant: 'destructive',
+          title: 'Não foi possível salvar',
+          description: detail,
+        });
+        // Log defensivo pro admin investigar
+        try {
+          import('@/lib/wizard-stuck').then(m => m.reportWizardStuck({
+            kind: 'next_blocked',
+            step: 'edit',
+            route: `/editar/${pageId}`,
+            detail: flat.join(' | ').slice(0, 400),
+            userId: user?.uid,
+          }));
+        } catch { /* silencioso */ }
       },
     )();
   };

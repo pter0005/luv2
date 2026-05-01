@@ -85,6 +85,73 @@ export const pageSchema = z.object({
 
 export type PageData = z.infer<typeof pageSchema>;
 
+/**
+ * Schema permissivo pra edição. Diferente do criação:
+ * - message pode ser vazia (user não é forçado a escrever de novo)
+ * - URLs de fotos não validam strict (páginas antigas podem ter URLs estranhas)
+ * - Cada item é parcial — edição salva o que mandou, ignora o resto
+ *
+ * Usado SÓ no /editar/[pageId]. Criação continua com pageSchema.
+ */
+export const pageEditSchema = z.object({
+  plan: z.string().optional(),
+  intentId: z.string().optional(),
+  userId: z.string().optional(),
+  title: z.string().optional(),
+  titleColor: z.string().optional(),
+  recipientName: z.string().max(40, "Até 40 caracteres.").optional(),
+  relationshipStart: z.string().optional(),
+  // Aceita string vazia em edição — user pode estar limpando
+  message: z.string().max(2000, "A mensagem pode ter no máximo 2000 caracteres.").optional(),
+  messageFontSize: z.string().optional(),
+  messageFormatting: z.array(z.string()).optional(),
+  specialDate: z.date().optional().nullable(),
+  countdownStyle: z.string().optional(),
+  countdownColor: z.string().optional(),
+  // URL não-strict — aceita qualquer string (páginas antigas têm URLs longas/estranhas)
+  galleryImages: z.array(z.object({ url: z.string(), path: z.string() }).passthrough()).max(MAX_GALLERY_IMAGES).optional(),
+  galleryStyle: z.string().optional(),
+  timelineEvents: z.array(z.object({
+    id: z.string().optional(),
+    image: z.object({ url: z.string(), path: z.string() }).passthrough().optional(),
+    description: z.string().optional(),
+    date: z.date().optional().nullable(),
+  }).passthrough()).max(MAX_TIMELINE_IMAGES).optional(),
+  musicOption: z.string().optional(),
+  youtubeUrl: z.string().optional().or(z.literal('')),
+  audioRecording: z.object({ url: z.string(), path: z.string() }).passthrough().optional().nullable(),
+  songName: z.string().optional(),
+  artistName: z.string().optional(),
+  backgroundAnimation: z.string().optional(),
+  heartColor: z.string().optional(),
+  backgroundVideo: z.object({ url: z.string(), path: z.string() }).passthrough().optional().nullable(),
+  enablePuzzle: z.boolean().optional(),
+  puzzleImage: z.object({ url: z.string(), path: z.string() }).passthrough().optional().nullable(),
+  puzzleBackgroundAnimation: z.string().optional(),
+  enableMemoryGame: z.boolean().optional(),
+  memoryGameImages: z.array(z.object({ url: z.string(), path: z.string() }).passthrough()).optional(),
+  enableQuiz: z.boolean().optional(),
+  // Quiz opções podem estar vazias durante edição — user editando uma pergunta
+  quizQuestions: z.array(z.object({
+    questionText: z.string().optional(),
+    options: z.array(z.object({ text: z.string().optional() }).passthrough()).optional(),
+    correctAnswerIndex: z.number().nullable().optional(),
+  }).passthrough()).max(5).optional(),
+  enableWordGame: z.boolean().optional(),
+  wordGameQuestions: z.array(z.object({
+    question: z.string().optional(),
+    answer: z.string().optional(),
+    hint: z.string().optional(),
+  }).passthrough()).max(4).optional(),
+  introType: z.string().optional(),
+  introGender: z.enum(['fem', 'mas']).optional(),
+  introFont: z.string().optional(),
+  qrCodeDesign: z.string().optional(),
+  utmSource: z.string().optional(),
+  whatsappNumber: z.string().optional(),
+  payment: paymentSchema.optional(),
+}).passthrough();
+
 export const chatDefaultValues: Partial<PageData> = {
   plan: 'vip',
   title: "",
