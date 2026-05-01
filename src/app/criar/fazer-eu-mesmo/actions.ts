@@ -781,11 +781,16 @@ async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T, index
 // FINALIZAR PÁGINA (core)
 // ─────────────────────────────────────────────
 export async function finalizeLovePage(intentId: string, paymentId: string): Promise<FinalizePageResult> {
+  const finalizeStartedAt = Date.now();
+  const timing: Record<string, number> = {};
+  const markTime = (label: string) => { timing[label] = Date.now() - finalizeStartedAt; };
+
   const db = getAdminFirestore();
   const intentRef = db.collection('payment_intents').doc(intentId);
 
   // ── 1. Read intent OUTSIDE transaction (no timeout risk) ──────────────────
   const intentDoc = await intentRef.get();
+  markTime('read_intent');
   if (!intentDoc.exists) return { success: false, error: 'Rascunho não encontrado.' };
   const data = intentDoc.data();
   if (!data) return { success: false, error: 'Dados do rascunho inválidos.' };
@@ -920,6 +925,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
       }
     }
   }
+  markTime('preflight_done');
 
   const CONCURRENCY = 2;
   if (sanitizedData.galleryImages?.length) {
@@ -1143,6 +1149,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     `${saleTitle} — Plano ${salePlan}`,
     `https://mycupid.com.br/admin`,
   ).catch(() => {});
+  markTime('all_done');
   // If files were stripped during pre-flight, log + alert so admin can investigate.
   if (strippedFiles.length > 0) {
     logCriticalError('page_creation', `Página criada com ${strippedFiles.length} arquivos faltando (removidos automaticamente)`, {
@@ -1150,6 +1157,9 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
       intentId,
       strippedFiles,
       totalFiles: allTempPaths.length,
+      timing,
+      intentCreatedAtMs: data.createdAt?.toMillis ? data.createdAt.toMillis() : null,
+      finalizeTookMs: Date.now() - finalizeStartedAt,
     }).catch(() => {});
     notifyAdmins(
       `⚠️ Página criada com ${strippedFiles.length} imagem(ns) faltando`,
