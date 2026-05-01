@@ -80,16 +80,49 @@ export async function POST(req: NextRequest) {
 
     const downloadToken = randomUUID();
     const targetFile = bucket.file(fullPath);
-    await targetFile.save(buffer, {
-      contentType,
-      metadata: {
-        contentType,
-        metadata: {
-          firebaseStorageDownloadTokens: downloadToken,
-        },
-      },
-      resumable: false, // arquivos < 10MB fazem upload single-shot, mais rápido
-    });
+
+    // Retry com backoff exponencial — "socket hang up" do GCS é transient,
+    // acontece quando lambda em cold start ou TCP keep-alive expira mid-upload.
+    // 4 tentativas × backoff (500ms, 1.5s, 3.5s) cobre 99% dos casos.
+    let saveErr: any = null;
+    let saved = false;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        await targetFile.save(buffer, {
+          contentType,
+          metadata: {
+            contentType,
+            metadata: {
+              firebaseStorageDownloadTokens: downloadToken,
+            },
+          },
+          resumable: false, // arquivos < 10MB fazem upload single-shot, mais rápido
+          // Validation: força checksum check no GCS — se passar, byte tá íntegro.
+          validation: 'crc32c',
+          timeout: 30_000,
+        } as any);
+        saved = true;
+        break;
+      } catch (e: any) {
+        saveErr = e;
+        const msg = String(e?.message || '').toLowerCase();
+        const isRetryable = msg.includes('socket hang up')
+          || msg.includes('econnreset')
+          || msg.includes('etimedout')
+          || msg.includes('eai_again')
+          || msg.includes('network')
+          || (e?.code >= 500 && e?.code < 600);
+        if (!isRetryable) break;
+        if (attempt < 3) {
+          const delay = 500 * Math.pow(2, attempt);
+          console.warn(`[upload-image] save attempt ${attempt + 1} falhou (${msg}), retry em ${delay}ms`);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+    if (!saved) {
+      throw saveErr || new Error('save_failed_no_error');
+    }
 
     // CONFIRMA — getMetadata só retorna se o byte está realmente persistido.
     // Pequeno retry pra cobrir transient eventual consistency do GCS logo após save.
