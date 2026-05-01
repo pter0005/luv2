@@ -2450,6 +2450,26 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [isProcessing, startTransition] = useTransition();
     const [isVerifying, setIsVerifying] = useState(false);
     const [error, setError] = useState<{ message: string; details?: any } | null>(null);
+
+    // Safety net: se uploadingCount ficou >0 por mais de 90s sem mudar,
+    // assume que algum upload travou e força reset. NUNCA bloqueia checkout
+    // por causa de contador stale.
+    const lastCountChangeRef = useRef({ count: 0, t: Date.now() });
+    useEffect(() => {
+        if (uploadingCount !== lastCountChangeRef.current.count) {
+            lastCountChangeRef.current = { count: uploadingCount, t: Date.now() };
+        }
+        if (uploadingCount === 0) return;
+        const timer = setTimeout(() => {
+            const now = Date.now();
+            const stale = now - lastCountChangeRef.current.t > 90_000;
+            if (stale && (getValues('_uploadingCount') || 0) > 0) {
+                console.warn('[wizard] uploadingCount travado >90s, resetando pra 0');
+                setValue('_uploadingCount', 0);
+            }
+        }, 90_000);
+        return () => clearTimeout(timer);
+    }, [uploadingCount, getValues, setValue]);
     const { toast } = useToast();
     const [pixData, setPixData] = useState<{ qrCode: string; qrCodeBase64: string; paymentId: string } | null>(null);
     const [pixExpired, setPixExpired] = useState(false);
@@ -2763,7 +2783,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setPixData(null);
         setPixExpired(false);
         pixCreatedAtRef.current = 0;
-        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de pagar.' }); return; }
+        // NUNCA bloqueia venda por causa de upload em andamento — finalize tem self-heal.
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) { setError({ message: 'Preencha seu WhatsApp com DDD para continuar.' }); return; }
@@ -2813,7 +2833,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const handleStripePayment = () => {
         setError(null);
-        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de pagar.' }); return; }
+        // NUNCA bloqueia venda por causa de upload em andamento — finalize tem self-heal.
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         startTransition(async () => {
@@ -2878,7 +2898,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
 
     const handleCreditFinalize = () => {
         setError(null);
-        if (uploadingCount > 0) { setError({ message: 'Aguarde o envio das imagens terminar antes de continuar.' }); return; }
+        // NUNCA bloqueia por upload em andamento — finalize tem self-heal.
         if (!user || !user.email) { setError({ message: 'Sessão de usuário inválida. Por favor, faça login novamente.' }); return; }
         if (!intentId) { setError({ message: 'Rascunho não encontrado. Tente recarregar a página.' }); return; }
         startTransition(async () => {
@@ -3024,7 +3044,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                             <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={24} height={16} />
                         </div>
                     </div>
-                    <Button onClick={handleStripePayment} disabled={isProcessing || uploadingCount > 0 || (isAnonymousUser && !confirmedGuestEmail)} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
+                    <Button onClick={handleStripePayment} disabled={isProcessing || (isAnonymousUser && !confirmedGuestEmail)} className="w-full h-16 text-lg font-bold bg-white text-black hover:bg-zinc-200 shadow-2xl transition-all active:scale-95 group">
                         {isProcessing ? (
                             <Loader2 className="animate-spin" />
                         ) : (
@@ -3402,13 +3422,11 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
             {(!isAnonymousUser || confirmedGuestEmail) && !pixData ? (
                 <Button
                   onClick={handleOneClickPix}
-                  disabled={isProcessing || uploadingCount > 0 || whatsappNumber.replace(/\D/g, '').length < 10}
+                  disabled={isProcessing || whatsappNumber.replace(/\D/g, '').length < 10}
                   size="lg"
                   className="w-full h-auto py-4 text-lg font-bold bg-[#009EE3] hover:bg-[#008ac6] disabled:opacity-60 disabled:cursor-not-allowed">
                     {isProcessing ? (
                         <><Loader2 className="mr-2 h-5 w-5 animate-spin" /><span>Gerando QR Code do Mercado Pago...</span></>
-                    ) : uploadingCount > 0 ? (
-                        <span>Aguarde o envio das imagens...</span>
                     ) : whatsappNumber.replace(/\D/g, '').length < 10 ? (
                         <span>Preencha seu WhatsApp para continuar</span>
                     ) : (
