@@ -360,13 +360,20 @@ const deleteFileWithRetry = (storage: any, path: string) => {
 // 2) FALLBACK: se o server falhar (Netlify down, rede ruim, body too large),
 //    cai no SDK direto MAS valida HEAD na URL pública antes de retornar.
 //    Sem isso, o cliente fica refém de qualquer bug do server e perde venda.
-const confirmStorageVisible = async (downloadURL: string): Promise<boolean> => {
-    const MAX_TRIES = 8;
+// Server-side check (Admin SDK) — HEAD direto da URL pública não funciona
+// no browser por causa do CORS do bucket Firebase Storage.
+const confirmStorageVisible = async (path: string, idToken: string): Promise<boolean> => {
+    const MAX_TRIES = 6;
     const DELAY = 2000;
     for (let i = 0; i < MAX_TRIES; i++) {
         try {
-            const res = await fetch(downloadURL, { method: 'HEAD', cache: 'no-store' });
-            if (res.ok) return true;
+            const res = await fetch('/api/storage-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, idToken }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data?.exists && Number(data.size) > 0) return true;
         } catch { /* retenta */ }
         if (i < MAX_TRIES - 1) await new Promise(r => setTimeout(r, DELAY));
     }
@@ -430,7 +437,7 @@ const uploadFile = async (storage: any, userId: string, file: File | Blob, folde
             });
             await getMetadata(fileRef);
             const downloadURL = await getDownloadURL(fileRef);
-            const visible = await confirmStorageVisible(downloadURL);
+            const visible = await confirmStorageVisible(fullPath, idToken);
             if (!visible) throw new Error('upload_not_visible_after_polling');
             return { url: downloadURL, path: fullPath };
         } catch (err) {
