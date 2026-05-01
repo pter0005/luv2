@@ -850,10 +850,11 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   const allTempPaths = allFileEntries.map(e => e.path);
   let strippedFiles: string[] = [];
   if (allFileEntries.length > 0) {
-    // 6 rounds × 5s = ~30s. Era 3×5s — quando o arquivo demorava mais de 15s
-    // pra propagar (4G mobile, momento de pico), o pre-flight desistia, ia
-    // pra recovery via URL fetch (que também 404), e finalmente estripava.
-    const MAX_WAIT_ROUNDS = 6;
+    // Pre-flight: confere se os bytes estão visíveis no Storage. NÃO bloqueia
+    // mais a finalização — as refs ficam no doc mesmo se ainda não visíveis.
+    // O cron self-heal-images recupera depois, e a UI mostra placeholder com
+    // link "reenviar foto" quando der 404.
+    const MAX_WAIT_ROUNDS = 4;
     const WAIT_DELAY = 5_000;
     let missingPaths: string[] = [];
     for (let round = 0; round < MAX_WAIT_ROUNDS; round++) {
@@ -871,17 +872,14 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
       }
     }
 
-    // Recovery: for files still missing, try to re-download from URL and re-upload
     if (missingPaths.length > 0) {
-      console.warn(`[finalize] ${missingPaths.length} files missing after polling. Attempting URL recovery...`);
-      const missingSet = new Set(missingPaths);
+      console.warn(`[finalize] ${missingPaths.length} files missing após polling. Tentando URL recovery...`);
       const urlByPath = new Map(allFileEntries.map(e => [e.path, e.url]));
-      const recovered: string[] = [];
-      const unrecoverable: string[] = [];
+      const stillMissing: string[] = [];
 
       for (const path of missingPaths) {
         const url = urlByPath.get(path);
-        if (!url) { unrecoverable.push(path); continue; }
+        if (!url) { stillMissing.push(path); continue; }
         try {
           const resp = await fetch(url, { signal: AbortSignal.timeout(15_000) });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -889,39 +887,28 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
           if (buffer.length < 100) throw new Error(`Too small: ${buffer.length}b`);
           const contentType = resp.headers.get('content-type') || 'application/octet-stream';
           await bucket.file(path).save(buffer, { metadata: { contentType } });
-          recovered.push(path);
-          missingSet.delete(path);
           console.log(`[finalize] Recovered ${path} (${(buffer.length / 1024).toFixed(0)}KB)`);
         } catch (err: any) {
           console.error(`[finalize] Recovery failed for ${path}:`, err?.message);
-          unrecoverable.push(path);
+          stillMissing.push(path);
         }
       }
 
-      if (recovered.length > 0) {
-        console.log(`[finalize] Recovered ${recovered.length}/${missingPaths.length} files`);
-      }
-
-      // Only strip truly unrecoverable files
-      if (unrecoverable.length > 0) {
-        strippedFiles = unrecoverable;
-        console.warn(`[finalize] ${unrecoverable.length} files unrecoverable — stripping. Intent: ${intentId}`, unrecoverable);
-        const unrec = new Set(unrecoverable);
-        if (Array.isArray(sanitizedData.galleryImages)) {
-          sanitizedData.galleryImages = sanitizedData.galleryImages.filter((img: any) => img?.path && !unrec.has(img.path));
-        }
-        if (Array.isArray(sanitizedData.timelineEvents)) {
-          sanitizedData.timelineEvents = sanitizedData.timelineEvents.map((ev: any) => {
-            if (ev?.image && unrec.has(ev.image.path)) return { ...ev, image: undefined };
-            return ev;
-          });
-        }
-        if (Array.isArray(sanitizedData.memoryGameImages)) {
-          sanitizedData.memoryGameImages = sanitizedData.memoryGameImages.filter((img: any) => img?.path && !unrec.has(img.path));
-        }
-        if (sanitizedData.puzzleImage && unrec.has(sanitizedData.puzzleImage.path)) sanitizedData.puzzleImage = undefined;
-        if (sanitizedData.audioRecording && unrec.has(sanitizedData.audioRecording.path)) sanitizedData.audioRecording = undefined;
-        if (sanitizedData.backgroundVideo && unrec.has(sanitizedData.backgroundVideo.path)) sanitizedData.backgroundVideo = undefined;
+      // ── MUDANÇA CRÍTICA ──
+      // Antes: se URL recovery falhasse, estripava as refs do doc (page criada
+      // sem as fotos, cliente confuso, sem como recuperar).
+      // Agora: NÃO ESTRIPA NADA. Mantém as refs no doc mesmo apontando pra
+      // arquivos que ainda não estão visíveis. Razões:
+      //   1. Cron /api/cron/self-heal-images roda 30 em 30 min e recupera.
+      //   2. /api/page-heal recupera quando o cliente abre a página.
+      //   3. Eventual consistency do GCS pode levar minutos — não temos como
+      //      saber se sumiu ou só está atrasado.
+      //   4. UI mostra placeholder + botão "reenviar foto" se imagem der 404.
+      // Resultado: cliente pagou → tem página, mesmo que algumas fotos
+      // demorem pra aparecer. ZERO dano.
+      strippedFiles = stillMissing;
+      if (stillMissing.length > 0) {
+        console.warn(`[finalize] ${stillMissing.length} files NÃO ESTRIPADOS — refs mantidas pro self-heal recuperar depois. Intent: ${intentId}`, stillMissing);
       }
     }
   }
@@ -1150,12 +1137,14 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     `https://mycupid.com.br/admin`,
   ).catch(() => {});
   markTime('all_done');
-  // If files were stripped during pre-flight, log + alert so admin can investigate.
+  // Files que ainda não estavam visíveis no Storage no momento do finalize.
+  // Não foram removidos do doc — vão ser recuperados pelo cron self-heal
+  // ou /api/page-heal quando o cliente abrir a página.
   if (strippedFiles.length > 0) {
-    logCriticalError('page_creation', `Página criada com ${strippedFiles.length} arquivos faltando (removidos automaticamente)`, {
+    logCriticalError('page_creation', `Página criada com ${strippedFiles.length} arquivos pendentes (refs mantidas, self-heal vai recuperar)`, {
       pageId: newPageId,
       intentId,
-      strippedFiles,
+      pendingFiles: strippedFiles,
       totalFiles: allTempPaths.length,
       timing,
       intentCreatedAtMs: data.createdAt?.toMillis ? data.createdAt.toMillis() : null,
