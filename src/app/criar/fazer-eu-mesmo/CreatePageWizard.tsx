@@ -355,48 +355,45 @@ const deleteFileWithRetry = (storage: any, path: string) => {
     attempt(2);
 };
 
-// Confirma que o byte tá REALMENTE no Storage fazendo HEAD na URL pública —
-// é o mesmo caminho que o server usa pra ler depois. Sem essa checagem, o
-// SDK retorna URL "fantasma" (cache local) que funciona no client mas dá 404
-// quando o bucket.file(path).exists() roda no Admin SDK.
-const confirmStorageVisible = async (downloadURL: string): Promise<boolean> => {
-    const MAX_TRIES = 6;
-    const DELAY = 1500;
-    for (let i = 0; i < MAX_TRIES; i++) {
-        try {
-            const res = await fetch(downloadURL, { method: 'HEAD', cache: 'no-store' });
-            if (res.ok) return true;
-        } catch { /* retenta */ }
-        if (i < MAX_TRIES - 1) await new Promise(r => setTimeout(r, DELAY));
-    }
-    return false;
-};
-
+// Upload via servidor (proxy) — fonte da verdade. O cliente envia o byte ao
+// /api/upload-image, que valida auth com Admin SDK, salva via bucket.file().save(),
+// faz getMetadata pra confirmar persistência, e SÓ ENTÃO retorna {path, url}.
+// Substitui o upload direto cliente→Storage que perdia bytes silenciosamente
+// (token expirado, rede caindo, "upload fantasma" do SDK).
 const uploadFile = async (storage: any, userId: string, file: File | Blob, folderName: string): Promise<FileWithPreview> => {
     if (!userId) throw new Error("Usuário não identificado para upload.");
     if (file.size > MAX_FILE_SIZE) throw new Error(`file_too_large:${Math.round(file.size / 1024 / 1024)}MB`);
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).slice(2, 8);
-    const safeName = (file instanceof File ? file.name : 'audio.webm').replace(/[^a-zA-Z0-9.]/g, "_");
-    const fileName = `${timestamp}-${random}-${safeName}`;
-    const fullPath = `temp/${userId}/${folderName}/${fileName}`;
-    const fileRef = storageRef(storage, fullPath);
+
+    // Pega idToken atual — se anônimo, signInAnonymously já rolou no useEffect raiz.
+    const auth = (await import('firebase/auth')).getAuth(storage.app);
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error('no_auth_user');
+    const idToken = await currentUser.getIdToken();
+
+    const fd = new FormData();
+    fd.append('file', file as Blob, file instanceof File ? file.name : 'audio.webm');
+    fd.append('folder', folderName);
+    fd.append('idToken', idToken);
+
     let lastErr: unknown;
     for (let attempt = 0; attempt <= 2; attempt++) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                const task = uploadBytesResumable(fileRef, file);
-                task.on('state_changed', null, (err) => reject(err), () => resolve());
-            });
-            await getMetadata(fileRef);
-            const downloadURL = await getDownloadURL(fileRef);
-            // Bloqueia até o byte ser HEAD-able publicamente. Se nem após
-            // ~9s ficou visível, joga erro pro retry externo tentar de novo.
-            const visible = await confirmStorageVisible(downloadURL);
-            if (!visible) throw new Error('upload_not_visible_after_polling');
-            return { url: downloadURL, path: fullPath };
-        } catch (err) {
+            const res = await fetch('/api/upload-image', { method: 'POST', body: fd });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                // Erros que não vale retentar:
+                if (res.status === 413) throw new Error(`file_too_large:${data.sizeMB || '?'}MB`);
+                if (res.status === 401) throw new Error('auth_failed');
+                if (res.status === 400) throw new Error(`invalid:${data.error || 'unknown'}`);
+                throw new Error(data?.error || `http_${res.status}`);
+            }
+            if (!data.ok || !data.path || !data.url) throw new Error('invalid_response');
+            return { url: data.url, path: data.path };
+        } catch (err: any) {
             lastErr = err;
+            // file_too_large/auth_failed/invalid não retenta
+            const msg = String(err?.message || '');
+            if (msg.startsWith('file_too_large') || msg === 'auth_failed' || msg.startsWith('invalid:')) break;
             if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         }
     }
