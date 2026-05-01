@@ -5,6 +5,7 @@ import { getAdminFirestore, getAdminStorage } from '@/lib/firebase/admin/config'
 import CopyReportButton from './CopyReportButton';
 import RestoreSoftDeletedPanel from './RestoreSoftDeletedPanel';
 import HealPagesPanel from './HealPagesPanel';
+import StuckLogsPanel from './StuckLogsPanel';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -355,6 +356,7 @@ export default async function DiagnosticoUploadsPage() {
 
       <main className="container mx-auto px-3 sm:px-4 pt-4 sm:pt-6 max-w-5xl">
 
+        <StuckLogsPanel />
         <RestoreSoftDeletedPanel />
         <HealPagesPanel />
 

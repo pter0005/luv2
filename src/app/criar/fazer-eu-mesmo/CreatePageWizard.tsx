@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
+import { reportWizardStuck } from '@/lib/wizard-stuck';
 import { computeTotalBRL, PRICES } from '@/lib/price';
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -4005,6 +4006,7 @@ function WizardInternal() {
             const currentData = getValues();
             if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
                 toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
+                reportWizardStuck({ kind: 'next_blocked', step: currentStepId, detail: 'puzzle:no_image', userId: user?.uid });
                 return;
             }
         } else {
@@ -4013,6 +4015,11 @@ function WizardInternal() {
             if (!ok) {
                 console.error("Erros de validação:", methods.formState.errors);
                 toast({ variant: "destructive", title: 'Campos obrigatórios', description: 'Por favor, verifique se preencheu tudo corretamente antes de prosseguir.' });
+                try {
+                    const errs = methods.formState.errors as any;
+                    const failed = (fieldsToValidate as string[]).filter(f => errs?.[f]).map(f => `${f}:${errs[f]?.message || 'invalid'}`);
+                    reportWizardStuck({ kind: 'next_blocked', step: currentStepId, detail: failed.join(' | ').slice(0, 400), userId: user?.uid });
+                } catch { /* silencioso */ }
                 return;
             }
         }
