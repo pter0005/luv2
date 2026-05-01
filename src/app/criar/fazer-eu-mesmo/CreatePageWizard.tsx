@@ -1448,11 +1448,19 @@ type FeatureHeaderProps = {
   enabled: boolean;
 };
 const FeatureHeader = ({ icon, title, hook, bullets, badge, badgePrice, accent, enabled }: FeatureHeaderProps) => {
-  const badgeText = badge === 'free' ? 'GRÁTIS'
-    : badge === 'vip-included' ? 'INCLUÍDO NO VIP'
+  // Se o usuário escolheu VIP, qualquer feature paga vira "INCLUÍDO NO VIP".
+  // Reduz fricção pra ativar add-ons sem o medo de "tá pagando duas vezes".
+  const { control } = useFormContext<PageData>();
+  const planValue = useWatch({ control, name: 'plan' });
+  const isVipPlan = planValue === 'vip';
+  const effectiveBadge: 'free' | 'paid' | 'vip-included' =
+    badge === 'paid' && isVipPlan ? 'vip-included' : badge;
+
+  const badgeText = effectiveBadge === 'free' ? 'GRÁTIS'
+    : effectiveBadge === 'vip-included' ? 'INCLUÍDO NO VIP ✨'
     : `EXTRA ${badgePrice ?? ''}`.trim();
-  const badgeColor = badge === 'free' ? '#22c55e'
-    : badge === 'vip-included' ? '#a855f7'
+  const badgeColor = effectiveBadge === 'free' ? '#22c55e'
+    : effectiveBadge === 'vip-included' ? '#a855f7'
     : '#fbbf24';
   return (
     <div className="rounded-2xl overflow-hidden mb-2" style={{
@@ -1474,10 +1482,14 @@ const FeatureHeader = ({ icon, title, hook, bullets, badge, badgePrice, accent, 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h3 className="text-[15px] font-black text-foreground leading-tight">{title}</h3>
-              <span className="text-[9.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full whitespace-nowrap" style={{
+              <span className={cn(
+                "text-[9.5px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full whitespace-nowrap",
+                effectiveBadge === 'vip-included' && "animate-pulse"
+              )} style={{
                 background: `${badgeColor}20`,
                 color: badgeColor,
                 border: `1px solid ${badgeColor}50`,
+                boxShadow: effectiveBadge === 'vip-included' ? `0 0 12px ${badgeColor}80` : undefined,
               }}>{badgeText}</span>
             </div>
             <p className="text-[12px] text-muted-foreground leading-snug">{hook}</p>

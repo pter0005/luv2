@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from 'react';
 import QRCode from 'qrcode.react';
-import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download } from 'lucide-react';
 
@@ -22,6 +21,9 @@ export default function TicketGenerator({ linkUrl, nomeArquivo = 'ticket-amor' }
     setLoading(true);
 
     try {
+      // Lazy: html2canvas pesa ~200KB e só é usado quando user clica em baixar.
+      // Antes, era bundlado eagerly em todo cliente que renderizava ticket.
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(ticketRef.current, {
         scale: 2,
         backgroundColor: null,
