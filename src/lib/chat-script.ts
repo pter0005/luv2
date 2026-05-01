@@ -34,6 +34,8 @@ export const CHAT_STEP_ORDER: ChatStepKey[] = [
 
 export interface CupidContext {
   recipientName?: string;
+  /** Valor do cupom em R$ (ou USD se locale=en). Quando presente E step='recipient', cupido abre dizendo do desconto antes de pedir o nome. */
+  discountAmount?: number;
 }
 
 type LineFn = (ctx: CupidContext) => string;
@@ -192,6 +194,15 @@ export function getCupidLine(
   ctx: CupidContext = {},
   locale: Locale = 'pt',
 ): string {
+  // OVERRIDE: user veio com cupom de desconto — saúda mencionando o cupom
+  // antes de seguir o fluxo normal. Aparece SÓ no step 'recipient' (primeiro).
+  if (step === 'recipient' && ctx.discountAmount && ctx.discountAmount > 0) {
+    if (locale === 'en') {
+      return `Heyy! 💝 I saw you came in with a $${ctx.discountAmount} discount coupon — nice, that's already locked in for you! Now tell me, what's the name of the person who'll receive this surprise?`;
+    }
+    return `Oiii! 💝 Vi que você chegou com um cupom de R$${ctx.discountAmount} de desconto — boa, isso já tá garantido pra você! Agora me conta, qual o nome de quem vai receber essa surpresa?`;
+  }
+
   // Lazy import EN dict pra evitar custo em callsites BR
   const dict = locale === 'en'
     ? (require('./chat-script-en').CUPID_LINES_EN as Record<WizardSegmentKey, SegmentLines>)

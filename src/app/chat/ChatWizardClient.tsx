@@ -111,6 +111,24 @@ function Inner() {
   const [alreadyPaid, setAlreadyPaid] = useState<{ pageId: string } | null>(null);
   const milestonesFiredRef = useRef<Set<number>>(new Set());
 
+  // Discount detection — se user veio com /desconto/CODIGO ou ?discount=,
+  // valida no server e passa o valor pro cupido saudar mencionando o cupom.
+  const [discountAmount, setDiscountAmount] = useState(0);
+  useEffect(() => {
+    const urlCode = searchParams.get('discount');
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('mycupid_discount_code') : null;
+    const code = urlCode || stored;
+    if (!code) return;
+    if (urlCode && typeof window !== 'undefined') localStorage.setItem('mycupid_discount_code', urlCode);
+    fetch(`/api/discount?code=${encodeURIComponent(code)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d?.valid && d.discount > 0) setDiscountAmount(d.discount);
+        else if (typeof window !== 'undefined') localStorage.removeItem('mycupid_discount_code');
+      })
+      .catch(() => {});
+  }, [searchParams]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -216,9 +234,9 @@ function Inner() {
   // da animação de "digitando" do Cupido a cada caractere que o usuário digita.
   const cupidText = useMemo(() => {
     const recipientName = methods.getValues('recipientName');
-    return getCupidLine(segment, currentStep, { recipientName }, locale);
+    return getCupidLine(segment, currentStep, { recipientName, discountAmount }, locale);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segment, currentStep, locale]);
+  }, [segment, currentStep, locale, discountAmount]);
 
   // Alterna entre asking e idle ~4 vezes ao longo do fluxo pra ficar dinâmico.
   // Começa em 'asking' (pede o nome), alterna em blocos.
