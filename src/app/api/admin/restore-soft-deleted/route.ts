@@ -24,6 +24,7 @@ type Job = {
   startedAt: number;
   finishedAt?: number;
   prefix: string;
+  hoursWindow: number | null;
   totalFound: number;
   restored: number;
   failed: number;
@@ -41,7 +42,12 @@ async function getAccessToken(): Promise<string> {
   return t.access_token;
 }
 
-async function listSoftDeleted(bucket: string, prefix: string, token: string): Promise<Array<{ name: string; generation: string; size: string }>> {
+async function listSoftDeleted(
+  bucket: string,
+  prefix: string,
+  token: string,
+  deletedAfterMs: number | null,
+): Promise<Array<{ name: string; generation: string; size: string }>> {
   const all: Array<{ name: string; generation: string; size: string }> = [];
   let pageToken = '';
   for (let i = 0; i < 200; i++) {
@@ -49,6 +55,8 @@ async function listSoftDeleted(bucket: string, prefix: string, token: string): P
     url.searchParams.set('softDeleted', 'true');
     url.searchParams.set('prefix', prefix);
     url.searchParams.set('maxResults', '1000');
+    // Pede timeDeleted explicitamente — sem isso GCS pode omitir do payload.
+    url.searchParams.set('fields', 'nextPageToken,items(name,generation,size,timeDeleted)');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
 
     const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
@@ -59,7 +67,12 @@ async function listSoftDeleted(bucket: string, prefix: string, token: string): P
     const data: any = await res.json();
     if (Array.isArray(data.items)) {
       for (const it of data.items) {
-        if (it?.name && it?.generation) all.push({ name: it.name, generation: String(it.generation), size: String(it.size || 0) });
+        if (!it?.name || !it?.generation) continue;
+        if (deletedAfterMs !== null) {
+          const t = it.timeDeleted ? Date.parse(it.timeDeleted) : 0;
+          if (!t || t < deletedAfterMs) continue;
+        }
+        all.push({ name: it.name, generation: String(it.generation), size: String(it.size || 0) });
       }
     }
     if (!data.nextPageToken) break;
@@ -78,12 +91,12 @@ async function restoreOne(bucket: string, name: string, generation: string, toke
   }
 }
 
-async function runJob(jobId: string, prefix: string) {
+async function runJob(jobId: string, prefix: string, deletedAfterMs: number | null) {
   const job = JOBS.get(jobId)!;
   try {
     const token = await getAccessToken();
     const bucket = getAdminStorage().name;
-    const items = await listSoftDeleted(bucket, prefix, token);
+    const items = await listSoftDeleted(bucket, prefix, token, deletedAfterMs);
     job.totalFound = items.length;
     if (items.length === 0) {
       job.status = 'done';
@@ -126,12 +139,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const prefix = typeof body.prefix === 'string' && body.prefix ? body.prefix : 'temp/';
   const dryRun = !!body.dryRun;
+  // Janela em horas (ex: 48). null = sem filtro (restaura tudo da janela soft-delete).
+  const hoursWindow = Number.isFinite(body.hoursWindow) && body.hoursWindow > 0 ? Number(body.hoursWindow) : null;
+  const deletedAfterMs = hoursWindow !== null ? Date.now() - hoursWindow * 60 * 60 * 1000 : null;
 
   if (dryRun) {
     try {
       const token = await getAccessToken();
       const bucket = getAdminStorage().name;
-      const items = await listSoftDeleted(bucket, prefix, token);
+      const items = await listSoftDeleted(bucket, prefix, token, deletedAfterMs);
       const totalSize = items.reduce((sum, it) => sum + Number(it.size || 0), 0);
       return NextResponse.json({ ok: true, dryRun: true, count: items.length, totalSizeMB: Math.round(totalSize / 1024 / 1024), sample: items.slice(0, 5).map(i => i.name) });
     } catch (err: any) {
@@ -145,6 +161,7 @@ export async function POST(req: NextRequest) {
     status: 'running',
     startedAt: Date.now(),
     prefix,
+    hoursWindow,
     totalFound: 0,
     restored: 0,
     failed: 0,
@@ -152,7 +169,7 @@ export async function POST(req: NextRequest) {
     done: false,
   };
   JOBS.set(jobId, job);
-  runJob(jobId, prefix); // fire-and-forget
+  runJob(jobId, prefix, deletedAfterMs); // fire-and-forget
   return NextResponse.json({ ok: true, jobId });
 }
 

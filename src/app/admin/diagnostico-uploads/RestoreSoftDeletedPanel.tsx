@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, RotateCw, AlertTriangle, CheckCircle2, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type Job = {
   id: string;
@@ -9,6 +10,7 @@ type Job = {
   startedAt: number;
   finishedAt?: number;
   prefix: string;
+  hoursWindow: number | null;
   totalFound: number;
   restored: number;
   failed: number;
@@ -16,8 +18,16 @@ type Job = {
   done: boolean;
 };
 
+const WINDOW_OPTIONS: Array<{ label: string; hours: number | null }> = [
+  { label: '24h', hours: 24 },
+  { label: '48h', hours: 48 },
+  { label: '7 dias', hours: 24 * 7 },
+  { label: 'Tudo', hours: null },
+];
+
 export default function RestoreSoftDeletedPanel() {
   const [prefix, setPrefix] = useState('temp/');
+  const [hoursWindow, setHoursWindow] = useState<number | null>(48);
   const [scanResult, setScanResult] = useState<{ count: number; totalSizeMB: number; sample: string[] } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState('');
@@ -36,7 +46,7 @@ export default function RestoreSoftDeletedPanel() {
       const res = await fetch('/api/admin/restore-soft-deleted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix, dryRun: true }),
+        body: JSON.stringify({ prefix, dryRun: true, hoursWindow }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || data.error || `http_${res.status}`);
@@ -55,11 +65,11 @@ export default function RestoreSoftDeletedPanel() {
       const res = await fetch('/api/admin/restore-soft-deleted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix }),
+        body: JSON.stringify({ prefix, hoursWindow }),
       });
       const data = await res.json();
       if (!res.ok || !data.jobId) throw new Error(data.message || data.error || 'falhou');
-      setJob({ id: data.jobId, status: 'running', startedAt: Date.now(), prefix, totalFound: 0, restored: 0, failed: 0, errors: [], done: false });
+      setJob({ id: data.jobId, status: 'running', startedAt: Date.now(), prefix, hoursWindow, totalFound: 0, restored: 0, failed: 0, errors: [], done: false });
       // Polling
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = setInterval(async () => {
@@ -112,6 +122,28 @@ export default function RestoreSoftDeletedPanel() {
           {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
           Verificar
         </button>
+      </div>
+
+      {/* Filtro de janela temporal */}
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mr-1">Excluídos nas últimas:</span>
+        {WINDOW_OPTIONS.map(opt => {
+          const active = hoursWindow === opt.hours;
+          const disabled = scanning || starting || job?.status === 'running';
+          return (
+            <button
+              key={opt.label}
+              onClick={() => { setHoursWindow(opt.hours); setScanResult(null); }}
+              disabled={disabled}
+              className={cn(
+                'px-2.5 py-1 rounded-md text-[11px] font-bold transition disabled:opacity-50',
+                active ? 'bg-green-500/25 text-green-200 border border-green-500/50' : 'bg-white/5 text-zinc-400 hover:text-white border border-white/10',
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {scanError && (
