@@ -94,7 +94,7 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════════════════
-          DESKTOP HEADER (md+): barra horizontal com active state pill-style
+          DESKTOP HEADER (md+): duas linhas — brand+ações em cima, nav embaixo
           ═══════════════════════════════════════════════════════════════════ */}
       <header
         className="sticky top-0 z-40 hidden md:block border-b"
@@ -105,30 +105,48 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
       >
-        <div className="container mx-auto flex h-16 items-center gap-4 px-4">
-          {/* Brand */}
-          <Link href="/admin" className="flex items-center gap-2.5 shrink-0 group">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.2))',
-                border: '1px solid rgba(168,85,247,0.4)',
-                boxShadow: '0 4px 20px -4px rgba(168,85,247,0.4)',
-              }}
-            >
-              <ShieldCheck className="w-4 h-4 text-purple-300" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[13px] font-black text-white tracking-tight">Admin</div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">MyCupid</div>
-            </div>
-          </Link>
+        <div className="container mx-auto px-4">
+          {/* Linha 1: brand + data + sair */}
+          <div className="flex h-12 items-center gap-4">
+            <Link href="/admin" className="flex items-center gap-2.5 shrink-0 group">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.2))',
+                  border: '1px solid rgba(168,85,247,0.4)',
+                  boxShadow: '0 4px 20px -4px rgba(168,85,247,0.4)',
+                }}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[13px] font-black text-white tracking-tight">Admin</div>
+                <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-semibold">MyCupid</div>
+              </div>
+            </Link>
 
-          {/* Divider */}
-          <div className="w-px h-8 bg-white/[0.06] shrink-0" />
+            <div className="flex-1" />
 
-          {/* Nav — horizontal scroll se não couber (raramente acontece em desktop wide) */}
-          <nav className="flex-1 flex items-center gap-0.5 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: 'none' } as any}>
+            {today && (
+              <span className="hidden lg:block text-[11px] text-zinc-500 tabular-nums capitalize">{today}</span>
+            )}
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-semibold text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition"
+                title="Sair"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Sair</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Linha 2: nav em duas colunas (grid 2 linhas no desktop) */}
+          <nav
+            className="grid grid-flow-col grid-rows-2 gap-1 pb-2 pt-1 auto-cols-max overflow-x-auto scrollbar-hide"
+            style={{ scrollbarWidth: 'none' } as any}
+          >
             {FLAT_NAV.map(({ label, href, Icon, color }) => {
               const active = isActive(pathname, href);
               return (
@@ -136,7 +154,7 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
                   key={href}
                   href={href}
                   className={cn(
-                    'shrink-0 group relative flex items-center gap-1 h-9 px-2 rounded-lg text-[12px] font-semibold transition-all',
+                    'shrink-0 group relative flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[11.5px] font-semibold transition-all',
                     active
                       ? 'text-white bg-white/[0.06] ring-1 ring-white/10 shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]',
@@ -145,35 +163,12 @@ export default function AdminNav({ logoutAction }: AdminNavProps) {
                     boxShadow: `inset 0 0 0 1px ${color}30, 0 0 20px -10px ${color}80`,
                   } : undefined}
                 >
-                  <Icon className="h-3.5 w-3.5" style={{ color: active ? color : undefined }} />
-                  <span>{label}</span>
-                  {active && (
-                    <span
-                      className="absolute inset-x-2 -bottom-px h-px opacity-60"
-                      style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
-                    />
-                  )}
+                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: active ? color : undefined }} />
+                  <span className="whitespace-nowrap">{label}</span>
                 </Link>
               );
             })}
           </nav>
-
-          {/* Direita: data + sair (Criar página fica só no drawer mobile) */}
-          <div className="flex items-center gap-2 shrink-0">
-            {today && (
-              <span className="hidden xl:block text-[11px] text-zinc-500 tabular-nums">{today}</span>
-            )}
-            <form action={logoutAction}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-semibold text-zinc-500 hover:text-red-300 hover:bg-red-500/10 transition"
-                title="Sair"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden lg:inline">Sair</span>
-              </button>
-            </form>
-          </div>
         </div>
       </header>
 
