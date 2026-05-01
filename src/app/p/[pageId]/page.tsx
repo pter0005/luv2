@@ -5,6 +5,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import PageClientComponentV1 from './PageClientComponentV1'; // Import V1
 import PageClientComponent from './PageClientComponent'; // This is now V2
 import { LoadingState, ErrorState } from './PageStates';
+import { healPageInline } from '@/lib/heal-page-inline';
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -138,7 +139,15 @@ export default async function ViewPage({ params }: { params: { pageId: string } 
 
   // Version-based rendering logic
   const version = rawPageData.componentVersion || 'v1';
-  const pageDataWithId = { ...rawPageData, id: pageId };
+
+  // INLINE HEAL: se o doc tem refs temp/ (arquivo ainda não movido pra
+  // lovepages/), tenta curar SÍNCRONO antes de mandar HTML pro cliente.
+  // Timeout 3s — se passar, segue com data original e o auto-heal client
+  // recupera depois. Resultado: usuário JAMAIS vê "imagem indisponível"
+  // se o storage tem o arquivo (caminho rápido), e ainda funciona como
+  // fallback se o move falhou (caminho lento via /api/page-heal).
+  const healedData = await healPageInline(pageId, rawPageData, 3000);
+  const pageDataWithId = { ...healedData, id: pageId };
 
   // Success case
   return (

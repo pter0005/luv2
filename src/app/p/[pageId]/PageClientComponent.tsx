@@ -244,8 +244,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       .then(r => r.json())
       .then((res) => {
         if (res?.healed > 0) {
-          // Deu certo — recarrega pra pegar URLs novas do Firestore
-          setTimeout(() => window.location.reload(), 1500);
+          // Deu certo — recarrega IMEDIATO. Antes era 1500ms, mas com o
+          // inline-heal no server component esse fallback raramente roda;
+          // quando rodar, é melhor ser instantâneo.
+          window.location.reload();
         }
       })
       .catch(() => { /* silencioso — cron faz segunda tentativa em até 30min */ });
