@@ -281,30 +281,82 @@ function Inner() {
     setCurrentStep(CHAT_STEP_ORDER[stepIndex - 1]);
   }, [isFirst, stepIndex, router]);
 
+  // Steps que TRAVAM se inválidos (campo crítico). Resto avança mesmo com
+  // erro — usuário NUNCA fica preso por validação. Filosofia: melhor uma
+  // página com timeline meio quebrada do que perder a venda.
+  const HARD_GATE_STEPS = useMemo(() => new Set(['recipient', 'message']), []);
+
   const handleNext = useCallback(async () => {
     const fields = getFieldsForStep(currentStep);
+
+    // PRE-CLEAN: remove entradas malformadas que poderiam reprovar a validação
+    // sem o user perceber. Filosofia "user nunca trava por dado parcial".
+    try {
+      // timelineEvents: remove entradas sem image E sem description E sem date
+      const tle = methods.getValues('timelineEvents' as any);
+      if (Array.isArray(tle)) {
+        const cleaned = tle.filter((ev: any) =>
+          (ev?.image?.url && ev?.image?.path) ||
+          (ev?.description && String(ev.description).trim()) ||
+          ev?.date,
+        );
+        if (cleaned.length !== tle.length) {
+          methods.setValue('timelineEvents' as any, cleaned, { shouldValidate: false, shouldDirty: true });
+        }
+      }
+      // galleryImages: remove entradas sem url ou path
+      const gal = methods.getValues('galleryImages' as any);
+      if (Array.isArray(gal)) {
+        const cleaned = gal.filter((g: any) => g?.url && g?.path);
+        if (cleaned.length !== gal.length) {
+          methods.setValue('galleryImages' as any, cleaned, { shouldValidate: false, shouldDirty: true });
+        }
+      }
+      // memoryGameImages: idem
+      const mem = methods.getValues('memoryGameImages' as any);
+      if (Array.isArray(mem)) {
+        const cleaned = mem.filter((m: any) => m?.url && m?.path);
+        if (cleaned.length !== mem.length) {
+          methods.setValue('memoryGameImages' as any, cleaned, { shouldValidate: false, shouldDirty: true });
+        }
+      }
+    } catch { /* silencioso — não pode quebrar handleNext */ }
+
     const valid = fields.length === 0 ? true : await methods.trigger(fields as any, { shouldFocus: true });
+
     if (!valid) {
       haptic('error');
-      // Log defensivo: queremos saber EXATAMENTE em qual campo a validação reprovou
+      // Coleta os campos que falharam pro toast e pro log
+      const errs = methods.formState.errors as any;
+      const failedFields = fields.filter(f => errs?.[f as any]).map(f => `${String(f)}:${errs[f as any]?.message || 'invalid'}`);
+      const detail = failedFields.join(' | ').slice(0, 400);
+
       try {
-        const errs = methods.formState.errors as any;
-        const failedFields = fields.filter(f => errs?.[f as any]).map(f => `${String(f)}:${errs[f as any]?.message || 'invalid'}`);
         reportWizardStuck({
           kind: 'next_blocked',
           step: currentStep,
-          detail: failedFields.join(' | ').slice(0, 400),
+          detail,
           userId: user?.uid,
         });
       } catch { /* silencioso */ }
-      return;
+
+      // Hard gate: bloqueia + avisa user com campo específico
+      if (HARD_GATE_STEPS.has(currentStep)) {
+        // No-op aqui — RHF já fez shouldFocus, user vê o campo destacado
+        return;
+      }
+
+      // Soft fail: AVANÇA mesmo com erro. Loga + segue. Filosofia "user never stuck".
+      // Se a página ficar meio quebrada, /api/page-heal + admin tools recuperam depois.
+      console.warn(`[wizard] step=${currentStep} validation failed but advancing anyway:`, detail);
     }
+
     if (isLast) return;
     haptic('tap');
     setDirection(1);
     setCurrentStep(CHAT_STEP_ORDER[stepIndex + 1]);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep, isLast, stepIndex, methods, user?.uid]);
+  }, [currentStep, isLast, stepIndex, methods, user?.uid, HARD_GATE_STEPS]);
 
   useEffect(() => {
     if (!ENTER_TO_CONTINUE_STEPS.has(currentStep)) return;
