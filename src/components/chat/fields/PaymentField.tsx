@@ -97,13 +97,31 @@ export default function PaymentField() {
   const ensureUser = useCallback(async () => {
     if (user) return user;
     if (!firebase.auth) return null;
-    try {
-      const cred = await signInAnonymously(firebase.auth);
-      return cred.user;
-    } catch {
-      return null;
+    // Retry com backoff: signInAnonymously falha em ~30% no iOS Safari
+    // private/3rd-party-cookies-blocked. Na 1a falha tenta de novo, na 2a
+    // retorna null com erro claro pro caller mostrar toast.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const cred = await signInAnonymously(firebase.auth);
+        return cred.user;
+      } catch (err: any) {
+        console.warn(`[ensureUser] signInAnonymously attempt ${attempt + 1} failed:`, err?.message);
+        if (attempt < 1) await new Promise(r => setTimeout(r, 800));
+      }
     }
+    return null;
   }, [user, firebase.auth]);
+
+  // Guard contra duplo-click: PIX/Card/Stripe podem ser clicados 2x antes do
+  // startTransition desabilitar. Cria 2 intents por engano + cobra duplicado.
+  const submitGuardRef = useRef(false);
+  const acquireSubmitGuard = useCallback(() => {
+    if (submitGuardRef.current) return false;
+    submitGuardRef.current = true;
+    setTimeout(() => { submitGuardRef.current = false; }, 30_000); // libera após 30s mesmo em caso de erro
+    return true;
+  }, []);
+  const releaseSubmitGuard = useCallback(() => { submitGuardRef.current = false; }, []);
   const { toast } = useToast();
   const { control, getValues, setValue } = useFormContext<PageData>();
   const locale = useLocale() as Locale;
@@ -468,11 +486,17 @@ export default function PaymentField() {
       setError(t('phoneInvalid'));
       return;
     }
+    // Guard duplo-click: usuário com touch impaciente clicava 2x e gerava 2 intents
+    if (!acquireSubmitGuard()) return;
 
     startTransition(async () => {
       try {
         const activeUser = await ensureUser();
-        if (!activeUser) { setError(t('sessionLoading')); return; }
+        if (!activeUser) {
+          setError('Sessão não pôde ser iniciada. Tenta atualizar a página ou desativar bloqueadores (extensões, modo privado).');
+          releaseSubmitGuard();
+          return;
+        }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
@@ -535,9 +559,11 @@ export default function PaymentField() {
         }
       } catch (e: any) {
         setError(e?.message || 'Erro ao conectar com o pagamento.');
+      } finally {
+        releaseSubmitGuard();
       }
     });
-  }, [emailInput, phone, getValues, setValue, total, ensureUser, siteCfg.currency]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, siteCfg.currency, acquireSubmitGuard, releaseSubmitGuard]);
 
   const handleCard = useCallback(() => {
     setError(null);
@@ -549,10 +575,15 @@ export default function PaymentField() {
       setError(t('phoneInvalid'));
       return;
     }
+    if (!acquireSubmitGuard()) return;
     startTransition(async () => {
       try {
         const activeUser = await ensureUser();
-        if (!activeUser) { setError(t('sessionLoading')); return; }
+        if (!activeUser) {
+          setError('Sessão não pôde ser iniciada. Atualize a página ou desative bloqueadores.');
+          releaseSubmitGuard();
+          return;
+        }
         const data = getValues();
         const whatsappDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
@@ -579,9 +610,11 @@ export default function PaymentField() {
       } catch (e: any) {
         trackEvent('PaymentFailed', { method: 'card', reason: e?.message, value: total });
         setError(e?.message || 'Erro ao conectar com o pagamento.');
+      } finally {
+        releaseSubmitGuard();
       }
     });
-  }, [emailInput, phone, getValues, setValue, total, ensureUser, isUS]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, isUS, acquireSubmitGuard, releaseSubmitGuard]);
 
   const handleStripe = useCallback(() => {
     setError(null);
@@ -591,10 +624,15 @@ export default function PaymentField() {
     if (phone.replace(/\D/g, '').length < 10) {
       setError('Please enter a valid phone number.'); return;
     }
+    if (!acquireSubmitGuard()) return;
     startTransition(async () => {
       try {
         const activeUser = await ensureUser();
-        if (!activeUser) { setError('Session loading, try again in a moment.'); return; }
+        if (!activeUser) {
+          setError('Session could not start. Refresh or disable blockers.');
+          releaseSubmitGuard();
+          return;
+        }
         const data = getValues();
         const phoneDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
@@ -629,9 +667,11 @@ export default function PaymentField() {
       } catch (e: any) {
         trackEvent('PaymentFailed', { method: 'stripe', reason: e?.message, value: total });
         setError(e?.message || 'Payment error.');
+      } finally {
+        releaseSubmitGuard();
       }
     });
-  }, [emailInput, phone, getValues, setValue, total, ensureUser]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, acquireSubmitGuard, releaseSubmitGuard]);
 
   const handleAdminFinalize = useCallback(() => {
     if (!user || !intentId || !isAdmin) return;
@@ -941,7 +981,7 @@ export default function PaymentField() {
           <button
             type="button"
             onClick={handleRedeemGift}
-            disabled={isRedeemingGift || isUploading}
+            disabled={isRedeemingGift}
             className={cn(
               'w-full h-12 rounded-xl font-bold text-white transition flex items-center justify-center gap-2',
               'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',
@@ -1104,7 +1144,7 @@ export default function PaymentField() {
                 <button
                   type="button"
                   onClick={handlePix}
-                  disabled={isProcessing || !isContactValid || isUploading}
+                  disabled={isProcessing || !isContactValid}
                   className={cn(
                     'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                     'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400',
@@ -1115,10 +1155,6 @@ export default function PaymentField() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" /> Gerando QR...
-                    </>
-                  ) : isUploading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Uploading files…' : 'Enviando arquivos…'}
                     </>
                   ) : !isContactValid ? (
                     <>
@@ -1243,7 +1279,7 @@ export default function PaymentField() {
             <button
               type="button"
               onClick={handleCard}
-              disabled={isProcessing || !isContactValid || isUploading}
+              disabled={isProcessing || !isContactValid}
               className={cn(
                 'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
                 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400',

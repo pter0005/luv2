@@ -39,8 +39,14 @@ export default function VoiceField() {
   const upload = async (blob: Blob) => {
     let activeUser = firebase.user;
     if (!activeUser && firebase.auth) {
-      const cred = await signInAnonymously(firebase.auth);
-      activeUser = cred.user;
+      try {
+        const cred = await signInAnonymously(firebase.auth);
+        activeUser = cred.user;
+      } catch {
+        setStatus('idle');
+        toast({ variant: 'destructive', title: isEN ? 'Session blocked' : 'Sessão bloqueada', description: isEN ? 'Refresh the page or disable blockers.' : 'Atualize a página ou desative bloqueadores.' });
+        return;
+      }
     }
     if (!activeUser) {
       setStatus('idle');
@@ -54,9 +60,18 @@ export default function VoiceField() {
       setValue('audioRecording', data, { shouldDirty: true, shouldValidate: true });
       setStatus('recorded');
       toast({ title: isEN ? 'Message saved 💝' : 'Mensagem salva 💝', description: isEN ? 'Your voice will melt their heart.' : 'Sua voz vai emocionar demais.' });
-    } catch {
+    } catch (err: any) {
       setStatus('idle');
-      toast({ variant: 'destructive', title: isEN ? 'Upload error' : 'Erro no upload' });
+      // Mostrar a causa do erro pro user (file_too_large, etc) em vez de toast genérico
+      const msg = String(err?.message || '');
+      let desc: string | undefined;
+      if (msg.startsWith('file_too_large')) {
+        const mb = msg.split(':')[1] || '';
+        desc = isEN ? `Audio too large (${mb}). Record a shorter message.` : `Áudio grande demais (${mb}). Grave uma mensagem mais curta.`;
+      } else if (msg) {
+        desc = msg;
+      }
+      toast({ variant: 'destructive', title: isEN ? 'Upload error' : 'Erro no upload', description: desc });
     } finally {
       setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
     }

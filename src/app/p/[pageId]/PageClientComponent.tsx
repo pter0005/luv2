@@ -240,17 +240,22 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
     if (!hasTempUrls) return;
 
     sessionStorage.setItem(healedKey, '1');
-    fetch(`/api/page-heal?pageId=${encodeURIComponent(pageData.id)}`, { cache: 'no-store' })
+    // Timeout 30s — usuário em GCS slow link (sudeste asiático) pode levar
+    // tempo. Sem timeout pendurava a promise pra sempre, sem segundo retry.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30_000);
+    fetch(`/api/page-heal?pageId=${encodeURIComponent(pageData.id)}`, {
+      cache: 'no-store',
+      signal: ctrl.signal,
+    })
       .then(r => r.json())
       .then((res) => {
         if (res?.healed > 0) {
-          // Deu certo — recarrega IMEDIATO. Antes era 1500ms, mas com o
-          // inline-heal no server component esse fallback raramente roda;
-          // quando rodar, é melhor ser instantâneo.
           window.location.reload();
         }
       })
-      .catch(() => { /* silencioso — cron faz segunda tentativa em até 30min */ });
+      .catch(() => { /* timeout/network — cron faz segunda tentativa em até 30min */ })
+      .finally(() => clearTimeout(timer));
   }, [pageData?.id]);
 
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false);

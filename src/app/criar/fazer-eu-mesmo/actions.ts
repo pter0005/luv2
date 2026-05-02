@@ -1409,11 +1409,13 @@ export async function finalizeWithGiftToken(
 }
 
 // ─────────────────────────────────────────────
-// STRIPE (placeholder)
+// STRIPE — re-export da implementação real em /lib/payment/stripe-checkout
 // ─────────────────────────────────────────────
-export async function createStripeCheckoutSession(intentId: string, plan: 'basico' | 'avancado', domain: string): Promise<StripeSessionResult> {
-  return { success: false, error: 'Stripe integration is not fully configured on the backend.' };
-}
+// ANTES era um placeholder retornando {success:false, error:'not configured'}
+// que silenciosamente quebrava 100% das vendas internacionais via wizard.
+// O /chat já usava a real (importava de @/lib/payment/stripe-checkout).
+// Re-export aqui pra wizard antigo continuar funcionando sem mudar callers.
+export { createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
 
 // ─────────────────────────────────────────────
 // EDITAR PÁGINA (VIP only)

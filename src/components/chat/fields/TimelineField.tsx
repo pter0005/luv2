@@ -51,11 +51,14 @@ export default function TimelineField() {
         const cred = await signInAnonymously(firebase.auth);
         activeUser = cred.user;
       } catch {
-        toast({ variant: 'destructive', title: isEN ? 'Error' : 'Erro', description: isEN ? 'Couldn\'t start the session.' : 'Não foi possível iniciar a sessão.' });
+        toast({ variant: 'destructive', title: isEN ? 'Session blocked' : 'Sessão bloqueada', description: isEN ? 'Refresh or disable blockers.' : 'Atualize a página ou desative bloqueadores.' });
         return;
       }
     }
-    if (!activeUser) return;
+    if (!activeUser) {
+      toast({ variant: 'destructive', title: isEN ? 'Session unavailable' : 'Sessão indisponível', description: isEN ? 'Refresh and try again.' : 'Atualize a página e tente de novo.' });
+      return;
+    }
 
     setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
     setPendingCount(selected.length);
@@ -81,20 +84,26 @@ export default function TimelineField() {
       }
     };
 
-    for (let i = 0; i < selected.length; i += CONCURRENCY) {
-      const chunk = selected.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(chunk.map(uploadOne));
-      for (const r of results) {
-        if (r.ok) {
-          append({ id: crypto.randomUUID(), image: r.uploaded, description: '', date: undefined });
-        } else {
-          failed++;
+    // try/finally GARANTE que o _uploadingCount sempre decrementa, mesmo
+    // se algum erro inesperado acontecer no meio. Sem isso, um erro deixa
+    // o counter travado e bloqueia o botão de pagamento depois.
+    try {
+      for (let i = 0; i < selected.length; i += CONCURRENCY) {
+        const chunk = selected.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(chunk.map(uploadOne));
+        for (const r of results) {
+          if (r.ok) {
+            append({ id: crypto.randomUUID(), image: r.uploaded, description: '', date: undefined });
+          } else {
+            failed++;
+          }
+          setPendingCount((n) => Math.max(0, n - 1));
         }
-        setPendingCount((n) => Math.max(0, n - 1));
       }
+    } finally {
+      setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
+      setPendingCount(0);
     }
-
-    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
 
     if (failed > 0) {
       toast({ variant: 'destructive', title: isEN ? `${failed} ${failed === 1 ? 'moment failed' : 'moments failed'}` : `${failed} ${failed === 1 ? 'momento falhou' : 'momentos falharam'}`, description: isEN ? 'Try again.' : 'Tenta de novo.' });

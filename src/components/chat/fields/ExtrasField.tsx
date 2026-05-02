@@ -89,10 +89,19 @@ function PuzzleSubForm() {
     if (!file) return;
     let activeUser = user;
     if (!activeUser && firebase.auth) {
-      const cred = await signInAnonymously(firebase.auth);
-      activeUser = cred.user;
+      try {
+        const cred = await signInAnonymously(firebase.auth);
+        activeUser = cred.user;
+      } catch {
+        toast({ variant: 'destructive', title: 'Sessão bloqueada', description: 'Atualize a página ou desative bloqueadores.' });
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
     }
-    if (!activeUser) return;
+    if (!activeUser) {
+      toast({ variant: 'destructive', title: 'Sessão indisponível', description: 'Atualize a página e tente de novo.' });
+      return;
+    }
     setUploading(true);
     setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
     try {
@@ -182,10 +191,20 @@ function MemorySubForm() {
 
     let activeUser = user;
     if (!activeUser && firebase.auth) {
-      const cred = await signInAnonymously(firebase.auth);
-      activeUser = cred.user;
+      try {
+        const cred = await signInAnonymously(firebase.auth);
+        activeUser = cred.user;
+      } catch {
+        toast({ variant: 'destructive', title: 'Sessão bloqueada', description: 'Não foi possível iniciar sessão. Atualize a página ou desative bloqueadores.' });
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
     }
-    if (!activeUser) { if (fileRef.current) fileRef.current.value = ''; return; }
+    if (!activeUser) {
+      toast({ variant: 'destructive', title: 'Sessão indisponível', description: 'Atualize a página e tente de novo.' });
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
 
     setValue('_uploadingCount' as any, ((getValues as any)('_uploadingCount') || 0) + 1);
 
@@ -193,41 +212,43 @@ function MemorySubForm() {
     setPending((prev) => [...prev, ...batch]);
 
     let failed = 0;
-    const results = await Promise.all(
-      selected.map(async (file, idx) => {
-        const entry = batch[idx];
-        try {
-          let toUpload: File | Blob = file;
+    // try/finally GARANTE decremento do _uploadingCount em qualquer cenário
+    try {
+      const results = await Promise.all(
+        selected.map(async (file, idx) => {
+          const entry = batch[idx];
           try {
-            // Cartas do jogo da memória são bem pequenas no render — 900px sobra.
-            toUpload = await compressImage(file, 900, 0.76);
+            let toUpload: File | Blob = file;
+            try {
+              toUpload = await compressImage(file, 900, 0.76);
+            } catch (err) {
+              console.warn('[memory] compressImage falhou, enviando original', err);
+            }
+            const up = await uploadFile(firebase.storage, activeUser!.uid, toUpload, 'memory-game');
+            return { ok: true as const, up, entry };
           } catch (err) {
-            console.warn('[memory] compressImage falhou, enviando original', err);
+            console.error('[memory] upload falhou', err);
+            return { ok: false as const, entry };
           }
-          const up = await uploadFile(firebase.storage, activeUser!.uid, toUpload, 'memory-game');
-          return { ok: true as const, up, entry };
-        } catch (err) {
-          console.error('[memory] upload falhou', err);
-          return { ok: false as const, entry };
-        }
-      })
-    );
-    const successful = results.filter((r) => r.ok).map((r) => (r as any).up);
-    failed = results.filter((r) => !r.ok).length;
-    if (successful.length) {
-      setValue(
-        'memoryGameImages',
-        [...(watch('memoryGameImages') ?? []), ...successful] as any,
-        { shouldDirty: true, shouldTouch: true }
+        })
       );
+      const successful = results.filter((r) => r.ok).map((r) => (r as any).up);
+      failed = results.filter((r) => !r.ok).length;
+      if (successful.length) {
+        setValue(
+          'memoryGameImages',
+          [...(watch('memoryGameImages') ?? []), ...successful] as any,
+          { shouldDirty: true, shouldTouch: true }
+        );
+      }
+      setPending((prev) => {
+        const settled = new Set(results.map((r) => r.entry.id));
+        prev.forEach((p) => { if (settled.has(p.id)) URL.revokeObjectURL(p.previewUrl); });
+        return prev.filter((p) => !settled.has(p.id));
+      });
+    } finally {
+      setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
     }
-    setPending((prev) => {
-      const settled = new Set(results.map((r) => r.entry.id));
-      prev.forEach((p) => { if (settled.has(p.id)) URL.revokeObjectURL(p.previewUrl); });
-      return prev.filter((p) => !settled.has(p.id));
-    });
-
-    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
 
     if (failed > 0) {
       toast({ variant: 'destructive', title: `${failed} ${failed === 1 ? 'foto falhou' : 'fotos falharam'}`, description: 'Tenta de novo.' });

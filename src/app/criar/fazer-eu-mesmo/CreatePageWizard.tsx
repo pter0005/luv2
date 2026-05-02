@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback, ChangeEvent, useRef, useTransition, DragEvent, useMemo } from "react";
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { reportWizardStuck } from '@/lib/wizard-stuck';
-import { computeTotalBRL, PRICES } from '@/lib/price';
+import { computeTotalBRL, computeTotalUSD, PRICES } from '@/lib/price';
 import { useForm, FormProvider, useWatch, useFormContext, useFieldArray, useFormState, useController } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -2477,6 +2477,15 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
     const [pixTimeLeft, setPixTimeLeft] = useState(0);
     const pixCreatedAtRef = useRef<number>(0);
     const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    // Guard contra duplo-click em payment buttons — evita 2 intents/cobranças.
+    const submitGuardRef = useRef(false);
+    const acquireSubmitGuard = () => {
+        if (submitGuardRef.current) return false;
+        submitGuardRef.current = true;
+        setTimeout(() => { submitGuardRef.current = false; }, 30_000);
+        return true;
+    };
+    const releaseSubmitGuard = () => { submitGuardRef.current = false; };
     const [isBrazilDomain, setIsBrazilDomain] = useState<boolean | null>(null);
     const router = useRouter();
 
@@ -2787,6 +2796,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         // NUNCA bloqueia venda por causa de upload em andamento — finalize tem self-heal.
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
+        if (!acquireSubmitGuard()) return;
         if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) { setError({ message: 'Preencha seu WhatsApp com DDD para continuar.' }); return; }
         if (user.email) setValue('payment.payerEmail', user.email, { shouldDirty: true });
         startTransition(async () => {
@@ -2828,6 +2838,8 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                 }
             } catch (err: any) {
                 setError({ message: "Erro ao conectar com o serviço de pagamento.", details: err });
+            } finally {
+                releaseSubmitGuard();
             }
         });
     };
@@ -2836,6 +2848,7 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         setError(null);
         // NUNCA bloqueia venda por causa de upload em andamento — finalize tem self-heal.
         if (!user) { setError({ message: 'Sessão carregando, aguarde um instante e tente novamente.' }); return; }
+        if (!acquireSubmitGuard()) return;
         if (isAnonymousUser && !confirmedGuestEmail) { setGuestEmailError('Confirme seu e-mail antes de pagar.'); return; }
         startTransition(async () => {
             try {
@@ -2850,16 +2863,38 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
                     return;
                 }
                 setValue('intentId', saveResult.intentId);
-                const planValue = getValues('plan') as 'basico' | 'avancado';
-                const domain = window.location.origin;
-                const sessionResult = await createStripeCheckoutSession(saveResult.intentId, planValue, domain);
+                const formData = getValues();
+                // ANTES: passava `planValue` (string 'avancado'/'basico') no slot de
+                // clientClaimedTotalUSD, dava NaN no Math.abs(undefined-total) e a
+                // sessão do Stripe falhava com 'Price mismatch' silencioso.
+                const claimedUSD = computeTotalUSD({
+                  plan: formData.plan,
+                  qrCodeDesign: formData.qrCodeDesign,
+                  enableWordGame: formData.enableWordGame,
+                  wordGameQuestions: formData.wordGameQuestions as any,
+                  introType: formData.introType,
+                  audioRecording: formData.audioRecording as any,
+                  discountAmount: discountAmount,
+                });
+                const stripeContact = {
+                  email: confirmedGuestEmail || user.email || formData.payment?.payerEmail,
+                  phone: whatsappNumber,
+                };
+                const sessionResult = await createStripeCheckoutSession(
+                  saveResult.intentId,
+                  claimedUSD,
+                  discountCode,
+                  stripeContact,
+                );
                 if (!sessionResult.success) {
-                    setError({ message: sessionResult.error || "Could not create Stripe checkout session.", details: sessionResult.details });
+                    setError({ message: sessionResult.error || "Could not create Stripe checkout session." });
                 } else {
-                    window.location.href = sessionResult.url;
+                    window.location.href = sessionResult.url!;
                 }
             } catch (err: any) {
                 setError({ message: "Error connecting to the payment service.", details: err });
+            } finally {
+                releaseSubmitGuard();
             }
         });
     };
@@ -3815,7 +3850,16 @@ function WizardInternal() {
     const intentId = watch('intentId');
 
     const doAutosave = useCallback(async () => {
-        if (!user || isUserLoading) return;
+        // Espera user hidratar (até 5s) em vez de retornar silencioso —
+        // se isUserLoading na hora do clique Continue, autosave perdia
+        // o fire e o user chegava no Payment com data stale.
+        if (isUserLoading) {
+            const start = Date.now();
+            while (isUserLoading && Date.now() - start < 5_000) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+        if (!user) return;
         const uploadingCount = getValues('_uploadingCount') || 0;
         if (uploadingCount > 0) return;
         const data = getValues();
@@ -3999,12 +4043,29 @@ function WizardInternal() {
         };
     }, [watch, handleAutosave]);
 
+    const isHandlingNextRef = useRef(false);
     const handleNext = async () => {
+        // Double-click guard: clicar 2x rápido disparava 2 autosaves concorrentes
+        if (isHandlingNextRef.current) return;
+        isHandlingNextRef.current = true;
+        try {
         const currentStepId = steps[currentStep].id;
 
         if (currentStepId === 'puzzle') {
             const currentData = getValues();
-            if (currentData.enablePuzzle && !currentData.puzzleImage?.url) {
+            // Race: user mandou foto MAS upload ainda em andamento. Espera
+            // até 8s antes de bloquear — evita falso "envie uma imagem"
+            // quando o upload já tá quase no fim.
+            const uploadingCount = (getValues('_uploadingCount') as any) || 0;
+            if (currentData.enablePuzzle && !currentData.puzzleImage?.url && uploadingCount > 0) {
+                const start = Date.now();
+                toast({ title: 'Aguardando upload...', description: 'Sua imagem do quebra-cabeça tá quase pronta.' });
+                while (((getValues('_uploadingCount') as any) || 0) > 0 && Date.now() - start < 8000) {
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+            const finalData = getValues();
+            if (finalData.enablePuzzle && !finalData.puzzleImage?.url) {
                 toast({ variant: "destructive", title: 'Imagem Necessária', description: 'Para ativar o quebra-cabeça, você precisa enviar uma imagem.' });
                 reportWizardStuck({ kind: 'next_blocked', step: currentStepId, detail: 'puzzle:no_image', userId: user?.uid });
                 return;
@@ -4065,7 +4126,10 @@ function WizardInternal() {
 
         if (nextStepId === 'payment' && user) {
             toast({ title: 'Salvando rascunho...', description: 'Preparando checkout seguro.' });
-            await flushAutosave();
+            // flushAutosave NUNCA pode quebrar o avanço — se falhar, segue
+            // (o checkout vai recriar o intent se necessário). Sem catch
+            // aqui, falha no autosave deixava user preso "Salvando..." pra sempre.
+            await flushAutosave().catch(err => console.warn('[handleNext] flushAutosave falhou (não bloqueia):', err));
             const planVal = getValues('plan');
             trackEvent('InitiateCheckout', {
                 value: estimateValue(),
@@ -4076,6 +4140,9 @@ function WizardInternal() {
             });
         }
         setCurrentStep(Math.min(nextStepIndex, steps.length - 1));
+        } finally {
+            isHandlingNextRef.current = false;
+        }
     };
 
     const handleBack = () => {

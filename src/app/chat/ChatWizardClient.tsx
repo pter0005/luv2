@@ -120,13 +120,23 @@ function Inner() {
     const code = urlCode || stored;
     if (!code) return;
     if (urlCode && typeof window !== 'undefined') localStorage.setItem('mycupid_discount_code', urlCode);
-    fetch(`/api/discount?code=${encodeURIComponent(code)}`)
+
+    // AbortController pro cleanup — sem isso, navegação back/forward
+    // disparava 2 fetches em paralelo, e o POST de mark-as-used incrementava
+    // o contador 2x por click (queimando códigos antes da venda real).
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10_000);
+
+    fetch(`/api/discount?code=${encodeURIComponent(code)}`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => {
         if (d?.valid && d.discount > 0) setDiscountAmount(d.discount);
         else if (typeof window !== 'undefined') localStorage.removeItem('mycupid_discount_code');
       })
-      .catch(() => {});
+      .catch(() => { /* timeout/abort/network — silencioso, segue sem desconto */ })
+      .finally(() => clearTimeout(timer));
+
+    return () => { clearTimeout(timer); ctrl.abort(); };
   }, [searchParams]);
 
   useEffect(() => {
@@ -157,6 +167,10 @@ function Inner() {
 
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Sinaliza quota de localStorage estourou — exibe banner pro user salvar
+  // antes de perder o form. Se quota cheia + user navega → form perdido.
+  const [quotaWarn, setQuotaWarn] = useState(false);
+
   useEffect(() => {
     if (!hydrated) return;
     const sub = methods.watch((values) => {
@@ -166,14 +180,32 @@ function Inner() {
           const slim = stripNonPersistable(values as PageData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
           setSaveTick((t) => t + 1);
-        } catch { /* quota */ }
+          if (quotaWarn) setQuotaWarn(false);
+        } catch (err: any) {
+          // QuotaExceededError, NS_ERROR_DOM_QUOTA_REACHED (Firefox), etc.
+          const isQuota = err?.name === 'QuotaExceededError' || /quota|exceed/i.test(err?.message || '');
+          if (isQuota) {
+            setQuotaWarn(true);
+            // Tenta liberar espaço deletando outros keys mycupid_* não-críticos
+            try {
+              for (const k of Object.keys(localStorage)) {
+                if (k.startsWith('mycupid_') && k !== STORAGE_KEY && k !== STEP_KEY_STORAGE) {
+                  localStorage.removeItem(k);
+                }
+              }
+              // Tenta de novo
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(stripNonPersistable(values as PageData)));
+              setQuotaWarn(false);
+            } catch { /* desistir, banner fica */ }
+          }
+        }
       }, PERSIST_DEBOUNCE_MS);
     });
     return () => {
       sub.unsubscribe();
       if (persistTimer.current) clearTimeout(persistTimer.current);
     };
-  }, [methods, hydrated]);
+  }, [methods, hydrated, quotaWarn]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -286,7 +318,13 @@ function Inner() {
   // página com timeline meio quebrada do que perder a venda.
   const HARD_GATE_STEPS = useMemo(() => new Set(['recipient', 'message']), []);
 
+  // Guard contra duplo-click no Continue
+  const isHandlingNextRef = useRef(false);
+
   const handleNext = useCallback(async () => {
+    if (isHandlingNextRef.current) return;
+    isHandlingNextRef.current = true;
+    try {
     const fields = getFieldsForStep(currentStep);
 
     // PRE-CLEAN: remove entradas malformadas que poderiam reprovar a validação
@@ -356,6 +394,9 @@ function Inner() {
     setDirection(1);
     setCurrentStep(CHAT_STEP_ORDER[stepIndex + 1]);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      isHandlingNextRef.current = false;
+    }
   }, [currentStep, isLast, stepIndex, methods, user?.uid, HARD_GATE_STEPS]);
 
   useEffect(() => {

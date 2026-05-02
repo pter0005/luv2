@@ -126,25 +126,33 @@ export default function GalleryField() {
       }
     };
 
-    for (let i = 0; i < selected.length; i += CONCURRENCY) {
-      const chunk = selected.slice(i, i + CONCURRENCY);
-      const chunkEntries = batch.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(chunk.map((file, j) => uploadOne(file, chunkEntries[j])));
+    // try/finally garante decremento do _uploadingCount em qualquer cenário
+    try {
+      for (let i = 0; i < selected.length; i += CONCURRENCY) {
+        const chunk = selected.slice(i, i + CONCURRENCY);
+        const chunkEntries = batch.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(chunk.map((file, j) => uploadOne(file, chunkEntries[j])));
 
-      const successful = results.filter((r) => r.ok).map((r) => (r as any).uploaded);
-      const settledIds = new Set(results.map((r) => r.entry.id));
-      failed += results.filter((r) => !r.ok).length;
+        const successful = results.filter((r) => r.ok).map((r) => (r as any).uploaded);
+        const settledIds = new Set(results.map((r) => r.entry.id));
+        failed += results.filter((r) => !r.ok).length;
 
-      // Append sequencial: um por vez pra não disputar o estado do useFieldArray
-      for (const up of successful) append(up);
+        // Append sequencial: um por vez pra não disputar o estado do useFieldArray
+        for (const up of successful) append(up);
 
+        setPending((prev) => {
+          prev.forEach((p) => { if (settledIds.has(p.id)) URL.revokeObjectURL(p.previewUrl); });
+          return prev.filter((p) => !settledIds.has(p.id));
+        });
+      }
+    } finally {
+      setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
+      // Defesa: limpa pending órfão (se loop quebrou no meio)
       setPending((prev) => {
-        prev.forEach((p) => { if (settledIds.has(p.id)) URL.revokeObjectURL(p.previewUrl); });
-        return prev.filter((p) => !settledIds.has(p.id));
+        prev.forEach((p) => { try { URL.revokeObjectURL(p.previewUrl); } catch {} });
+        return [];
       });
     }
-
-    setValue('_uploadingCount' as any, Math.max(0, ((getValues as any)('_uploadingCount') || 0) - 1));
 
     if (failed > 0) {
       toast({
