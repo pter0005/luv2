@@ -408,10 +408,20 @@ export default function PaymentField() {
     return () => clearInterval(id);
   }, [pixData]);
 
-  // Polling — se MP retornar cancelled/rejected, marca como expirado pra mostrar CTA
+  // Polling — se MP retornar cancelled/rejected, marca como expirado pra mostrar CTA.
+  // TIMEOUT: para de pollar após 15 min (PIX expira em 30 min mas usuário
+  // costuma desistir antes). Antes pollava pra sempre = bateria mobile drenada
+  // + custo de função no servidor + spinner girando sem fim.
   useEffect(() => {
     if (!pixData || !intentId || paid || pixExpired) return;
+    const startedAt = Date.now();
+    const POLL_MAX_MS = 15 * 60 * 1000;
     pollRef.current = setInterval(async () => {
+      if (Date.now() - startedAt > POLL_MAX_MS) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setPixExpired(true);
+        return;
+      }
       try {
         const res = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
         if (res.status === 'approved') {
@@ -421,7 +431,6 @@ export default function PaymentField() {
           if (pollRef.current) clearInterval(pollRef.current);
           setPixExpired(true);
         } else if (res.status === 'error') {
-          // Não bloqueia — retry silencioso. Só marca erro visível se for persistente.
           console.warn('[pix] verify transient error:', res.error);
         }
       } catch { /* retry */ }
@@ -1079,7 +1088,7 @@ export default function PaymentField() {
                 </span>
               </div>
               <div className="text-[12px] text-white/60 mt-0.5">
-                Aprovado em segundos · sem taxas
+                {isUS ? 'Approved in seconds · no fees' : 'Aprovado em segundos · sem taxas'}
               </div>
             </div>
             {method === 'pix' && (
@@ -1116,7 +1125,7 @@ export default function PaymentField() {
                 </span>
               </div>
               <div className="text-[12px] text-white/60 mt-0.5">
-                Crédito ou débito
+                {isUS ? 'Credit or debit' : 'Crédito ou débito'}
               </div>
             </div>
             {method === 'card' && (
@@ -1154,15 +1163,15 @@ export default function PaymentField() {
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Gerando QR...
+                      <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Generating QR...' : 'Gerando QR...'}
                     </>
                   ) : !isContactValid ? (
                     <>
-                      <AlertCircle className="w-5 h-5" /> Preenche email + WhatsApp
+                      <AlertCircle className="w-5 h-5" /> {isUS ? 'Enter email + phone' : 'Preenche email + WhatsApp'}
                     </>
                   ) : (
                     <>
-                      <Zap className="w-5 h-5" /> Gerar PIX de {BRL.format(total)}
+                      <Zap className="w-5 h-5" /> {isUS ? `Pay ${money(total, locale)}` : `Gerar PIX de ${BRL.format(total)}`}
                     </>
                   )}
                 </button>
@@ -1171,7 +1180,7 @@ export default function PaymentField() {
                   <span className="h-10 w-px bg-white/10" />
                   <div className="flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.5} />
-                    <span className="text-[11.5px] font-semibold text-white/80">Pagamento seguro</span>
+                    <span className="text-[11.5px] font-semibold text-white/80">{isUS ? 'Secure payment' : 'Pagamento seguro'}</span>
                   </div>
                 </div>
               </div>
@@ -1261,7 +1270,7 @@ export default function PaymentField() {
                   <span className="h-10 w-px bg-white/10" />
                   <div className="flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-emerald-400" strokeWidth={2.5} />
-                    <span className="text-[11.5px] font-semibold text-white/80">Pagamento seguro</span>
+                    <span className="text-[11.5px] font-semibold text-white/80">{isUS ? 'Secure payment' : 'Pagamento seguro'}</span>
                   </div>
                 </div>
               </motion.div>
@@ -1289,15 +1298,15 @@ export default function PaymentField() {
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Abrindo checkout...
+                  <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Opening checkout...' : 'Abrindo checkout...'}
                 </>
               ) : !isContactValid ? (
                 <>
-                  <AlertCircle className="w-5 h-5" /> Preenche email + WhatsApp
+                  <AlertCircle className="w-5 h-5" /> {isUS ? 'Enter email + phone' : 'Preenche email + WhatsApp'}
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-5 h-5" /> Pagar {BRL.format(total)} no cartão
+                  <CreditCard className="w-5 h-5" /> {isUS ? `Pay ${money(total, locale)} by card` : `Pagar ${BRL.format(total)} no cartão`}
                 </>
               )}
             </button>
@@ -1311,7 +1320,7 @@ export default function PaymentField() {
                 </div>
               </div>
               <p className="text-[10.5px] text-center text-white/40">
-                Visa · Master · Elo · Amex · Hipercard
+                {isUS ? 'Visa · Mastercard · Amex · Discover' : 'Visa · Master · Elo · Amex · Hipercard'}
               </p>
             </div>
 

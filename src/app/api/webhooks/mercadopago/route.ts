@@ -37,6 +37,17 @@ const validateWebhookSignature = (request: NextRequest, rawBody: string): boolea
         return false;
     }
 
+    // Replay protection: rejeita webhooks com mais de 5 min — atacante com
+    // signature válida antiga não pode reusar pra disparar finalize.
+    const tsNum = Number(ts);
+    if (Number.isFinite(tsNum)) {
+        const ageSec = Math.abs(Date.now() / 1000 - tsNum);
+        if (ageSec > 300) {
+            console.error(`[WEBHOOK_VALIDATION] Webhook stale (age=${ageSec.toFixed(0)}s).`);
+            return false;
+        }
+    }
+
     let dataId;
     try {
         const body = JSON.parse(rawBody);

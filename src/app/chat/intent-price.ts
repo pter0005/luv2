@@ -2,6 +2,8 @@
 
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { computeTotalBRL, computeTotalUSD } from '@/lib/price';
+import { headers } from 'next/headers';
+import { localeFromHost } from '@/i18n/config';
 
 export interface IntentPriceResult {
   ok: boolean;
@@ -35,7 +37,19 @@ export async function getIntentServerPrice(intentId: string): Promise<IntentPric
       discountAmount: Number(d.appliedDiscount) || 0,
     };
 
-    const isEN = d.locale === 'en' || d.currency === 'USD';
+    // BUG ANTERIOR: se intent não tinha d.locale nem d.currency setado
+    // (cenário comum: createOrUpdatePaymentIntent é chamado em useEffect
+    // SEM passar locale, só preenchidos no handlePix/handleStripe DEPOIS),
+    // isEN caía pra false → calculava em BRL pra usuário US → cliente
+    // formatava esse número como USD = "$34.99 sendo R$ 34,99 mascarado".
+    // Fallback: lê o host do request e infere locale corretamente.
+    let isEN = d.locale === 'en' || d.currency === 'USD';
+    if (!d.locale && !d.currency) {
+      try {
+        const host = headers().get('host');
+        isEN = localeFromHost(host) === 'en';
+      } catch { /* fora de request context — segue com isEN=false */ }
+    }
     const total = isEN ? computeTotalUSD(input) : computeTotalBRL(input);
     return { ok: true, total, currency: isEN ? 'USD' : 'BRL' };
   } catch (e: any) {

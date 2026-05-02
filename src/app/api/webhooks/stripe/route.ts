@@ -36,11 +36,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 400 });
   }
 
-  // Dedup: checa se já processamos esse event.id
+  // Dedup ATÔMICO: write-or-skip via transaction. Antes era read+write
+  // separados → 2 webhooks concorrentes podiam ambos passar e processar 2x.
   const db = getAdminFirestore();
   const eventRef = db.collection('stripe_events').doc(event.id);
-  const eventSnap = await eventRef.get();
-  if (eventSnap.exists) {
+  let alreadyProcessed = false;
+  try {
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(eventRef);
+      if (snap.exists) { alreadyProcessed = true; return; }
+      t.set(eventRef, { type: event.type, createdAt: Timestamp.now() });
+    });
+  } catch (err: any) {
+    console.error('[stripe-webhook] dedup transaction failed:', err?.message);
+    return NextResponse.json({ error: 'dedup_failed' }, { status: 500 });
+  }
+  if (alreadyProcessed) {
     return NextResponse.json({ ok: true, dedup: true });
   }
 
@@ -71,11 +82,6 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-
-    await eventRef.set({
-      type: event.type,
-      createdAt: Timestamp.now(),
-    });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

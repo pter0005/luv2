@@ -739,7 +739,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className="w-full max-w-2xl text-center"
                 >
-                  <h2 className="text-4xl font-bold font-headline text-white mb-8">Escolha um Jogo</h2>
+                  <h2 className="text-4xl font-bold font-headline text-white mb-8">{isEN ? 'Choose a Game' : 'Escolha um Jogo'}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {hasMemoryGame && (
                         <div
@@ -747,8 +747,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <BrainCircuit className="w-10 h-10 text-primary" />
-                        <h3 className="font-bold text-lg text-white">Jogo da Memória</h3>
-                        <p className="text-sm text-muted-foreground">Encontre os pares de suas fotos especiais.</p>
+                        <h3 className="font-bold text-lg text-white">{isEN ? 'Memory Game' : 'Jogo da Memória'}</h3>
+                        <p className="text-sm text-muted-foreground">{isEN ? 'Match pairs of your special photos.' : 'Encontre os pares de suas fotos especiais.'}</p>
                         </div>
                     )}
                     {hasQuiz && (
@@ -757,8 +757,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <HelpCircle className="w-10 h-10 text-primary" />
-                        <h3 className="font-bold text-lg text-white">Quiz do Casal</h3>
-                        <p className="text-sm text-muted-foreground">Crie um quiz divertido sobre vocês.</p>
+                        <h3 className="font-bold text-lg text-white">{isEN ? 'Couple Quiz' : 'Quiz do Casal'}</h3>
+                        <p className="text-sm text-muted-foreground">{isEN ? 'A fun quiz about you both.' : 'Crie um quiz divertido sobre vocês.'}</p>
                         </div>
                     )}
                     {hasWordGame && (
@@ -767,8 +767,8 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                         className="card-glow p-6 rounded-2xl flex flex-col items-center gap-4 cursor-pointer text-center bg-white/5 border-white/10"
                         >
                         <span className="text-5xl">💘</span>
-                        <h3 className="text-xl font-bold text-white">Adivinhe a Palavra</h3>
-                        <p className="text-sm text-muted-foreground">Descubra as respostas secretas letra por letra.</p>
+                        <h3 className="text-xl font-bold text-white">{isEN ? 'Guess the Word' : 'Adivinhe a Palavra'}</h3>
+                        <p className="text-sm text-muted-foreground">{isEN ? 'Discover the secret answers letter by letter.' : 'Descubra as respostas secretas letra por letra.'}</p>
                         </div>
                     )}
                   </div>
@@ -788,7 +788,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   >
                     <ArrowLeft className="mr-2" /> Voltar
                   </Button>
-                  {activeGame === 'memory' && pageData.memoryGameImages && <MemoryGame images={pageData.memoryGameImages.map((img: any) => img.url)} />}
+                  {activeGame === 'memory' && Array.isArray(pageData.memoryGameImages) && pageData.memoryGameImages.length > 0 && (
+                    <MemoryGame images={pageData.memoryGameImages.filter((img: any) => img?.url).map((img: any) => img.url)} />
+                  )}
                   {activeGame === 'quiz' && pageData.quizQuestions && <QuizGame questions={pageData.quizQuestions} />}
                   {activeGame === 'word' && pageData.wordGameQuestions && <WordGame questions={pageData.wordGameQuestions} onExit={() => setActiveGame(null)} />}
                 </motion.div>
@@ -828,13 +830,10 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
                   </div>
                   <div className="space-y-2">
                       <h2 className="text-4xl md:text-5xl font-bold text-white font-headline tracking-tighter">
-                          Um Enigma de{' '}
-                          <span className="gradient-text">
-                              Amor
-                          </span>
+                          {isEN ? <>A Love <span className="gradient-text">Puzzle</span></> : <>Um Enigma de <span className="gradient-text">Amor</span></>}
                       </h2>
                       <p className="text-white/70 text-sm max-w-xs mx-auto">
-                          Resolva o quebra-cabeça para revelar uma surpresa especial.
+                          {isEN ? 'Solve the puzzle to reveal a special surprise.' : 'Resolva o quebra-cabeça para revelar uma surpresa especial.'}
                       </p>
                   </div>
               </div>

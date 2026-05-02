@@ -7,9 +7,47 @@ import PageClientComponent from './PageClientComponent'; // This is now V2
 import { LoadingState, ErrorState } from './PageStates';
 import { healPageInline } from '@/lib/heal-page-inline';
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
+// Dynamic metadata por página — antes era static "robots noindex" só.
+// Sem isso, WhatsApp/Instagram/Facebook mostravam preview genérico (sem
+// foto da galeria, título da página, mensagem), matando o viral effect.
+// Agora cada compartilhamento mostra preview personalizado.
+export async function generateMetadata({ params }: { params: { pageId: string } }): Promise<Metadata> {
+  try {
+    const db = getAdminFirestore();
+    const snap = await db.collection('lovepages').doc(params.pageId).get();
+    if (!snap.exists) return { robots: { index: false, follow: false } };
+    const d = snap.data() || {};
+    const title = (d.title as string) || 'MyCupid';
+    const message = ((d.message as string) || '').slice(0, 160).trim();
+    const description = message || (d.locale === 'en'
+      ? 'A special love page made just for you 💌'
+      : 'Uma página especial feita com carinho 💌');
+    const galleryImage = Array.isArray(d.galleryImages) && d.galleryImages.length > 0
+      ? d.galleryImages[0]?.url
+      : null;
+    const heroImage = galleryImage || d.puzzleImage?.url || null;
+
+    return {
+      title,
+      description,
+      robots: { index: false, follow: false }, // Páginas privadas — não indexar
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        images: heroImage ? [{ url: heroImage, width: 1200, height: 630, alt: title }] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: heroImage ? [heroImage] : undefined,
+      },
+    };
+  } catch {
+    return { robots: { index: false, follow: false } };
+  }
+}
 
 // =================================================================
 // SERVER-SIDE LOGIC

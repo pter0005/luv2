@@ -35,28 +35,42 @@ export async function GET(request: NextRequest) {
 
 // POST /api/discount — marca como usado por um email
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = rateLimit(`discount-post:${ip}`, 20, 60_000);
+  if (!rl.ok) return NextResponse.json({ ok: false, reason: 'rate_limited' }, { status: 429 });
   try {
     const { code, email } = await request.json();
     if (!code || !email) return NextResponse.json({ ok: false });
 
     const db = getAdminFirestore();
     const ref = db.collection('discount_codes').doc(code.toUpperCase());
-    const snap = await ref.get();
-    if (!snap.exists) return NextResponse.json({ ok: false, reason: 'not_found' });
-
-    const d = snap.data()!;
-    if (!d.active || d.usedCount >= d.maxUses) return NextResponse.json({ ok: false, reason: 'unavailable' });
-
     const cleanEmail = email.toLowerCase().trim();
-    if (d.usedEmails?.includes(cleanEmail)) return NextResponse.json({ ok: false, reason: 'already_used' });
 
-    await ref.update({
-      usedCount: FieldValue.increment(1),
-      usedEmails: FieldValue.arrayUnion(cleanEmail),
-      lastUsedAt: Timestamp.now(),
-    });
-
-    return NextResponse.json({ ok: true });
+    // TRANSACTION: previne race condition onde 2 requests concorrentes leem
+    // usedCount/usedEmails antes do primeiro write — ambos passam, ambos
+    // incrementam, código fica "esgotado" prematuramente OU email único é
+    // marcado 2x.
+    try {
+      await db.runTransaction(async (t) => {
+        const snap = await t.get(ref);
+        if (!snap.exists) throw new Error('not_found');
+        const d = snap.data()!;
+        if (!d.active) throw new Error('inactive');
+        if ((d.usedCount ?? 0) >= (d.maxUses ?? 0)) throw new Error('limit_reached');
+        if (Array.isArray(d.usedEmails) && d.usedEmails.includes(cleanEmail)) {
+          throw new Error('already_used');
+        }
+        t.update(ref, {
+          usedCount: FieldValue.increment(1),
+          usedEmails: FieldValue.arrayUnion(cleanEmail),
+          lastUsedAt: Timestamp.now(),
+        });
+      });
+      return NextResponse.json({ ok: true });
+    } catch (e: any) {
+      const reason = e?.message || 'unavailable';
+      return NextResponse.json({ ok: false, reason });
+    }
   } catch {
     return NextResponse.json({ ok: false });
   }

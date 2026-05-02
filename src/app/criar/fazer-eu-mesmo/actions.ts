@@ -393,6 +393,27 @@ export async function processPixPayment(
     if (!intentDoc.exists) return { error: 'Rascunho não encontrado.' };
 
     const intentData = intentDoc.data();
+
+    // IDEMPOTÊNCIA: se já tem PIX ATIVO pra esse intent, devolve o MESMO QR.
+    // Antes: 2 cliques rápidos = 2 PIX gerados pra mesmo pedido = risco de
+    // dupla cobrança se ambos forem pagos. Status 'completed' segue rejeitando
+    // (intent já fechado), 'pending' devolve o QR existente — user consegue
+    // pagar de novo sem gerar duplicata.
+    if (intentData?.status === 'completed') {
+      return { error: 'Pedido já foi pago.' };
+    }
+    if (intentData?.paymentId && intentData?.pixQrCode && intentData?.pixCreatedAt) {
+      const ageMs = Date.now() - (intentData.pixCreatedAt.toMillis?.() || 0);
+      const PIX_TTL_MS = 30 * 60 * 1000; // PIX MP expira em 30 min
+      if (ageMs < PIX_TTL_MS) {
+        return {
+          qrCode: intentData.pixQrCode,
+          qrCodeBase64: intentData.pixQrCodeBase64,
+          paymentId: intentData.paymentId,
+        };
+      }
+    }
+
     // Prioriza contato passado na chamada — evita race condition onde o
     // merge-save ainda não visível nesta leitura do Firestore.
     // sanitizeEmail: lower, trim, remove chars invisíveis/zero-width/BOM que usuários
@@ -526,7 +547,9 @@ export async function processPixPayment(
         console.warn('[PIX] Failed to mark discount as used (non-blocking):', e);
       }
     }
-    const amount = Number(serverAmount.toFixed(2));
+    // Math.round * 100 / 100 evita binário-floating quirks (toFixed depende
+    // de floor depending on JS engine). 19.895 → 19.90 consistente.
+    const amount = Math.round(serverAmount * 100) / 100;
     if (!amount || amount < 1 || isNaN(amount)) {
       return { error: `Valor inválido: R$${amount}. Tente novamente.` };
     }
@@ -582,6 +605,12 @@ export async function processPixPayment(
             paymentId: paymentId.toString(),
             status: 'waiting_payment',
             paidAmount: amount,
+            // Persiste QR pro idempotency check no início desse próprio
+            // handler — duplo-click ou retry retorna o MESMO PIX em vez
+            // de gerar segundo cobrança.
+            pixQrCode: qrCode,
+            pixQrCodeBase64: qrCodeBase64,
+            pixCreatedAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
           });
           // Notify admin: PIX generated (non-blocking)
