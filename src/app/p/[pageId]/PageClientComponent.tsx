@@ -361,7 +361,29 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
   
   const hasValidTimelineEvents = timelineEventsForDisplay.length > 0;
 
+  // Sequência de overlays: intro → puzzle → conteúdo final.
+  // ANTES o `puzzleRevealed` único era setado pelo onReveal de QUALQUER um
+  // (intro OU puzzle), o que ocultava o puzzle quando user tinha intro+puzzle:
+  // intro acabava, setPuzzleRevealed(true), e o puzzle nunca renderizava.
+  // Agora separamos: introDone é exclusivo da intro. Puzzle só aparece se
+  // (introDone && hasPuzzle && !puzzleRevealed). Conteúdo final aparece
+  // quando puzzleRevealed=true (compat com resto do componente).
+  const [introDone, setIntroDone] = useState(false);
+
+  const handleIntroFinished = useCallback(() => {
+    setIntroDone(true);
+    // Se NÃO tem puzzle, vai direto pro conteúdo
+    if (!hasPuzzle) {
+      setShowExplosion(true);
+      setPuzzleRevealed(true);
+      try { playerRef.current?.play(); } catch {}
+    }
+  }, [hasPuzzle]);
+
+  // handleReveal mantém o nome legado; agora só é usado pelo PUZZLE
+  // (quando user completa peças) e pelos error boundaries das intros.
   const handleReveal = useCallback(() => {
+    setIntroDone(true);
     setShowExplosion(true);
     setPuzzleRevealed(true);
     try { playerRef.current?.play(); } catch {}
@@ -369,8 +391,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
 
   useEffect(() => {
     setIsClient(true);
-    if (!hasPuzzle && !hasEasterIntro && !hasLoveIntro && !hasPoemaIntro) {
+    const hasAnyIntro = hasEasterIntro || hasLoveIntro || hasPoemaIntro;
+    // Sem intro nenhuma e sem puzzle → vai direto pro conteúdo final
+    if (!hasPuzzle && !hasAnyIntro) {
+      setIntroDone(true);
       setPuzzleRevealed(true);
+    }
+    // Sem intro mas com puzzle → puzzle aparece logo (introDone=true)
+    if (!hasAnyIntro && hasPuzzle) {
+      setIntroDone(true);
     }
   }, [hasPuzzle, hasEasterIntro, hasLoveIntro, hasPoemaIntro]);
 
@@ -773,7 +802,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {!puzzleRevealed && hasPuzzle && puzzleImageSrc && (
+        {introDone && !puzzleRevealed && hasPuzzle && puzzleImageSrc && (
           <motion.div
             key="puzzle-overlay-layer"
             initial={{ opacity: 1 }}
@@ -838,9 +867,9 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
         )}
       </AnimatePresence>
 
-      <IntroErrorBoundary onError={handleReveal}>
+      <IntroErrorBoundary onError={handleIntroFinished}>
         <AnimatePresence>
-          {!puzzleRevealed && hasEasterIntro && (
+          {!introDone && hasEasterIntro && (
             <motion.div
               key="easter-overlay-layer"
               initial={{ opacity: 1 }}
@@ -848,15 +877,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               transition={{ duration: 0.8 }}
               className="fixed inset-0 z-[100]"
             >
-              <EasterEggIntro onReveal={handleReveal} />
+              <EasterEggIntro onReveal={handleIntroFinished} />
             </motion.div>
           )}
         </AnimatePresence>
       </IntroErrorBoundary>
 
-      <IntroErrorBoundary onError={handleReveal}>
+      <IntroErrorBoundary onError={handleIntroFinished}>
         <AnimatePresence>
-          {!puzzleRevealed && hasLoveIntro && (
+          {!introDone && hasLoveIntro && (
             <motion.div
               key="love-overlay-layer"
               initial={{ opacity: 1, y: 0 }}
@@ -864,15 +893,15 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               transition={{ duration: 0.9, ease: [0.4, 0, 0.2, 1] }}
               className="fixed inset-0 z-[100]"
             >
-              <BunnyLoveIntro onReveal={handleReveal} />
+              <BunnyLoveIntro onReveal={handleIntroFinished} />
             </motion.div>
           )}
         </AnimatePresence>
       </IntroErrorBoundary>
 
-      <IntroErrorBoundary onError={handleReveal}>
+      <IntroErrorBoundary onError={handleIntroFinished}>
         <AnimatePresence>
-          {!puzzleRevealed && hasPoemaIntro && (
+          {!introDone && hasPoemaIntro && (
             <motion.div
               key="poema-overlay-layer"
               initial={{ opacity: 1 }}
@@ -882,7 +911,7 @@ export default function PageClientComponent({ pageData }: { pageData: any }) {
               style={{ background: '#0a0510' }}
             >
               <div className="absolute inset-0 overflow-hidden">
-                <FlowerPoemIntro onReveal={handleReveal} gender={(pageData as any).introGender || 'fem'} fontFamily={(pageData as any).introFont || 'cormorant'} />
+                <FlowerPoemIntro onReveal={handleIntroFinished} gender={(pageData as any).introGender || 'fem'} fontFamily={(pageData as any).introFont || 'cormorant'} />
               </div>
             </motion.div>
           )}
