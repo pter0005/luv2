@@ -922,6 +922,48 @@ export default function PaymentField() {
         </div>
       )}
 
+      {/* Trust block — garantia + segurança ANTES dos campos de contato.
+          Reduz hesitação de quem chega no checkout achando que é arriscado. */}
+      {!pixData && !giftToken && (
+        <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-500/10 via-emerald-400/5 to-green-500/5 ring-1 ring-emerald-400/30">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 ring-1 ring-emerald-400/40 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4 text-emerald-300" />
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-white leading-tight">
+                {isUS ? '7-day money-back guarantee' : 'Garantia de 7 dias'}
+              </p>
+              <p className="text-[11.5px] text-white/60 mt-0.5">
+                {isUS
+                  ? 'Don\'t love it? Full refund, no questions asked.'
+                  : 'Não gostou? Devolvemos 100% do valor, sem perguntas.'}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/5">
+            <div className="flex flex-col items-center gap-1 text-center">
+              <Lock className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="text-[10px] text-white/65 font-medium leading-tight">
+                {isUS ? 'Encrypted payment' : 'Pagamento seguro'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1 text-center">
+              <Zap className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="text-[10px] text-white/65 font-medium leading-tight">
+                {isUS ? 'Instant access' : 'Acesso imediato'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1 text-center">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+              <span className="text-[10px] text-white/65 font-medium leading-tight">
+                {isUS ? 'No subscription' : 'Sem mensalidade'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contato — email + whatsapp (obrigatórios) */}
       <div className="space-y-3 rounded-xl p-4 bg-white/[0.03] ring-1 ring-white/10">
         <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
