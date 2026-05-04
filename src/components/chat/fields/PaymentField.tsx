@@ -317,8 +317,8 @@ export default function PaymentField() {
     const key = `${emailInput}|${phone}`;
     if (amFiredFor.current === key) return;
     amFiredFor.current = key;
-    setAdvancedMatching({ email: emailInput, phone }).catch(() => {});
-  }, [isContactValid, emailInput, phone]);
+    setAdvancedMatching({ email: emailInput, phone, market }).catch(() => {});
+  }, [isContactValid, emailInput, phone, market]);
 
   // Attribution (UTMs + fbp/fbc/ttclid) lida 1x e injetada em todos os saves.
   // Persistida no intent doc pro server-side pixel (CAPI/Events API) conseguir

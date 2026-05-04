@@ -39,14 +39,37 @@ async function sha256Hex(raw: string): Promise<string | null> {
  * Inject hashed email + phone into Meta Pixel & TikTok Pixel so match rate
  * jumps from ~40% to 70%+. Call once the user provides contact info (at the
  * payment step). Safe to call multiple times — providers dedup internally.
+ *
+ * Phone country code:
+ *   PT (9 dígitos)       → prefix 351
+ *   BR (10-11 dígitos)   → prefix 55
+ *   US (10 dígitos)      → prefix 1
+ *   12+ dígitos          → assume já tem country code
+ * Aceita `market` opcional pra desambiguar — sem ele, cai na heurística por
+ * comprimento (10 díg ambíguo entre BR-curto e US, default BR pq é o mercado
+ * primário). Quando o caller souber market, sempre passa.
  */
-export async function setAdvancedMatching(opts: { email?: string; phone?: string }) {
+export async function setAdvancedMatching(opts: { email?: string; phone?: string; market?: 'BR' | 'PT' | 'US' }) {
   const email = (opts.email || '').trim().toLowerCase();
-  // Phone for Meta: digits only, country code prefixed (55 for BR, 1 for US).
-  // Heuristic: 10-11 digits → BR without country code (most common), prepend 55.
-  // 12+ digits → already has country code, use as-is.
   const rawPhone = (opts.phone || '').replace(/\D/g, '');
-  const phone = rawPhone.length >= 10 && rawPhone.length <= 11 ? `55${rawPhone}` : rawPhone;
+
+  let phone = rawPhone;
+  if (rawPhone.length >= 12) {
+    // Já tem country code, usa como veio
+    phone = rawPhone;
+  } else if (opts.market === 'PT' && rawPhone.length === 9) {
+    phone = `351${rawPhone}`;
+  } else if (opts.market === 'US' && rawPhone.length === 10) {
+    phone = `1${rawPhone}`;
+  } else if (opts.market === 'BR' && (rawPhone.length === 10 || rawPhone.length === 11)) {
+    phone = `55${rawPhone}`;
+  } else if (rawPhone.length === 9) {
+    // Sem market explícito mas 9 dígitos → quase certeza PT
+    phone = `351${rawPhone}`;
+  } else if (rawPhone.length === 10 || rawPhone.length === 11) {
+    // 10-11 sem market → fallback BR (mercado primário)
+    phone = `55${rawPhone}`;
+  }
 
   const [emHash, phHash] = await Promise.all([
     email ? sha256Hex(email) : Promise.resolve(null),

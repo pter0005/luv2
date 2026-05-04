@@ -48,6 +48,7 @@ interface ServerPurchaseInput {
   userPhone?: string;
   paidAmount?: number;
   locale?: 'pt' | 'en';
+  market?: 'BR' | 'PT' | 'US';
   fbp?: string; // _fbp cookie (Facebook browser id)
   fbc?: string; // _fbc cookie (Facebook click id, from fbclid param)
   ttclid?: string; // TikTok click id
@@ -61,22 +62,38 @@ async function sendServerSidePurchaseEvent(input: ServerPurchaseInput | 'basico'
     ? { plan: input, pageId: pageIdLegacy!, userEmail: userEmailLegacy, paidAmount: paidAmountLegacy }
     : input;
 
-  const { plan, pageId, userEmail, userPhone, paidAmount, locale, fbp, fbc, ttclid, ttp, eventSourceUrl } = opts;
-  const isEN = locale === 'en';
-  const currency = isEN ? 'USD' : 'BRL';
-  const defaultDomain = isEN ? 'https://mycupid.net' : 'https://mycupid.com.br';
+  const { plan, pageId, userEmail, userPhone, paidAmount, locale, market, fbp, fbc, ttclid, ttp, eventSourceUrl } = opts;
+
+  // Resolve market a partir do que foi passado, com fallback no locale
+  // (legacy: chamadas antigas sem market). Currency segue o market — não
+  // dá pra inferir só por locale (PT e BR ambos são locale='pt').
+  const resolvedMarket: 'BR' | 'PT' | 'US' = market || (locale === 'en' ? 'US' : 'BR');
+  const currency: 'BRL' | 'EUR' | 'USD' =
+    resolvedMarket === 'PT' ? 'EUR' : resolvedMarket === 'US' ? 'USD' : 'BRL';
+  // isEN seleciona pixel/token "internacional" — engloba US E PT (ambos
+  // mercados Stripe). Vars _US existentes continuam servindo. Quando
+  // tivermos pixel PT-específico, basta adicionar branch resolvedMarket==='PT'.
+  const isEN = resolvedMarket !== 'BR';
+  const defaultDomain =
+    resolvedMarket === 'BR' ? 'https://mycupid.com.br' : 'https://mycupid.net';
   const sourceUrl = eventSourceUrl || `${defaultDomain}/chat`;
 
+  // Default value por market — nunca cai num cálculo BRL pra venda PT.
+  const defaultByMarket = {
+    BR: { vip: 34.99, avancado: 24.90, basico: 19.90 },
+    PT: { vip: 17.99, avancado: 12.99, basico: 8.99 },
+    US: { vip: 19.99, avancado: 14.99, basico: 9.99 },
+  } as const;
   const value = (typeof paidAmount === 'number' && paidAmount > 0)
     ? paidAmount
-    : (plan === 'vip' ? 34.99 : plan === 'avancado' ? 24.90 : 19.90);
+    : defaultByMarket[resolvedMarket][plan];
 
-  // Phone para hashing: só dígitos, país prefixo (55 BR, 1 US) se faltar.
+  // Phone para hashing: só dígitos, país prefixo (55 BR, 1 US, 351 PT).
   const rawPhone = (userPhone || '').replace(/\D/g, '');
+  const phonePrefix = resolvedMarket === 'PT' ? '351' : resolvedMarket === 'US' ? '1' : '55';
+  const phoneNeedsPrefix = rawPhone.length >= 9 && rawPhone.length <= 11;
   const hashedPhone = rawPhone
-    ? sha256(rawPhone.length >= 10 && rawPhone.length <= 11
-        ? (isEN ? `1${rawPhone}` : `55${rawPhone}`)
-        : rawPhone)
+    ? sha256(phoneNeedsPrefix ? `${phonePrefix}${rawPhone}` : rawPhone)
     : null;
 
   const headersList = await headers();
@@ -1098,6 +1115,10 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
   // Propaga locale do intent pro doc final — pageData.locale fica imutável,
   // garantindo que a página seja renderizada no idioma em que foi criada.
   if (!finalData.locale) finalData.locale = (data?.locale === 'en' ? 'en' : 'pt');
+  // Propaga market + currency pro doc final — admin precisa saber em que
+  // mercado a venda aconteceu (sem isso, todos os PT viram BR no relatório).
+  if (data?.market && !finalData.market) finalData.market = data.market;
+  if (data?.currency && !finalData.currency) finalData.currency = data.currency;
   if (data.paidAmount) finalData.paidAmount = data.paidAmount;
 
   // introType vem do formulário (ex: 'love') e é preservado no finalData automaticamente
@@ -1177,6 +1198,7 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
       userPhone: data.whatsappNumber,
       paidAmount: typeof data.paidAmount === 'number' ? data.paidAmount : undefined,
       locale: data.locale === 'en' ? 'en' : 'pt',
+      market: data.market === 'PT' || data.market === 'US' || data.market === 'BR' ? data.market : undefined,
       fbp: data.fbp,
       fbc: data.fbc,
       ttclid: data.ttclid,

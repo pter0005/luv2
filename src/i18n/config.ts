@@ -38,12 +38,10 @@ export function marketFromLocale(locale: Locale): Market {
   return locale === 'en' ? 'US' : 'BR';
 }
 
-// Detecta locale pelo hostname. `mycupid.net` serve US/PT (en/pt),
-// qualquer outro domínio (mycupid.com.br, preview, localhost) serve BR (pt).
+// Detecta locale pelo hostname. Com US fora do funil, `.net` serve PT (pt).
 // Mantido pra backward compat — código novo prefere marketFromRequest.
-export function localeFromHost(host: string | null | undefined): Locale {
-  if (!host) return defaultLocale;
-  return host.endsWith('mycupid.net') ? 'en' : 'pt';
+export function localeFromHost(_host: string | null | undefined): Locale {
+  return 'pt';
 }
 
 /**
@@ -51,8 +49,12 @@ export function localeFromHost(host: string | null | undefined): Locale {
  *
  *   mycupid.com.br        → BR (sempre, ignora geo — domínio é a verdade)
  *   mycupid.net + geo=PT  → PT (português de Portugal, EUR + Stripe)
- *   mycupid.net + geo=US  → US (americano, USD + Stripe)
- *   mycupid.net + geo=??  → US (fallback default — .net é mercado US primary)
+ *   mycupid.net + qualquer outro → PT (fallback default — .net agora é PT primary)
+ *
+ * NOTA: US foi removido do funil ativo (não está sendo rodado por enquanto).
+ * O Market 'US' continua existindo no tipo pra não quebrar dados antigos
+ * persistidos em Firestore, mas geo nunca resolve pra US automaticamente.
+ * Quando US voltar à ativa, basta restaurar o branch 'return US'.
  *
  * Override (cookie/query `market`) tem prioridade máxima — escape hatch
  * pra VPN/viajante. Validado contra `isMarket` pra não aceitar lixo.
@@ -65,7 +67,7 @@ export function marketFromRequest(input: {
   geoCountry?: string | null | undefined;
   override?: string | null | undefined;
 }): Market {
-  const { host, geoCountry, override } = input;
+  const { host, override } = input;
 
   if (override && isMarket(override)) return override;
 
@@ -74,12 +76,8 @@ export function marketFromRequest(input: {
   // .com.br = BR sempre
   if (host.endsWith('mycupid.com.br')) return 'BR';
 
-  // .net = US ou PT por geo
-  if (host.endsWith('mycupid.net')) {
-    const cc = (geoCountry || '').toUpperCase();
-    if (cc === 'PT') return 'PT';
-    return 'US';
-  }
+  // .net = PT (US fora de operação — geo irrelevante por enquanto)
+  if (host.endsWith('mycupid.net')) return 'PT';
 
   // Preview/localhost/qualquer outro → BR (mercado primário)
   return defaultMarket;

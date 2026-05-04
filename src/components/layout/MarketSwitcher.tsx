@@ -11,6 +11,10 @@ const FLAGS: Record<Market, { emoji: string; label: string; currency: string }> 
   US: { emoji: '🇺🇸', label: 'United States', currency: '$' },
 };
 
+// Markets ativos no funil hoje. US fora de operação — não aparece no dropdown
+// mas continua funcional via cookie MARKET_OVERRIDE=US se precisar testar.
+const ACTIVE_MARKETS: Market[] = ['BR', 'PT'];
+
 /**
  * Escape hatch manual: usuário com VPN ou viajando força market diferente
  * do que geo-IP detectou. Seta cookie MARKET_OVERRIDE — middleware respeita
@@ -56,7 +60,7 @@ export default function MarketSwitcher() {
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-40 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 min-w-[180px] py-1.5">
-            {(Object.keys(FLAGS) as Market[]).map((m) => (
+            {ACTIVE_MARKETS.map((m) => (
               <button
                 key={m}
                 type="button"

@@ -2680,6 +2680,9 @@ const PaymentStep = ({ setPageId }: { setPageId: (id: string) => void; }) => {
         try {
             const ttq = (window as any).ttq;
             if (ttq) {
+                // currency BRL hardcoded: esse wizard atende SOMENTE BR
+                // (rota /criar/fazer-eu-mesmo). PT/US passam pelo /chat,
+                // que tem trackEvent currency-aware via useMarket.
                 ttq.track('CompletePayment', {
                     value,
                     currency: 'BRL',

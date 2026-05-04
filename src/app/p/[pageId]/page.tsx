@@ -19,9 +19,18 @@ export async function generateMetadata({ params }: { params: { pageId: string } 
     const d = snap.data() || {};
     const title = (d.title as string) || 'MyCupid';
     const message = ((d.message as string) || '').slice(0, 160).trim();
-    const description = message || (d.locale === 'en'
-      ? 'A special love page made just for you 💌'
-      : 'Uma página especial feita com carinho 💌');
+    // OG locale segue o market da página, não só o locale. PT compartilha
+    // pra primo em Lisboa → preview vem em pt-PT (não pt-BR genérico).
+    const market = d.market || (d.currency === 'EUR' ? 'PT' : d.currency === 'USD' ? 'US' : 'BR');
+    const ogLocale =
+      market === 'PT' ? 'pt_PT' :
+      market === 'US' || d.locale === 'en' ? 'en_US' :
+      'pt_BR';
+    const description = message || (
+      market === 'PT' ? 'Uma página especial feita com muito carinho 💌' :
+      market === 'US' || d.locale === 'en' ? 'A special love page made just for you 💌' :
+      'Uma página especial feita com carinho 💌'
+    );
     const galleryImage = Array.isArray(d.galleryImages) && d.galleryImages.length > 0
       ? d.galleryImages[0]?.url
       : null;
@@ -35,6 +44,8 @@ export async function generateMetadata({ params }: { params: { pageId: string } 
         title,
         description,
         type: 'website',
+        locale: ogLocale,
+        siteName: 'MyCupid',
         images: heroImage ? [{ url: heroImage, width: 1200, height: 630, alt: title }] : undefined,
       },
       twitter: {
