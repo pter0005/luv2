@@ -3,8 +3,9 @@
 import Stripe from 'stripe';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
-import { computeTotalUSD } from '@/lib/price';
-import { getSiteConfig } from '@/lib/site-config';
+import { computeTotalForMarket } from '@/lib/price';
+import { getSiteConfigByMarket } from '@/lib/site-config';
+import { isMarket, type Market } from '@/i18n/config';
 
 function getStripe(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -14,7 +15,7 @@ function getStripe(): Stripe {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const sanitizeEmail = (v: string) =>
-  v.normalize('NFKC').replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF\s]/g, '').toLowerCase();
+  v.normalize('NFKC').replace(/[​-‏‪-‮⁠﻿\s]/g, '').toLowerCase();
 
 export interface StripeCheckoutResult {
   success: boolean;
@@ -23,18 +24,20 @@ export interface StripeCheckoutResult {
 }
 
 /**
- * Cria uma Stripe Checkout Session em USD para o intent dado.
- * Simétrica ao processPixPayment / createMercadoPagoCardSession
- * (mesmo padrão de retorno, mesma validação de contato).
+ * Stripe Checkout Session — parametrizado por market (US/PT).
+ * - US: USD + card + Link
+ * - PT: EUR + card + Multibanco (referência bancária instantânea, padrão em PT)
+ * BR não passa por aqui (usa Mercado Pago).
  *
- * O webhook em /api/webhooks/stripe consome checkout.session.completed
+ * Webhook em /api/webhooks/stripe consome checkout.session.completed
  * e chama finalizeLovePage() — mesma pipeline que MP usa hoje.
  */
 export async function createStripeCheckoutSession(
   intentId: string,
-  clientClaimedTotalUSD?: number,
+  clientClaimedTotal?: number,
   discountCode?: string | null,
   contact?: { phone?: string; email?: string } | null,
+  market: Market = 'US',
 ): Promise<StripeCheckoutResult> {
   try {
     const stripe = getStripe();
@@ -44,14 +47,25 @@ export async function createStripeCheckoutSession(
 
     const intentData = intentDoc.data() || {};
 
-    // Contact (email + phone) — mesma sanitização que MP
+    // Market vem do request, mas se intent já tem persistido, intent vence
+    // (fonte da verdade do checkout — evita bug se Header dropdown muda mid-flow).
+    const resolvedMarket: Market = isMarket(intentData.market) ? intentData.market : market;
+    if (resolvedMarket === 'BR') {
+      return { success: false, error: 'BR market should use Mercado Pago, not Stripe.' };
+    }
+
+    const config = getSiteConfigByMarket(resolvedMarket);
+    const stripeCurrency = config.currency.toLowerCase();
+    const paymentMethods = (config.stripePaymentMethods || ['card']) as Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
+
+    // Contact (email + phone)
     const contactPhone = (contact?.phone || '').replace(/\D/g, '');
     const contactEmail = sanitizeEmail(contact?.email || '');
     const docPhone = (intentData?.whatsappNumber || '').replace(/\D/g, '');
     const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '');
 
-    const rawPhone = contactPhone.length >= 10 ? contactPhone : docPhone;
-    if (rawPhone.length < 10) {
+    const rawPhone = contactPhone.length >= 9 ? contactPhone : docPhone;
+    if (rawPhone.length < 9) {
       return { success: false, error: 'Phone required. Please enter a valid number before continuing.' };
     }
 
@@ -60,55 +74,67 @@ export async function createStripeCheckoutSession(
       return { success: false, error: 'Email required. Please enter a valid email before continuing.' };
     }
 
-    // Persiste contato + locale no intent pra webhook saber
+    // Persiste contato + market no intent pra webhook saber
     await intentDoc.ref.set(
       {
         whatsappNumber: rawPhone,
         guestEmail: rawEmail,
-        locale: 'en',
-        currency: 'USD',
+        market: resolvedMarket,
+        locale: resolvedMarket === 'US' ? 'en' : 'pt',
+        currency: config.currency,
         updatedAt: Timestamp.now(),
       },
       { merge: true },
     );
 
     // Total server-side (ignora client claim se divergir)
-    const serverTotal = computeTotalUSD({
-      plan: intentData.plan,
-      qrCodeDesign: intentData.qrCodeDesign,
-      enableWordGame: intentData.enableWordGame,
-      wordGameQuestions: intentData.wordGameQuestions,
-      introType: intentData.introType,
-      audioRecording: intentData.audioRecording,
-      discountAmount: 0, // TODO: validar código de desconto USD se for suportar
-    });
+    const serverTotal = computeTotalForMarket(
+      {
+        plan: intentData.plan,
+        qrCodeDesign: intentData.qrCodeDesign,
+        enableWordGame: intentData.enableWordGame,
+        wordGameQuestions: intentData.wordGameQuestions,
+        introType: intentData.introType,
+        audioRecording: intentData.audioRecording,
+        discountAmount: 0, // TODO: validar código de desconto USD/EUR se for suportar
+      },
+      resolvedMarket,
+    );
     const total = Number(serverTotal.toFixed(2));
 
-    if (clientClaimedTotalUSD && Math.abs(clientClaimedTotalUSD - total) > 0.01) {
+    if (clientClaimedTotal && Math.abs(clientClaimedTotal - total) > 0.01) {
       console.warn('[stripe-checkout] client/server total mismatch', {
-        intentId, clientClaimedTotalUSD, serverTotal: total,
+        intentId, market: resolvedMarket, clientClaimedTotal, serverTotal: total,
       });
     }
 
-    const { baseUrl } = getSiteConfig('en');
-    const planLabel = intentData.plan === 'vip' ? 'VIP' : intentData.plan === 'avancado' ? 'Advanced' : 'Basic';
+    const { baseUrl } = config;
+    const isEN = resolvedMarket === 'US';
+    const planLabel = intentData.plan === 'vip'
+      ? 'VIP'
+      : intentData.plan === 'avancado'
+        ? (isEN ? 'Advanced' : 'Avançado')
+        : (isEN ? 'Basic' : 'Básico');
     const productName = intentData.plan === 'vip'
       ? 'MyCupid VIP bundle · love page'
       : `MyCupid ${planLabel} love page`;
+    const productDescription = isEN
+      ? 'Your personalized love page, ready to share.'
+      : 'A tua página personalizada, pronta a partilhar.';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
+      payment_method_types: paymentMethods,
       customer_email: rawEmail,
       line_items: [
         {
           quantity: 1,
           price_data: {
-            currency: 'usd',
+            currency: stripeCurrency,
             unit_amount: Math.round(total * 100), // cents
             product_data: {
               name: productName,
-              description: 'Your personalized love page, ready to share.',
+              description: productDescription,
             },
           },
         },
@@ -117,14 +143,16 @@ export async function createStripeCheckoutSession(
         intentId,
         userId: intentData.userId || '',
         plan: intentData.plan || 'basico',
-        locale: 'en',
+        market: resolvedMarket,
+        locale: isEN ? 'en' : 'pt',
       },
       success_url: `${baseUrl}/chat?paid=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/chat?cancelled=1`,
       allow_promotion_codes: false,
       billing_address_collection: 'auto',
-      // Auto tax — dono precisa ativar Stripe Tax no dashboard. Sem risco se não ativar.
       automatic_tax: { enabled: false },
+      // Locale do checkout UI da Stripe (idioma dos botões/textos do hosted page).
+      locale: isEN ? 'en' : 'pt',
     });
 
     if (!session.url) {

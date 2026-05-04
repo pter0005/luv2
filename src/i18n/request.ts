@@ -1,6 +1,16 @@
 import { getRequestConfig } from 'next-intl/server';
 import { headers, cookies } from 'next/headers';
-import { defaultLocale, isLocale, localeFromHost, type Locale } from './config';
+import {
+  defaultLocale,
+  defaultMarket,
+  isLocale,
+  isMarket,
+  localeFromHost,
+  localeFromMarket,
+  marketFromRequest,
+  type Locale,
+  type Market,
+} from './config';
 
 /**
  * Resolve o locale da request no server:
@@ -21,6 +31,29 @@ export async function resolveLocale(): Promise<Locale> {
     return localeFromHost(host);
   } catch {
     return defaultLocale;
+  }
+}
+
+/**
+ * Resolve market server-side. Mesma cascata que resolveLocale, mas pra
+ * a dimensão moeda/gateway. Header > cookie > derivação host+geo > default.
+ */
+export async function resolveMarket(): Promise<Market> {
+  try {
+    const h = headers();
+    const c = cookies();
+    const fromHeader = h.get('x-market');
+    if (isMarket(fromHeader)) return fromHeader;
+    const fromCookie = c.get('MARKET')?.value;
+    if (isMarket(fromCookie)) return fromCookie;
+    const override = c.get('MARKET_OVERRIDE')?.value;
+    return marketFromRequest({
+      host: h.get('host'),
+      geoCountry: h.get('x-geo-country'),
+      override,
+    });
+  } catch {
+    return defaultMarket;
   }
 }
 

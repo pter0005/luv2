@@ -10,6 +10,9 @@ import { createHash, randomUUID } from 'crypto';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { logCriticalError } from '@/lib/log-critical-error';
 import { computeTotalBRL } from '@/lib/price';
+import { resolveMarket } from '@/i18n/request';
+import { localeFromMarket, type Market } from '@/i18n/config';
+import { getSiteConfigByMarket } from '@/lib/site-config';
 import { notifyAdmins } from '@/lib/notify-admin';
 
 // ─────────────────────────────────────────────
@@ -331,17 +334,39 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
         }
         fileSnapshot(`after-protection (${intentId})`, dataToSave);
       }
+      // Backfill market se intent legado ainda não tinha. Não sobrescreve
+      // se já existe — fonte da verdade é o que foi gravado primeiro.
+      const existingMarket = docSnap.exists ? docSnap.data()?.market : null;
+      if (!existingMarket) {
+        try {
+          const mkt = await resolveMarket();
+          const cfg = getSiteConfigByMarket(mkt);
+          (dataToSave as any).market = mkt;
+          (dataToSave as any).currency = cfg.currency;
+          (dataToSave as any).locale = localeFromMarket(mkt);
+        } catch { /* segue sem — webhook resolve via fallback */ }
+      }
       await intentRef.set(dataToSave, { merge: true });
       console.log(`[intent-files] SAVED intent ${intentId} (update, merge:true)`);
       return { success: true, intentId };
     } else {
       fileSnapshot('new-intent-create', dataToSave);
+      // Resolve market server-side. Persiste já no doc pra não depender
+      // de header em chamadas subsequentes (PIX/Stripe).
+      let market: Market = 'BR';
+      try {
+        market = await resolveMarket();
+      } catch { /* fallback BR */ }
+      const cfg = getSiteConfigByMarket(market);
       const intentDoc = await db.collection('payment_intents').add({
         ...dataToSave,
         status: 'pending',
         createdAt: Timestamp.now(),
+        market,
+        currency: cfg.currency,
+        locale: localeFromMarket(market),
       });
-      console.log(`[intent-files] CREATED new intent ${intentDoc.id}`);
+      console.log(`[intent-files] CREATED new intent ${intentDoc.id} market=${market}`);
       return { success: true, intentId: intentDoc.id };
     }
   } catch (error: any) {

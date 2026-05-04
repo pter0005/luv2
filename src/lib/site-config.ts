@@ -1,12 +1,13 @@
-import { ptBR, enUS, type Locale as DateFnsLocale } from 'date-fns/locale';
-import type { Locale } from '@/i18n/config';
+import { ptBR, enUS, pt as ptPT, type Locale as DateFnsLocale } from 'date-fns/locale';
+import type { Locale, Market } from '@/i18n/config';
+import { marketFromLocale } from '@/i18n/config';
 
-export type Currency = 'BRL' | 'USD';
+export type Currency = 'BRL' | 'USD' | 'EUR';
 export type Gateway = 'mercadopago' | 'stripe';
-export type PhoneFormat = 'br' | 'us';
+export type PhoneFormat = 'br' | 'us' | 'pt';
 
 export interface SiteConfig {
-  /** Base URL absoluta do site naquele locale (sem barra no final). */
+  /** Base URL absoluta do site naquele market (sem barra no final). */
   baseUrl: string;
   /** Domínio apex (sem protocolo). */
   domain: string;
@@ -16,7 +17,7 @@ export interface SiteConfig {
   currencySymbol: string;
   /** Gateway primário pra esse mercado. */
   gateway: Gateway;
-  /** Formato de telefone (BR = DDD + 10-11 díg, US = 10 díg). */
+  /** Formato de telefone (BR = DDD + 10-11 díg, US = 10 díg, PT = 9 díg). */
   phoneFormat: PhoneFormat;
   /** Locale do date-fns pra format/parse. */
   dateLocale: DateFnsLocale;
@@ -28,6 +29,8 @@ export interface SiteConfig {
   ogLocale: string;
   /** Nome do produto legível (pode divergir por mercado no futuro). */
   siteName: string;
+  /** Métodos de pagamento Stripe habilitados (vazio se gateway != stripe). */
+  stripePaymentMethods?: ('card' | 'multibanco' | 'link')[];
 }
 
 const BR: SiteConfig = {
@@ -56,12 +59,45 @@ const US: SiteConfig = {
   htmlLang: 'en-US',
   ogLocale: 'en_US',
   siteName: 'MyCupid',
+  stripePaymentMethods: ['card', 'link'],
 };
 
-export function getSiteConfig(locale: Locale): SiteConfig {
-  return locale === 'en' ? US : BR;
+// PT compartilha domínio com US (mycupid.net) — geo decide. Currency
+// EUR + Multibanco (referência bancária instantânea, padrão em PT).
+// MB Way não é exposto direto pelo Stripe Checkout hoje; multibanco
+// cobre o mesmo nicho de "não-cartão" e é nativo no Checkout.
+const PT: SiteConfig = {
+  baseUrl: 'https://mycupid.net',
+  domain: 'mycupid.net',
+  currency: 'EUR',
+  currencySymbol: '€',
+  gateway: 'stripe',
+  phoneFormat: 'pt',
+  dateLocale: ptPT,
+  timeZone: 'Europe/Lisbon',
+  htmlLang: 'pt-PT',
+  ogLocale: 'pt_PT',
+  siteName: 'MyCupid',
+  stripePaymentMethods: ['card', 'multibanco'],
+};
+
+const CONFIGS: Record<Market, SiteConfig> = { BR, PT, US };
+
+/**
+ * Resolve config pelo Market — entry point preferido pra código novo.
+ */
+export function getSiteConfigByMarket(market: Market): SiteConfig {
+  return CONFIGS[market];
 }
 
-export function getAllSiteConfigs(): Record<Locale, SiteConfig> {
-  return { pt: BR, en: US };
+/**
+ * Resolve config pelo Locale — backward compat.
+ * `pt` cai em BR (mercado primário pt). Pra PT-EUR use getSiteConfigByMarket('PT').
+ */
+export function getSiteConfig(locale: Locale): SiteConfig {
+  return CONFIGS[marketFromLocale(locale)];
+}
+
+export function getAllSiteConfigs(): Record<Market, SiteConfig> {
+  return CONFIGS;
 }

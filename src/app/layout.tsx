@@ -133,9 +133,10 @@ export async function generateMetadata() {
     alternates: {
       canonical: cfg.baseUrl,
       languages: {
-        'pt-BR': all.pt.baseUrl,
-        'en-US': all.en.baseUrl,
-        'x-default': all.pt.baseUrl,
+        'pt-BR': all.BR.baseUrl,
+        'pt-PT': all.PT.baseUrl,
+        'en-US': all.US.baseUrl,
+        'x-default': all.BR.baseUrl,
       },
     },
     icons: {

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GuaranteeBadge from '@/components/layout/GuaranteeBadge';
 import ScarcityIndicator from '@/components/layout/ScarcityIndicator';
 import { useLocale } from 'next-intl';
+import { useMarket } from '@/i18n/use-market';
 import { getBuyersToday } from '@/lib/scarcity';
 
 function isMothersDayPeriod() {
@@ -82,13 +83,15 @@ function UrgencyBadge() {
 function VipCard() {
   const locale = useLocale();
   const isEN = locale === 'en';
+  const market = useMarket();
   const [md, setMd] = useState(false);
   useEffect(() => { setMd(isMothersDayPeriod()); }, []);
-  const price = '34';
-  const cents = isEN ? '.99' : ',99';
-  const currency = isEN ? '$' : 'R$';
-  const strikePrice = isEN ? '$49.90' : md ? 'R$59,90' : 'R$49,90';
-  const savings = isEN ? '$14.91' : md ? 'R$24,91' : 'R$14,91';
+  const isPT = market === 'PT';
+  const price = isPT ? '17' : '34';
+  const cents = isPT ? ',99' : isEN ? '.99' : ',99';
+  const currency = isPT ? '€' : isEN ? '$' : 'R$';
+  const strikePrice = isPT ? '€24,99' : isEN ? '$49.90' : md ? 'R$59,90' : 'R$49,90';
+  const savings = isPT ? '€7,00' : isEN ? '$14.91' : md ? 'R$24,91' : 'R$14,91';
 
   return (
     <motion.div
@@ -202,11 +205,13 @@ function AdvancedCard() {
   const offerExpired = useOfferExpired();
   const locale = useLocale();
   const isEN = locale === 'en';
+  const market = useMarket();
+  const isPT = market === 'PT';
   const [md, setMd] = useState(false);
   useEffect(() => { setMd(isMothersDayPeriod()); }, []);
-  const price = offerExpired ? '29' : '24';
-  const cents = isEN ? '.90' : ',90';
-  const currency = isEN ? '$' : 'R$';
+  const price = isPT ? '12' : isEN ? '14' : offerExpired ? '29' : '24';
+  const cents = isPT ? ',99' : isEN ? '.99' : ',90';
+  const currency = isPT ? '€' : isEN ? '$' : 'R$';
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -248,7 +253,7 @@ function AdvancedCard() {
         <div className="mb-6 p-4 rounded-2xl" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
           <div className="flex items-start gap-3 justify-center">
             <div className="text-center">
-              <p className="text-zinc-500 text-lg line-through font-medium">{isEN ? 'From $39.90' : md ? 'De R$44,90' : 'De R$39,90'}</p>
+              <p className="text-zinc-500 text-lg line-through font-medium">{isPT ? 'De €19,99' : isEN ? 'From $24.99' : md ? 'De R$44,90' : 'De R$39,90'}</p>
               <div className="flex items-baseline gap-1 justify-center">
                 <span className="text-zinc-400 text-lg font-bold">{currency}</span>
                 <span className="text-5xl font-black text-white leading-none">{price}</span>
@@ -319,11 +324,13 @@ function AdvancedCard() {
 function EconomicCard() {
   const locale = useLocale();
   const isEN = locale === 'en';
+  const market = useMarket();
+  const isPT = market === 'PT';
   const [md, setMd] = useState(false);
   useEffect(() => { setMd(isMothersDayPeriod()); }, []);
-  const price = '19';
-  const cents = isEN ? '.90' : ',90';
-  const currency = isEN ? '$' : 'R$';
+  const price = isPT ? '8' : isEN ? '9' : '19';
+  const cents = isPT ? ',99' : isEN ? '.99' : ',90';
+  const currency = isPT ? '€' : isEN ? '$' : 'R$';
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}

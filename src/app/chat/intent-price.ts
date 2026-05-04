@@ -1,16 +1,23 @@
 'use server';
 
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
-import { computeTotalBRL, computeTotalUSD } from '@/lib/price';
+import { computeTotalForMarket } from '@/lib/price';
 import { headers } from 'next/headers';
-import { localeFromHost } from '@/i18n/config';
+import { isMarket, marketFromRequest, type Market } from '@/i18n/config';
 
 export interface IntentPriceResult {
   ok: boolean;
   total?: number;
-  currency?: 'BRL' | 'USD';
+  currency?: 'BRL' | 'USD' | 'EUR';
+  market?: Market;
   error?: string;
 }
+
+const currencyForMarket: Record<Market, 'BRL' | 'USD' | 'EUR'> = {
+  BR: 'BRL',
+  PT: 'EUR',
+  US: 'USD',
+};
 
 /**
  * Canonical price for an intent — what the server WILL charge if the user
@@ -37,21 +44,35 @@ export async function getIntentServerPrice(intentId: string): Promise<IntentPric
       discountAmount: Number(d.appliedDiscount) || 0,
     };
 
-    // BUG ANTERIOR: se intent não tinha d.locale nem d.currency setado
-    // (cenário comum: createOrUpdatePaymentIntent é chamado em useEffect
-    // SEM passar locale, só preenchidos no handlePix/handleStripe DEPOIS),
-    // isEN caía pra false → calculava em BRL pra usuário US → cliente
-    // formatava esse número como USD = "$34.99 sendo R$ 34,99 mascarado".
-    // Fallback: lê o host do request e infere locale corretamente.
-    let isEN = d.locale === 'en' || d.currency === 'USD';
-    if (!d.locale && !d.currency) {
+    // Resolução de market: prefere o que tá persistido no intent (fonte da
+    // verdade desde o início do checkout); se ausente — caso comum quando
+    // createOrUpdatePaymentIntent é chamado em useEffect SEM passar market —
+    // deriva do request (host + geo + override). Currency legada (USD/EUR/BRL)
+    // serve como fallback adicional pra intents pré-multimarket.
+    let market: Market;
+    if (isMarket(d.market)) {
+      market = d.market;
+    } else if (d.currency === 'EUR') {
+      market = 'PT';
+    } else if (d.currency === 'USD' || d.locale === 'en') {
+      market = 'US';
+    } else if (d.currency === 'BRL' || d.locale === 'pt') {
+      market = 'BR';
+    } else {
       try {
-        const host = headers().get('host');
-        isEN = localeFromHost(host) === 'en';
-      } catch { /* fora de request context — segue com isEN=false */ }
+        const h = headers();
+        market = marketFromRequest({
+          host: h.get('host'),
+          geoCountry: h.get('x-geo-country'),
+          override: null,
+        });
+      } catch {
+        market = 'BR';
+      }
     }
-    const total = isEN ? computeTotalUSD(input) : computeTotalBRL(input);
-    return { ok: true, total, currency: isEN ? 'USD' : 'BRL' };
+
+    const total = computeTotalForMarket(input, market);
+    return { ok: true, total, currency: currencyForMarket[market], market };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'server error' };
   }
