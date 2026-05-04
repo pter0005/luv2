@@ -453,9 +453,21 @@ export default function PaymentField() {
       setError(t('emailInvalid'));
       return;
     }
+    // WhatsApp NÃO bloqueia gift redeem (presente já tá ativo, é grátis).
+    // Só pede com alert friendly se faltar — pra recovery futuro.
     if (phone.replace(/\D/g, '').length < 10) {
-      setError(t('phoneInvalid'));
-      return;
+      const wantsToContinue = typeof window !== 'undefined' && window.confirm(
+        isUS
+          ? 'Add your phone for support and order recovery? (Click OK to add it, Cancel to skip and redeem now)'
+          : 'Quer adicionar seu WhatsApp pra suporte e recuperação? (OK pra adicionar, Cancelar pra resgatar sem)'
+      );
+      if (wantsToContinue) {
+        // Foca no input do WhatsApp pro user preencher
+        const phoneInput = typeof document !== 'undefined' ? document.querySelector<HTMLInputElement>('input[type="tel"]') : null;
+        if (phoneInput) phoneInput.focus();
+        return;
+      }
+      // Cancelou → segue sem WhatsApp
     }
     const cleanEmail = emailInput.trim().toLowerCase();
     startRedeemGift(async () => {
