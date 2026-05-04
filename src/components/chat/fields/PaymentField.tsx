@@ -23,13 +23,15 @@ import {
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
-import { computeTotal, getPrices, PRICES } from '@/lib/price';
+import { computeTotal, getPrices, PRICES, computeTotalForMarket, getPricesForMarket } from '@/lib/price';
+import { useMarket } from '@/i18n/use-market';
+import { getSiteConfigByMarket } from '@/lib/site-config';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import type { PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
 import type { Locale } from '@/i18n/config';
 import { getSiteConfig } from '@/lib/site-config';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatCurrencyForMarket } from '@/lib/format';
 import { createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
 import {
   createOrUpdatePaymentIntent,
@@ -49,7 +51,7 @@ import { trackEvent, setAdvancedMatching, trackFunnelStep } from '@/lib/analytic
 import { getAttribution, captureAttribution } from '@/lib/attribution';
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-// Helper compat: usa o formatter do locale ativo (BRL em pt, USD em en).
+// Helper compat: usa o formatter do locale ativo (legacy — prefere money2 com market).
 function money(v: number, locale: Locale) { return formatCurrency(v, locale); }
 
 type Method = 'pix' | 'card';
@@ -73,6 +75,13 @@ function formatPhoneUS(raw: string) {
   if (d.length <= 3) return d;
   if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+function formatPhonePT(raw: string) {
+  const d = raw.replace(/\D/g, '').slice(0, 9);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`;
+  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
 }
 
 // Mensagens de erro locale-aware. Centraliza pra evitar PT vazando no US.
@@ -125,9 +134,11 @@ export default function PaymentField() {
   const { toast } = useToast();
   const { control, getValues, setValue } = useFormContext<PageData>();
   const locale = useLocale() as Locale;
-  const siteCfg = getSiteConfig(locale);
+  const market = useMarket();
+  const siteCfg = getSiteConfigByMarket(market);
   const t = (k: keyof typeof ERR) => ERR[k][locale === 'en' ? 'en' : 'pt'];
-  const isUS = locale === 'en';
+  const isUS = market === 'US';
+  const isPT = market === 'PT';
 
   const [plan, introType, audioRecording, musicOption, intentId, whatsappNumber, qrCodeDesign, title, enableWordGame, wordGameQuestions] = useWatch({
     control,
@@ -146,8 +157,8 @@ export default function PaymentField() {
   ];
 
   const clientTotal = useMemo(
-    () => computeTotal({ plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions } as any, locale),
-    [plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions, locale]
+    () => computeTotalForMarket({ plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions } as any, market),
+    [plan, introType, audioRecording, musicOption, qrCodeDesign, enableWordGame, wordGameQuestions, market]
   );
 
   // ── SERVER-TRUSTED TOTAL ──
@@ -175,28 +186,30 @@ export default function PaymentField() {
 
   // Breakdown real do pedido — só entra item que o cliente efetivamente escolheu.
   const lineItems = useMemo(() => {
-    const prices = getPrices(locale);
+    const prices = getPricesForMarket(market);
     const items: { label: string; value: number; originalValue?: number; hint?: string }[] = [];
     const isEN = locale === 'en';
 
     // VIP: preço flat, uma linha só — tudo já incluso no bundle.
     if (plan === 'vip') {
+      const originalValue = isPT ? 24.99 : isEN ? 29.99 : 44.99;
       items.push({
         label: isEN ? 'VIP bundle' : 'Bundle VIP',
         value: prices.vip,
-        originalValue: isEN ? 54.99 : 44.99,
+        originalValue,
         hint: isEN ? 'everything unlocked · best value' : 'tudo liberado · melhor custo',
       });
       return items;
     }
 
     const base = plan === 'avancado' ? prices.avancado : prices.basico;
+    const advancedOriginal = isPT ? 19.99 : isEN ? 24.99 : 34.99;
     items.push({
       label: isEN
         ? (plan === 'avancado' ? 'Advanced plan' : 'Basic plan')
         : (plan === 'avancado' ? 'Plano Avançado' : 'Plano Básico'),
       value: base,
-      originalValue: plan === 'avancado' ? (isEN ? 34.99 : 34.99) : undefined,
+      originalValue: plan === 'avancado' ? advancedOriginal : undefined,
       hint: isEN
         ? (plan === 'avancado' ? 'games + voice + intros + music' : 'page + photos + countdown')
         : (plan === 'avancado' ? 'jogos + voz + intros + música' : 'página + fotos + contador'),
@@ -211,7 +224,7 @@ export default function PaymentField() {
       items.push({ label: isEN ? 'Custom QR code' : 'QR Code personalizado', value: prices.qrCustom });
     }
     return items;
-  }, [plan, introType, audioRecording, qrCodeDesign, enableWordGame, wordGameQuestions, locale]);
+  }, [plan, introType, audioRecording, qrCodeDesign, enableWordGame, wordGameQuestions, locale, market, isPT]);
 
   const [method, setMethod] = useState<Method>('pix');
   const [isProcessing, startTransition] = useTransition();
@@ -287,12 +300,14 @@ export default function PaymentField() {
   }, [user?.email, emailInput]);
   const phone = whatsappNumber || '';
 
-  // Validação de contato — usada pra desabilitar botões de pagamento
+  // Validação de contato — usada pra desabilitar botões de pagamento.
+  // PT aceita 9 dígitos (móvel ou fixo); BR/US continuam exigindo 10+.
   const isContactValid = useMemo(() => {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim());
-    const phoneOk = phone.replace(/\D/g, '').length >= 10;
+    const phoneMin = market === 'PT' ? 9 : 10;
+    const phoneOk = phone.replace(/\D/g, '').length >= phoneMin;
     return emailOk && phoneOk;
-  }, [emailInput, phone]);
+  }, [emailInput, phone, market]);
 
   // Advanced Matching: manda email + phone hasheados pro Meta/TikTok assim
   // que o contato fica válido. Aumenta match rate de ~40% pra ~70%+ — crucial
@@ -639,32 +654,36 @@ export default function PaymentField() {
 
   const handleStripe = useCallback(() => {
     setError(null);
+    const phoneMin = market === 'PT' ? 9 : 10;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailInput.trim())) {
-      setError('Please enter a valid email.'); return;
+      setError(market === 'PT' ? 'Por favor introduza um email válido.' : 'Please enter a valid email.'); return;
     }
-    if (phone.replace(/\D/g, '').length < 10) {
-      setError('Please enter a valid phone number.'); return;
+    if (phone.replace(/\D/g, '').length < phoneMin) {
+      setError(market === 'PT' ? 'Por favor introduza um número de telefone válido.' : 'Please enter a valid phone number.'); return;
     }
     if (!acquireSubmitGuard()) return;
     startTransition(async () => {
       try {
         const activeUser = await ensureUser();
         if (!activeUser) {
-          setError('Session could not start. Refresh or disable blockers.');
+          setError(market === 'PT' ? 'Sessão não iniciada. Atualize ou desative bloqueadores.' : 'Session could not start. Refresh or disable blockers.');
           releaseSubmitGuard();
           return;
         }
         const data = getValues();
         const phoneDigits = phone.replace(/\D/g, '');
         const cleanEmail = emailInput.trim().toLowerCase();
+        const currency = market === 'PT' ? 'EUR' : 'USD';
+        const intentLocale = market === 'PT' ? 'pt' : 'en';
         const saveRes = await createOrUpdatePaymentIntent({
           ...data,
           ...attributionRef.current,
           userId: activeUser.uid,
           whatsappNumber: phoneDigits,
           guestEmail: cleanEmail,
-          locale: 'en',
-          currency: 'USD',
+          locale: intentLocale,
+          currency,
+          market,
         });
         if (!saveRes.success) { setError(saveRes.error || 'Failed to save draft.'); return; }
         setValue('intentId', saveRes.intentId, { shouldDirty: false });
@@ -679,7 +698,7 @@ export default function PaymentField() {
         const session = await createStripeCheckoutSession(saveRes.intentId, claimedTotal, null, {
           phone: phoneDigits,
           email: cleanEmail,
-        });
+        }, market);
         if (!session.success || !session.url) {
           trackEvent('PaymentFailed', { method: 'stripe', reason: session.error, value: total });
           setError(session.error || 'Failed to create checkout session.'); return;
@@ -692,7 +711,7 @@ export default function PaymentField() {
         releaseSubmitGuard();
       }
     });
-  }, [emailInput, phone, getValues, setValue, total, ensureUser, acquireSubmitGuard, releaseSubmitGuard]);
+  }, [emailInput, phone, getValues, setValue, total, ensureUser, acquireSubmitGuard, releaseSubmitGuard, market]);
 
   const handleAdminFinalize = useCallback(() => {
     if (!user || !intentId || !isAdmin) return;
@@ -902,11 +921,11 @@ export default function PaymentField() {
               <div className="flex items-baseline gap-1.5 shrink-0">
                 {item.originalValue && (
                   <span className="text-[11px] text-white/35 line-through tabular-nums">
-                    {money(item.originalValue, locale)}
+                    {formatCurrencyForMarket(item.originalValue, market)}
                   </span>
                 )}
                 <span className={`text-[13px] font-semibold tabular-nums ${item.originalValue ? 'text-emerald-400' : 'text-white/85'}`}>
-                  {money(item.value, locale)}
+                  {formatCurrencyForMarket(item.value, market)}
                 </span>
               </div>
             </div>
@@ -919,7 +938,7 @@ export default function PaymentField() {
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-white/55 font-semibold">Total</div>
             <div className="text-[11px] text-white/50 mt-0.5">{isUS ? 'Lifetime access · no subscription' : 'Acesso vitalício · sem mensalidade'}</div>
           </div>
-          <div className="text-2xl font-bold text-white tabular-nums">{money(total, locale)}</div>
+          <div className="text-2xl font-bold text-white tabular-nums">{formatCurrencyForMarket(total, market)}</div>
         </div>
       </div>
 
@@ -1010,17 +1029,17 @@ export default function PaymentField() {
           )}
         </div>
         <div className="space-y-1.5">
-          <label className="text-[11px] text-white/55 font-medium">{isUS ? 'Phone' : 'WhatsApp'}</label>
+          <label className="text-[11px] text-white/55 font-medium">{isPT ? 'Telefone' : isUS ? 'Phone' : 'WhatsApp'}</label>
           <input
             type="tel"
             inputMode="numeric"
             autoComplete="tel"
-            value={isUS ? formatPhoneUS(phone) : formatPhoneBR(phone)}
+            value={isPT ? formatPhonePT(phone) : isUS ? formatPhoneUS(phone) : formatPhoneBR(phone)}
             onChange={(e) => setValue('whatsappNumber', e.target.value.replace(/\D/g, ''), { shouldDirty: true })}
-            placeholder={isUS ? '(555) 123-4567' : '(11) 99999-9999'}
+            placeholder={isPT ? '912 345 678' : isUS ? '(555) 123-4567' : '(11) 99999-9999'}
             className={cn(
               'w-full h-12 px-4 rounded-xl text-[15px] text-white placeholder:text-white/40 bg-white/[0.03] ring-1 focus:bg-white/[0.06] focus:ring-2 focus:outline-none transition tabular-nums',
-              phone && phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < 10
+              phone && phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < (isPT ? 9 : 10)
                 ? 'ring-red-400/50 focus:ring-red-400/60'
                 : 'ring-white/10 focus:ring-pink-500/40'
             )}
@@ -1091,7 +1110,7 @@ export default function PaymentField() {
             ) : !isContactValid ? (
               <>Enter email + phone first</>
             ) : (
-              <><Lock className="w-4 h-4" /> Pay {money(total, locale)} securely</>
+              <><Lock className="w-4 h-4" /> Pay {formatCurrencyForMarket(total, market)} securely</>
             )}
           </button>
           <div className="flex items-center justify-center gap-3 text-[11px] text-white/45">
@@ -1107,8 +1126,9 @@ export default function PaymentField() {
         </div>
       )}
 
-      {/* Como pagar — destaque visual forte (some se tem gift pendente) */}
-      {!giftToken && !isUS && (
+      {/* Como pagar — destaque visual forte (some se tem gift pendente).
+          PIX só faz sentido em BR — US/PT vão direto pro Stripe (sem seletor). */}
+      {!giftToken && market === 'BR' && (
       <>
       <div>
         <div className="flex items-center gap-2 mb-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
@@ -1206,7 +1226,7 @@ export default function PaymentField() {
               <div className="space-y-1.5">
                 <button
                   type="button"
-                  onClick={handlePix}
+                  onClick={market === 'BR' ? handlePix : handleStripe}
                   disabled={isProcessing || !isContactValid}
                   className={cn(
                     'w-full h-14 rounded-xl font-semibold text-white transition flex items-center justify-center gap-2',
@@ -1217,15 +1237,15 @@ export default function PaymentField() {
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Generating QR...' : 'Gerando QR...'}
+                      <Loader2 className="w-5 h-5 animate-spin" /> {isUS ? 'Generating QR...' : isPT ? 'A processar…' : 'Gerando QR...'}
                     </>
                   ) : !isContactValid ? (
                     <>
-                      <AlertCircle className="w-5 h-5" /> {isUS ? 'Enter email + phone' : 'Preenche email + WhatsApp'}
+                      <AlertCircle className="w-5 h-5" /> {isUS ? 'Enter email + phone' : isPT ? 'Preenche email + telefone' : 'Preenche email + WhatsApp'}
                     </>
                   ) : (
                     <>
-                      <Zap className="w-5 h-5" /> {isUS ? `Pay ${money(total, locale)}` : `Gerar PIX de ${BRL.format(total)}`}
+                      <Zap className="w-5 h-5" /> {market === 'BR' ? `Gerar PIX de ${BRL.format(total)}` : (market === 'US' ? `Pay ${formatCurrencyForMarket(total, market)}` : `Pagar ${formatCurrencyForMarket(total, market)}`)}
                     </>
                   )}
                 </button>
@@ -1360,7 +1380,7 @@ export default function PaymentField() {
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-5 h-5" /> {isUS ? `Pay ${money(total, locale)} by card` : `Pagar ${BRL.format(total)} no cartão`}
+                  <CreditCard className="w-5 h-5" /> {isUS ? `Pay ${formatCurrencyForMarket(total, market)} by card` : `Pagar ${BRL.format(total)} no cartão`}
                 </>
               )}
             </button>

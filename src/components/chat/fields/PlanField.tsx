@@ -6,8 +6,9 @@ import { Check, Sparkles, Heart, Image as ImageIcon, Clock, Gamepad2, Mic, Wand2
 import { cn } from '@/lib/utils';
 import type { PageData } from '@/lib/wizard-schema';
 import { useLocale } from 'next-intl';
-import { getPrices, computeVipSavings } from '@/lib/price';
-import { formatCurrency } from '@/lib/format';
+import { getPricesForMarket, computeVipSavingsForMarket } from '@/lib/price';
+import { formatCurrencyForMarket } from '@/lib/format';
+import { useMarket } from '@/i18n/use-market';
 import type { Locale } from '@/i18n/config';
 
 type Feature = { icon: React.ReactNode; text: string };
@@ -56,12 +57,13 @@ const VIP_FEATURES_EN: Feature[] = [
 export default function PlanField() {
   const { control, setValue } = useFormContext<PageData>();
   const locale = useLocale() as Locale;
+  const market = useMarket();
   const isEN = locale === 'en';
   const BASICO_FEATURES = isEN ? BASICO_FEATURES_EN : BASICO_FEATURES_PT;
   const AVANCADO_EXTRAS = isEN ? AVANCADO_EXTRAS_EN : AVANCADO_EXTRAS_PT;
   const VIP_FEATURES = isEN ? VIP_FEATURES_EN : VIP_FEATURES_PT;
-  const prices = getPrices(locale);
-  const savings = computeVipSavings(locale);
+  const prices = getPricesForMarket(market);
+  const savings = computeVipSavingsForMarket(market);
 
   // Ao escolher VIP: ativa TODOS os add-ons automaticamente (flat price de verdade).
   // Ao sair de VIP: NÃO reseta os add-ons — o user pode ter escolhido algum antes.
@@ -121,19 +123,19 @@ export default function PlanField() {
                       Preço "de" = avancado + todos os add-ons premium
                       separados. "por" = VIP. Só mostra o riscado se a
                       economia valer a pena (>= R$10) — senão fica ridículo. */}
-                  {savings >= 10 && (
+                  {savings >= (market === 'BR' ? 10 : 5) && (
                     <div className="text-[11.5px] font-medium text-white/40 line-through leading-none mb-1 tabular-nums">
-                      {formatCurrency(Number((prices.vip + savings).toFixed(2)), locale)}
+                      {formatCurrencyForMarket(Number((prices.vip + savings).toFixed(2)), market)}
                     </div>
                   )}
                   <div className="text-[19px] font-black text-white leading-none tabular-nums">
-                    {formatCurrency(prices.vip, locale)}
+                    {formatCurrencyForMarket(prices.vip, market)}
                   </div>
-                  {savings >= 10 && (
+                  {savings >= (market === 'BR' ? 10 : 5) && (
                     <div className="text-[10.5px] font-bold text-emerald-300 mt-1 whitespace-nowrap">
                       {isEN
-                        ? `Save ${formatCurrency(savings, locale)}`
-                        : `Economize ${formatCurrency(savings, locale)}`}
+                        ? `Save ${formatCurrencyForMarket(savings, market)}`
+                        : `Economize ${formatCurrencyForMarket(savings, market)}`}
                     </div>
                   )}
                 </div>
@@ -202,7 +204,7 @@ export default function PlanField() {
                 </div>
                 <div className="text-right">
                   <div className="text-[18px] font-black text-white leading-none tabular-nums">
-                    {formatCurrency(prices.avancado, locale)}
+                    {formatCurrencyForMarket(prices.avancado, market)}
                   </div>
                   <div className="text-[10px] text-white/50 mt-1">
                     {isEN ? '+ optional add-ons' : '+ add-ons opcionais'}
@@ -254,7 +256,7 @@ export default function PlanField() {
                 </div>
                 <div className="text-right">
                   <div className="text-[14px] font-bold text-white/85">
-                    {formatCurrency(prices.basico, locale)}
+                    {formatCurrencyForMarket(prices.basico, market)}
                   </div>
                 </div>
               </div>

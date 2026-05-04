@@ -56,11 +56,25 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (event.type === 'checkout.session.completed') {
+    // Multibanco (PT): Stripe dispara checkout.session.completed com payment_status='unpaid'
+    // quando a referência é gerada e ainda não paga. O dinheiro só entra dias depois.
+    // Pra capturar ambos os fluxos (card-instant + multibanco-async), tratamos:
+    //   checkout.session.completed (paid)         → finalize agora
+    //   checkout.session.async_payment_succeeded  → finalize depois (multibanco confirmado)
+    //   checkout.session.async_payment_failed     → log, intent fica pending
+    const isFinalizeEvent =
+      event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded';
+    const isAsyncFailure = event.type === 'checkout.session.async_payment_failed';
+
+    if (isFinalizeEvent) {
       const session = event.data.object as Stripe.Checkout.Session;
+      // Pra multibanco em "completed" o status vem 'unpaid' — só finaliza
+      // de fato em async_payment_succeeded. Card vem 'paid' em completed.
+      const isPaid = session.payment_status === 'paid';
 
       if (session.metadata?.type === 'upgrade' && session.metadata?.pageId) {
-        if (session.payment_status === 'paid') {
+        if (isPaid) {
           const result = await applyUpgrade(session.metadata.pageId, session.id);
           if (!result.success) {
             console.error('[stripe-webhook] applyUpgrade failed', {
@@ -72,15 +86,32 @@ export async function POST(req: NextRequest) {
         const intentId = session.metadata?.intentId;
         if (!intentId) {
           console.error('[stripe-webhook] missing intentId in metadata', session.id);
-        } else if (session.payment_status === 'paid') {
+        } else if (isPaid) {
           const result = await finalizeLovePage(intentId, session.id);
           if (!result.success) {
             console.error('[stripe-webhook] finalizeLovePage failed', {
               intentId, sessionId: session.id, error: result.error,
             });
           }
+        } else {
+          // Multibanco aguardando pagamento — registra pra UI mostrar "pendente".
+          await db.collection('payment_intents').doc(intentId).set(
+            { stripeStatus: 'awaiting_payment', stripeSessionId: session.id, updatedAt: Timestamp.now() },
+            { merge: true },
+          ).catch(() => {});
+          console.log('[stripe-webhook] multibanco awaiting payment', { intentId, sessionId: session.id });
         }
       }
+    } else if (isAsyncFailure) {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const intentId = session.metadata?.intentId;
+      if (intentId) {
+        await db.collection('payment_intents').doc(intentId).set(
+          { stripeStatus: 'failed', stripeSessionId: session.id, updatedAt: Timestamp.now() },
+          { merge: true },
+        ).catch(() => {});
+      }
+      console.warn('[stripe-webhook] async payment failed', { sessionId: session.id, intentId });
     }
 
     return NextResponse.json({ ok: true });

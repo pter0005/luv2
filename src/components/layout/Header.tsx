@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { removeSession } from "@/app/auth-actions";
 import { useLocale } from 'next-intl';
+import MarketSwitcher from "@/components/layout/MarketSwitcher";
 
 const NAV_LINKS_PT = [
   { href: "/#recursos", label: "Recursos" },
@@ -132,6 +133,7 @@ export default function Header() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center"><MarketSwitcher /></div>
             <div className="hidden md:flex items-center">{renderUserArea()}</div>
             <div className="md:hidden">
               <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
