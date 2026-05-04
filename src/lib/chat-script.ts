@@ -50,7 +50,7 @@ const nameOr = (ctx: CupidContext, fallback: string) =>
 // ─────────────────────────────────────────────────────────────
 const NAMORADE_LINES: SegmentLines = {
   recipient: () => 'Oiii! 💘 Antes de tudo: qual o nome de quem vai receber essa surpresa?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🥰 Agora me conta: qual vai ser o título lá em cima da página? (pode ser o nome dele(a), apelidinho, frase de efeito…)`,
+  title: () => `Aah, que nome lindo! 🥰 Agora me conta: qual vai ser o título lá em cima da página? (pode ser o nome dele(a), apelidinho, frase de efeito…)`,
   message: (ctx) => `Agora vem a parte mais especial 💌 — escreva a mensagem do coração pra ${nameOr(ctx, 'ela(e)')}. Se joga, o Cupido ajuda a deixar fofo!`,
   specialDate: (ctx) => `Eba! Me conta: há quanto tempo vocês estão juntos? ⏳ (pra gente mostrar o tempo de amor de vocês na página 💖)`,
   gallery: (ctx) => `Bora escolher as fotos? 📸 Solta as que você mais ama de vocês dois — ${nameOr(ctx, 'ele(a)')} vai amar relembrar!`,
@@ -69,7 +69,7 @@ const NAMORADE_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const MAE_LINES: SegmentLines = {
   recipient: () => 'Que lindo, uma homenagem pra mãe 💕 Me conta, qual o nome dela?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🌷 Agora me conta, como você quer titular essa homenagem? Pode ser algo como "A melhor mãe do mundo" ou algo único de vocês duas.`,
+  title: () => `Aah, que nome lindo! 🌷 Agora me conta, como você quer titular essa homenagem? Pode ser algo como "A melhor mãe do mundo" ou algo único de vocês duas.`,
   message: (ctx) => `Agora a parte que aperta o coração 💞 — o que você sempre quis dizer pra ${nameOr(ctx, 'ela')}? Solta tudo, pode ser longo!`,
   specialDate: () => `Me conta: quando vocês começaram essa história juntas? 🌿 (pode ser seu aniversário mesmo — aí a gente mostra o tempo de amor de vocês!)`,
   gallery: (ctx) => `Hora das fotos 📸 — escolhe aquelas fotos marcantes de vocês. ${nameOr(ctx, 'Ela')} vai chorar!`,
@@ -88,7 +88,7 @@ const MAE_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const ESPOUSE_LINES: SegmentLines = {
   recipient: () => 'Que lindo! 💍 Antes de tudo, qual o nome do seu amor?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🥹 Agora me conta, como você quer chamar essa página? Pode ser uma frase que resume vocês dois.`,
+  title: () => `Aah, que nome lindo! 🥹 Agora me conta, como você quer chamar essa página? Pode ser uma frase que resume vocês dois.`,
   message: (ctx) => `Agora a mensagem 💌 — o que seu coração quer dizer pra ${nameOr(ctx, 'ele(a)')}? Desabafa, é seguro aqui!`,
   specialDate: () => `Me conta: há quanto tempo vocês tão construindo essa vida juntos? 💞 (casamento, namoro desde quando — o que fizer mais sentido)`,
   gallery: () => `Bora ver as fotos de vocês? 📸 Escolhe as que contam a história de vocês dois.`,
@@ -107,7 +107,7 @@ const ESPOUSE_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const AMIGE_LINES: SegmentLines = {
   recipient: () => 'Amizade que é família é uma delícia 🫶 Me conta, qual o nome dessa pessoa especial?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🌟 Agora me conta, como você quer titular a página? Pode ser uma zoeira interna de vocês, uma frase, qualquer coisa.`,
+  title: () => `Aah, que nome lindo! 🌟 Agora me conta, como você quer titular a página? Pode ser uma zoeira interna de vocês, uma frase, qualquer coisa.`,
   message: (ctx) => `Escreve aí, sem vergonha 💌 — o que você sempre quis dizer pra ${nameOr(ctx, 'ele(a)')}? Pode rir, pode chorar, tudo vale.`,
   specialDate: () => `Há quanto tempo vocês são amigos? ⏳ (desde a escola? faculdade? ontem?)`,
   gallery: () => `Hora das melhores fotos de vocês 📸 — as engraçadas, as fofas, as que ninguém pode ver…`,
@@ -126,7 +126,7 @@ const AMIGE_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const PAI_LINES: SegmentLines = {
   recipient: () => 'Homenagem pra um pai 💙 que coisa linda. Qual o nome dele?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 💙 Agora me conta, como você quer titular essa homenagem? Pode ser "Pro melhor pai do mundo" ou algo único.`,
+  title: () => `Aah, que nome lindo! 💙 Agora me conta, como você quer titular essa homenagem? Pode ser "Pro melhor pai do mundo" ou algo único.`,
   message: (ctx) => `Agora a parte mais especial 💌 — o que você quer dizer pra ${nameOr(ctx, 'ele')}? Solta, ele merece ouvir tudo.`,
   specialDate: () => `Me conta: quando começou essa história de vocês? 🌿 (pode ser seu aniversário — a gente mostra o tempo juntos na página)`,
   gallery: () => `Bora reviver esses momentos 📸 — escolhe as fotos mais marcantes de vocês.`,
@@ -145,7 +145,7 @@ const PAI_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const AVO_LINES: SegmentLines = {
   recipient: () => 'Aaah, uma homenagem pra avó/avô 🥹 coisa mais linda. Qual o nome?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🥹 Agora me conta, como você quer titular essa homenagem? Pode ser "Minha vó" ou um nome carinhoso especial.`,
+  title: () => `Aah, que nome lindo! 🥹 Agora me conta, como você quer titular essa homenagem? Pode ser "Minha vó" ou um nome carinhoso especial.`,
   message: () => `Agora a parte mais fofa 💌 — o que você sempre quis dizer? Solta o coração.`,
   specialDate: () => `Me conta: quando começou essa história de amor de vocês? 🌿 (seu nascimento serve!)`,
   gallery: () => `Fotos antigas, fotos recentes, tudo vale 📸 — escolhe as mais marcantes.`,
@@ -164,7 +164,7 @@ const AVO_LINES: SegmentLines = {
 // ─────────────────────────────────────────────────────────────
 const FILHO_LINES: SegmentLines = {
   recipient: () => 'Homenagem pro filho(a) 🌱 que demais! Qual o nome?',
-  title: (ctx) => `Aah${ctx.recipientName ? `, ${ctx.recipientName}` : ''}, que nome lindo! 🌱 Agora me conta, como vai ser o título da página? Pode ser o nome dele(a) mesmo, uma frase carinhosa…`,
+  title: () => `Aah, que nome lindo! 🌱 Agora me conta, como vai ser o título da página? Pode ser o nome dele(a) mesmo, uma frase carinhosa…`,
   message: (ctx) => `Agora a mensagem 💌 — o que você quer que ${nameOr(ctx, 'ele(a)')} leia e guarde pra sempre?`,
   specialDate: (ctx) => `Há quanto tempo ${nameOr(ctx, 'ele(a)')} está iluminando a sua vida? 🌟 (pode ser a data de nascimento!)`,
   gallery: () => `Bora escolher as fotos mais marcantes 📸 — do primeiro dia até hoje.`,
