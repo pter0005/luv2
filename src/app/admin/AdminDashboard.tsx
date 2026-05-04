@@ -37,7 +37,8 @@ export type RecentSale = {
   pageId: string; title: string; plan: string; price: number; createdAt: string; utmSource: string;
 };
 export type SaleRecord = {
-  id: string; plan: string; price: number; currency: 'BRL' | 'USD';
+  id: string; plan: string; price: number; currency: 'BRL' | 'USD' | 'EUR';
+  market?: 'BR' | 'PT' | 'US';
   createdAt: string; ownerEmail: string; isGift?: boolean;
   title?: string;
   addOns?: string[];
@@ -56,19 +57,32 @@ export type DashboardProps = {
   basicoCount: number;
   totalSalesBRL: number;
   totalSalesUSD: number;
+  totalSalesEUR: number;
+  salesCountBRL: number;
+  salesCountUSD: number;
+  salesCountEUR: number;
   salesHistory: SaleRecord[];
   todayVisitors: number;
   todaySales: number;
   todayRevenue: number;
+  todayRevenueEUR: number;
+  todayRevenueUSD: number;
+  todaySalesBR: number;
+  todaySalesPT: number;
+  todaySalesUS: number;
   yesterdayVisitors: number;
   yesterdaySales: number;
   yesterdayRevenue: number;
+  yesterdayRevenueEUR: number;
+  yesterdayRevenueUSD: number;
   totalVisitors: number;
   totalSalesCount: number;
   totalSoldCount: number;
   totalRevenue: number;
   overallConv: string;
   avgTicketBRL: number;
+  avgTicketEUR: number;
+  avgTicketUSD: number;
   chartData: DayData[];
   sourceRows: SourceRow[];
   recentSales: RecentSale[];
@@ -99,6 +113,24 @@ const brl = (v: number) =>
 
 const usd = (v: number) =>
   v.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+const eur = (v: number) =>
+  v.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+
+// Conversão aproximada pra "receita consolidada em BRL" — meta do dia,
+// totalRevenue, etc. Cotações fixas: revisar quando flutuar > 5%.
+// EUR (ago/2025): ~R$5,80 · USD: ~R$5,10
+const FX_TO_BRL = { BRL: 1, EUR: 5.8, USD: 5.1 } as const;
+const toBRL = (v: number, c: 'BRL' | 'EUR' | 'USD') => v * FX_TO_BRL[c];
+
+// Formata na própria moeda do mercado — nunca converte na exibição
+// (converter só pra "visão consolidada R$" via toBRL → brl).
+const fmtCurrency = (v: number, c: 'BRL' | 'EUR' | 'USD') =>
+  c === 'EUR' ? eur(v) : c === 'USD' ? usd(v) : brl(v);
+
+// Bandeira do market — usado em SaleRecord cards / linhas
+const flagOf = (m?: 'BR' | 'PT' | 'US' | null) =>
+  m === 'PT' ? '🇵🇹' : m === 'US' ? '🇺🇸' : '🇧🇷';
 
 const fmtDate = (d: Date) =>
   new Intl.DateTimeFormat('pt-BR', {
@@ -213,14 +245,26 @@ function KpiCard({ label, value, sub, icon: Icon, accent, today, trend, sparklin
 // HERO REVENUE CARD — destaque do dia
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroRevenueCard({
-  todayRevenue, yesterdayRevenue, todaySales, yesterdaySales, chartData,
+  todayRevenue, todayRevenueEUR, todayRevenueUSD,
+  yesterdayRevenue, yesterdayRevenueEUR, yesterdayRevenueUSD,
+  todaySales, yesterdaySales,
+  todaySalesBR, todaySalesPT, todaySalesUS,
+  chartData,
 }: {
-  todayRevenue: number; yesterdayRevenue: number;
+  todayRevenue: number; todayRevenueEUR: number; todayRevenueUSD: number;
+  yesterdayRevenue: number; yesterdayRevenueEUR: number; yesterdayRevenueUSD: number;
   todaySales: number; yesterdaySales: number;
+  todaySalesBR: number; todaySalesPT: number; todaySalesUS: number;
   chartData: DayData[];
 }) {
-  const diff = todayRevenue - yesterdayRevenue;
-  const pct = yesterdayRevenue > 0 ? (diff / yesterdayRevenue) * 100 : 0;
+  // Receita consolidada (BRL equivalente) — soma os 3 mercados em real.
+  // Sem isso, vendas PT/US ficavam invisíveis no card "Hoje".
+  const todayConsolidatedBRL =
+    todayRevenue + todayRevenueEUR * FX_TO_BRL.EUR + todayRevenueUSD * FX_TO_BRL.USD;
+  const yesterdayConsolidatedBRL =
+    yesterdayRevenue + yesterdayRevenueEUR * FX_TO_BRL.EUR + yesterdayRevenueUSD * FX_TO_BRL.USD;
+  const diff = todayConsolidatedBRL - yesterdayConsolidatedBRL;
+  const pct = yesterdayConsolidatedBRL > 0 ? (diff / yesterdayConsolidatedBRL) * 100 : 0;
   const up = diff >= 0;
   const last7 = chartData.slice(-7);
 
@@ -255,7 +299,7 @@ function HeroRevenueCard({
               }}>
               {up ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-red-400" />}
               <span className={`text-[10px] font-black ${up ? 'text-emerald-300' : 'text-red-300'}`}>
-                {yesterdayRevenue > 0 ? `${up ? '+' : ''}${pct.toFixed(0)}%` : 'NOVO'}
+                {yesterdayConsolidatedBRL > 0 ? `${up ? '+' : ''}${pct.toFixed(0)}%` : 'NOVO'}
               </span>
             </div>
           </div>
@@ -263,9 +307,34 @@ function HeroRevenueCard({
 
         <div className="flex items-end gap-4 mb-2">
           <p className="text-4xl sm:text-5xl font-black text-white leading-none tracking-tight">
-            {brl(todayRevenue)}
+            {brl(todayConsolidatedBRL)}
           </p>
+          {(todayRevenueEUR > 0 || todayRevenueUSD > 0) && (
+            <p className="text-[10px] text-zinc-500 mb-2 font-medium">consolidado</p>
+          )}
         </div>
+
+        {/* Breakdown por moeda — só aparece se tem venda fora de BR */}
+        {(todayRevenueEUR > 0 || todayRevenueUSD > 0) && (
+          <div className="flex items-center gap-3 text-[10.5px] text-zinc-400 mb-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/20">
+              🇧🇷 <strong className="text-emerald-300 tabular-nums">{brl(todayRevenue)}</strong>
+              <span className="text-zinc-500">· {todaySalesBR}</span>
+            </span>
+            {todayRevenueEUR > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/8 border border-amber-500/20">
+                🇵🇹 <strong className="text-amber-300 tabular-nums">{eur(todayRevenueEUR)}</strong>
+                <span className="text-zinc-500">· {todaySalesPT}</span>
+              </span>
+            )}
+            {todayRevenueUSD > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/8 border border-blue-500/20">
+                🇺🇸 <strong className="text-blue-300 tabular-nums">{usd(todayRevenueUSD)}</strong>
+                <span className="text-zinc-500">· {todaySalesUS}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 text-[11px] text-zinc-400 mb-4">
           <span className="flex items-center gap-1">
@@ -274,7 +343,7 @@ function HeroRevenueCard({
           </span>
           <span className="text-zinc-700">·</span>
           <span>
-            Ontem: <strong className="text-zinc-300">{brl(yesterdayRevenue)}</strong> ({yesterdaySales} vendas)
+            Ontem: <strong className="text-zinc-300">{brl(yesterdayConsolidatedBRL)}</strong> ({yesterdaySales} vendas)
           </span>
         </div>
 
@@ -935,7 +1004,10 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
           {sale.isGift
             ? <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)' }}>🎁 CRÉDITO</span>
             : sale.price > 0
-              ? <span className="text-xs font-black text-emerald-400 font-mono">{sale.currency === 'BRL' ? brl(sale.price) : usd(sale.price)}</span>
+              ? <span className="text-xs font-black text-emerald-400 font-mono inline-flex items-center gap-1.5">
+                  <span className="text-[10px] opacity-70">{flagOf(sale.market)}</span>
+                  {fmtCurrency(sale.price, sale.currency)}
+                </span>
               : <span className="text-xs text-zinc-600">—</span>
           }
         </td>
@@ -981,7 +1053,16 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
                   style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
                   Plano {sale.plan === 'avancado' ? 'Avançado' : sale.plan === 'basico' ? 'Básico' : sale.plan}
-                  {' '}({sale.currency === 'BRL' ? `R$${sale.plan === 'avancado' ? '24,90' : '19,90'}` : sale.plan === 'avancado' ? 'US$19,90' : 'US$14,90'})
+                  {' '}({(() => {
+                    const pricesByMarket = {
+                      BR: { avancado: 24.90, basico: 19.90 },
+                      PT: { avancado: 12.99, basico: 8.99 },
+                      US: { avancado: 14.99, basico: 9.99 },
+                    } as const;
+                    const m = sale.market || (sale.currency === 'EUR' ? 'PT' : sale.currency === 'USD' ? 'US' : 'BR');
+                    const base = pricesByMarket[m][sale.plan === 'avancado' ? 'avancado' : 'basico'];
+                    return fmtCurrency(base, sale.currency);
+                  })()})
                 </span>
                 {sale.addOns && sale.addOns.length > 0
                   ? sale.addOns.map(ao => (
@@ -1009,15 +1090,26 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function AdminDashboard({
   totalUsers, avancadoCount, basicoCount,
-  totalSalesBRL, totalSalesUSD, salesHistory,
+  totalSalesBRL, totalSalesUSD, totalSalesEUR,
+  salesCountBRL, salesCountUSD, salesCountEUR,
+  salesHistory,
   recentErrors, unresolvedErrorCount,
-  todayVisitors, todaySales, todayRevenue,
-  yesterdayVisitors, yesterdaySales, yesterdayRevenue,
+  todayVisitors, todaySales, todayRevenue, todayRevenueEUR, todayRevenueUSD,
+  todaySalesBR, todaySalesPT, todaySalesUS,
+  yesterdayVisitors, yesterdaySales, yesterdayRevenue, yesterdayRevenueEUR, yesterdayRevenueUSD,
   totalVisitors, totalSalesCount, totalSoldCount, totalRevenue, overallConv,
-  avgTicketBRL,
+  avgTicketBRL, avgTicketEUR, avgTicketUSD,
   chartData, sourceRows, recentSales,
   wizardFunnelToday, attachRate, salesHeatmap,
 }: DashboardProps) {
+  // Receita total consolidada em BRL (usado pra meta do dia + KPIs unificados).
+  // Mostra cards individuais por moeda também — converte só onde precisa unificar.
+  const totalRevenueConsolidatedBRL =
+    toBRL(totalSalesBRL, 'BRL') + toBRL(totalSalesEUR, 'EUR') + toBRL(totalSalesUSD, 'USD');
+  const todayRevenueConsolidatedBRL =
+    toBRL(todayRevenue, 'BRL') + toBRL(todayRevenueEUR, 'EUR') + toBRL(todayRevenueUSD, 'USD');
+  const yesterdayRevenueConsolidatedBRL =
+    toBRL(yesterdayRevenue, 'BRL') + toBRL(yesterdayRevenueEUR, 'EUR') + toBRL(yesterdayRevenueUSD, 'USD');
   const router = useRouter();
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1096,15 +1188,32 @@ export default function AdminDashboard({
         <div className="lg:col-span-2">
           <HeroRevenueCard
             todayRevenue={todayRevenue}
+            todayRevenueEUR={todayRevenueEUR}
+            todayRevenueUSD={todayRevenueUSD}
             yesterdayRevenue={yesterdayRevenue}
+            yesterdayRevenueEUR={yesterdayRevenueEUR}
+            yesterdayRevenueUSD={yesterdayRevenueUSD}
             todaySales={todaySales}
             yesterdaySales={yesterdaySales}
+            todaySalesBR={todaySalesBR}
+            todaySalesPT={todaySalesPT}
+            todaySalesUS={todaySalesUS}
             chartData={chartData}
           />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
-          <KpiCard label="Ticket Médio" value={brl(avgTicketBRL)}
-            sub="média geral BRL" icon={Receipt} accent="#f472b6" />
+          <KpiCard label="Ticket Médio 🇧🇷" value={brl(avgTicketBRL)}
+            sub={`${salesCountBRL} vendas BRL`} icon={Receipt} accent="#f472b6" />
+          {salesCountEUR > 0 && (
+            <KpiCard label="Ticket Médio 🇵🇹" value={eur(avgTicketEUR)}
+              sub={`${salesCountEUR} vendas EUR · ${brl(avgTicketEUR * FX_TO_BRL.EUR)} líq.`}
+              icon={Receipt} accent="#fbbf24" />
+          )}
+          {salesCountUSD > 0 && (
+            <KpiCard label="Ticket Médio 🇺🇸" value={usd(avgTicketUSD)}
+              sub={`${salesCountUSD} vendas USD · ${brl(avgTicketUSD * FX_TO_BRL.USD)} líq.`}
+              icon={Receipt} accent="#60a5fa" />
+          )}
           <KpiCard label="Visitantes" value={totalVisitors.toLocaleString('pt-BR')}
             today={todayVisitors.toLocaleString('pt-BR')}
             trend={{ current: todayVisitors, previous: yesterdayVisitors }}
@@ -1122,19 +1231,19 @@ export default function AdminDashboard({
             revenue={todayRevenue}
           />
         </Section>
-        <Section title="Meta do Dia" sub="R$500 diários" icon={Trophy} accent="#fbbf24">
+        <Section title="Meta do Dia" sub="R$1.000 consolidado" icon={Trophy} accent="#fbbf24">
           <div className="space-y-4">
             <GoalProgressRing
-              current={todayRevenue}
-              goal={500}
-              label="Hoje"
+              current={todayRevenueConsolidatedBRL}
+              goal={1000}
+              label="Hoje (BR+PT+US)"
               color="#fbbf24"
             />
             <div className="pt-3 border-t border-white/5">
               <GoalProgressRing
                 current={last7.reduce((s, d) => s + d.revenue, 0)}
-                goal={3500}
-                label="Semana"
+                goal={7000}
+                label="Semana BR"
                 color="#a855f7"
               />
             </div>
@@ -1175,10 +1284,14 @@ export default function AdminDashboard({
         <KpiCard label="Páginas Criadas" value={totalSalesCount.toLocaleString('pt-BR')}
           sub={`${avancadoCount} Avançado · ${basicoCount} Básico`}
           icon={FileText} accent="#c084fc" />
-        <KpiCard label="Receita BRL Total" value={brl(totalSalesBRL)} icon={DollarSign} accent="#34d399"
-          sub="acumulado brasileiro" />
-        <KpiCard label="Receita USD" value={usd(totalSalesUSD)} icon={DollarSign} accent="#22d3ee"
-          sub="vendas internacionais" />
+        <KpiCard label="🇧🇷 Receita BRL" value={brl(totalSalesBRL)} icon={DollarSign} accent="#34d399"
+          sub={`${salesCountBRL} vendas`} />
+        <KpiCard label="🇵🇹 Receita EUR" value={eur(totalSalesEUR)} icon={DollarSign} accent="#fbbf24"
+          sub={`${salesCountEUR} vendas · ${brl(totalSalesEUR * FX_TO_BRL.EUR)} líq.`} />
+        <KpiCard label="🇺🇸 Receita USD" value={usd(totalSalesUSD)} icon={DollarSign} accent="#22d3ee"
+          sub={`${salesCountUSD} vendas · ${brl(totalSalesUSD * FX_TO_BRL.USD)} líq.`} />
+        <KpiCard label="💰 Total Consolidado" value={brl(totalRevenueConsolidatedBRL)} icon={DollarSign} accent="#a855f7"
+          sub="BR + PT + US em BRL" />
         <KpiCard label="Páginas Vendidas" value={totalSoldCount.toLocaleString('pt-BR')}
           today={todaySales.toLocaleString('pt-BR')}
           trend={{ current: todaySales, previous: yesterdaySales }}

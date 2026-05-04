@@ -88,8 +88,11 @@ async function getAllData() {
 
   let todaySales = 0, todayRevenue = 0;
   let yesterdaySales = 0, yesterdayRevenue = 0;
-  let totalSalesBRL = 0, totalSalesUSD = 0;
-  let totalBRLCount = 0; // vendas BRL pra calcular ticket médio
+  let totalSalesBRL = 0, totalSalesUSD = 0, totalSalesEUR = 0;
+  let totalBRLCount = 0, totalUSDCount = 0, totalEURCount = 0;
+  let todayRevenueEUR = 0, todayRevenueUSD = 0;
+  let yesterdayRevenueEUR = 0, yesterdayRevenueUSD = 0;
+  let todaySalesBR = 0, todaySalesPT = 0, todaySalesUS = 0;
   let avancadoCount = 0, basicoCount = 0;
   let totalPagesCount = 0;  // todas as páginas criadas (exceto admin)
   let totalSoldCount = 0;   // páginas vendidas (exceto gifts e admin)
@@ -121,17 +124,30 @@ async function getAllData() {
       // Venda real = tem paymentId (webhook confirmou pagamento) OU é gift explícito
       const isPaid = !!d.paymentId;
 
-      const isUSD = d.paymentId && isNaN(Number(d.paymentId));
-      const currency: 'BRL' | 'USD' = isUSD ? 'USD' : 'BRL';
-      const basePrice = d.plan === 'avancado'
-        ? (isUSD ? 19.90 : 24.90)
-        : (isUSD ? 14.90 : 19.90);
+      // Detecta currency/market via campos canônicos do intent (persistidos
+      // desde o feat de geo-detection). Fallback: se paymentId não-numérico
+      // (Stripe sessions tipo "cs_..."), assume USD legado.
+      const docMarket = (d.market || (d.currency === 'EUR' ? 'PT' : d.currency === 'USD' ? 'US' : null)) as
+        'BR' | 'PT' | 'US' | null;
+      const isStripeId = d.paymentId && isNaN(Number(d.paymentId));
+      const market: 'BR' | 'PT' | 'US' = docMarket || (isStripeId ? 'US' : 'BR');
+      const currency: 'BRL' | 'USD' | 'EUR' = market === 'PT' ? 'EUR' : market === 'US' ? 'USD' : 'BRL';
+
+      // Base price por plano e moeda — mantém os fallbacks "antigos" pra
+      // docs sem paidAmount (legacy). Novo flow sempre tem paidAmount.
+      const baseByMarket: Record<'BR' | 'PT' | 'US', { avancado: number; basico: number }> = {
+        BR: { avancado: 24.90, basico: 19.90 },
+        PT: { avancado: 12.99, basico: 8.99 },
+        US: { avancado: 14.99, basico: 9.99 },
+      };
+      const basePrice = d.plan === 'avancado' ? baseByMarket[market].avancado : baseByMarket[market].basico;
       const price = d.paidAmount ?? basePrice;
 
       // Páginas de presente e páginas sem pagamento (drafts) não contam como venda / receita
       if (!isGift && isPaid) {
         totalSoldCount++;
-        if (isUSD) totalSalesUSD += price;
+        if (currency === 'EUR') { totalSalesEUR += price; totalEURCount++; }
+        else if (currency === 'USD') { totalSalesUSD += price; totalUSDCount++; }
         else { totalSalesBRL += price; totalBRLCount++; }
 
         if (d.plan === 'avancado') avancadoCount++;
@@ -163,6 +179,7 @@ async function getAllData() {
           plan: d.plan || 'gratis',
           price: isGift ? 0 : price,
           currency,
+          market,
           createdAt: createdAtDate.toISOString(),
           ownerEmail: owner?.email || 'User deleted',
           isGift,
@@ -193,10 +210,17 @@ async function getAllData() {
         if (date === today) {
           todaySales++;
           if (currency === 'BRL') todayRevenue += price;
+          else if (currency === 'EUR') todayRevenueEUR += price;
+          else if (currency === 'USD') todayRevenueUSD += price;
+          if (market === 'BR') todaySalesBR++;
+          else if (market === 'PT') todaySalesPT++;
+          else if (market === 'US') todaySalesUS++;
         }
         if (date === yesterday) {
           yesterdaySales++;
           if (currency === 'BRL') yesterdayRevenue += price;
+          else if (currency === 'EUR') yesterdayRevenueEUR += price;
+          else if (currency === 'USD') yesterdayRevenueUSD += price;
         }
       }
 
@@ -273,14 +297,18 @@ async function getAllData() {
     : '0.00';
 
   const avgTicketBRL = totalBRLCount > 0 ? totalSalesBRL / totalBRLCount : 0;
+  const avgTicketEUR = totalEURCount > 0 ? totalSalesEUR / totalEURCount : 0;
+  const avgTicketUSD = totalUSDCount > 0 ? totalSalesUSD / totalUSDCount : 0;
 
   return {
     totalUsers, avancadoCount, basicoCount,
-    totalSalesBRL, totalSalesUSD, salesHistory,
-    todayVisitors, todaySales, todayRevenue,
-    yesterdayVisitors, yesterdaySales, yesterdayRevenue,
+    totalSalesBRL, totalSalesUSD, totalSalesEUR, salesHistory,
+    todayVisitors, todaySales, todayRevenue, todayRevenueEUR, todayRevenueUSD,
+    todaySalesBR, todaySalesPT, todaySalesUS,
+    yesterdayVisitors, yesterdaySales, yesterdayRevenue, yesterdayRevenueEUR, yesterdayRevenueUSD,
     totalVisitors, totalSalesCount: totalPagesCount, totalSoldCount, totalRevenue, overallConv,
-    avgTicketBRL,
+    avgTicketBRL, avgTicketEUR, avgTicketUSD,
+    salesCountBRL: totalBRLCount, salesCountEUR: totalEURCount, salesCountUSD: totalUSDCount,
     chartData, sourceRows, recentSales,
     recentErrors, unresolvedErrorCount,
     wizardFunnelToday,
