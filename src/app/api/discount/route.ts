@@ -26,10 +26,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false, reason: 'already_used' });
   }
 
+  // CRÍTICO: NÃO usa fallback ?? 10. Se doc não tem campo discount, é bug
+  // de criação — falha cedo pra admin perceber em vez de aplicar R$10
+  // silenciosamente em código que ele criou com outro valor.
+  const discountValue = Number(d.discount);
+  if (!isFinite(discountValue) || discountValue <= 0) {
+    console.error(`[discount] Code ${code} sem campo discount válido:`, d);
+    return NextResponse.json({ valid: false, reason: 'broken_code' });
+  }
+
   return NextResponse.json({
     valid: true,
-    discount: d.discount ?? 10,
-    remaining: d.maxUses - d.usedCount,
+    discount: discountValue,
+    remaining: (d.maxUses ?? 0) - (d.usedCount ?? 0),
   });
 }
 
