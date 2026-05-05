@@ -34,3 +34,10 @@
 # automática sem intervenção manual — cliente geralmente nem nota a falha.
 [functions."api/cron/self-heal-images"]
   schedule = "*/30 * * * *"
+
+# Recover PIX stuck: 1×/hora pergunta ao Mercado Pago se intents pendentes
+# (>1h, <24h) foram pagos. Se sim, finaliza a página automaticamente. Cobre o
+# gap onde o webhook do MP morreu (timeout, retry esgotado, lentidão). Sem
+# isso, cliente paga e nunca recebe → Reclame Aqui + reembolso.
+[functions."api/cron/recover-stuck-pix"]
+  schedule = "0 * * * *"

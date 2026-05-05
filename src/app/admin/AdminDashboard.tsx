@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -15,13 +15,14 @@ import {
   ExternalLink, Edit, Calendar, Trash2, RefreshCw,
   Zap, ArrowUpRight, ArrowDownRight, ShoppingBag,
   TrendingUp, Receipt, Sparkles, Target, Crown,
-  BarChart3, Activity, Trophy,
+  BarChart3, Activity, Trophy, Loader2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 import { SaleNotification } from '@/components/admin/SaleNotification';
 import { ErrorStatusWidget } from '@/components/admin/ErrorStatusWidget';
+import { deletePage } from '@/app/admin/pages/actions';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -970,7 +971,28 @@ function GoalProgressRing({
 // SALE HISTORY ROW
 // ─────────────────────────────────────────────────────────────────────────────
 function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startDelete] = useTransition();
+
+  const handleDelete = () => {
+    setDeleteError(null);
+    startDelete(async () => {
+      const res = await deletePage(sale.id, 'apagado pelo admin via histórico de vendas');
+      if (res.success) {
+        setDeleted(true);
+        // Refresh dashboard depois de 1.5s pra mostrar a remoção
+        setTimeout(() => router.refresh(), 1500);
+      } else {
+        setDeleteError(res.error || 'Erro ao deletar');
+        setConfirmDelete(false);
+      }
+    });
+  };
+
   const planColor = sale.plan === 'vip'
     ? { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', border: 'rgba(245,158,11,0.25)' }
     : sale.plan === 'avancado'
@@ -981,7 +1003,10 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
 
   return (
     <>
-      <tr className="border-t transition-colors hover:bg-white/[0.02]"
+      <tr className={cn(
+        'border-t transition-colors hover:bg-white/[0.02]',
+        deleted && 'opacity-30 pointer-events-none',
+      )}
         style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <td className="px-6 py-3">
           <p className="text-xs font-medium text-zinc-200">{sale.ownerEmail}</p>
@@ -1040,6 +1065,46 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <ExternalLink className="w-3 h-3" />View
             </Link>
+            {/* Botão Apagar — confirmação inline em 2 cliques pra evitar
+                acidente. Soft delete (reversível 7 dias via deleted_lovepages
+                + Cloud Storage soft-delete). */}
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                disabled={deleted || isDeleting}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-red-400/70 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}
+                title="Apagar página"
+              >
+                <Trash2 className="w-3 h-3" />Apagar
+              </button>
+            ) : (
+              <div className="inline-flex items-center gap-1">
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black text-white bg-red-600 hover:bg-red-500 transition-colors disabled:opacity-60"
+                  title="Confirmar exclusão"
+                >
+                  {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  Confirmar
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={isDeleting}
+                  className="inline-flex items-center px-1.5 py-1 rounded-lg text-[10px] text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Cancelar"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            {deleteError && (
+              <span className="text-[9px] text-red-300 ml-1" title={deleteError}>erro</span>
+            )}
+            {deleted && (
+              <span className="text-[9px] text-emerald-300 font-bold ml-1">apagada ✓</span>
+            )}
           </div>
         </td>
       </tr>
