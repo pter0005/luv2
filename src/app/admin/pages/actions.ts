@@ -416,6 +416,163 @@ export async function removeBrokenFileRefs(pageId: string): Promise<{ success: b
     }
 }
 
+// ── DELETAR PÁGINA MANUALMENTE (admin only) ───────────────────────
+// Remove o doc da lovepages + tenta deletar arquivos do Storage. Soft delete:
+// move o doc inteiro pra deleted_lovepages com timestamp + admin who did it,
+// pra ter audit trail. Storage usa Cloud soft-delete (7 dias de janela de
+// recuperação). Por isso é REVERSÍVEL via /admin/diagnostico-uploads se
+// admin deletou por engano.
+//
+// Fluxo:
+//   1. Snapshot do doc atual
+//   2. Copy pra deleted_lovepages/{pageId} com metadata (deletedAt, deletedBy, reason)
+//   3. Delete o doc original em lovepages/
+//   4. Best-effort: deleta arquivos do Storage (galleryImages, timeline, etc)
+//   5. Marca payment_intent associado como deletedByAdmin (não conta na receita)
+//   6. revalidatePath de admin + página pública (que agora retorna 404)
+//
+// USE CASE: cliente pediu reembolso e vc quer apagar a página, OU descobriu
+// fraude/conteúdo inadequado.
+export async function deletePage(pageId: string, reason?: string): Promise<{
+  success: boolean;
+  filesDeleted?: number;
+  filesFailedToDelete?: number;
+  error?: string;
+}> {
+    await requireAdmin();
+    const db = getAdminFirestore();
+    const bucket = getAdminStorage();
+
+    if (!pageId || typeof pageId !== 'string' || pageId.length < 4) {
+        return { success: false, error: 'pageId inválido.' };
+    }
+
+    try {
+        const pageRef = db.collection('lovepages').doc(pageId);
+        const snap = await pageRef.get();
+        if (!snap.exists) return { success: false, error: 'Página não encontrada (pode já ter sido deletada).' };
+
+        const data = snap.data()!;
+
+        // ── 1. Snapshot pra deleted_lovepages (soft delete + audit) ──────────
+        const archive = {
+            ...data,
+            _originalPageId: pageId,
+            _deletedAt: Timestamp.now(),
+            _deletedBy: 'admin',
+            _deleteReason: reason || null,
+        };
+        await db.collection('deleted_lovepages').doc(pageId).set(archive);
+
+        // ── 2. Remove o doc original ─────────────────────────────────────────
+        await pageRef.delete();
+
+        // ── 3. Marca payment_intent associado (se houver) como deletado ──────
+        // Importante pra dashboard de receita NÃO contar essa venda.
+        if (data.intentId) {
+            try {
+                await db.collection('payment_intents').doc(data.intentId).update({
+                    deletedByAdmin: true,
+                    deletedAt: Timestamp.now(),
+                    deletedBy: 'admin',
+                    deleteReason: reason || null,
+                });
+            } catch { /* intent pode não existir ou já ter expirado */ }
+        }
+
+        // ── 4. Storage cleanup — best-effort, não bloqueia o retorno ─────────
+        // Cloud Storage soft-delete (7 dias) cobre rollback. Aqui só removemos
+        // do "active state" — recuperação via /admin/diagnostico-uploads.
+        let filesDeleted = 0;
+        let filesFailedToDelete = 0;
+
+        const collectPaths = (): string[] => {
+            const paths: string[] = [];
+            const pushIfPath = (obj: any) => {
+                if (obj?.path && typeof obj.path === 'string') paths.push(obj.path);
+            };
+
+            if (Array.isArray(data.galleryImages)) data.galleryImages.forEach(pushIfPath);
+            if (Array.isArray(data.timelineEvents)) data.timelineEvents.forEach((ev: any) => pushIfPath(ev?.image));
+            if (Array.isArray(data.memoryGameImages)) data.memoryGameImages.forEach(pushIfPath);
+            pushIfPath(data.puzzleImage);
+            pushIfPath(data.audioRecording);
+            pushIfPath(data.backgroundVideo);
+
+            return paths.filter(p => p.startsWith('lovepages/') || p.startsWith('temp/'));
+        };
+
+        const paths = collectPaths();
+        for (const path of paths) {
+            try {
+                await bucket.file(path).delete();
+                filesDeleted++;
+            } catch {
+                filesFailedToDelete++;
+            }
+        }
+
+        revalidatePath('/admin/pages');
+        revalidatePath('/admin');
+        revalidatePath(`/p/${pageId}`);
+
+        return { success: true, filesDeleted, filesFailedToDelete };
+    } catch (error: any) {
+        return { success: false, error: error?.message || 'unknown' };
+    }
+}
+
+// ── BUSCAR PÁGINA POR ID (busca rápida no admin) ──────────────────
+export async function getPageQuickInfo(pageId: string): Promise<{
+  success: boolean;
+  found?: boolean;
+  data?: {
+    id: string;
+    title: string;
+    plan: string;
+    paidAmount: number | null;
+    currency: string | null;
+    market: string | null;
+    createdAt: string | null;
+    paymentId: string | null;
+    ownerEmail: string | null;
+    whatsappNumber: string | null;
+    isGift: boolean;
+  };
+  error?: string;
+}> {
+    await requireAdmin();
+    const db = getAdminFirestore();
+
+    if (!pageId || typeof pageId !== 'string') return { success: false, error: 'pageId inválido.' };
+
+    try {
+        const snap = await db.collection('lovepages').doc(pageId).get();
+        if (!snap.exists) return { success: true, found: false };
+        const d = snap.data()!;
+
+        return {
+            success: true,
+            found: true,
+            data: {
+                id: pageId,
+                title: (d.title as string) || 'Sem título',
+                plan: (d.plan as string) || 'desconhecido',
+                paidAmount: typeof d.paidAmount === 'number' ? d.paidAmount : null,
+                currency: (d.currency as string) || null,
+                market: (d.market as string) || null,
+                createdAt: d.createdAt?.toDate?.()?.toISOString() || null,
+                paymentId: (d.paymentId as string) || null,
+                ownerEmail: (d.ownerEmail as string) || (d.guestEmail as string) || null,
+                whatsappNumber: (d.whatsappNumber as string) || null,
+                isGift: !!d.isGift,
+            },
+        };
+    } catch (error: any) {
+        return { success: false, error: error?.message || 'unknown' };
+    }
+}
+
 // ── BUSCAR DADOS PARA A PÁGINA DE MONITORAMENTO ───────────────────
 // Varre recursivamente procurando `path` que começa com 'temp/' OU `url`
 // que ainda referencia `/temp/` (inclusive encoded `%2Ftemp%2F`). Detecta:

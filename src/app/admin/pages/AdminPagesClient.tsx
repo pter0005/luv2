@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react';
 import { reprocessPageFiles, removeBrokenFileRefs, reprocessAllPages, markIrrecoverableAsResolved } from './actions';
+import DeletePagePanel from './DeletePagePanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -407,6 +408,9 @@ export default function AdminPagesClient({
 
     return (
         <div className="space-y-8">
+            {/* Painel de delete manual — busca e remove página por ID/URL */}
+            <DeletePagePanel />
+
             {/* KPIs */}
             <div className="grid grid-cols-3 gap-4">
                 <Card className={cn("border-l-4", stats.totalPending > 0 ? "border-l-red-500" : "border-l-green-500")}>
