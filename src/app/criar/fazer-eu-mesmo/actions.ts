@@ -639,6 +639,13 @@ export async function processPixPayment(
       ? 'Página de amor digital VIP - bundle com tudo incluído'
       : `Página de amor digital - Plano ${planLabel}`;
 
+    // payer.phone do whatsapp digitado pelo cliente (DDD + número).
+    // MP aceita area_code (2 díg) + number (resto). Boas práticas que
+    // ajudam o motor de risco entender o comprador.
+    const phoneDigits = rawWhatsapp; // já validado: 10-11 díg BR
+    const areaCode = phoneDigits.slice(0, 2);
+    const phoneNumber = phoneDigits.slice(2);
+
     const body: any = {
       transaction_amount: amount,
       description: productTitle,
@@ -648,6 +655,7 @@ export async function processPixPayment(
         first_name: firstName,
         last_name: lastName,
         identification: { type: 'CPF', number: '19100000000' },
+        phone: { area_code: areaCode, number: phoneNumber },
       },
       external_reference: intentId,
       // Statement descriptor — aparece na fatura do cartão. Reduz contestação
@@ -668,6 +676,7 @@ export async function processPixPayment(
         payer: {
           first_name: firstName,
           last_name: lastName,
+          phone: { area_code: areaCode, number: phoneNumber },
         },
       },
     };
