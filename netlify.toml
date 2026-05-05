@@ -6,6 +6,14 @@
   command = "npm run build"
   publish = ".next"
 
+# Secrets scanning — Netlify acha que NEXT_PUBLIC_FIREBASE_API_KEY ('AIzaSy…')
+# é secret. Não é (Firebase Web API key é pública por design — Auth Rules
+# protegem). E webpack cache em .netlify/.next/cache também escaneia, gera
+# falso-positivo. SECRETS_SCAN_OMIT_PATHS exclui dirs do scan.
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**,.netlify/.next/static/**,.netlify/.next/standalone/**,.netlify/.next/server/**,.netlify/functions-internal/**"
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "true"
+
 [functions."api/cron/cleanup-expired"]
   schedule = "0 4 * * *"
 

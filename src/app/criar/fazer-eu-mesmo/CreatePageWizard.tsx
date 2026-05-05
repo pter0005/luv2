@@ -51,7 +51,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useSearchParams, useRouter } from 'next/navigation'
 import { fileToBase64, compressImage, base64ToBlob } from "@/lib/image-utils";
-import { SuggestContentOutput } from "@/ai/flows/ai-powered-content-suggestion";
 import { useUser, useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { signInAnonymously } from 'firebase/auth';
 import { useCreatingPresence } from '@/hooks/usePresence';
