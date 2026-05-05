@@ -15,6 +15,7 @@ import { localeFromMarket, type Market } from '@/i18n/config';
 import { getSiteConfigByMarket } from '@/lib/site-config';
 import { notifyAdmins } from '@/lib/notify-admin';
 import { createStripeCheckoutSession as _createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
+import { getRequestGeo } from '@/lib/geo-from-request';
 
 // ─────────────────────────────────────────────
 // META CAPI + TIKTOK EVENTS API
@@ -376,15 +377,33 @@ export async function createOrUpdatePaymentIntent(fullPageData: any): Promise<Cr
         market = await resolveMarket();
       } catch { /* fallback BR */ }
       const cfg = getSiteConfigByMarket(market);
+
+      // Captura geo + UA do request — fonte server-side da verdade pro
+      // attribution (client-side pode ser bloqueado por privacy mode/VPN).
+      // Aqui a gente confirma país/região/cidade do IP real + UA do browser
+      // que veio na request HTTP. Persistido só na CRIAÇÃO do intent — não
+      // sobrescreve em updates (first-touch wins). Não-bloqueante: try/catch
+      // por segurança em headers indisponíveis.
+      const geoFields: Record<string, any> = {};
+      try {
+        const geo = getRequestGeo();
+        if (geo.country) geoFields.ipCountry = geo.country;
+        if (geo.region) geoFields.ipRegion = geo.region;
+        if (geo.city) geoFields.ipCity = geo.city;
+        if (geo.userAgent && !dataToSave.user_agent) geoFields.userAgentServer = geo.userAgent;
+        if (geo.acceptLanguage) geoFields.acceptLanguage = geo.acceptLanguage;
+      } catch { /* segue sem geo — não bloqueia venda */ }
+
       const intentDoc = await db.collection('payment_intents').add({
         ...dataToSave,
+        ...geoFields,
         status: 'pending',
         createdAt: Timestamp.now(),
         market,
         currency: cfg.currency,
         locale: localeFromMarket(market),
       });
-      console.log(`[intent-files] CREATED new intent ${intentDoc.id} market=${market}`);
+      console.log(`[intent-files] CREATED new intent ${intentDoc.id} market=${market} country=${geoFields.ipCountry || 'unknown'}`);
       return { success: true, intentId: intentDoc.id };
     }
   } catch (error: any) {

@@ -144,6 +144,11 @@ export async function GET(req: NextRequest) {
       amigo_amiga: 0, filho_filha: 0, irmao_irma: 0, avo: 0, outro: 0,
     };
 
+    // P1 NEW: byCountry (geo IP), byBrowser, byOS
+    const countryCounts: Record<string, { count: number; totalBRL: number }> = {};
+    const browserCounts: Record<string, number> = {};
+    const osCounts: Record<string, number> = {};
+
     let totalSales = 0;
     let totalGifts = 0;
 
@@ -178,11 +183,21 @@ export async function GET(req: NextRequest) {
         planMap[planSlug].totalBRL += amountBRL;
       }
 
-      // byDevice
-      const ua = (d.userAgent as string) || (d.user_agent as string) || null;
-      const { deviceType } = parseUA(ua);
-      deviceMap[deviceType].count++;
-      deviceMap[deviceType].totalBRL += amountBRL;
+      // byDevice + byBrowser + byOS
+      const ua = (d.user_agent as string) || (d.userAgent as string) || (d.userAgentServer as string) || null;
+      const parsedUA = parseUA(ua);
+      deviceMap[parsedUA.deviceType].count++;
+      deviceMap[parsedUA.deviceType].totalBRL += amountBRL;
+      browserCounts[parsedUA.browser] = (browserCounts[parsedUA.browser] || 0) + 1;
+      osCounts[parsedUA.os] = (osCounts[parsedUA.os] || 0) + 1;
+
+      // byCountry (geo IP server-side)
+      const ipCountry = (d.ipCountry as string) || (d.ip_country as string) || null;
+      if (ipCountry) {
+        countryCounts[ipCountry] = countryCounts[ipCountry] || { count: 0, totalBRL: 0 };
+        countryCounts[ipCountry].count++;
+        countryCounts[ipCountry].totalBRL += amountBRL;
+      }
 
       // byAddOn
       if (addOns.intro === 'love') addOnsMap.introLove++;
@@ -264,6 +279,17 @@ export async function GET(req: NextRequest) {
         byDevice: deviceMap,
         addOnsAttach: addOnAttach,
         byRecipient: recipientList,
+
+        // ── P1 EXPANSIONS (atribuição + device + geo) ─────────────────
+        byCountry: Object.entries(countryCounts)
+          .map(([country, v]) => ({ country, count: v.count, totalBRL: Number(v.totalBRL.toFixed(2)) }))
+          .sort((a, b) => b.count - a.count),
+        byBrowser: Object.entries(browserCounts)
+          .map(([browser, count]) => ({ browser, count }))
+          .sort((a, b) => b.count - a.count),
+        byOS: Object.entries(osCounts)
+          .map(([os, count]) => ({ os, count }))
+          .sort((a, b) => b.count - a.count),
         totals: {
           paidSales: totalSales,
           gifts: totalGifts,

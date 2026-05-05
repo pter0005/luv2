@@ -94,9 +94,20 @@ export async function GET(req: NextRequest) {
         // Add-ons aceitos (upsells durante o wizard)
         const addOns = parseAddOns(d);
 
-        // Device fingerprint do userAgent (se capturado em error_logs/intent)
-        const ua = (d.userAgent as string) || (d.user_agent as string) || null;
+        // Device fingerprint — prefere user_agent capturado client-side
+        // (mais detalhado), fallback no userAgentServer (request HTTP).
+        const ua = (d.user_agent as string) || (d.userAgent as string) || (d.userAgentServer as string) || null;
         const parsedUA = parseUA(ua);
+
+        // First visit / time-to-purchase: se cliente capturou first_visit_at
+        // no client-side e a venda tem createdAt, dá pra calcular tempo de
+        // funil real ("vi anúncio às 14h, paguei às 16h" = 2h).
+        const firstVisitMs = Number(d.first_visit_at || d.captured_at);
+        let timeToPurchaseSec: number | null = null;
+        if (createdAt && isFinite(firstVisitMs) && firstVisitMs > 0) {
+          const diff = (createdAt.getTime() - firstVisitMs) / 1000;
+          if (diff > 0 && diff < 60 * 60 * 24 * 30) timeToPurchaseSec = Math.round(diff);
+        }
 
         return {
           id: doc.id,
@@ -108,21 +119,39 @@ export async function GET(req: NextRequest) {
           plan: d.plan || 'basico',
           isGift: !!d.isGift,
 
-          // ── Atribution (Meta/TikTok pixel + UTMs) ─────────────────────
+          // ── Atribution (Meta/TikTok/Google pixel + UTMs) ──────────────
           utmSource: (d.utmSource || d.utm_source || 'direct') as string,
           utmCampaign: (d.utmCampaign || d.utm_campaign || null) as string | null,
           utmMedium: (d.utmMedium || d.utm_medium || null) as string | null,
           utmContent: (d.utmContent || d.utm_content || null) as string | null,
           utmTerm: (d.utmTerm || d.utm_term || null) as string | null,
-          fbclid: (d.fbclid || d.fbc || null) as string | null, // fbc é o cookie derivado de fbclid
+          fbclid: (d.fbclid || null) as string | null, // raw fbclid (P1)
+          fbc: (d.fbc || null) as string | null,       // derivado fb.1.<ts>.<fbclid>
+          fbp: (d.fbp || null) as string | null,
           ttclid: (d.ttclid || null) as string | null,
+          ttp: (d.ttp || null) as string | null,
+          gclid: (d.gclid || null) as string | null,   // Google Ads (P1)
+          msclkid: (d.msclkid || null) as string | null, // Bing Ads (P1)
           referrer: (d.referrer || null) as string | null,
           landingPage: (d.landingPage || d.landing_page || null) as string | null,
+          firstVisitAt: isFinite(firstVisitMs) && firstVisitMs > 0 ? new Date(firstVisitMs).toISOString() : null,
+          timeToPurchaseSec,
 
-          // ── Device ────────────────────────────────────────────────────
+          // ── Geo (server-side, IP-based) ──────────────────────────────
+          ipCountry: (d.ipCountry as string) || null,
+          ipRegion: (d.ipRegion as string) || null,
+          ipCity: (d.ipCity as string) || null,
+
+          // ── Device (UA parsed + raw fingerprint) ─────────────────────
           deviceType: parsedUA.deviceType,
           os: parsedUA.os,
           browser: parsedUA.browser,
+          screenSize: (d.screen_size as string) || null,
+          viewportSize: (d.viewport_size as string) || null,
+          devicePixelRatio: typeof d.device_pixel_ratio === 'number' ? d.device_pixel_ratio : null,
+          timezone: (d.timezone as string) || null,
+          language: (d.language as string) || (d.acceptLanguage as string)?.split(',')[0] || null,
+          platform: (d.platform as string) || null,
           userAgent: ua ? ua.slice(0, 200) : null,
 
           // ── Discount + add-ons ────────────────────────────────────────
