@@ -2,25 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { ADMIN_EMAILS } from '@/lib/admin-emails';
 import { authenticateExternalRequest, unauthorized, corsHeaders } from '@/lib/external-api-auth';
+import {
+  resolveMarket,
+  currencyOfMarket,
+  resolveAmount,
+  parseAddOns,
+  parseUA,
+  toBRL,
+  maskEmail,
+  maskPhone,
+  FX,
+} from '@/lib/external-api-helpers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const FX_TO_BRL = { BRL: 1, EUR: 5.8, USD: 5.1 } as const;
-type Currency = keyof typeof FX_TO_BRL;
-
-function maskEmail(email: string): string {
-  if (!email || !email.includes('@')) return '***';
-  const [user, domain] = email.split('@');
-  if (user.length <= 2) return `**@${domain}`;
-  return `${user.slice(0, 2)}***@${domain}`;
-}
-
-function maskPhone(phone: string): string {
-  const d = (phone || '').replace(/\D/g, '');
-  if (d.length < 4) return '***';
-  return `***${d.slice(-4)}`;
-}
 
 export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, { status: 204, headers: corsHeaders(req.headers.get('origin')) });
@@ -33,18 +28,16 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const params = url.searchParams;
 
-  // Filtros
-  const fromStr = params.get('from'); // ISO date 'YYYY-MM-DD' ou ISO completo
+  const fromStr = params.get('from');
   const toStr = params.get('to');
-  const market = params.get('market'); // BR | PT | US
+  const market = params.get('market');
   const limitRaw = parseInt(params.get('limit') || '100', 10);
   const limit = Math.min(Math.max(isNaN(limitRaw) ? 100 : limitRaw, 1), 500);
-  const cursor = params.get('cursor'); // pageId pra paginação keyset
+  const cursor = params.get('cursor');
 
   try {
     const db = getAdminFirestore();
 
-    // Mapa de userId → email (pra excluir admins)
     const usersSnap = await db.collection('users').get();
     const userMap = new Map<string, { email: string }>();
     usersSnap.docs.forEach(doc => {
@@ -63,7 +56,6 @@ export async function GET(req: NextRequest) {
       if (!isNaN(toDate.getTime())) query = query.where('createdAt', '<=', toDate);
     }
 
-    // Cursor — pega doc do pageId e startAfter
     if (cursor) {
       const cursorDoc = await db.collection('lovepages').doc(cursor).get();
       if (cursorDoc.exists) query = query.startAfter(cursorDoc);
@@ -77,9 +69,7 @@ export async function GET(req: NextRequest) {
       .filter(doc => {
         const d = doc.data();
         const owner = userMap.get(d.userId);
-        // exclui admins
         if (owner && ADMIN_EMAILS.includes(owner.email)) return false;
-        // só páginas pagas (tem paymentId) ou gifts explícitos
         if (!d.paymentId && !d.isGift) return false;
         return true;
       })
@@ -87,26 +77,26 @@ export async function GET(req: NextRequest) {
         const d = doc.data();
         const owner = userMap.get(d.userId);
 
-        // Resolve market via fields canônicos (persistidos desde i18n feat).
-        // Fallback: paymentId não-numérico (Stripe session "cs_…") → US legacy.
-        const docMarket = d.market || (d.currency === 'EUR' ? 'PT' : d.currency === 'USD' ? 'US' : null);
-        const isStripeId = d.paymentId && isNaN(Number(d.paymentId));
-        const m: 'BR' | 'PT' | 'US' = (docMarket as any) || (isStripeId ? 'US' : 'BR');
-        const currency: Currency = m === 'PT' ? 'EUR' : m === 'US' ? 'USD' : 'BRL';
-
-        const baseByMarket: Record<'BR' | 'PT' | 'US', Record<string, number>> = {
-          BR: { vip: 34.99, avancado: 24.90, basico: 19.90 },
-          PT: { vip: 17.99, avancado: 12.99, basico: 8.99 },
-          US: { vip: 19.99, avancado: 14.99, basico: 9.99 },
-        };
-        const baseFallback = baseByMarket[m][d.plan] ?? baseByMarket[m]['basico'];
-        const amount = typeof d.paidAmount === 'number' && d.paidAmount > 0 ? d.paidAmount : baseFallback;
-        const amountBRL = Number((amount * FX_TO_BRL[currency]).toFixed(2));
+        const m = resolveMarket(d);
+        const currency = currencyOfMarket(m);
+        const amount = resolveAmount(d, m);
+        const amountBRL = Number((toBRL(amount, currency)).toFixed(2));
 
         const createdAt: Date | null = d.createdAt?.toDate ? d.createdAt.toDate() : null;
 
-        // Filtro market pós-aggregation (Firestore não indexa em tudo)
         if (market && m !== market.toUpperCase()) return null;
+
+        // Discount info — gravado no intent durante PIX/Stripe checkout
+        const promoCodeUsed = (d.discountCode as string) || null;
+        const discountValueRaw = Number(d.appliedDiscount);
+        const discountValue = isFinite(discountValueRaw) && discountValueRaw > 0 ? discountValueRaw : 0;
+
+        // Add-ons aceitos (upsells durante o wizard)
+        const addOns = parseAddOns(d);
+
+        // Device fingerprint do userAgent (se capturado em error_logs/intent)
+        const ua = (d.userAgent as string) || (d.user_agent as string) || null;
+        const parsedUA = parseUA(ua);
 
         return {
           id: doc.id,
@@ -117,9 +107,37 @@ export async function GET(req: NextRequest) {
           amountBRL,
           plan: d.plan || 'basico',
           isGift: !!d.isGift,
+
+          // ── Atribution (Meta/TikTok pixel + UTMs) ─────────────────────
           utmSource: (d.utmSource || d.utm_source || 'direct') as string,
           utmCampaign: (d.utmCampaign || d.utm_campaign || null) as string | null,
           utmMedium: (d.utmMedium || d.utm_medium || null) as string | null,
+          utmContent: (d.utmContent || d.utm_content || null) as string | null,
+          utmTerm: (d.utmTerm || d.utm_term || null) as string | null,
+          fbclid: (d.fbclid || d.fbc || null) as string | null, // fbc é o cookie derivado de fbclid
+          ttclid: (d.ttclid || null) as string | null,
+          referrer: (d.referrer || null) as string | null,
+          landingPage: (d.landingPage || d.landing_page || null) as string | null,
+
+          // ── Device ────────────────────────────────────────────────────
+          deviceType: parsedUA.deviceType,
+          os: parsedUA.os,
+          browser: parsedUA.browser,
+          userAgent: ua ? ua.slice(0, 200) : null,
+
+          // ── Discount + add-ons ────────────────────────────────────────
+          promoCodeUsed,
+          discountValue,
+          discountValueBRL: discountValue * FX[currency],
+          addOnsAccepted: {
+            intro: addOns.intro,
+            voice: addOns.voice,
+            wordGame: addOns.wordGame,
+            customQR: addOns.customQR,
+            count: addOns.count,
+          },
+
+          // ── Contact (mascarados) ──────────────────────────────────────
           email: maskEmail(owner?.email || d.guestEmail || d.ownerEmail || ''),
           phone: maskPhone(d.whatsappNumber || ''),
           title: (d.title as string) || null,
@@ -134,6 +152,8 @@ export async function GET(req: NextRequest) {
         else if (s.currency === 'USD') acc.totalUSD += s.amount;
         else acc.totalBRLNative += s.amount;
         acc.byMarket[s.market] = (acc.byMarket[s.market] || 0) + 1;
+        if (s.addOnsAccepted.count > 0) acc.salesWithAddOns++;
+        if (s.promoCodeUsed) acc.salesWithDiscount++;
         return acc;
       },
       {
@@ -142,6 +162,8 @@ export async function GET(req: NextRequest) {
         totalBRLNative: 0,
         totalEUR: 0,
         totalUSD: 0,
+        salesWithAddOns: 0,
+        salesWithDiscount: 0,
         byMarket: {} as Record<string, number>,
       },
     );
@@ -156,17 +178,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         data: sales,
-        pagination: {
-          limit,
-          count: sales.length,
-          hasMore,
-          nextCursor,
-        },
+        pagination: { limit, count: sales.length, hasMore, nextCursor },
         summary,
         filters: { from: fromStr, to: toStr, market: market || null },
         meta: {
-          fxToBRL: FX_TO_BRL,
+          fxToBRL: FX,
           fxNote: 'Cotação fixa — revisar quando flutuar > 5%',
+          addOnsLegend: {
+            intro: 'love | poema | null — intro animada',
+            voice: 'mensagem de voz gravada',
+            wordGame: 'jogo adivinhe a palavra',
+            customQR: 'QR code com tema customizado (não classic)',
+          },
         },
       },
       { headers: corsHeaders(req.headers.get('origin')) },
