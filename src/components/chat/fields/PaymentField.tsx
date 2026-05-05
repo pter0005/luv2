@@ -54,6 +54,17 @@ const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 // Helper compat: usa o formatter do locale ativo (legacy — prefere money2 com market).
 function money(v: number, locale: Locale) { return formatCurrency(v, locale); }
 
+/**
+ * Lê o MP_DEVICE_SESSION_ID injetado pelo script security.js do Mercado Pago.
+ * Usado pra anti-fraude — manda no header X-meli-session-id da chamada do PIX/Card.
+ * Sem isso, MP bloqueia mais transações (score de integração cai).
+ */
+function getMpDeviceId(): string | null {
+  if (typeof window === 'undefined') return null;
+  const id = (window as any).MP_DEVICE_SESSION_ID;
+  return typeof id === 'string' && id.length > 4 ? id : null;
+}
+
 type Method = 'pix' | 'card';
 
 type PixState = {
@@ -606,7 +617,7 @@ export default function PaymentField() {
         const pix = await processPixPayment(saveRes.intentId, claimedTotal, null, {
           whatsapp: whatsappDigits,
           email: cleanEmail,
-        });
+        }, getMpDeviceId());
         if (pix.error) {
           trackEvent('PaymentFailed', { method: 'pix', reason: pix.error, value: total });
           // Auto-recovery: se foi "valor mudou", busca o novo preço e atualiza
@@ -682,7 +693,7 @@ export default function PaymentField() {
         const session = await createMercadoPagoCardSession(saveRes.intentId, domain, {
           whatsapp: whatsappDigits,
           email: cleanEmail,
-        });
+        }, getMpDeviceId());
         if (!session.success) {
           trackEvent('PaymentFailed', { method: 'card', reason: session.error, value: total });
           setError(session.error || (isUS ? 'Failed to create payment session.' : 'Erro ao criar sessão de pagamento.'));

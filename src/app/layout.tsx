@@ -183,6 +183,17 @@ export default async function RootLayout({
   return (
     <html lang={cfg.htmlLang} className="dark scroll-smooth">
       <head>
+        {/* Mercado Pago Security Script — injeta MP_DEVICE_SESSION_ID no window.
+            Invisível pro user. Aumenta MUITO a aprovação de pagamentos: MP usa
+            o fingerprint do device pra anti-fraude. Sem isso, score de
+            integração fica baixo (39/100) e MP bloqueia mais por precaução.
+            VIEW_ID é qualquer string que identifique a tela — usamos 'checkout'
+            porque o script só importa onde tem fluxo de pagamento. */}
+        <script
+          src="https://www.mercadopago.com/v2/security.js"
+          {...{ view: 'checkout' } as any}
+          async
+        />
         {/* Preload do logo — começa download em paralelo ao HTML, antes do JS
             inicializar. Logo aparece no LCP path em todas as rotas. Sem isso,
             browser só baixa logo depois de parsear React → atrasa LCP em 1-2s. */}

@@ -19,7 +19,10 @@ export type MpCardResult =
 export async function createMercadoPagoCardSession(
   intentId: string,
   domain: string,
-  contact?: { whatsapp?: string; email?: string } | null
+  contact?: { whatsapp?: string; email?: string } | null,
+  // Device ID do MP SDK (X-meli-session-id) — fingerprint do device pra
+  // anti-fraude. Sem ele, score MP cai e mais transações são bloqueadas.
+  deviceId?: string | null,
 ): Promise<MpCardResult> {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) return { success: false, error: 'Mercado Pago não configurado.' };
@@ -73,13 +76,19 @@ export async function createMercadoPagoCardSession(
     const safeDomain = domain.replace(/\/$/, '');
     const planLabel = intent.plan === 'vip' ? 'VIP' : intent.plan === 'avancado' ? 'Avançado' : 'Básico';
 
-    const pref = await preference.create({
+    // SDK MP aceita meliSessionId em Options — vai como header pra anti-fraude.
+    const safeDeviceId = deviceId && deviceId.length > 4 && deviceId.length < 200 ? deviceId : null;
+
+    const prefArgs: any = {
       body: {
         items: [
           {
             id: intentId,
             title: `MyCupid — Plano ${planLabel}`,
             description: 'Página de amor personalizada · acesso vitalício',
+            // category_id ajuda o motor de risco MP a entender o tipo de
+            // produto. 'services' é o canônico pra produto digital/serviço.
+            category_id: 'services',
             quantity: 1,
             unit_price: amount,
             currency_id: 'BRL',
@@ -103,7 +112,11 @@ export async function createMercadoPagoCardSession(
         statement_descriptor: 'MYCUPID',
         notification_url: `${safeDomain}/api/webhooks/mercadopago`,
       },
-    });
+    };
+    if (safeDeviceId) {
+      prefArgs.requestOptions = { meliSessionId: safeDeviceId };
+    }
+    const pref = await preference.create(prefArgs);
 
     const url = pref.init_point || pref.sandbox_init_point;
     if (!url || !pref.id) {
