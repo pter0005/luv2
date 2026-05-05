@@ -9,10 +9,16 @@
 # Secrets scanning — Netlify acha que NEXT_PUBLIC_FIREBASE_API_KEY ('AIzaSy…')
 # é secret. Não é (Firebase Web API key é pública por design — Auth Rules
 # protegem). E webpack cache em .netlify/.next/cache também escaneia, gera
-# falso-positivo. SECRETS_SCAN_OMIT_PATHS exclui dirs do scan.
+# falso-positivo.
+#
+# Por que aqui no toml e não em env vars:
+#   - AWS Lambda tem limite HARD de 4KB pra TODAS env vars somadas.
+#   - Essas 3 são só pra build/scan, não precisam estar no runtime do Lambda.
+#   - Setadas aqui, o scanner pega mas NÃO contam no Lambda env limit.
 [build.environment]
   SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache/**,.netlify/.next/static/**,.netlify/.next/standalone/**,.netlify/.next/server/**,.netlify/functions-internal/**"
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "true"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_DATABASE_URL,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_PAYPAL_CLIENT_ID,NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY"
 
 [functions."api/cron/cleanup-expired"]
   schedule = "0 4 * * *"
