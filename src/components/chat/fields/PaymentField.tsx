@@ -614,7 +614,15 @@ export default function PaymentField() {
           setServerTotal(freshPrice.total);
         }
 
-        const pix = await processPixPayment(saveRes.intentId, claimedTotal, null, {
+        // Lê o cupom do localStorage (gravado quando user entra via /desconto/CODE).
+        // ChatWizardClient grava aqui no localStorage.setItem('mycupid_discount_code').
+        // Antes era passado null aqui — desconto NUNCA chegava no server-side, mesmo
+        // o cupido mostrando "ganhou cupom" na UI. Cliente via promessa, pagava preço cheio.
+        const discountCodeFromStorage = typeof window !== 'undefined'
+          ? localStorage.getItem('mycupid_discount_code')
+          : null;
+
+        const pix = await processPixPayment(saveRes.intentId, claimedTotal, discountCodeFromStorage, {
           whatsapp: whatsappDigits,
           email: cleanEmail,
         }, getMpDeviceId());
@@ -752,7 +760,10 @@ export default function PaymentField() {
         if (freshPrice.ok && typeof freshPrice.total === 'number') {
           setServerTotal(freshPrice.total);
         }
-        const session = await createStripeCheckoutSession(saveRes.intentId, claimedTotal, null, {
+        const stripeDiscountCode = typeof window !== 'undefined'
+          ? localStorage.getItem('mycupid_discount_code')
+          : null;
+        const session = await createStripeCheckoutSession(saveRes.intentId, claimedTotal, stripeDiscountCode, {
           phone: phoneDigits,
           email: cleanEmail,
         }, market);

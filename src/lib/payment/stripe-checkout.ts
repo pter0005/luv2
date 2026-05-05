@@ -93,6 +93,35 @@ export async function createStripeCheckoutSession(
     );
 
     // Total server-side (ignora client claim se divergir)
+    // Aplica desconto se houver — server-side validado contra discount_codes
+    // pra cliente não conseguir forjar desconto. Idempotente: se intent já
+    // tem appliedDiscount de tentativa anterior, reusa ao invés de re-validar
+    // (cupom já foi consumido, ficaria preso senão).
+    let validatedDiscount = 0;
+    const existingDiscount = Number(intentData?.appliedDiscount);
+    if (isFinite(existingDiscount) && existingDiscount > 0) {
+      validatedDiscount = existingDiscount;
+    } else if (discountCode && typeof discountCode === 'string') {
+      try {
+        const codeNorm = discountCode.toUpperCase().trim();
+        const discDoc = await db.collection('discount_codes').doc(codeNorm).get();
+        if (discDoc.exists) {
+          const dd = discDoc.data()!;
+          const discValue = Number(dd.discount);
+          const usedOk = (dd.usedCount ?? 0) < (dd.maxUses ?? 0);
+          const emailOk = !Array.isArray(dd.usedEmails) || !dd.usedEmails.includes(rawEmail);
+          if (dd.active && usedOk && emailOk && isFinite(discValue) && discValue > 0) {
+            validatedDiscount = discValue;
+            // Persiste no intent — finalize não re-cobra desconto duplicado e
+            // intent-price.ts vê o valor canônico.
+            await intentDoc.ref.set({ appliedDiscount: validatedDiscount, discountCode: codeNorm }, { merge: true });
+          }
+        }
+      } catch (e: any) {
+        console.warn('[stripe-checkout] discount validation failed:', e?.message);
+      }
+    }
+
     const serverTotal = computeTotalForMarket(
       {
         plan: intentData.plan,
@@ -101,7 +130,7 @@ export async function createStripeCheckoutSession(
         wordGameQuestions: intentData.wordGameQuestions,
         introType: intentData.introType,
         audioRecording: intentData.audioRecording,
-        discountAmount: 0, // TODO: validar código de desconto USD/EUR se for suportar
+        discountAmount: validatedDiscount,
       },
       resolvedMarket,
     );
