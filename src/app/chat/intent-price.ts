@@ -10,6 +10,8 @@ export interface IntentPriceResult {
   total?: number;
   currency?: 'BRL' | 'USD' | 'EUR';
   market?: Market;
+  status?: string;            // 'pending' | 'completed' | etc
+  lovePageId?: string | null; // setado quando status === 'completed'
   error?: string;
 }
 
@@ -72,7 +74,17 @@ export async function getIntentServerPrice(intentId: string): Promise<IntentPric
     }
 
     const total = computeTotalForMarket(input, market);
-    return { ok: true, total, currency: currencyForMarket[market], market };
+    return {
+      ok: true,
+      total,
+      currency: currencyForMarket[market],
+      market,
+      status: (d.status as string) || 'pending',
+      // lovePageId é setado pelo finalizeLovePage quando vira 'completed'.
+      // Polling do client usa pra atalho: se já foi finalizado pelo webhook,
+      // pula a query do MP API e vai direto pra tela de sucesso.
+      lovePageId: (d.lovePageId as string) || null,
+    };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'server error' };
   }

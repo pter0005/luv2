@@ -287,7 +287,11 @@ export default function PaymentField() {
   const [isAdminAction, startAdminAction] = useTransition();
   const [isDryRun, startDryRun] = useTransition();
   const [dryRunReport, setDryRunReport] = useState<MpDryRunReport | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Estado intermediário: MP retornou pending/in_process (banco confirmou
+  // pagamento mas MP ainda tá processando). Mostra "Detectando pagamento…"
+  // pro usuário ficar tranquilo em vez de achar que travou.
+  const [paymentDetected, setPaymentDetected] = useState(false);
 
   // Em dev, todo mundo é admin (mesma regra do admin-guard server-side)
   const isDev = process.env.NODE_ENV !== 'production';
@@ -427,36 +431,78 @@ export default function PaymentField() {
   // TIMEOUT: para de pollar após 15 min (PIX expira em 30 min mas usuário
   // costuma desistir antes). Antes pollava pra sempre = bateria mobile drenada
   // + custo de função no servidor + spinner girando sem fim.
+  // Polling adaptativo: 1.5s nos primeiros 60s (cliente acabou de pagar e
+  // tá ansioso esperando) → 3s depois. Sem isso, com setInterval fixo de 3s,
+  // cliente pagava e demorava 5-15s pra ver "página criada" mesmo com MP
+  // já tendo confirmado em 3s. Percepção de lentidão = pedido de reembolso.
+  //
+  // Detecção dupla: pergunta MP API E checa se `payment_intent.status` virou
+  // 'completed' (webhook chegou e finalizou ANTES do polling perguntar). Isso
+  // cobre o caso onde webhook é mais rápido que polling — antes, polling
+  // continuava chamando MP API mesmo com página já criada.
   useEffect(() => {
     if (!pixData || !intentId || paid || pixExpired) return;
     const startedAt = Date.now();
     const POLL_MAX_MS = 15 * 60 * 1000;
-    pollRef.current = setInterval(async () => {
-      if (Date.now() - startedAt > POLL_MAX_MS) {
-        if (pollRef.current) clearInterval(pollRef.current);
+    let stopped = false;
+
+    const tick = async () => {
+      if (stopped) return;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed > POLL_MAX_MS) {
         setPixExpired(true);
         return;
       }
       try {
+        // Primeiro: tenta atalho via intent status (webhook pode ter
+        // finalizado antes do polling — vai mais rápido que MP API).
+        const intentRes = await getIntentServerPrice(intentId);
+        if (!stopped && intentRes.status === 'completed' && intentRes.lovePageId) {
+          setPaid({ pageId: intentRes.lovePageId });
+          return;
+        }
+      } catch { /* segue pra MP query */ }
+
+      try {
         const res = await verifyPaymentWithMercadoPago(pixData.paymentId, intentId);
+        if (stopped) return;
         if (res.status === 'approved') {
-          if (pollRef.current) clearInterval(pollRef.current);
           setPaid({ pageId: res.pageId });
-        } else if (res.status === 'cancelled' || res.status === 'rejected') {
-          if (pollRef.current) clearInterval(pollRef.current);
+          return;
+        }
+        if (res.status === 'cancelled' || res.status === 'rejected') {
           setPixExpired(true);
-        } else if (res.status === 'error') {
+          return;
+        }
+        // 'in_process' / 'authorized' / 'pending' — banco confirmou mas MP
+        // ainda processando. Mostra UI de "detectando" pro user ficar tranquilo.
+        if (res.status === 'in_process' || res.status === 'authorized') {
+          setPaymentDetected(true);
+        }
+        if (res.status === 'error') {
           console.warn('[pix] verify transient error:', res.error);
         }
       } catch { /* retry */ }
-    }, 3000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+
+      // Reagenda com cadência adaptativa
+      const interval = elapsed < 60_000 ? 1500 : 3000;
+      pollRef.current = setTimeout(tick, interval);
+    };
+
+    // Primeira chamada imediata (1ms) pra não esperar o intervalo inicial
+    pollRef.current = setTimeout(tick, 1);
+
+    return () => {
+      stopped = true;
+      if (pollRef.current) clearTimeout(pollRef.current);
+    };
   }, [pixData, intentId, paid, pixExpired]);
 
   const handleGenerateNewPix = useCallback(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) clearTimeout(pollRef.current);
     setPixData(null);
     setPixExpired(false);
+    setPaymentDetected(false);
     setError(null);
     trackEvent('PaymentRetry', { method: 'pix', reason: 'pix_expired' });
   }, [setPixData]);
@@ -1292,14 +1338,22 @@ export default function PaymentField() {
                 className="rounded-2xl p-4 bg-white/[0.04] ring-1 ring-emerald-400/30 space-y-3"
               >
                 <div className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 text-emerald-300 font-medium">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Aguardando pagamento
+                  <div className={cn(
+                    "flex items-center gap-1.5 font-medium",
+                    paymentDetected ? "text-amber-300" : "text-emerald-300",
+                  )}>
+                    <span className={cn(
+                      "inline-block w-1.5 h-1.5 rounded-full animate-pulse",
+                      paymentDetected ? "bg-amber-400" : "bg-emerald-400",
+                    )} />
+                    {paymentDetected ? '✨ Pagamento detectado, criando sua página…' : 'Aguardando pagamento'}
                   </div>
-                  <span className="text-white/50 tabular-nums">
-                    Expira em {String(Math.floor(pixTimeLeft / 60)).padStart(2, '0')}:
-                    {String(pixTimeLeft % 60).padStart(2, '0')}
-                  </span>
+                  {!paymentDetected && (
+                    <span className="text-white/50 tabular-nums">
+                      Expira em {String(Math.floor(pixTimeLeft / 60)).padStart(2, '0')}:
+                      {String(pixTimeLeft % 60).padStart(2, '0')}
+                    </span>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-xl p-3 flex items-center justify-center">
