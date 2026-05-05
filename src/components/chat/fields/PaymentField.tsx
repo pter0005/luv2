@@ -42,7 +42,7 @@ import {
 } from '@/app/criar/fazer-eu-mesmo/actions';
 import { createMercadoPagoCardSession, dryRunMercadoPagoCardSession, type MpDryRunReport } from '@/app/chat/mp-card-action';
 import { lookupIntentStatus } from '@/app/chat/lookup-intent';
-import { getIntentServerPrice } from '@/app/chat/intent-price';
+import { getIntentServerPrice, applyDiscountToIntent } from '@/app/chat/intent-price';
 import { MercadoPagoLogo } from '@/components/chat/fields/MercadoPagoBadge';
 import QrCodeSelector from '@/app/criar/fazer-eu-mesmo/QrCodeSelector';
 import { downloadQrCard } from '@/lib/downloadQrCard';
@@ -180,6 +180,29 @@ export default function PaymentField() {
   // Enquanto não chegou a resposta (primeira renderização), mostra clientTotal
   // como fallback — bate na esmagadora maioria dos casos.
   const [serverTotal, setServerTotal] = useState<number | null>(null);
+  // Aplica cupom de desconto AO MONTAR a tela de checkout — antes era só
+  // ao clicar "Gerar PIX" → cliente via preço cheio mesmo após cupido
+  // saudar com cupom. Idempotente: se já tá aplicado, não duplica.
+  useEffect(() => {
+    if (!intentId) return;
+    const code = typeof window !== 'undefined'
+      ? localStorage.getItem('mycupid_discount_code')
+      : null;
+    if (!code) return;
+    let cancelled = false;
+    applyDiscountToIntent(intentId, code).then((res) => {
+      if (cancelled) return;
+      // Após aplicar, refresh do total pra mostrar com desconto
+      if (res.ok) {
+        getIntentServerPrice(intentId).then((p) => {
+          if (cancelled) return;
+          if (p.ok && typeof p.total === 'number') setServerTotal(p.total);
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [intentId]);
+
   useEffect(() => {
     if (!intentId) { setServerTotal(null); return; }
     let cancelled = false;

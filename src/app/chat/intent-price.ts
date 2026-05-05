@@ -4,6 +4,7 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { computeTotalForMarket } from '@/lib/price';
 import { headers } from 'next/headers';
 import { isMarket, marketFromRequest, type Market } from '@/i18n/config';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export interface IntentPriceResult {
   ok: boolean;
@@ -87,5 +88,76 @@ export async function getIntentServerPrice(intentId: string): Promise<IntentPric
     };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'server error' };
+  }
+}
+
+/**
+ * Aplica cupom no intent ANTES do pagamento. Chamado pelo PaymentField
+ * assim que monta com intentId + cupom no localStorage.
+ *
+ * Sem isso, o desconto só era aplicado no momento do clique em "Gerar PIX"
+ * — usuário via preço cheio no breakdown, ficava confuso ("o cupido falou
+ * de cupom mas o checkout não desconta"), abandonava o carrinho.
+ *
+ * Idempotente: se intent já tem appliedDiscount, NÃO sobrescreve. Cupom
+ * é one-shot por intent (consumido ao gerar PIX, não pode ser trocado
+ * mid-flow).
+ */
+export async function applyDiscountToIntent(
+  intentId: string,
+  code: string,
+): Promise<{ ok: boolean; discount?: number; reason?: string }> {
+  if (!intentId || !code) return { ok: false, reason: 'missing_args' };
+  try {
+    const db = getAdminFirestore();
+    const intentRef = db.collection('payment_intents').doc(intentId);
+    const intentSnap = await intentRef.get();
+    if (!intentSnap.exists) return { ok: false, reason: 'intent_not_found' };
+
+    const intent = intentSnap.data() || {};
+    if (intent.status === 'completed') return { ok: false, reason: 'already_completed' };
+
+    // Idempotência: já tem desconto aplicado? Não mexe — usuário pode
+    // estar voltando à tela e não queremos resetar.
+    const existing = Number(intent.appliedDiscount);
+    if (isFinite(existing) && existing > 0) {
+      return { ok: true, discount: existing };
+    }
+
+    const codeNorm = code.toUpperCase().trim().slice(0, 40);
+    if (!codeNorm) return { ok: false, reason: 'invalid_code' };
+
+    const discDoc = await db.collection('discount_codes').doc(codeNorm).get();
+    if (!discDoc.exists) return { ok: false, reason: 'not_found' };
+    const dd = discDoc.data()!;
+    if (!dd.active) return { ok: false, reason: 'inactive' };
+    const usedCount = dd.usedCount ?? 0;
+    const maxUses = dd.maxUses ?? 0;
+    if (usedCount >= maxUses) return { ok: false, reason: 'limit_reached' };
+
+    const cleanEmail = (intent.guestEmail || intent.userEmail || '').toLowerCase().trim();
+    if (cleanEmail && Array.isArray(dd.usedEmails) && dd.usedEmails.includes(cleanEmail)) {
+      return { ok: false, reason: 'already_used' };
+    }
+
+    const discValue = Number(dd.discount);
+    if (!isFinite(discValue) || discValue <= 0) return { ok: false, reason: 'broken_code' };
+
+    // Persiste no intent — getIntentServerPrice() vai pegar daqui na próxima
+    // chamada e mostrar o preço já com desconto. Não consome o cupom ainda
+    // (consumo é só ao gerar PIX/Stripe). Se cliente abandonar, contador
+    // não incrementa.
+    await intentRef.set(
+      {
+        appliedDiscount: discValue,
+        discountCode: codeNorm,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    );
+
+    return { ok: true, discount: discValue };
+  } catch (e: any) {
+    return { ok: false, reason: e?.message || 'server_error' };
   }
 }
