@@ -1133,6 +1133,19 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
         files: allFailures.slice(0, 30).map(f => `${f.folder}: ${f.path} → ${f.error}`),
       });
     } catch { /* best effort */ }
+
+    // Push admin: source_missing é IRRECUPERÁVEL (arquivo sumiu do bucket).
+    // Cliente pode reclamar — quero saber NA HORA pra contatar antes dele
+    // descobrir e abrir Reclame Aqui. Outros erros (rate_limit, eventual
+    // consistency) são auto-recuperáveis pelo cron, não precisam push.
+    const hasSourceMissing = (byError as any)['source_missing'] > 0;
+    if (hasSourceMissing) {
+      notifyAdmins(
+        `⚠️ Página criada com arquivo perdido`,
+        `${pageTitle} — ${allFailures.length} foto(s). Cliente: ${pageEmail || 'sem email'}. Considere oferecer reupload via WhatsApp.`,
+        `/admin/pages`,
+      ).catch(() => {});
+    }
   }
 
   // Flag _moveFailed/_moveError/_targetFolder são internos — tira antes de
