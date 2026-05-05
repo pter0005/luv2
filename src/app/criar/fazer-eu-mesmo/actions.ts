@@ -14,6 +14,7 @@ import { resolveMarket } from '@/i18n/request';
 import { localeFromMarket, type Market } from '@/i18n/config';
 import { getSiteConfigByMarket } from '@/lib/site-config';
 import { notifyAdmins } from '@/lib/notify-admin';
+import { createStripeCheckoutSession as _createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
 
 // ─────────────────────────────────────────────
 // META CAPI + TIKTOK EVENTS API
@@ -1485,13 +1486,24 @@ export async function finalizeWithGiftToken(
 }
 
 // ─────────────────────────────────────────────
-// STRIPE — re-export da implementação real em /lib/payment/stripe-checkout
+// STRIPE — wrapper async pra implementação real em /lib/payment/stripe-checkout
 // ─────────────────────────────────────────────
+// 'use server' files só permitem async function exports — re-export via
+// `export { x } from` quebra o build do Next 14. Daí o wrapper async aqui.
+// Implementação real fica em @/lib/payment/stripe-checkout (importada pelo
+// /chat direto). Wizard antigo continua chamando essa daqui sem mudar nada.
+//
 // ANTES era um placeholder retornando {success:false, error:'not configured'}
 // que silenciosamente quebrava 100% das vendas internacionais via wizard.
-// O /chat já usava a real (importava de @/lib/payment/stripe-checkout).
-// Re-export aqui pra wizard antigo continuar funcionando sem mudar callers.
-export { createStripeCheckoutSession } from '@/lib/payment/stripe-checkout';
+export async function createStripeCheckoutSession(
+  intentId: string,
+  clientClaimedTotal?: number,
+  discountCode?: string | null,
+  contact?: { phone?: string; email?: string } | null,
+  market: Market = 'PT',
+) {
+  return _createStripeCheckoutSession(intentId, clientClaimedTotal, discountCode, contact, market);
+}
 
 // ─────────────────────────────────────────────
 // EDITAR PÁGINA (VIP only)
