@@ -1,8 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
+import { isAdminRequest } from '@/lib/admin-guard';
 
 export async function GET() {
+    // Endpoint de teste — só admin pode disparar evento Meta CAPI fake.
+    // Antes era público: qualquer um podia POST 1000x e contaminar pixel
+    // com Purchases falsas, distorcendo ROAS e audiências lookalike.
+    if (!(await isAdminRequest())) {
+        return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const PIXEL_ID = process.env.META_PIXEL_ID;
     const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
     

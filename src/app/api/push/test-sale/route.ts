@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import { notifyAdmins } from '@/lib/notify-admin';
+import { isAdminRequest } from '@/lib/admin-guard';
 
 export async function POST() {
+  // Endpoint só pra admin testar push notification. Antes era público e
+  // qualquer um podia spammar push pros admins (ruído + DoS de notificação).
+  if (!(await isAdminRequest())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
   try {
     const value = (Math.random() * 40 + 10).toFixed(2).replace('.', ',');
     await notifyAdmins(

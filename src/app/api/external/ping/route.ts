@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   const auth = authenticateExternalRequest(req);
-  if (!auth.ok) return unauthorized(auth.reason);
+  if (!auth.ok) return unauthorized(auth.reason, auth.retryAfter);
 
   return NextResponse.json(
     { ok: true, authenticated: true, serverTime: new Date().toISOString() },

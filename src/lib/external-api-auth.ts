@@ -13,6 +13,7 @@
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export function getExternalApiToken(): string | null {
   const token = process.env.EXTERNAL_API_TOKEN;
@@ -20,7 +21,9 @@ export function getExternalApiToken(): string | null {
   return token;
 }
 
-export function authenticateExternalRequest(req: NextRequest): { ok: boolean; reason?: string } {
+export type ExternalAuthResult = { ok: true } | { ok: false; reason: string; retryAfter?: number };
+
+export function authenticateExternalRequest(req: NextRequest): ExternalAuthResult {
   const expected = getExternalApiToken();
   if (!expected) return { ok: false, reason: 'EXTERNAL_API_TOKEN not configured on server' };
 
@@ -40,10 +43,33 @@ export function authenticateExternalRequest(req: NextRequest): { ok: boolean; re
   }
   if (diff !== 0) return { ok: false, reason: 'invalid token' };
 
+  // Rate limit por (token, IP) — protege contra token comprometido sendo
+  // martelado de muitos IPs. 600 req/h por IP cobre uso normal de polling
+  // (1 chamada/min × 60 = 60/h, com folga 10x). Token único + IP único =
+  // bucket isolado, atacante não derruba uso legítimo de outro consumer.
+  const ip = getClientIp(req);
+  const tokenFingerprint = provided.slice(0, 8); // primeiros 8 chars como ID, sem expor token completo
+  const rl = rateLimit(`external-api:${tokenFingerprint}:${ip}`, 600, 60 * 60 * 1000);
+  if (!rl.ok) {
+    return { ok: false, reason: 'rate_limited', retryAfter: rl.retryAfter };
+  }
+
   return { ok: true };
 }
 
-export function unauthorized(reason?: string) {
+export function unauthorized(reason?: string, retryAfter?: number) {
+  // Distingue 401 (token inválido/ausente) de 429 (rate limit). Permite
+  // o consumer logar/alertar diferente: 401 = config errada, 429 = throttle
+  // legítimo, basta esperar.
+  if (reason === 'rate_limited') {
+    return NextResponse.json(
+      { error: 'rate_limited', reason: 'too many requests' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfter || 60) },
+      },
+    );
+  }
   return NextResponse.json(
     { error: 'unauthorized', reason: reason || 'authentication required' },
     {

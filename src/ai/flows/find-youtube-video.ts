@@ -20,7 +20,11 @@ export type FindVideoOutput = {
 };
 
 export async function findYoutubeVideo(input: FindVideoInput): Promise<FindVideoOutput> {
-  const query = `${input.songName} ${input.artistName}`.trim();
+  // Cap em 100 chars: nome de música + artista raramente passa de 60-80.
+  // Sem cap, query gigante (DoS / payload abuse) podia travar youtube-sr.
+  const songName = String(input.songName || '').slice(0, 80);
+  const artistName = String(input.artistName || '').slice(0, 60);
+  const query = `${songName} ${artistName}`.trim().slice(0, 100);
   if (!query) throw new Error('Empty query.');
 
   try {

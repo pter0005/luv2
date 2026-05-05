@@ -59,13 +59,18 @@ export async function createStripeCheckoutSession(
     const paymentMethods = (config.stripePaymentMethods || ['card']) as Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
 
     // Contact (email + phone)
-    const contactPhone = (contact?.phone || '').replace(/\D/g, '');
-    const contactEmail = sanitizeEmail(contact?.email || '');
-    const docPhone = (intentData?.whatsappNumber || '').replace(/\D/g, '');
-    const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '');
+    const contactPhone = (contact?.phone || '').replace(/\D/g, '').slice(0, 15);
+    const contactEmail = sanitizeEmail(contact?.email || '').slice(0, 256);
+    const docPhone = (intentData?.whatsappNumber || '').replace(/\D/g, '').slice(0, 15);
+    const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '').slice(0, 256);
 
-    const rawPhone = contactPhone.length >= 9 ? contactPhone : docPhone;
-    if (rawPhone.length < 9) {
+    // Phone validation per market: PT 9 díg / US 10 / BR fallback 10-11.
+    // Sem isso, atacante podia enviar phone vazio/curto e Stripe rejeitava
+    // a sessão DEPOIS de criar — gerava log de erro e UX ruim.
+    const phoneMin = resolvedMarket === 'PT' ? 9 : resolvedMarket === 'US' ? 10 : 10;
+    const phoneMax = resolvedMarket === 'PT' ? 9 : resolvedMarket === 'US' ? 11 : 13;
+    const rawPhone = contactPhone.length >= phoneMin ? contactPhone : docPhone;
+    if (rawPhone.length < phoneMin || rawPhone.length > phoneMax) {
       return { success: false, error: 'Phone required. Please enter a valid number before continuing.' };
     }
 

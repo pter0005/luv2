@@ -469,13 +469,17 @@ export async function processPixPayment(
     // "payer.email must be a valid email" — bloqueia ANTES de mandar pro MP.
     const EMAIL_RE = /^(?!.*\.\.)[A-Za-z0-9_+-]+(?:\.[A-Za-z0-9_+-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
 
-    const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '');
-    const contactEmail = sanitizeEmail(contact?.email || '');
-    const docWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '');
-    const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '');
+    // Caps: phone 15 díg (E.164 max), email 256 (RFC 5321 max).
+    // Sem isso, atacante mandava input gigante pra estourar memória/log.
+    const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '').slice(0, 15);
+    const contactEmail = sanitizeEmail(contact?.email || '').slice(0, 256);
+    const docWhatsapp = (intentData?.whatsappNumber || '').replace(/\D/g, '').slice(0, 15);
+    const docEmail = sanitizeEmail(intentData?.guestEmail || intentData?.userEmail || '').slice(0, 256);
 
-    const rawWhatsapp = contactWhatsapp.length >= 10 ? contactWhatsapp : docWhatsapp;
-    if (rawWhatsapp.length < 10) {
+    // BR PIX: 10-11 díg (DDD + 8-9). Rejeita > 11 (típico de quem já tem
+    // country code colado: "5511999..." → 13 díg → rejeita pra forçar formato BR puro).
+    const rawWhatsapp = contactWhatsapp.length >= 10 && contactWhatsapp.length <= 11 ? contactWhatsapp : docWhatsapp;
+    if (rawWhatsapp.length < 10 || rawWhatsapp.length > 11) {
       console.log('[PIX DEBUG] whatsappNumber inválido', {
         intentId,
         contactWhatsapp,

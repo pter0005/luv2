@@ -20,7 +20,7 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const auth = authenticateExternalRequest(req);
-  if (!auth.ok) return unauthorized(auth.reason);
+  if (!auth.ok) return unauthorized(auth.reason, auth.retryAfter);
 
   try {
     const db = getAdminFirestore();

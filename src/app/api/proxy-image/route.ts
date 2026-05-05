@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 const ALLOWED_HOSTS = [
   'firebasestorage.googleapis.com',
@@ -7,8 +8,21 @@ const ALLOWED_HOSTS = [
 ];
 
 export async function GET(req: NextRequest) {
+  // Rate limit pra proteger egress bandwidth — proxy gera tráfego upstream
+  // mesmo com whitelist. 30/min por IP cobre uso real (~1 req/imagem) e
+  // bloqueia DDoS amplificado via teu servidor.
+  const ip = getClientIp(req);
+  const rl = rateLimit(`proxy-image:${ip}`, 30, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json({ error: 'rate_limited' }, {
+      status: 429,
+      headers: { 'Retry-After': String(rl.retryAfter) },
+    });
+  }
+
   const url = req.nextUrl.searchParams.get('url');
   if (!url) return NextResponse.json({ error: 'missing url' }, { status: 400 });
+  if (url.length > 2048) return NextResponse.json({ error: 'url too long' }, { status: 400 });
 
   let parsed: URL;
   try { parsed = new URL(url); } catch {
