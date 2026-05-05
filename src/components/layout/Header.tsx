@@ -116,7 +116,19 @@ export default function Header() {
         <div className="container flex items-center justify-between h-24 px-4 md:px-6">
           <Link href="/" className="flex items-center shrink-0">
             <motion.div whileHover={{ scale: 1.04 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-              <img src={headerLogoUrl} alt="MyCupid Logo" style={{ height: "100px", width: "auto", objectFit: "contain", display: "block" }} />
+              {/* priority + dimensões explícitas → reduz LCP em ~2-3s no mobile.
+                  Antes era <img> sem width/height → browser não pré-aloca espaço,
+                  bloqueia render até a imagem chegar. */}
+              <Image
+                src={headerLogoUrl}
+                alt="MyCupid Logo"
+                width={300}
+                height={100}
+                priority
+                fetchPriority="high"
+                unoptimized
+                style={{ height: "100px", width: "auto", objectFit: "contain", display: "block" }}
+              />
             </motion.div>
           </Link>
           <nav className="hidden md:flex items-center gap-1">

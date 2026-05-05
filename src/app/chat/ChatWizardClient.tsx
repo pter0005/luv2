@@ -28,8 +28,12 @@ import AutosaveBadge from '@/components/chat/AutosaveBadge';
 import { useConfetti } from '@/components/chat/useConfetti';
 import StepField, { getFieldsForStep, getPrefetchForStep } from '@/components/chat/StepField';
 import PreviewButton from '@/components/chat/PreviewButton';
-import PreviewModal from '@/components/chat/PreviewModal';
-import DesktopPreviewPane from '@/components/chat/DesktopPreviewPane';
+// Dynamic — preview só renderiza quando user clica/desktop carrega.
+// PreviewModal: ~40KB economia (modal usa framer-motion + form context).
+// DesktopPreviewPane: só monta em md+ (mobile nem vê) — ssr:false ok.
+import dynamic from 'next/dynamic';
+const PreviewModal = dynamic(() => import('@/components/chat/PreviewModal'), { ssr: false });
+const DesktopPreviewPane = dynamic(() => import('@/components/chat/DesktopPreviewPane'), { ssr: false });
 
 const STORAGE_KEY = 'chat-wizard-draft-v1';
 const STEP_KEY_STORAGE = 'chat-wizard-step-v1';

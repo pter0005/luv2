@@ -183,6 +183,15 @@ export default async function RootLayout({
   return (
     <html lang={cfg.htmlLang} className="dark scroll-smooth">
       <head>
+        {/* Preload do logo — começa download em paralelo ao HTML, antes do JS
+            inicializar. Logo aparece no LCP path em todas as rotas. Sem isso,
+            browser só baixa logo depois de parsear React → atrasa LCP em 1-2s. */}
+        <link rel="preload" as="image" href={headerLogoUrl} fetchPriority="high" />
+        {/* DNS prefetch + preconnect pros hosts críticos — economiza ~300ms de
+            handshake TCP/TLS no primeiro request a cada um. */}
+        <link rel="preconnect" href="https://i.imgur.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
