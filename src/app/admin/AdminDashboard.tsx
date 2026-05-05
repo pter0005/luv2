@@ -1231,19 +1231,19 @@ export default function AdminDashboard({
             revenue={todayRevenue}
           />
         </Section>
-        <Section title="Meta do Dia" sub="R$1.000 consolidado" icon={Trophy} accent="#fbbf24">
+        <Section title="Meta do Dia" sub="R$800 / R$4k semana" icon={Trophy} accent="#fbbf24">
           <div className="space-y-4">
             <GoalProgressRing
               current={todayRevenueConsolidatedBRL}
-              goal={1000}
-              label="Hoje (BR+PT+US)"
+              goal={800}
+              label="Hoje (BR+PT)"
               color="#fbbf24"
             />
             <div className="pt-3 border-t border-white/5">
               <GoalProgressRing
                 current={last7.reduce((s, d) => s + d.revenue, 0)}
-                goal={7000}
-                label="Semana BR"
+                goal={4000}
+                label="Semana"
                 color="#a855f7"
               />
             </div>
@@ -1339,7 +1339,7 @@ export default function AdminDashboard({
       </Section>
 
       {/* ── REVENUE AREA CHART ─────────────────────────────────────────── */}
-      <Section title="Receita Diária (BRL)" sub="Faturamento nos últimos 30 dias" icon={TrendingUp} accent="#34d399">
+      <Section title="Receita Diária (consolidada R$)" sub="BR + PT em BRL · últimos 30 dias" icon={TrendingUp} accent="#34d399">
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -4, bottom: 0 }}>
             <defs>

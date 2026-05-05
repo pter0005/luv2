@@ -202,10 +202,15 @@ async function getAllData() {
 
       if (date && date >= cutoff) {
         salesByDay[date] = (salesByDay[date] || 0) + 1;
-        if (currency === 'BRL') {
-          revenueByDay[date] = (revenueByDay[date] || 0) + price;
-          revenueBySource[src] = (revenueBySource[src] || 0) + price;
-        }
+        // chartData.revenue agora é receita CONSOLIDADA em BRL (BR + PT*5,8 + US*5,1)
+        // Sem isso, a meta semanal R$4k só conta vendas BR e ignora as EUR.
+        // Cotação fixa, idêntica ao FX_TO_BRL do AdminDashboard — precisam casar.
+        const priceBRL =
+          currency === 'EUR' ? price * 5.8 :
+          currency === 'USD' ? price * 5.1 :
+          price;
+        revenueByDay[date] = (revenueByDay[date] || 0) + priceBRL;
+        revenueBySource[src] = (revenueBySource[src] || 0) + priceBRL;
         salesBySource[src] = (salesBySource[src] || 0) + 1;
         if (date === today) {
           todaySales++;
