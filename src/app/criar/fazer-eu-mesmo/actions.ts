@@ -535,16 +535,37 @@ export async function processPixPayment(
       ...collectPaths(intentData?.backgroundVideo),
     ];
     if (tempPaths.length > 0) {
-      // Best-effort: 1 check rápido, só pra telemetria. Não bloqueia.
+      // Pre-check com retry pra contornar eventual consistency: 2 tentativas
+      // separadas por 2s. Se uma das 2 retornar exists=true, considera OK.
+      // Antes era 1 check único — pegava replica atrasada do GCS como missing
+      // mesmo com arquivo presente, e gerava muitos falso-positivos no log.
       try {
-        const checks = await Promise.all(
-          tempPaths.map(async (p) => {
-            try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
-          }),
-        );
-        const missing = tempPaths.filter((_, i) => !checks[i]);
-        if (missing.length > 0) {
-          console.warn(`[PIX] ${missing.length}/${tempPaths.length} files not yet visible at PIX gen time (não bloqueando, finalize fará retry):`, missing.slice(0, 5));
+        const checkOnce = async (p: string) => {
+          try { const [exists] = await bucket.file(p).exists(); return exists; } catch { return false; }
+        };
+        const firstChecks = await Promise.all(tempPaths.map(checkOnce));
+        const stillMissing: string[] = [];
+        // Pra cada miss, tenta de novo após 2s — eventual consistency
+        const missingIndexes = firstChecks.map((ok, i) => ok ? -1 : i).filter(i => i >= 0);
+        if (missingIndexes.length > 0) {
+          await new Promise(r => setTimeout(r, 2000));
+          for (const i of missingIndexes) {
+            const ok2 = await checkOnce(tempPaths[i]);
+            if (!ok2) stillMissing.push(tempPaths[i]);
+          }
+        }
+
+        if (stillMissing.length > 0) {
+          // Confirmado missing após 2 checks separados — SOURCE realmente sumiu.
+          // Não bloqueia venda (finalize ainda tenta + cron self-heal pega
+          // depois), mas alerta o admin AGORA — pode ser preciso pedir reupload
+          // antes do cliente pagar e ficar sem foto.
+          console.warn(`[PIX] ${stillMissing.length}/${tempPaths.length} files CONFIRMED missing pre-PIX:`, stillMissing.slice(0, 5));
+          notifyAdmins(
+            `⚠️ Arquivos sumiram pré-PIX`,
+            `Cliente "${(intentData?.title as string) || 'sem título'}" gerando PIX com ${stillMissing.length} foto(s) faltando. Pode reclamar depois — considere preventivo.`,
+            '/admin',
+          ).catch(() => {});
         }
       } catch { /* nunca bloqueia venda */ }
     }
