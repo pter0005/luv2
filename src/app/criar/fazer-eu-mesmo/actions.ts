@@ -493,6 +493,37 @@ export async function processPixPayment(
     // "payer.email must be a valid email" — bloqueia ANTES de mandar pro MP.
     const EMAIL_RE = /^(?!.*\.\.)[A-Za-z0-9_+-]+(?:\.[A-Za-z0-9_+-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
 
+    // Detector de typo comum no domínio. Cliente digita 'gmial', sugere 'gmail'.
+    // MP frequentemente rejeita esses como "valid email" mesmo passando regex,
+    // porque o domínio em si não resolve DNS no momento da validação. Sugerimos
+    // a correção pra UI mostrar e cliente confirmar antes de tentar de novo.
+    const TYPO_DOMAINS: Record<string, string> = {
+      'gmial.com': 'gmail.com',
+      'gmai.com': 'gmail.com',
+      'gmaill.com': 'gmail.com',
+      'gnail.com': 'gmail.com',
+      'gmail.cm': 'gmail.com',
+      'gmail.co': 'gmail.com',
+      'hotmial.com': 'hotmail.com',
+      'hotmai.com': 'hotmail.com',
+      'hotmaill.com': 'hotmail.com',
+      'hormail.com': 'hotmail.com',
+      'outloook.com': 'outlook.com',
+      'outlok.com': 'outlook.com',
+      'yaho.com': 'yahoo.com',
+      'yhoo.com': 'yahoo.com',
+      'yahooo.com': 'yahoo.com',
+      'icloud.co': 'icloud.com',
+      'iclud.com': 'icloud.com',
+    };
+    const suggestEmailFix = (email: string): string | null => {
+      const at = email.lastIndexOf('@');
+      if (at < 0) return null;
+      const domain = email.slice(at + 1);
+      const fix = TYPO_DOMAINS[domain];
+      return fix ? `${email.slice(0, at)}@${fix}` : null;
+    };
+
     // Caps: phone 15 díg (E.164 max), email 256 (RFC 5321 max).
     // Sem isso, atacante mandava input gigante pra estourar memória/log.
     const contactWhatsapp = (contact?.whatsapp || '').replace(/\D/g, '').slice(0, 15);
@@ -517,8 +548,26 @@ export async function processPixPayment(
     const rawEmail = EMAIL_RE.test(contactEmail) ? contactEmail : docEmail;
     if (!EMAIL_RE.test(rawEmail)) {
       console.log('[PIX DEBUG] email inválido', { intentId, contactEmail, docEmail });
+      // Tenta sugerir correção se for typo comum (gmial → gmail)
+      const tryEmail = contactEmail || docEmail;
+      const fix = suggestEmailFix(tryEmail);
+      if (fix) {
+        return {
+          error: `O email "${tryEmail}" parece ter um erro de digitação. Você quis dizer "${fix}"? Corrige e tenta de novo.`,
+          suggestedEmail: fix,
+        };
+      }
       return { error: 'Email obrigatório. Preenche um email válido antes de gerar o PIX.' };
     }
+
+    // Verifica typo MESMO se passou no regex (gmial.com passa mas é typo).
+    // Se detectar, NÃO bloqueia mas anota — MP pode rejeitar e a gente loga
+    // pra debug.
+    const possibleTypo = suggestEmailFix(rawEmail);
+    if (possibleTypo) {
+      console.warn(`[PIX] email com possível typo: ${rawEmail} → ${possibleTypo}`);
+    }
+
     const cleanEmail = rawEmail;
 
     // Se o contact veio diferente do doc, persiste pra próximas leituras
@@ -781,7 +830,30 @@ export async function processPixPayment(
       }
     }
 
-    await logCriticalError('payment', `PIX falhou: ${lastError}`, { intentId, amount });
+    // Se MP rejeitou email mesmo após validação local, loga email mascarado
+    // pra debug + sugere typo se houver. Cliente recebe mensagem específica.
+    const isMpEmailReject = String(lastError || '').toLowerCase().includes('payer.email');
+    const emailMasked = cleanEmail
+      ? cleanEmail.replace(/^(.{2}).*?(@.+)$/, '$1***$2')
+      : '(vazio)';
+    await logCriticalError('payment', `PIX falhou: ${lastError}`, {
+      intentId,
+      amount,
+      ...(isMpEmailReject ? { rejectedEmailMasked: emailMasked } : {}),
+    });
+
+    if (isMpEmailReject) {
+      const fix = suggestEmailFix(cleanEmail);
+      if (fix) {
+        return {
+          error: `Mercado Pago rejeitou o email "${cleanEmail}". Parece que tem um erro de digitação — você quis dizer "${fix}"?`,
+          suggestedEmail: fix,
+        };
+      }
+      return {
+        error: `Mercado Pago não aceitou o email "${cleanEmail}". Confere se digitou certo (sem espaços, com @ e .com).`,
+      };
+    }
     return { error: `Erro ao gerar PIX: ${lastError}. Tente novamente.`, details: lastError };
   } catch (error: any) {
     console.error('[MP] ERRO CRÍTICO:', error?.message);
