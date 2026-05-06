@@ -164,6 +164,18 @@ export async function POST(req: NextRequest) {
                     return NextResponse.json({ error: 'finalization_failed' }, { status: 500 });
                 } else {
                     console.log(`[WEBHOOK_SUCCESS] Page processed for intent ${intentId}. Page ID: ${finalizationResult.pageId}`);
+
+                    // Fire-and-forget: confirmação WhatsApp pro cliente. Idempotente
+                    // (flag confirmationSent), seguro contra retry do MP. Wrap em
+                    // try/catch — sob NENHUMA hipótese pode tirar 500 do webhook.
+                    try {
+                        const { sendOrderConfirmation } = await import('@/services/whatsapp/confirmation');
+                        sendOrderConfirmation(intentId, finalizationResult.pageId).catch((err) => {
+                            console.warn('[WEBHOOK] confirmation send failed:', err?.message);
+                        });
+                    } catch (e: any) {
+                        console.warn('[WEBHOOK] confirmation import failed:', e?.message);
+                    }
                 }
             } else {
                  console.log(`[WEBHOOK_INFO] Payment ${paymentId} not approved or no external reference. Status: ${paymentInfo.status}`);

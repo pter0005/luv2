@@ -41,3 +41,11 @@
 # isso, cliente paga e nunca recebe → Reclame Aqui + reembolso.
 [functions."api/cron/recover-stuck-pix"]
   schedule = "0 * * * *"
+
+# WhatsApp recovery: a cada 5min varre payment_intents waiting_payment nas
+# janelas 5min/1h/24h e dispara mensagem via Z-API com cupom CUPOM10.
+# SOFT-LAUNCH: só roda se RECOVERY_ENABLED=true E ZAPI_ENABLED=true.
+# Cap diário RECOVERY_DAILY_CAP (default 100). Idempotente via flags
+# recovery${stage}Sent no doc.
+[functions."api/cron/whatsapp-recovery"]
+  schedule = "*/5 * * * *"
