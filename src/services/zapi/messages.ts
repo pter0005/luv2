@@ -145,8 +145,9 @@ Faz a entrega quando achar bom. Vai ser massa 💜`;
 }
 
 /**
- * Recovery 5min — SOFT check-in. Cliente acabou de gerar PIX, talvez só
- * teve algum problema técnico. Tom de ajuda, sem pressão de cupom.
+ * Recovery 5min — SOFT check-in. Cliente acabou de gerar PIX e não pagou.
+ * Importante: explicar CONTEXTO (o que ele fez), não assumir que ele lembra.
+ * Tom de ajuda, sem pressão de cupom.
  */
 export function buildRecovery5min(params: {
   firstName: string;
@@ -155,23 +156,23 @@ export function buildRecovery5min(params: {
   daysToMothersDay: number;
 }): string {
   const name = cleanName(params.firstName);
-  const greet = name ? `Oi ${name}, tudo bem?` : 'Oi! Tudo bem?';
+  const greet = name ? `Oi ${name}! 👋` : 'Oi! 👋';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
     return `${greet}
 
-Vi que você tava fazendo a página pra sua mãe — faltam ${params.daysToMothersDay} dias pro Dia das Mães.
+Vi que você começou a fazer uma página pra sua mãe no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
 
-Travou alguma coisa? Posso te ajudar?
+Faltam só ${params.daysToMothersDay} dias pro Dia das Mães. Travou alguma coisa? Posso te ajudar?
 
 Se quiser, é só responder aqui 💜${FOOTER}`;
   }
 
   return `${greet}
 
-Vi que você começou a fazer a página pra ${recipientStr} mas o pagamento não chegou.
+Vi que você começou a fazer uma página pra ${recipientStr} no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
 
 Travou alguma coisa? Posso te ajudar?
 
@@ -179,8 +180,9 @@ Se quiser, é só responder aqui 💜${FOOTER}`;
 }
 
 /**
- * Recovery 1h — agora COM cupom CUPOM10 (R$10 OFF). Cliente foi avisado no
- * 5min sem pressão; se ainda não pagou, oferece desconto pra fechar.
+ * Recovery 1h (atual: 10min) — COM cupom CUPOM10 (R$10 OFF). Cliente foi
+ * avisado no soft sem pressão; se ainda não pagou, oferece desconto.
+ * Importante: explicar contexto antes de oferecer cupom.
  */
 export function buildRecovery1h(params: {
   firstName: string;
@@ -189,40 +191,39 @@ export function buildRecovery1h(params: {
   daysToMothersDay: number;
 }): string {
   const name = cleanName(params.firstName);
+  const greet = name ? `Oi ${name}! 👋` : 'Oi! 👋';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
-    const opener = name
-      ? `Oi ${name}, sua mãe ainda tá te esperando 💜`
-      : `Sua mãe ainda tá te esperando 💜`;
-    return `${opener}
+    return `${greet}
 
-Sei que rolou alguma fricção. R$ 10 OFF garantido pra finalizar:
+Vi que você começou a fazer uma página pra sua mãe no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
 
-🎁 Cupom CUPOM10 (já aplicado)
+Faltam só ${params.daysToMothersDay} dias pro Dia das Mães. Pra te ajudar a finalizar a tempo, separei R$ 10 OFF:
+
+🎁 Cupom CUPOM10 (já aplicado no link)
 ⏰ Vale só até amanhã essa hora
 ✅ Entrega na hora — sua mãe vê hoje
 
 👉 ${params.checkoutUrl}
 
-Não deixa o Dia das Mães passar batido 💜${FOOTER}`;
+Não deixa essa surpresa passar batido 💜${FOOTER}`;
   }
 
-  const opener = name
-    ? `Oi ${name}, R$ 10 OFF garantido pra finalizar 🎁`
-    : `R$ 10 OFF garantido pra finalizar 🎁`;
-  return `${opener}
+  return `${greet}
 
-A página pra ${recipientStr} tá te esperando — vai surpreender demais.
+Vi que você começou a fazer uma página pra ${recipientStr} no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
 
-🎁 Cupom CUPOM10 (já aplicado)
+Pra te ajudar a finalizar, separei R$ 10 OFF:
+
+🎁 Cupom CUPOM10 (já aplicado no link)
 ⏰ Vale só até amanhã
-💜 Pronto em 5 minutos
+💜 Pronto em menos de 5 minutos
 
 👉 ${params.checkoutUrl}
 
-Quem ama, surpreende.${FOOTER}`;
+Qualquer dúvida, é só responder aqui!${FOOTER}`;
 }
 
 /**
