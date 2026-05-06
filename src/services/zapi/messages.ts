@@ -156,14 +156,19 @@ export function buildRecovery5min(params: {
   daysToMothersDay: number;
 }): string {
   const name = cleanName(params.firstName);
-  const greet = name ? `Oi ${name}! 👋` : 'Oi! 👋';
+  // Identificação clara como remetente (MyCupid) — fundamental porque o
+  // cliente recebe a msg horas depois e precisa lembrar de cara que é
+  // do produto que ele tava comprando, não spam aleatório.
+  const greet = name
+    ? `Oi ${name}! Aqui é do MyCupid 💜`
+    : 'Oi! Aqui é do MyCupid 💜';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
     return `${greet}
 
-Vi que você começou a fazer uma página pra sua mãe no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
+Vi que você começou a fazer uma página pra sua mãe no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
 
 Faltam só ${params.daysToMothersDay} dias pro Dia das Mães. Travou alguma coisa? Posso te ajudar?
 
@@ -172,7 +177,7 @@ Se quiser, é só responder aqui 💜${FOOTER}`;
 
   return `${greet}
 
-Vi que você começou a fazer uma página pra ${recipientStr} no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
+Vi que você começou a fazer uma página pra ${recipientStr} no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
 
 Travou alguma coisa? Posso te ajudar?
 
@@ -182,7 +187,7 @@ Se quiser, é só responder aqui 💜${FOOTER}`;
 /**
  * Recovery 1h (atual: 10min) — COM cupom CUPOM10 (R$10 OFF). Cliente foi
  * avisado no soft sem pressão; se ainda não pagou, oferece desconto.
- * Importante: explicar contexto antes de oferecer cupom.
+ * Importante: identificar MyCupid e explicar contexto antes de oferecer.
  */
 export function buildRecovery1h(params: {
   firstName: string;
@@ -191,14 +196,16 @@ export function buildRecovery1h(params: {
   daysToMothersDay: number;
 }): string {
   const name = cleanName(params.firstName);
-  const greet = name ? `Oi ${name}! 👋` : 'Oi! 👋';
+  const greet = name
+    ? `Oi ${name}! Aqui é do MyCupid 💜`
+    : 'Oi! Aqui é do MyCupid 💜';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
     return `${greet}
 
-Vi que você começou a fazer uma página pra sua mãe no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
+Vi que você começou a fazer uma página pra sua mãe no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
 
 Faltam só ${params.daysToMothersDay} dias pro Dia das Mães. Pra te ajudar a finalizar a tempo, separei R$ 10 OFF:
 
@@ -213,7 +220,7 @@ Não deixa essa surpresa passar batido 💜${FOOTER}`;
 
   return `${greet}
 
-Vi que você começou a fazer uma página pra ${recipientStr} no MyCupid e gerou um PIX, mas o pagamento não chegou ainda.
+Vi que você começou a fazer uma página pra ${recipientStr} no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
 
 Pra te ajudar a finalizar, separei R$ 10 OFF:
 
