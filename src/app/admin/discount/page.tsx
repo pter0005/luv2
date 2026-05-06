@@ -1,13 +1,19 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { createDiscountCode, getDiscountCodes, toggleDiscountCode, deleteDiscountCode } from './actions';
+import { createDiscountCode, getDiscountCodes, toggleDiscountCode, deleteDiscountCode, type DiscountType } from './actions';
 import { Tag, Plus, Copy, Check, Trash2, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react';
 
 type DiscountCode = {
-  code: string; discount: number; maxUses: number; usedCount: number;
+  code: string; discount: number; discountType: DiscountType; maxUses: number; usedCount: number;
   active: boolean; usedEmails: string[]; createdAt: string; url: string;
 };
+
+// Helper pra formatar o badge do desconto baseado no tipo. Mantém UI consistente
+// (badge verde compacto) seja R$ fixo ou %.
+function formatDiscountBadge(d: { discount: number; discountType: DiscountType }): string {
+  return d.discountType === 'percent' ? `-${d.discount}%` : `-R$${d.discount}`;
+}
 
 export default function AdminDiscountPage() {
   const [codes, setCodes] = useState<DiscountCode[]>([]);
@@ -15,6 +21,7 @@ export default function AdminDiscountPage() {
   const [isPending, startTransition] = useTransition();
   const [newCode, setNewCode] = useState('');
   const [discount, setDiscount] = useState(10);
+  const [discountType, setDiscountType] = useState<DiscountType>('fixed');
   const [maxUses, setMaxUses] = useState(90);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -30,7 +37,7 @@ export default function AdminDiscountPage() {
   const handleCreate = () => {
     if (!newCode.trim()) return;
     startTransition(async () => {
-      const result = await createDiscountCode(newCode.trim(), discount, maxUses);
+      const result = await createDiscountCode(newCode.trim(), discount, maxUses, discountType);
       if (result.success) {
         setNewCode('');
         setFeedback('✅ Código criado!');
@@ -56,6 +63,12 @@ export default function AdminDiscountPage() {
     startTransition(async () => { await deleteDiscountCode(code); await load(); });
   };
 
+  // Limite max do input depende do tipo: 100 pra %, 1000 pra R$.
+  const maxDiscount = discountType === 'percent' ? 100 : 1000;
+  const buttonLabel = discountType === 'percent'
+    ? `Criar código com ${discount}% de desconto`
+    : `Criar código com R$${discount} de desconto`;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
@@ -64,7 +77,7 @@ export default function AdminDiscountPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold">Códigos de Desconto</h1>
-          <p className="text-xs text-zinc-400">Links com desconto fixo, limite de usos e proteção por email</p>
+          <p className="text-xs text-zinc-400">Links com desconto fixo ou percentual, limite de usos e proteção por email</p>
         </div>
         <button onClick={load} disabled={isLoading} className="ml-auto p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700">
           <RefreshCw className={`w-4 h-4 text-zinc-400 ${isLoading ? 'animate-spin' : ''}`} />
@@ -83,11 +96,45 @@ export default function AdminDiscountPage() {
               className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-green-500/50 placeholder-zinc-500"
             />
           </div>
+
+          {/* Toggle tipo de desconto: R$ fixo vs % */}
+          <div>
+            <label className="text-xs text-zinc-400 block mb-1">Tipo de desconto</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDiscountType('fixed')}
+                className={`py-2 rounded-lg text-sm font-bold transition-colors ${
+                  discountType === 'fixed'
+                    ? 'bg-green-600 text-white ring-2 ring-green-400'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                R$ fixo
+              </button>
+              <button
+                type="button"
+                onClick={() => setDiscountType('percent')}
+                className={`py-2 rounded-lg text-sm font-bold transition-colors ${
+                  discountType === 'percent'
+                    ? 'bg-green-600 text-white ring-2 ring-green-400'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                % percentual
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-zinc-400 block mb-1">Desconto (R$)</label>
+              <label className="text-xs text-zinc-400 block mb-1">
+                {discountType === 'percent' ? 'Desconto (%)' : 'Desconto (R$)'}
+              </label>
               <input
-                type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} min={1}
+                type="number" value={discount}
+                onChange={e => setDiscount(Math.min(maxDiscount, Math.max(1, Number(e.target.value))))}
+                min={1} max={maxDiscount}
                 className="w-full px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
               />
             </div>
@@ -102,7 +149,7 @@ export default function AdminDiscountPage() {
           <button onClick={handleCreate} disabled={isPending || !newCode.trim()}
             className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" />
-            {isPending ? 'Criando...' : `Criar código com R$${discount} de desconto`}
+            {isPending ? 'Criando...' : buttonLabel}
           </button>
           {feedback && <p className="text-sm text-center">{feedback}</p>}
         </div>
@@ -120,7 +167,7 @@ export default function AdminDiscountPage() {
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono font-black text-white text-base">{c.code}</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">-R${c.discount}</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">{formatDiscountBadge(c)}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${c.active ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700 text-zinc-500'}`}>
                   {c.usedCount}/{c.maxUses} usos
                 </span>

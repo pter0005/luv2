@@ -2,6 +2,12 @@ import { RecipientCategory, recipientLabel } from './recipient';
 
 const FOOTER = '\n\n—\nMyCupid';
 
+// Teaser do cupom MAIS40 (50% OFF, 2 usos por email/phone) — anexado ao final
+// de toda confirmação. Brinde direto, sem condicional ("vc merece, manda pra
+// mais alguém"). Drive a SEGUNDA venda — produto naturalmente é one-shot.
+const COUPON_TEASER =
+  '\n\n🎁 Pequeno mimo: MAIS40 vale 50% OFF se quiser fazer outra página. Até 2 usos.\n👉 mycupid.com.br/desconto/MAIS40';
+
 /**
  * Sanitiza string que vai pro WhatsApp — evita usuário injetar markdown
  * malicioso (pouca chance de exploit, mas garante UX limpa). Trunca pra
@@ -16,24 +22,120 @@ function safe(s: string | null | undefined, max = 30): string {
     .slice(0, max);
 }
 
+/**
+ * Confirmação de pagamento — variante por destinatário pra soar como pessoa
+ * de verdade falando, não template corporativo.
+ */
 export function buildOrderConfirmation(params: {
   firstName: string;
   recipient: RecipientCategory;
   pageUrl: string;
 }): string {
   const name = safe(params.firstName) || 'amor';
-  const recipientStr = recipientLabel(params.recipient);
-  return `Pagamento confirmado, ${name}! 🎉
+  const url = params.pageUrl;
+  let body: string;
 
-Sua página pra ${recipientStr} já tá no ar:
+  switch (params.recipient) {
+    case 'mae':
+      body = `Eba ${name}, tá pronta!
 
-👉 ${params.pageUrl}
+A página pra sua mãe:
+👉 ${url}
 
-Compartilha e prepara — a reação vai ser épica ✨
+Manda quando achar que é a hora. Pode preparar o lenço, vai ser bonito.
 
-Qualquer coisa, é só responder aqui!${FOOTER}`;
+Boa sorte 💜`;
+      break;
+
+    case 'pai':
+      body = `Tá pronto, ${name}!
+
+A página pra seu pai:
+👉 ${url}
+
+Manda quando achar legal. Vai surpreender ele 😊`;
+      break;
+
+    case 'namorada':
+      body = `Eba ${name}! 🌹
+
+A página da sua namorada:
+👉 ${url}
+
+Faz a surpresa quando achar a hora certa. Ela vai amar.`;
+      break;
+
+    case 'namorado':
+      body = `Eba ${name} 💜
+
+A página do seu namorado:
+👉 ${url}
+
+Manda pra ele quando achar bom. Vai gostar muito.`;
+      break;
+
+    case 'esposa':
+      body = `Tá pronta, ${name}!
+
+A página pra sua esposa:
+👉 ${url}
+
+Vai surpreender demais. Boa sorte 💜`;
+      break;
+
+    case 'esposo':
+      body = `Tá pronta, ${name}!
+
+A página pro seu esposo:
+👉 ${url}
+
+Vai surpreender demais. Boa sorte 💜`;
+      break;
+
+    case 'filho_filha':
+      body = `${name} 💜
+
+A página pra sua família:
+👉 ${url}
+
+Vai ficar guardado pra sempre. Aproveita o momento!`;
+      break;
+
+    case 'amigo_amiga':
+      body = `${name}!
+
+A página pra essa pessoa especial tá pronta:
+👉 ${url}
+
+Manda já, vai ser top. Quero saber a reação depois 😊`;
+      break;
+
+    case 'irmao_irma':
+    case 'avo':
+      body = `Tá pronta, ${name}!
+
+A página pra ${recipientLabel(params.recipient)}:
+👉 ${url}
+
+Vai gostar muito. Boa sorte com a surpresa 💜`;
+      break;
+
+    default:
+      body = `Pronto, ${name}!
+
+Sua página:
+👉 ${url}
+
+Faz a entrega quando achar bom. Vai ser massa 💜`;
+  }
+
+  return body + COUPON_TEASER + FOOTER;
 }
 
+/**
+ * Recovery 5min — SOFT check-in. Cliente acabou de gerar PIX, talvez só
+ * teve algum problema técnico. Tom de ajuda, sem pressão de cupom.
+ */
 export function buildRecovery5min(params: {
   firstName: string;
   recipient: RecipientCategory;
@@ -45,31 +147,28 @@ export function buildRecovery5min(params: {
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
-    return `Oi ${name}, vi aqui que você gerou o PIX da página da sua mãe mas o pagamento não chegou ainda 👀
+    return `Oi ${name}, tudo bem?
 
-Pra te ajudar a finalizar, já liberei R$ 10 OFF:
+Vi que vc tava fazendo a página pra sua mãe — faltam ${params.daysToMothersDay} dias pro Dia das Mães.
 
-🎁 Cupom CUPOM10 (já aplicado)
-⏰ Faltam só ${params.daysToMothersDay} dias pro Dia das Mães
-✅ Entrega na hora — sua mãe vê hoje
+Travou alguma coisa? Posso te ajudar?
 
-👉 ${params.checkoutUrl}
-
-A reação dela vai valer cada centavo 💜${FOOTER}`;
+Se quiser, é só responder aqui 💜${FOOTER}`;
   }
 
-  return `Oi ${name}, percebi que você começou a página pra ${recipientStr} mas o pagamento ficou pra trás 👀
+  return `Oi ${name}, tudo bem?
 
-Já liberei R$ 10 OFF pra te ajudar a finalizar:
+Vi que vc começou a fazer a página pra ${recipientStr} mas o pagamento não chegou.
 
-🎁 Cupom CUPOM10 (já aplicado)
-✅ Em menos tempo do que demora pedir um café
+Travou alguma coisa? Posso te ajudar?
 
-👉 ${params.checkoutUrl}
-
-Qualquer dúvida, é só responder aqui que eu te ajudo na hora 🙌${FOOTER}`;
+Se quiser, é só responder aqui 💜${FOOTER}`;
 }
 
+/**
+ * Recovery 1h — agora COM cupom CUPOM10 (R$10 OFF). Cliente foi avisado no
+ * 5min sem pressão; se ainda não pagou, oferece desconto pra fechar.
+ */
 export function buildRecovery1h(params: {
   firstName: string;
   recipient: RecipientCategory;
@@ -107,6 +206,10 @@ A página pra ${recipientStr} tá te esperando — vai surpreender ela demais.
 Quem ama, surpreende.${FOOTER}`;
 }
 
+/**
+ * Recovery 24h — função mantida pra histórico, mas atualmente NÃO está no
+ * STAGES do cron (cadência reduzida pra 5min + 1h apenas, decisão do dono).
+ */
 export function buildRecovery24h(params: {
   firstName: string;
   recipient: RecipientCategory;

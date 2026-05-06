@@ -37,14 +37,32 @@ export async function getIntentServerPrice(intentId: string): Promise<IntentPric
     if (!snap.exists) return { ok: false, error: 'not found' };
     const d = snap.data() || {};
 
-    const input = {
+    // Cupons percentuais: subtotal varia conforme o cliente adiciona/remove
+    // itens, então precisamos recalcular o desconto a cada price-call em vez
+    // de cachear um R$ fixo. Cupons "fixed" continuam usando o valor armazenado
+    // em appliedDiscount (path antigo, backwards-compatible).
+    const isPercentDiscount = d.discountType === 'percent';
+    const baseInput = {
       plan: d.plan,
       qrCodeDesign: d.qrCodeDesign,
       enableWordGame: d.enableWordGame,
       wordGameQuestions: d.wordGameQuestions,
       introType: d.introType,
       audioRecording: d.audioRecording,
-      discountAmount: Number(d.appliedDiscount) || 0,
+    };
+
+    let discountAmount = Number(d.appliedDiscount) || 0;
+    if (isPercentDiscount) {
+      const pct = Number(d.discountValue ?? d.appliedDiscount) || 0;
+      // Subtotal = total SEM desconto. Calcula primeiro pra saber sobre quanto
+      // aplicar a porcentagem, depois deriva o R$ a abater.
+      const subtotal = computeTotalForMarket({ ...baseInput, discountAmount: 0 } as any, isMarket(d.market) ? d.market : 'BR');
+      discountAmount = Number(((subtotal * pct) / 100).toFixed(2));
+    }
+
+    const input = {
+      ...baseInput,
+      discountAmount,
     };
 
     // Resolução de market: prefere o que tá persistido no intent (fonte da
@@ -143,14 +161,24 @@ export async function applyDiscountToIntent(
     const discValue = Number(dd.discount);
     if (!isFinite(discValue) || discValue <= 0) return { ok: false, reason: 'broken_code' };
 
+    // Backwards compat: docs antigos sem discountType são tratados como 'fixed'.
+    const discType: 'fixed' | 'percent' = dd.discountType === 'percent' ? 'percent' : 'fixed';
+
     // Persiste no intent — getIntentServerPrice() vai pegar daqui na próxima
     // chamada e mostrar o preço já com desconto. Não consome o cupom ainda
     // (consumo é só ao gerar PIX/Stripe). Se cliente abandonar, contador
     // não incrementa.
+    //
+    // Para 'percent': armazenamos o valor original em discountValue e deixamos
+    // appliedDiscount como o R$ calculado no momento. getIntentServerPrice
+    // recalcula a cada chamada (subtotal pode mudar enquanto o cliente edita
+    // itens). Para 'fixed': appliedDiscount = discValue direto.
     await intentRef.set(
       {
-        appliedDiscount: discValue,
+        appliedDiscount: discValue, // fallback pra fluxos legados que leem só este campo
         discountCode: codeNorm,
+        discountType: discType,
+        discountValue: discValue,
         updatedAt: Timestamp.now(),
       },
       { merge: true },

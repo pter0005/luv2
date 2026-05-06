@@ -5,7 +5,6 @@ import { sendText } from '@/services/zapi/client';
 import {
   buildRecovery5min,
   buildRecovery1h,
-  buildRecovery24h,
 } from '@/services/zapi/messages';
 import { categorizeRecipient } from '@/services/zapi/recipient';
 import { formatPhoneE164 } from '@/services/zapi/phone';
@@ -46,7 +45,7 @@ function daysToMothersDay(): number {
   return Math.ceil(ms / 86400000);
 }
 
-type StageKey = '5min' | '1h' | '24h';
+type StageKey = '5min' | '1h';
 
 interface Stage {
   key: StageKey;
@@ -58,10 +57,12 @@ interface Stage {
   build: (p: { firstName: string; recipient: any; checkoutUrl: string; daysToMothersDay: number }) => string;
 }
 
+// Cadência decisão dono: 5min check-in soft + 1h cupom CUPOM10. SEM 24h —
+// considerado pushy demais. buildRecovery24h existe no messages.ts caso
+// volte a ser usado, mas não está no fluxo atual.
 const STAGES: Stage[] = [
   { key: '5min', minMin: 5,    maxMin: 30,   flag: 'recovery5minSent',  flagSentAt: 'recovery5minSentAt',  flagMsgId: 'recovery5minMessageId',  build: buildRecovery5min },
   { key: '1h',   minMin: 60,   maxMin: 120,  flag: 'recovery1hSent',    flagSentAt: 'recovery1hSentAt',    flagMsgId: 'recovery1hMessageId',    build: buildRecovery1h },
-  { key: '24h',  minMin: 1440, maxMin: 1500, flag: 'recovery24hSent',   flagSentAt: 'recovery24hSentAt',   flagMsgId: 'recovery24hMessageId',   build: buildRecovery24h },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -112,8 +113,9 @@ export async function GET(req: NextRequest) {
     console.warn('[whatsapp-recovery] cap check failed (index missing?):', e?.message);
   }
 
-  // Janela MAIOR de busca: 5min até 1500min (25h). Vai filtrar por stage abaixo.
-  const cutoffOldest = Timestamp.fromMillis(now - 1500 * 60 * 1000);
+  // Janela MAIOR de busca: 5min até 120min (2h). Vai filtrar por stage abaixo.
+  // Antes era 1500min por causa do stage 24h — removido na cadência atual.
+  const cutoffOldest = Timestamp.fromMillis(now - 120 * 60 * 1000);
   const cutoffYoungest = Timestamp.fromMillis(now - 5 * 60 * 1000);
 
   // Busca intents waiting_payment criados na janela. Filtros adicionais

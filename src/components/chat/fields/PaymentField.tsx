@@ -1022,6 +1022,24 @@ export default function PaymentField() {
               </div>
             </div>
           ))}
+
+          {/* Cupom aplicado — só aparece quando server confirmou desconto.
+              Discount = clientTotal (sem cupom) - serverTotal (com cupom). */}
+          {serverTotal !== null && serverTotal < clientTotal && (
+            <div className="flex items-baseline justify-between gap-3 pt-2 border-t border-white/5">
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] text-emerald-400 font-medium leading-tight">
+                  ✨ {isUS ? 'Coupon applied' : 'Cupom aplicado'}
+                </div>
+                <div className="text-[11px] text-white/45 mt-0.5">
+                  {isUS ? 'Discount automatically applied' : 'Desconto aplicado automaticamente'}
+                </div>
+              </div>
+              <span className="text-[13px] font-semibold tabular-nums text-emerald-400 shrink-0">
+                −{formatCurrencyForMarket(clientTotal - serverTotal, market)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Total */}

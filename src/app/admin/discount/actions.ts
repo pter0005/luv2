@@ -4,10 +4,13 @@ import { getAdminFirestore } from '@/lib/firebase/admin/config';
 import { Timestamp } from 'firebase-admin/firestore';
 import { requireAdmin } from '@/lib/admin-action-guard';
 
+export type DiscountType = 'fixed' | 'percent';
+
 export async function createDiscountCode(
   code: string,
   discount: number,
   maxUses: number,
+  discountType: DiscountType = 'fixed',
 ): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
   const db = getAdminFirestore();
@@ -17,9 +20,16 @@ export async function createDiscountCode(
   // ou NaN e Firestore aceitaria, gerando código sem discount válido.
   const discountNum = Number(discount);
   const maxUsesNum = Number(maxUses);
+  const type: DiscountType = discountType === 'percent' ? 'percent' : 'fixed';
   if (!clean || clean.length > 40) return { success: false, error: 'Código inválido (1-40 chars).' };
-  if (!isFinite(discountNum) || discountNum < 1 || discountNum > 1000) {
-    return { success: false, error: 'Desconto deve ser entre R$1 e R$1000.' };
+  if (!isFinite(discountNum) || discountNum < 1) {
+    return { success: false, error: 'Desconto deve ser maior que zero.' };
+  }
+  if (type === 'fixed' && discountNum > 1000) {
+    return { success: false, error: 'Desconto fixo deve ser entre R$1 e R$1000.' };
+  }
+  if (type === 'percent' && discountNum > 100) {
+    return { success: false, error: 'Desconto em % deve ser entre 1 e 100.' };
   }
   if (!isFinite(maxUsesNum) || maxUsesNum < 1 || maxUsesNum > 100000) {
     return { success: false, error: 'Limite de usos deve ser entre 1 e 100.000.' };
@@ -28,6 +38,7 @@ export async function createDiscountCode(
   try {
     await db.collection('discount_codes').doc(clean).set({
       discount: discountNum,
+      discountType: type,
       maxUses: maxUsesNum,
       usedCount: 0,
       usedEmails: [],
@@ -51,9 +62,12 @@ export async function getDiscountCodes() {
     // pro admin VER que o código tá quebrado, em vez de mascarar com default.
     const discountVal = Number(d.discount);
     const maxUsesVal = Number(d.maxUses);
+    // Backwards compat: docs antigos sem discountType são tratados como 'fixed'.
+    const type: DiscountType = d.discountType === 'percent' ? 'percent' : 'fixed';
     return {
       code: doc.id,
       discount: isFinite(discountVal) && discountVal > 0 ? discountVal : 0,
+      discountType: type,
       maxUses: isFinite(maxUsesVal) && maxUsesVal > 0 ? maxUsesVal : 0,
       usedCount: d.usedCount ?? 0,
       active: d.active ?? true,
