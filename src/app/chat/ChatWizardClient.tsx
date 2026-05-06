@@ -118,6 +118,7 @@ function Inner() {
   // Discount detection — se user veio com /desconto/CODIGO ou ?discount=,
   // valida no server e passa o valor pro cupido saudar mencionando o cupom.
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   useEffect(() => {
     const urlCode = searchParams.get('discount');
     const stored = typeof window !== 'undefined' ? localStorage.getItem('mycupid_discount_code') : null;
@@ -134,8 +135,13 @@ function Inner() {
     fetch(`/api/discount?code=${encodeURIComponent(code)}`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => {
-        if (d?.valid && d.discount > 0) setDiscountAmount(d.discount);
-        else if (typeof window !== 'undefined') localStorage.removeItem('mycupid_discount_code');
+        if (d?.valid && d.discount > 0) {
+          setDiscountAmount(d.discount);
+          // Backwards compat: se API antiga retornar sem discountType, assume 'fixed'.
+          setDiscountType(d.discountType === 'percent' ? 'percent' : 'fixed');
+        } else if (typeof window !== 'undefined') {
+          localStorage.removeItem('mycupid_discount_code');
+        }
       })
       .catch(() => { /* timeout/abort/network — silencioso, segue sem desconto */ })
       .finally(() => clearTimeout(timer));
@@ -270,9 +276,9 @@ function Inner() {
   // da animação de "digitando" do Cupido a cada caractere que o usuário digita.
   const cupidText = useMemo(() => {
     const recipientName = methods.getValues('recipientName');
-    return getCupidLine(segment, currentStep, { recipientName, discountAmount }, locale);
+    return getCupidLine(segment, currentStep, { recipientName, discountAmount, discountType }, locale);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segment, currentStep, locale, discountAmount]);
+  }, [segment, currentStep, locale, discountAmount, discountType]);
 
   // Alterna entre asking e idle ~4 vezes ao longo do fluxo pra ficar dinâmico.
   // Começa em 'asking' (pede o nome), alterna em blocos.

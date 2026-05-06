@@ -35,9 +35,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false, reason: 'broken_code' });
   }
 
+  // Backwards compat: docs antigos sem discountType são tratados como 'fixed'.
+  const discountType = d.discountType === 'percent' ? 'percent' : 'fixed';
+
   return NextResponse.json({
     valid: true,
     discount: discountValue,
+    discountType,
     remaining: (d.maxUses ?? 0) - (d.usedCount ?? 0),
   });
 }

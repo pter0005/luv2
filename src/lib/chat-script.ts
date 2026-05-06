@@ -34,8 +34,10 @@ export const CHAT_STEP_ORDER: ChatStepKey[] = [
 
 export interface CupidContext {
   recipientName?: string;
-  /** Valor do cupom em R$ (ou USD se locale=en). Quando presente E step='recipient', cupido abre dizendo do desconto antes de pedir o nome. */
+  /** Valor numérico do cupom — R$/USD se discountType='fixed', percentual se 'percent'. Quando presente E step='recipient', cupido abre dizendo do desconto antes de pedir o nome. */
   discountAmount?: number;
+  /** 'fixed' (R$/$) ou 'percent' (%). Default 'fixed' pra backwards-compat. */
+  discountType?: 'fixed' | 'percent';
 }
 
 type LineFn = (ctx: CupidContext) => string;
@@ -197,10 +199,16 @@ export function getCupidLine(
   // OVERRIDE: user veio com cupom de desconto — saúda mencionando o cupom
   // antes de seguir o fluxo normal. Aparece SÓ no step 'recipient' (primeiro).
   if (step === 'recipient' && ctx.discountAmount && ctx.discountAmount > 0) {
+    const isPercent = ctx.discountType === 'percent';
+    // Cupons percentuais: "40%" em vez de "R$40". Cupons fixos seguem mostrando
+    // o prefixo monetário (R$ pra BR/PT, $ pra EN).
+    const valueStr = isPercent
+      ? `${ctx.discountAmount}%`
+      : (locale === 'en' ? `$${ctx.discountAmount}` : `R$${ctx.discountAmount}`);
     if (locale === 'en') {
-      return `Heyy! 💝 I saw you came in with a $${ctx.discountAmount} discount coupon — nice, that's already locked in for you! Now tell me, what's the name of the person who'll receive this surprise?`;
+      return `Heyy! 💝 I saw you came in with a ${valueStr} discount coupon — nice, that's already locked in for you! Now tell me, what's the name of the person who'll receive this surprise?`;
     }
-    return `Oiii! 💝 Vi que você chegou com um cupom de R$${ctx.discountAmount} de desconto — boa, isso já tá garantido pra você! Agora me conta, qual o nome de quem vai receber essa surpresa?`;
+    return `Oiii! 💝 Vi que você chegou com um cupom de ${valueStr} de desconto — boa, isso já tá garantido pra você! Agora me conta, qual o nome de quem vai receber essa surpresa?`;
   }
 
   // Lazy import EN dict pra evitar custo em callsites BR
