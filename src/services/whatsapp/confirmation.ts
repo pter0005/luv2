@@ -65,8 +65,10 @@ export async function sendOrderConfirmation(intentId: string, lovePageId?: strin
     }
 
     // Domínio: usa .com.br por default. Se intent for PT, usa .net.
+    // Path "/p/" é a rota canônica das love pages (src/app/p/[pageId]).
+    // Sem o "/p/" o cliente cai num 404 — bug real reportado em prod.
     const baseUrl = sale.market === 'PT' ? 'https://mycupid.net' : 'https://mycupid.com.br';
-    const pageUrl = `${baseUrl}/${pageId}`;
+    const pageUrl = `${baseUrl}/p/${pageId}`;
 
     const firstName = (sale.userName as string || 'amor').split(' ')[0];
     const recipient = categorizeRecipient(sale.title);
