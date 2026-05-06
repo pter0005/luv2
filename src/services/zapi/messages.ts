@@ -23,88 +23,100 @@ function safe(s: string | null | undefined, max = 30): string {
 }
 
 /**
- * Confirmação de pagamento — variante por destinatário pra soar como pessoa
- * de verdade falando, não template corporativo.
+ * Limpa nome pra uso nas mensagens. Retorna string vazia quando o nome é
+ * inválido OU é um fallback genérico ("amor", "cliente", etc) — assim a
+ * mensagem decide se omite o "Olá <nome>" inteiro em vez de mandar
+ * "Olá amor!" que soa estranho pra um cliente real.
+ */
+function cleanName(s: string | null | undefined): string {
+  const cleaned = safe(s);
+  if (!cleaned) return '';
+  if (/^(amor|cliente|usuario|usuário|user)$/i.test(cleaned)) return '';
+  return cleaned;
+}
+
+/**
+ * Confirmação de pagamento — Cupido como protagonista. Nome do cliente é
+ * opcional (se não tiver, omite o ", Nome" sem deixar a frase quebrada).
  */
 export function buildOrderConfirmation(params: {
   firstName: string;
   recipient: RecipientCategory;
   pageUrl: string;
 }): string {
-  const name = safe(params.firstName) || 'amor';
+  const name = cleanName(params.firstName);
+  const greet = name ? `, ${name}` : '';
   const url = params.pageUrl;
   let body: string;
 
   switch (params.recipient) {
     case 'mae':
-      body = `Eba ${name}, tá pronta!
+      body = `Prontinho${greet}! 💜
 
-A página pra sua mãe:
+O Cupido criou a página pra sua mãe:
 👉 ${url}
 
-Manda quando achar que é a hora. Pode preparar o lenço, vai ser bonito.
-
-Boa sorte 💜`;
+Manda quando achar que é a hora. Pode preparar o lenço, vai ser bonito.`;
       break;
 
     case 'pai':
-      body = `Tá pronto, ${name}!
+      body = `Prontinho${greet}!
 
-A página pra seu pai:
+O Cupido criou a página pro seu pai:
 👉 ${url}
 
 Manda quando achar legal. Vai surpreender ele 😊`;
       break;
 
     case 'namorada':
-      body = `Eba ${name}! 🌹
+      body = `Prontinho${greet}! 🌹
 
-A página da sua namorada:
+O Cupido criou a página da sua namorada:
 👉 ${url}
 
 Faz a surpresa quando achar a hora certa. Ela vai amar.`;
       break;
 
     case 'namorado':
-      body = `Eba ${name} 💜
+      body = `Prontinho${greet}! 💜
 
-A página do seu namorado:
+O Cupido criou a página do seu namorado:
 👉 ${url}
 
 Manda pra ele quando achar bom. Vai gostar muito.`;
       break;
 
     case 'esposa':
-      body = `Tá pronta, ${name}!
+      body = `Prontinho${greet}!
 
-A página pra sua esposa:
+O Cupido criou a página pra sua esposa:
 👉 ${url}
 
-Vai surpreender demais. Boa sorte 💜`;
+Vai surpreender demais 💜`;
       break;
 
     case 'esposo':
-      body = `Tá pronta, ${name}!
+      body = `Prontinho${greet}!
 
-A página pro seu esposo:
+O Cupido criou a página pro seu esposo:
 👉 ${url}
 
-Vai surpreender demais. Boa sorte 💜`;
+Vai surpreender demais 💜`;
       break;
 
     case 'filho_filha':
-      body = `${name} 💜
+      body = `Prontinho${greet}! 💜
 
-A página pra sua família:
+O Cupido criou sua página:
 👉 ${url}
 
 Vai ficar guardado pra sempre. Aproveita o momento!`;
       break;
 
     case 'amigo_amiga':
-      body = `${name}!
+      body = `Prontinho${greet}!
 
-A página pra essa pessoa especial tá pronta:
+O Cupido criou a página pra essa pessoa especial:
 👉 ${url}
 
 Manda já, vai ser top. Quero saber a reação depois 😊`;
@@ -112,18 +124,18 @@ Manda já, vai ser top. Quero saber a reação depois 😊`;
 
     case 'irmao_irma':
     case 'avo':
-      body = `Tá pronta, ${name}!
+      body = `Prontinho${greet}!
 
-A página pra ${recipientLabel(params.recipient)}:
+O Cupido criou a página pra ${recipientLabel(params.recipient)}:
 👉 ${url}
 
-Vai gostar muito. Boa sorte com a surpresa 💜`;
+Vai gostar muito 💜`;
       break;
 
     default:
-      body = `Pronto, ${name}!
+      body = `Prontinho${greet}!
 
-Sua página:
+O Cupido já criou sua página:
 👉 ${url}
 
 Faz a entrega quando achar bom. Vai ser massa 💜`;
@@ -142,23 +154,24 @@ export function buildRecovery5min(params: {
   checkoutUrl: string;
   daysToMothersDay: number;
 }): string {
-  const name = safe(params.firstName) || 'amor';
+  const name = cleanName(params.firstName);
+  const greet = name ? `Oi ${name}, tudo bem?` : 'Oi! Tudo bem?';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
-    return `Oi ${name}, tudo bem?
+    return `${greet}
 
-Vi que vc tava fazendo a página pra sua mãe — faltam ${params.daysToMothersDay} dias pro Dia das Mães.
+Vi que você tava fazendo a página pra sua mãe — faltam ${params.daysToMothersDay} dias pro Dia das Mães.
 
 Travou alguma coisa? Posso te ajudar?
 
 Se quiser, é só responder aqui 💜${FOOTER}`;
   }
 
-  return `Oi ${name}, tudo bem?
+  return `${greet}
 
-Vi que vc começou a fazer a página pra ${recipientStr} mas o pagamento não chegou.
+Vi que você começou a fazer a página pra ${recipientStr} mas o pagamento não chegou.
 
 Travou alguma coisa? Posso te ajudar?
 
@@ -175,12 +188,15 @@ export function buildRecovery1h(params: {
   checkoutUrl: string;
   daysToMothersDay: number;
 }): string {
-  const name = safe(params.firstName) || 'amor';
+  const name = cleanName(params.firstName);
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
-    return `Oi ${name}, sua mãe ainda tá te esperando 💜
+    const opener = name
+      ? `Oi ${name}, sua mãe ainda tá te esperando 💜`
+      : `Sua mãe ainda tá te esperando 💜`;
+    return `${opener}
 
 Sei que rolou alguma fricção. R$ 10 OFF garantido pra finalizar:
 
@@ -193,9 +209,12 @@ Sei que rolou alguma fricção. R$ 10 OFF garantido pra finalizar:
 Não deixa o Dia das Mães passar batido 💜${FOOTER}`;
   }
 
-  return `Oi ${name}, R$ 10 OFF garantido pra finalizar 🎁
+  const opener = name
+    ? `Oi ${name}, R$ 10 OFF garantido pra finalizar 🎁`
+    : `R$ 10 OFF garantido pra finalizar 🎁`;
+  return `${opener}
 
-A página pra ${recipientStr} tá te esperando — vai surpreender ela demais.
+A página pra ${recipientStr} tá te esperando — vai surpreender demais.
 
 🎁 Cupom CUPOM10 (já aplicado)
 ⏰ Vale só até amanhã
@@ -215,9 +234,10 @@ export function buildRecovery24h(params: {
   recipient: RecipientCategory;
   checkoutUrl: string;
 }): string {
-  const name = safe(params.firstName) || 'amor';
+  const name = cleanName(params.firstName);
   const recipientStr = recipientLabel(params.recipient);
-  return `Oi ${name}, último aviso ⏰
+  const opener = name ? `Oi ${name}, último aviso ⏰` : 'Último aviso ⏰';
+  return `${opener}
 
 A página pra ${recipientStr} ainda tá esperando você finalizar.
 
