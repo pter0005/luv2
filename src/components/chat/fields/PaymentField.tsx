@@ -307,10 +307,11 @@ export default function PaymentField() {
             price: p.isGift ? 0 : total,
           }],
         }, p.pageId);
-        // Funnel final — marca esse device/sessão como "pago" pro painel
-        // "Funil do Wizard" mostrar a conversão real. Dedup lateral em
-        // trackFunnelStep (Set reportedFunnelSteps) garante 1-por-sessão.
-        trackFunnelStep('paid', 999, 999);
+        // NOTA: trackFunnelStep('paid') foi REMOVIDO daqui (era client-side).
+        // Causava discrepância entre Hero card (server) e funil (client) —
+        // user abrindo 2 abas duplicava, fechar antes do polling não contava.
+        // Agora finalizeLovePage incrementa server-side dentro da transação
+        // de status='completed' — 1 venda real = 1 increment, sempre.
       }
     } catch { /* ignore */ }
   }, [total, plan, siteCfg.currency]);

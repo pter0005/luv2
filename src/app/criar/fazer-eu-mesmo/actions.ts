@@ -1274,6 +1274,40 @@ export async function finalizeLovePage(intentId: string, paymentId: string): Pro
     transaction.update(intentRef, { status: 'completed', lovePageId: newPageId });
   });
 
+  // ── INCREMENT FUNNEL `paid` SERVER-SIDE ──
+  // Antes era disparado client-side (PaymentField → trackFunnelStep('paid')).
+  // Problemas:
+  //   - User abre 2 abas → 2 increments
+  //   - Sessão expira no Set dedup do trackFunnelStep → re-dispara
+  //   - User fecha aba antes do polling confirmar → 0 increments
+  //
+  // Resultado: discrepância entre /admin Hero (server-counted, real) e
+  // funil (client-counted, ruidoso). Agora dispara só aqui — 1 venda finalizada
+  // = 1 increment, sempre. Admin Hero e funil convergem.
+  //
+  // Idempotência: finalizeLovePage tem race guard (status==='completed' return)
+  // ANTES dessa transação. Se webhook chega 2x, segundo retorna early sem
+  // incrementar. Cron de recovery também não duplica porque chama finalizeLovePage
+  // que tem o mesmo guard.
+  //
+  // Pulamos pra gifts (não conta como conversão paga) e pra finalize via
+  // credit/admin (audit interno, não venda real).
+  if (!finalData.isGift && !paymentId.startsWith('credit_') && !paymentId.startsWith('admin_')) {
+    try {
+      const dateKey = new Date()
+        .toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        .split('/').reverse().join('-');
+      await db.collection('wizard_funnel').doc(dateKey).set(
+        { steps: { paid: FieldValue.increment(1) }, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+    } catch (e) {
+      // Não-crítico: se incremento falhar, página já foi criada. Só polui o
+      // dashboard com count menor temporariamente.
+      console.warn('[finalize] funnel paid increment failed:', e);
+    }
+  }
+
   // ── AUDIT: snapshot do que foi salvo, pra reconstruir se algo sumir.
   // Best-effort, fora da transaction (não bloqueia venda se falhar).
   try {
