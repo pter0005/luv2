@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /**
- * Cron WhatsApp Recovery (3 toques: 5min, 1h, 24h)
+ * Cron WhatsApp Recovery (2 toques: soft 4min + cupom 10min)
  *
  * Disparado pelo Netlify Scheduled Functions a cada 5min. Busca payment_intents
  * com status=waiting_payment dentro das janelas dos 3 stages e dispara mensagem
@@ -23,11 +23,12 @@ export const maxDuration = 60;
  *
  * SOFT-LAUNCH: por default `RECOVERY_ENABLED=false`. Liga via env var quando
  * pronto. Sem isso, cron entra e sai sem mandar nada.
+
  *
- * Janelas:
- *   5min  → mandado se 5  ≤ idade < 30min e !recovery5minSent
- *   1h    → mandado se 60 ≤ idade < 120min e !recovery1hSent
- *   24h   → mandado se 1440 ≤ idade < 1500min e !recovery24hSent
+ * Janelas (atualizadas — decisão dono: cadência mais agressiva pq PIX é
+ * pago rápido; se passou de 10min, provavelmente abandonou):
+ *   soft  → mandado se 4  ≤ idade < 9min  e !recovery5minSent (sem cupom)
+ *   cupom → mandado se 10 ≤ idade < 30min e !recovery1hSent  (CUPOM10)
  *
  * Cap diário (RECOVERY_DAILY_CAP, default 100): conta envios do "5min" hoje
  * como proxy de novos lembretes — protege contra explosão de gastos / banimento
@@ -57,12 +58,15 @@ interface Stage {
   build: (p: { firstName: string; recipient: any; checkoutUrl: string; daysToMothersDay: number }) => string;
 }
 
-// Cadência decisão dono: 5min check-in soft + 1h cupom CUPOM10. SEM 24h —
-// considerado pushy demais. buildRecovery24h existe no messages.ts caso
-// volte a ser usado, mas não está no fluxo atual.
+// Cadência atual (decisão dono): 4min soft + 10min cupom. PIX é pago rápido,
+// se passou de 10min sem pagar provavelmente já abandonou. Cadência antiga
+// (5min/1h/24h) era lenta demais. Stage 24h removido por ser pushy demais.
+// As keys '5min' e '1h' são MANTIDAS (e os flags recovery5minSent /
+// recovery1hSent) pra preservar idempotência com intents que já foram
+// processados — só o intervalo minMin/maxMin é que mudou.
 const STAGES: Stage[] = [
-  { key: '5min', minMin: 5,    maxMin: 30,   flag: 'recovery5minSent',  flagSentAt: 'recovery5minSentAt',  flagMsgId: 'recovery5minMessageId',  build: buildRecovery5min },
-  { key: '1h',   minMin: 60,   maxMin: 120,  flag: 'recovery1hSent',    flagSentAt: 'recovery1hSentAt',    flagMsgId: 'recovery1hMessageId',    build: buildRecovery1h },
+  { key: '5min', minMin: 4,    maxMin: 9,    flag: 'recovery5minSent',  flagSentAt: 'recovery5minSentAt',  flagMsgId: 'recovery5minMessageId',  build: buildRecovery5min },
+  { key: '1h',   minMin: 10,   maxMin: 30,   flag: 'recovery1hSent',    flagSentAt: 'recovery1hSentAt',    flagMsgId: 'recovery1hMessageId',    build: buildRecovery1h },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -113,10 +117,10 @@ export async function GET(req: NextRequest) {
     console.warn('[whatsapp-recovery] cap check failed (index missing?):', e?.message);
   }
 
-  // Janela MAIOR de busca: 5min até 120min (2h). Vai filtrar por stage abaixo.
-  // Antes era 1500min por causa do stage 24h — removido na cadência atual.
-  const cutoffOldest = Timestamp.fromMillis(now - 120 * 60 * 1000);
-  const cutoffYoungest = Timestamp.fromMillis(now - 5 * 60 * 1000);
+  // Janela MAIOR de busca: 4min até 30min. Casa com a cadência atual
+  // (soft 4-9min, cupom 10-30min). Filtro fino por stage acontece em memória.
+  const cutoffOldest = Timestamp.fromMillis(now - 30 * 60 * 1000);
+  const cutoffYoungest = Timestamp.fromMillis(now - 4 * 60 * 1000);
 
   // Busca intents waiting_payment criados na janela. Filtros adicionais
   // (opt-in, recoveryDisabled, isGift) aplicados em memória pra não exigir
