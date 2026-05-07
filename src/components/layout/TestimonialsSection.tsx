@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { Star, Verified, Play, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale } from 'next-intl';
 
-// 22 prints reais de clientes — pasta /public/depoimentos.
 const REAL_TESTIMONIALS = Array.from({ length: 22 }, (_, i) => ({
   src: `/depoimentos/depoimento-${String(i + 1).padStart(2, '0')}.png`,
   alt: `Depoimento real de cliente ${i + 1}`,
@@ -17,15 +16,12 @@ const VIDEO_SRC = '/depoimentos/reacao-mae.mp4';
 const TestimonialsSection = () => {
   const locale = useLocale();
   const isEN = locale === 'en';
-  // Lightbox: string pra print, 'video' pra vídeo, null pra fechado.
   const [lightbox, setLightbox] = useState<string | 'video' | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Total de slides = vídeo (1) + prints (22) = 23
   const totalSlides = 1 + REAL_TESTIMONIALS.length;
 
-  // Scroll snap: detecta qual slide tá centralizado pra atualizar índice
   useEffect(() => {
     const el = carouselRef.current;
     if (!el) return;
@@ -55,7 +51,7 @@ const TestimonialsSection = () => {
   return (
     <>
       <div className="relative w-full overflow-hidden py-16">
-        <div className="container relative z-10 max-w-5xl mx-auto px-4">
+        <div className="container relative z-10 max-w-3xl mx-auto px-4">
 
           {/* ═══ HEADER ═══ */}
           <motion.div
@@ -103,14 +99,14 @@ const TestimonialsSection = () => {
             </div>
           </motion.div>
 
-          {/* ═══ CAROUSEL — swipe lateral, 1 card por vez (mobile) ou 2-3 (desktop) ═══ */}
-          <div className="relative">
-            {/* Botões prev/next (visível só desktop) */}
+          {/* ═══ CAROUSEL ═══ 1 card por view, sem bordas pretas */}
+          <div className="relative max-w-md mx-auto">
+            {/* Botão prev (desktop) */}
             <button
               type="button"
               onClick={prev}
               disabled={activeIdx === 0}
-              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-14 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Anterior"
             >
               <ChevronLeft className="w-5 h-5 text-white" />
@@ -119,16 +115,16 @@ const TestimonialsSection = () => {
               type="button"
               onClick={next}
               disabled={activeIdx === totalSlides - 1}
-              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-14 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Próximo"
             >
               <ChevronRight className="w-5 h-5 text-white" />
             </button>
 
-            {/* Carousel container — scroll horizontal com snap */}
+            {/* Carousel: items-start pra cards alinharem topo (não esticam) */}
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory items-start scrollbar-hide pb-2"
               style={{
                 scrollSnapType: 'x mandatory',
                 scrollbarWidth: 'none',
@@ -136,101 +132,99 @@ const TestimonialsSection = () => {
               }}
             >
               {/* CARD VÍDEO — primeiro slide */}
-              <motion.button
-                type="button"
-                onClick={() => setLightbox('video')}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4 }}
-                className="group relative shrink-0 snap-center w-[85%] sm:w-[60%] md:w-[40%] lg:w-[32%] aspect-[9/16] overflow-hidden rounded-3xl ring-2 ring-purple-400/40 hover:ring-purple-400/80 transition-all cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))',
-                  boxShadow: '0 16px 40px -12px rgba(168,85,247,0.5)',
-                }}
-              >
-                {/* Video — preload auto carrega FULL pra mostrar primeiro frame */}
-                <video
-                  src={VIDEO_SRC}
-                  muted
-                  playsInline
-                  preload="auto"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-
-                {/* Overlay escuro */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/40 group-hover:from-black/90 transition-all" />
-
-                {/* Tag REAL pulsante */}
-                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/95 backdrop-blur-md shadow-lg">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                  </span>
-                  <span className="text-[9px] font-black uppercase tracking-[0.12em] text-white">
-                    {isEN ? 'Real' : 'Real'}
-                  </span>
-                </div>
-
-                {/* Play button GIGANTE */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-24 h-24 rounded-full bg-white/15 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/25 transition-all duration-300 shadow-2xl">
-                    <Play className="w-11 h-11 text-white fill-white ml-1.5" />
-                  </div>
-                </div>
-
-                {/* Caption */}
-                <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
-                  <p className="text-base font-bold text-white mb-1">
-                    {isEN ? '🎬 Watch the reaction' : '🎬 Veja a reação'}
-                  </p>
-                  <p className="text-sm text-white/85 leading-tight">
-                    {isEN
-                      ? 'Reaction video (23s)'
-                      : 'Vídeo da reação (23s)'}
-                  </p>
-                </div>
-              </motion.button>
-
-              {/* PRINTS REAIS — cada um é um slide */}
-              {REAL_TESTIMONIALS.map((t, i) => (
+              <div className="shrink-0 snap-center w-full">
                 <motion.button
-                  key={t.src}
                   type="button"
-                  onClick={() => setLightbox(t.src)}
+                  onClick={() => setLightbox('video')}
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
-                  className="group relative shrink-0 snap-center w-[85%] sm:w-[60%] md:w-[40%] lg:w-[32%] overflow-hidden rounded-3xl ring-1 ring-white/10 hover:ring-purple-400/60 transition-all cursor-zoom-in flex items-center justify-center"
+                  transition={{ duration: 0.4 }}
+                  className="group relative block w-full aspect-[9/16] overflow-hidden rounded-3xl ring-2 ring-purple-400/40 hover:ring-purple-400/80 transition-all cursor-pointer"
                   style={{
-                    background: '#0a0a0a',
-                    boxShadow: '0 12px 30px -8px rgba(0,0,0,0.6)',
+                    boxShadow: '0 16px 40px -12px rgba(168,85,247,0.5)',
                   }}
                 >
-                  <Image
-                    src={t.src}
-                    alt={t.alt}
-                    width={500}
-                    height={500}
-                    sizes="(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 32vw"
-                    className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-[1.02]"
-                    loading={i < 3 ? 'eager' : 'lazy'}
-                    unoptimized
+                  {/* autoPlay+muted+loop = mostra frames como thumbnail (não preto) */}
+                  <video
+                    src={VIDEO_SRC}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md">
-                      <Verified className="w-3 h-3 text-white" />
-                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                        {isEN ? 'Verified' : 'Verificado'}
-                      </span>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40 group-hover:from-black/85 transition-all" />
+
+                  <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/95 backdrop-blur-md shadow-lg">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.12em] text-white">
+                      {isEN ? 'Real' : 'Real'}
+                    </span>
+                  </div>
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-white/15 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/25 transition-all duration-300 shadow-2xl">
+                      <Play className="w-11 h-11 text-white fill-white ml-1.5" />
                     </div>
                   </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
+                    <p className="text-base font-bold text-white mb-1">
+                      {isEN ? '🎬 Watch the reaction' : '🎬 Veja a reação'}
+                    </p>
+                    <p className="text-sm text-white/85 leading-tight">
+                      {isEN ? 'Reaction video (23s)' : 'Vídeo da reação (23s)'}
+                    </p>
+                  </div>
                 </motion.button>
+              </div>
+
+              {/* PRINTS — cada um com altura NATURAL da imagem (sem letterbox) */}
+              {REAL_TESTIMONIALS.map((t, i) => (
+                <div key={t.src} className="shrink-0 snap-center w-full">
+                  <motion.button
+                    type="button"
+                    onClick={() => setLightbox(t.src)}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
+                    className="group relative block w-full overflow-hidden rounded-3xl ring-1 ring-white/10 hover:ring-purple-400/60 transition-all cursor-zoom-in"
+                    style={{
+                      boxShadow: '0 12px 30px -8px rgba(0,0,0,0.6)',
+                    }}
+                  >
+                    {/* Image em altura natural — sem aspect ratio forçado, sem fundo preto */}
+                    <Image
+                      src={t.src}
+                      alt={t.alt}
+                      width={500}
+                      height={500}
+                      sizes="(max-width: 640px) 90vw, 448px"
+                      className="block w-full h-auto"
+                      loading={i < 3 ? 'eager' : 'lazy'}
+                      unoptimized
+                    />
+                    <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md">
+                        <Verified className="w-3 h-3 text-white" />
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                          {isEN ? 'Verified' : 'Verificado'}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
               ))}
             </div>
 
-            {/* Indicador de posição (X de Y) — mobile + desktop */}
+            {/* Indicador */}
             <div className="flex items-center justify-center gap-2 mt-6">
               <span className="text-xs text-zinc-400 font-medium">
                 <strong className="text-white text-sm">{activeIdx + 1}</strong>
@@ -238,7 +232,7 @@ const TestimonialsSection = () => {
                 <span>{totalSlides}</span>
               </span>
               <span className="text-xs text-zinc-600 ml-3">
-                {isEN ? '· Swipe / arraste pro lado' : '· Arrasta pro lado pra ver mais'}
+                {isEN ? '· Swipe' : '· Arrasta pro lado'}
               </span>
             </div>
           </div>
@@ -267,7 +261,7 @@ const TestimonialsSection = () => {
         </div>
       </div>
 
-      {/* ═══ LIGHTBOX ═══ */}
+      {/* Lightbox */}
       {lightbox && (
         <div
           className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200"
@@ -296,7 +290,7 @@ const TestimonialsSection = () => {
                 alt="Depoimento ampliado"
                 width={1200}
                 height={1200}
-                className="w-full h-auto rounded-2xl ring-1 ring-white/10 object-contain"
+                className="w-full h-auto rounded-2xl ring-1 ring-white/10"
                 unoptimized
               />
             )}
@@ -304,7 +298,6 @@ const TestimonialsSection = () => {
         </div>
       )}
 
-      {/* Hide scrollbar pra carousel */}
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
