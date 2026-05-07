@@ -155,13 +155,9 @@ export function buildRecovery5min(params: {
   checkoutUrl: string;
   daysToMothersDay: number;
 }): string {
-  const name = cleanName(params.firstName);
-  // Identificação clara como remetente (MyCupid) — fundamental porque o
-  // cliente recebe a msg horas depois e precisa lembrar de cara que é
-  // do produto que ele tava comprando, não spam aleatório.
-  const greet = name
-    ? `Oi ${name}! Aqui é do MyCupid 💜`
-    : 'Oi! Aqui é do MyCupid 💜';
+  // Recovery vai sem nome — saudação genérica é mais natural pra mensagem em
+  // massa. Identifica MyCupid de cara pra cliente saber quem mandou.
+  const greet = 'Oii, tudo bem? Aqui é do MyCupid 💜';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
@@ -187,7 +183,7 @@ Se quiser, é só responder aqui 💜${FOOTER}`;
 /**
  * Recovery 1h (atual: 10min) — COM cupom CUPOM10 (R$10 OFF). Cliente foi
  * avisado no soft sem pressão; se ainda não pagou, oferece desconto.
- * Importante: identificar MyCupid e explicar contexto antes de oferecer.
+ * Saudação genérica (sem nome) — mais natural em mensagem em massa.
  */
 export function buildRecovery1h(params: {
   firstName: string;
@@ -195,10 +191,7 @@ export function buildRecovery1h(params: {
   checkoutUrl: string;
   daysToMothersDay: number;
 }): string {
-  const name = cleanName(params.firstName);
-  const greet = name
-    ? `Oi ${name}! Aqui é do MyCupid 💜`
-    : 'Oi! Aqui é do MyCupid 💜';
+  const greet = 'Oii, tudo bem? Aqui é do MyCupid 💜';
   const isMae = params.recipient === 'mae';
   const recipientStr = recipientLabel(params.recipient);
 
