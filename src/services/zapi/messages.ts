@@ -181,9 +181,9 @@ Se quiser, é só responder aqui 💜${FOOTER}`;
 }
 
 /**
- * Recovery 1h (atual: 10min) — COM cupom CUPOM10 (R$10 OFF). Cliente foi
- * avisado no soft sem pressão; se ainda não pagou, oferece desconto.
- * Saudação genérica (sem nome) — mais natural em mensagem em massa.
+ * Recovery 1h (atual: 25min) — COM cupom CUPOM10 (R$10 OFF). Esta é a 2ª
+ * mensagem do fluxo (após o soft 4min). Cliente já foi saudado, já sabe
+ * que é do MyCupid — então essa msg vai DIRETO ao ponto, sem re-saudar.
  */
 export function buildRecovery1h(params: {
   firstName: string;
@@ -191,33 +191,23 @@ export function buildRecovery1h(params: {
   checkoutUrl: string;
   daysToMothersDay: number;
 }): string {
-  const greet = 'Oii, tudo bem? Aqui é do MyCupid 💜';
   const isMae = params.recipient === 'mae';
-  const recipientStr = recipientLabel(params.recipient);
 
   if (isMae && params.daysToMothersDay > 0 && params.daysToMothersDay <= 14) {
-    return `${greet}
+    return `Pra te ajudar a finalizar a tempo do Dia das Mães (faltam ${params.daysToMothersDay} dias), separei um cupom 💜
 
-Vi que você começou a fazer uma página pra sua mãe no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
-
-Faltam só ${params.daysToMothersDay} dias pro Dia das Mães. Pra te ajudar a finalizar a tempo, separei R$ 10 OFF:
-
-🎁 Cupom CUPOM10 (já aplicado no link)
+🎁 R$ 10 OFF — Cupom CUPOM10 (já aplicado no link)
 ⏰ Vale só até amanhã essa hora
 ✅ Entrega na hora — sua mãe vê hoje
 
 👉 ${params.checkoutUrl}
 
-Não deixa essa surpresa passar batido 💜${FOOTER}`;
+Não deixa essa surpresa passar batido!${FOOTER}`;
   }
 
-  return `${greet}
+  return `Pra te ajudar a finalizar, separei um cupom 💜
 
-Vi que você começou a fazer uma página pra ${recipientStr} no nosso site e gerou um PIX, mas o pagamento não chegou ainda.
-
-Pra te ajudar a finalizar, separei R$ 10 OFF:
-
-🎁 Cupom CUPOM10 (já aplicado no link)
+🎁 R$ 10 OFF — Cupom CUPOM10 (já aplicado no link)
 ⏰ Vale só até amanhã
 💜 Pronto em menos de 5 minutos
 

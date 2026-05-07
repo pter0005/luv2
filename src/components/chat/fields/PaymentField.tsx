@@ -1053,38 +1053,34 @@ export default function PaymentField() {
         </div>
       </div>
 
-      {/* ORDER BUMP — Mensagem em áudio (se ainda não gravou).
-          Aparece logo após SEU PEDIDO pra cliente VER o upsell antes de
-          chegar no botão pagar. Não funcional ainda — info card que motiva
-          cliente a voltar 1 step e gravar (decisão dono: TODOS os planos,
-          incluindo VIP, pagam +R$2,90 pelo áudio). */}
+      {/* ORDER BUMP — Mensagem em áudio. Visual minimalista, consistente
+          com os outros cards (sem gradient gritante). */}
       {!pixData && !giftToken && !audioRecording?.url && market === 'BR' && (
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-red-500/10 ring-1 ring-amber-400/30">
+        <div className="rounded-2xl p-5 bg-white/[0.03] ring-1 ring-white/10">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 ring-1 ring-amber-400/40 flex items-center justify-center shrink-0">
-              <Mic className="w-5 h-5 text-amber-300" />
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 ring-1 ring-purple-400/30 flex items-center justify-center shrink-0">
+              <Mic className="w-5 h-5 text-purple-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
                 <p className="text-[14px] font-bold text-white leading-tight">
                   Adicione sua voz à página
                 </p>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-200 font-bold uppercase tracking-wider">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 font-bold uppercase tracking-wider">
                   +R$ 2,90
                 </span>
               </div>
-              <p className="text-[12px] text-white/65 leading-relaxed">
-                Sua voz gravando uma mensagem emociona <strong className="text-white">muito mais</strong> que texto. Volte ao passo <strong className="text-amber-200">"Mensagem de voz"</strong> no chat pra gravar (leva 30 segundos).
+              <p className="text-[12px] text-white/60 leading-relaxed">
+                Sua voz emociona muito mais que texto. Volte ao passo <strong className="text-purple-200">"Mensagem de voz"</strong> no chat pra gravar (leva 30 segundos).
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Contato — email + whatsapp (obrigatórios). Subido pra logo após o
-          pedido + order bump pra cliente preencher dados antes de método
-          de pagamento + decisão final. */}
-      <div className="space-y-3 rounded-xl p-4 bg-white/[0.03] ring-1 ring-white/10">
+      {/* Contato — email + whatsapp. Mesmo padrão visual dos outros cards
+          (rounded-2xl, p-5) pra consistência. */}
+      <div className="space-y-3 rounded-2xl p-5 bg-white/[0.03] ring-1 ring-white/10">
         <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-white/45">
           <span>{isUS ? 'Your contact info' : 'Seus dados de contato'}</span>
         </div>
@@ -1136,12 +1132,12 @@ export default function PaymentField() {
         </div>
       </div>
 
-      {/* Trust block — garantia + segurança APÓS dados de contato.
-          Reforça segurança ANTES da decisão final de pagamento. */}
+      {/* Trust block — garantia + segurança. Visual minimalista (gradient
+          removido, mantém só accent emerald no ícone pra semântica). */}
       {!pixData && !giftToken && (
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-500/10 via-emerald-400/5 to-green-500/5 ring-1 ring-emerald-400/30">
+        <div className="rounded-2xl p-5 bg-white/[0.03] ring-1 ring-white/10">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 ring-1 ring-emerald-400/40 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-400/30 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
             </div>
             <div>
@@ -1178,11 +1174,9 @@ export default function PaymentField() {
         </div>
       )}
 
-      {/* QR Code templates — móvel pro fim do bloco de customização.
-          Decisão dono: cliente já viu pedido, dados, garantia. Agora vê
-          as opções extras de personalização sem que dominem a tela. */}
+      {/* QR Code templates — visual minimalista, sem gradient gritante. */}
       {!pixData && (
-        <div className="rounded-2xl p-4 bg-gradient-to-br from-purple-500/10 via-fuchsia-500/5 to-pink-500/10 ring-1 ring-purple-400/25">
+        <div className="rounded-2xl p-5 bg-white/[0.03] ring-1 ring-white/10">
           <QrCodeSelector
             value={qrCodeDesign || 'classic'}
             onChange={(id) => setValue('qrCodeDesign', id, { shouldDirty: true })}

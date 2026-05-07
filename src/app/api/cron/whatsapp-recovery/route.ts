@@ -25,10 +25,9 @@ export const maxDuration = 60;
  * pronto. Sem isso, cron entra e sai sem mandar nada.
 
  *
- * Janelas (atualizadas — decisão dono: cadência mais agressiva pq PIX é
- * pago rápido; se passou de 10min, provavelmente abandonou):
+ * Janelas (decisão dono — espaçamento maior pra cliente respirar):
  *   soft  → mandado se 4  ≤ idade < 9min  e !recovery5minSent (sem cupom)
- *   cupom → mandado se 10 ≤ idade < 30min e !recovery1hSent  (CUPOM10)
+ *   cupom → mandado se 25 ≤ idade < 60min e !recovery1hSent  (CUPOM10)
  *
  * Cap diário (RECOVERY_DAILY_CAP, default 100): conta envios do "5min" hoje
  * como proxy de novos lembretes — protege contra explosão de gastos / banimento
@@ -58,15 +57,14 @@ interface Stage {
   build: (p: { firstName: string; recipient: any; checkoutUrl: string; daysToMothersDay: number }) => string;
 }
 
-// Cadência atual (decisão dono): 4min soft + 10min cupom. PIX é pago rápido,
-// se passou de 10min sem pagar provavelmente já abandonou. Cadência antiga
-// (5min/1h/24h) era lenta demais. Stage 24h removido por ser pushy demais.
+// Cadência atual (decisão dono): 4min soft + 25min cupom. Espaçamento dá
+// tempo do cliente respirar entre msgs (antes era 4+10, mt seguido).
 // As keys '5min' e '1h' são MANTIDAS (e os flags recovery5minSent /
 // recovery1hSent) pra preservar idempotência com intents que já foram
 // processados — só o intervalo minMin/maxMin é que mudou.
 const STAGES: Stage[] = [
   { key: '5min', minMin: 4,    maxMin: 9,    flag: 'recovery5minSent',  flagSentAt: 'recovery5minSentAt',  flagMsgId: 'recovery5minMessageId',  build: buildRecovery5min },
-  { key: '1h',   minMin: 10,   maxMin: 30,   flag: 'recovery1hSent',    flagSentAt: 'recovery1hSentAt',    flagMsgId: 'recovery1hMessageId',    build: buildRecovery1h },
+  { key: '1h',   minMin: 25,   maxMin: 60,   flag: 'recovery1hSent',    flagSentAt: 'recovery1hSentAt',    flagMsgId: 'recovery1hMessageId',    build: buildRecovery1h },
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -117,9 +115,9 @@ export async function GET(req: NextRequest) {
     console.warn('[whatsapp-recovery] cap check failed (index missing?):', e?.message);
   }
 
-  // Janela MAIOR de busca: 4min até 30min. Casa com a cadência atual
-  // (soft 4-9min, cupom 10-30min). Filtro fino por stage acontece em memória.
-  const cutoffOldest = Timestamp.fromMillis(now - 30 * 60 * 1000);
+  // Janela MAIOR de busca: 4min até 60min. Casa com a cadência atual
+  // (soft 4-9min, cupom 25-60min). Filtro fino por stage acontece em memória.
+  const cutoffOldest = Timestamp.fromMillis(now - 60 * 60 * 1000);
   const cutoffYoungest = Timestamp.fromMillis(now - 4 * 60 * 1000);
 
   // Busca intents waiting_payment criados na janela. Filtros adicionais
