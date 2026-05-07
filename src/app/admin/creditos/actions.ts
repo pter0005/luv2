@@ -150,9 +150,6 @@ export async function getEmailByPageId(pageId: string): Promise<{ email: string 
 // ── Remove usuário dos créditos ──────────────
 export async function removeUserCredits(email: string): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
-  // SEGURANÇA: deletes desabilitados via feature flag.
-  const { ADMIN_DELETES_ENABLED, DELETES_DISABLED_MSG } = await import('@/lib/admin-feature-flags');
-  if (!ADMIN_DELETES_ENABLED) return { success: false, error: DELETES_DISABLED_MSG };
   const db = getAdminFirestore();
   try {
     await db.collection('user_credits').doc(email.toLowerCase().trim()).delete();

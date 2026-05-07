@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { reprocessPageFiles, removeBrokenFileRefs, reprocessAllPages, markIrrecoverableAsResolved } from './actions';
 import DeletePagePanel from './DeletePagePanel';
-import { ADMIN_DELETES_ENABLED } from '@/lib/admin-feature-flags';
+import { ADMIN_DELETE_PAGES_ENABLED } from '@/lib/admin-feature-flags';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -410,7 +410,7 @@ export default function AdminPagesClient({
     return (
         <div className="space-y-8">
             {/* Painel de delete manual — escondido via feature flag de segurança */}
-            {ADMIN_DELETES_ENABLED && <DeletePagePanel />}
+            {ADMIN_DELETE_PAGES_ENABLED && <DeletePagePanel />}
 
             {/* KPIs */}
             <div className="grid grid-cols-3 gap-4">

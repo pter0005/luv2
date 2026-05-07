@@ -3,7 +3,6 @@
 import { useState, useEffect, useTransition } from 'react';
 import { createDiscountCode, getDiscountCodes, toggleDiscountCode, deleteDiscountCode, type DiscountType } from './actions';
 import { Tag, Plus, Copy, Check, Trash2, RefreshCw, ToggleLeft, ToggleRight } from 'lucide-react';
-import { ADMIN_DELETES_ENABLED } from '@/lib/admin-feature-flags';
 
 type DiscountCode = {
   code: string; discount: number; discountType: DiscountType; maxUses: number; usedCount: number;
@@ -178,12 +177,10 @@ export default function AdminDiscountPage() {
                   className="p-1.5 rounded-lg hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors" title={c.active ? 'Desativar' : 'Ativar'}>
                   {c.active ? <ToggleRight className="w-4 h-4 text-green-400" /> : <ToggleLeft className="w-4 h-4" />}
                 </button>
-                {ADMIN_DELETES_ENABLED && (
-                  <button onClick={() => handleDelete(c.code)} disabled={isPending}
-                    className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <button onClick={() => handleDelete(c.code)} disabled={isPending}
+                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
             <div className="flex items-center gap-2 mb-2">

@@ -441,10 +441,10 @@ export async function deletePage(pageId: string, reason?: string): Promise<{
 }> {
     await requireAdmin();
 
-    // SEGURANÇA: deletes globalmente desabilitados via feature flag.
+    // SEGURANÇA: deleção de páginas bloqueada via feature flag.
     // Defesa em camadas — UI esconde botão E server bloqueia.
-    const { ADMIN_DELETES_ENABLED, DELETES_DISABLED_MSG } = await import('@/lib/admin-feature-flags');
-    if (!ADMIN_DELETES_ENABLED) {
+    const { ADMIN_DELETE_PAGES_ENABLED, DELETES_DISABLED_MSG } = await import('@/lib/admin-feature-flags');
+    if (!ADMIN_DELETE_PAGES_ENABLED) {
         return { success: false, error: DELETES_DISABLED_MSG };
     }
 

@@ -23,7 +23,7 @@ import { ActiveUsersWidget } from '@/components/admin/ActiveUsersWidget';
 import { SaleNotification } from '@/components/admin/SaleNotification';
 import { ErrorStatusWidget } from '@/components/admin/ErrorStatusWidget';
 import { deletePage } from '@/app/admin/pages/actions';
-import { ADMIN_DELETES_ENABLED } from '@/lib/admin-feature-flags';
+import { ADMIN_DELETE_PAGES_ENABLED } from '@/lib/admin-feature-flags';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -1066,10 +1066,10 @@ function SaleHistoryRow({ sale }: { sale: SaleRecord }) {
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <ExternalLink className="w-3 h-3" />View
             </Link>
-            {/* Botão Apagar — protegido por feature flag ADMIN_DELETES_ENABLED.
+            {/* Botão Apagar — protegido por feature flag ADMIN_DELETE_PAGES_ENABLED.
                 Esconde da UI quando flag false (caso senha admin vaze, vândalo
                 não tem botão pra clicar). Server actions também rejeitam. */}
-            {ADMIN_DELETES_ENABLED && (!confirmDelete ? (
+            {ADMIN_DELETE_PAGES_ENABLED && (!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
                 disabled={deleted || isDeleting}
@@ -1578,8 +1578,7 @@ export default function AdminDashboard({
         </div>
       </Section>
 
-      {/* ── DANGER ZONE ──────────────────────────────────────────────────────── */}
-      {ADMIN_DELETES_ENABLED && (
+      {/* ── DANGER ZONE — analytics reset (não apaga páginas, só visitas/UTM) */}
       <div className="rounded-2xl p-6"
         style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)' }}>
         <div className="flex items-center gap-2 mb-4">
@@ -1671,7 +1670,6 @@ export default function AdminDashboard({
           </div>
         )}
       </div>
-      )}
 
     </div>
   );
