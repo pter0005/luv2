@@ -11,6 +11,7 @@ import {
   Trash2, RefreshCw, AlertTriangle, ExternalLink,
   ArrowUpRight, Zap,
 } from 'lucide-react';
+import { ADMIN_DELETES_ENABLED } from '@/lib/admin-feature-flags';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
@@ -391,7 +392,8 @@ export default function AnalyticsDashboard({
         </div>
       </Section>
 
-      {/* ── ZONA DE PERIGO ─────────────────────────────────────────────────── */}
+      {/* ── ZONA DE PERIGO ─── escondido via feature flag ADMIN_DELETES_ENABLED */}
+      {ADMIN_DELETES_ENABLED && (
       <div className="rounded-2xl p-6"
         style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)' }}>
         <div className="flex items-center gap-2 mb-4">
@@ -487,6 +489,7 @@ export default function AnalyticsDashboard({
           </div>
         )}
       </div>
+      )}
 
     </div>
   );

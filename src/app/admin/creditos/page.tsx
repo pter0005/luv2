@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { getAllCredits, addCredits, setTotalCredits, removeUserCredits, getEmailByPageId, type CreditEntry, type CreditPlan } from './actions';
 import { Gift, Trash2, Plus, RefreshCw, ChevronDown, ChevronUp, Pencil, X, Check, Search, Crown, Star, Sparkles } from 'lucide-react';
+import { ADMIN_DELETES_ENABLED } from '@/lib/admin-feature-flags';
 
 const PLAN_OPTIONS: { value: CreditPlan; label: string; color: string; bg: string; border: string; icon: typeof Star }[] = [
   { value: 'basico', label: 'Básico', color: 'text-zinc-300', bg: 'bg-zinc-700/50', border: 'border-zinc-600', icon: Sparkles },
@@ -336,22 +337,24 @@ export default function AdminCreditosPage() {
                   </button>
                 )}
 
-                {confirmDelete === entry.email ? (
-                  <div className="flex flex-col gap-1">
-                    <button onClick={() => handleDelete(entry.email)} disabled={isPending} className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors">
-                      Sim
+                {ADMIN_DELETES_ENABLED && (
+                  confirmDelete === entry.email ? (
+                    <div className="flex flex-col gap-1">
+                      <button onClick={() => handleDelete(entry.email)} disabled={isPending} className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors">
+                        Sim
+                      </button>
+                      <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs transition-colors">
+                        Não
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDelete(entry.email)}
+                      className="p-2 rounded-xl bg-zinc-800/80 hover:bg-red-500/15 text-zinc-500 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-xs transition-colors">
-                      Não
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmDelete(entry.email)}
-                    className="p-2 rounded-xl bg-zinc-800/80 hover:bg-red-500/15 text-zinc-500 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  )
                 )}
               </div>
             </div>

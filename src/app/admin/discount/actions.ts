@@ -86,6 +86,9 @@ export async function toggleDiscountCode(code: string, active: boolean): Promise
 
 export async function deleteDiscountCode(code: string): Promise<void> {
   await requireAdmin();
+  // SEGURANÇA: deletes desabilitados via feature flag.
+  const { ADMIN_DELETES_ENABLED, DELETES_DISABLED_MSG } = await import('@/lib/admin-feature-flags');
+  if (!ADMIN_DELETES_ENABLED) throw new Error(DELETES_DISABLED_MSG);
   const db = getAdminFirestore();
   await db.collection('discount_codes').doc(code).delete();
 }
