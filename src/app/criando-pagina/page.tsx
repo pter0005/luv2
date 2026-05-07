@@ -197,7 +197,7 @@ function CreatingPageContent() {
 
     if (isFinalized && pageId) {
         return (
-            <div className="flex flex-col items-center text-center gap-6 animate-in fade-in duration-500">
+            <div className="flex flex-col items-center text-center gap-6 animate-in fade-in duration-500 max-w-lg">
                 <CheckCircle className="w-24 h-24 text-green-500"/>
                 <h1 className="text-4xl font-bold font-headline">Sua página está pronta!</h1>
                 <p className="text-muted-foreground max-w-md">
@@ -213,6 +213,31 @@ function CreatingPageContent() {
                         Ir para Minhas Páginas
                     </Link>
                 </Button>
+
+                {/* Upsell pós-pagamento — momento de alta dopamina, conversão alta.
+                    Cupom MAIS40 já existe no admin (criado pelo dono). Link direto
+                    leva pro wizard com desconto pré-aplicado. */}
+                <div className="mt-8 w-full rounded-2xl border-2 border-pink-300/50 bg-gradient-to-br from-pink-50 to-purple-50 p-6 text-left shadow-lg dark:from-pink-950/40 dark:to-purple-950/40 dark:border-pink-800/50">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">✨</span>
+                        <h2 className="text-lg font-bold">Quer fazer outra agora?</h2>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Tá no pique. Se tem mais alguém pra você surpreender, separei um cupom <strong>só pra você</strong> — vale só nas próximas 24h.
+                    </p>
+                    <div className="flex items-center gap-3 mb-4 rounded-lg bg-white/80 p-3 dark:bg-zinc-900/80">
+                        <span className="text-2xl">🎁</span>
+                        <div>
+                            <p className="font-bold text-pink-700 dark:text-pink-400">Cupom MAIS40 — desconto aplicado</p>
+                            <p className="text-xs text-muted-foreground">Já tá no link, é só clicar</p>
+                        </div>
+                    </div>
+                    <Button asChild size="lg" className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+                        <Link href="/desconto/MAIS40">
+                            Fazer outra com desconto →
+                        </Link>
+                    </Button>
+                </div>
             </div>
         );
     }
