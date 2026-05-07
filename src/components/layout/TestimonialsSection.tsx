@@ -53,37 +53,17 @@ const TestimonialsSection = () => {
       <div className="relative w-full overflow-hidden py-16">
         <div className="container relative z-10 max-w-3xl mx-auto px-4">
 
-          {/* ═══ HEADER ═══ */}
+          {/* ═══ HEADER MINIMAL ═══ título simples + estrelas (decisão dono) */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto mb-10"
+            className="text-center max-w-2xl mx-auto mb-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 border"
-              style={{
-                background: 'rgba(168,85,247,0.10)',
-                borderColor: 'rgba(168,85,247,0.30)',
-              }}>
-              <Verified className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-purple-300">
-                {isEN ? 'Real reactions · Verified' : 'Reações reais · Verificadas'}
-              </span>
-            </div>
-
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4 leading-[1.05]">
-              {isEN ? 'Sem edição.' : 'Sem edição.'}{' '}
-              <span className="text-transparent bg-clip-text"
-                style={{ backgroundImage: 'linear-gradient(135deg, #a855f7, #ec4899)' }}>
-                {isEN ? 'Just real love.' : 'Só amor de verdade.'}
-              </span>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-5 leading-tight">
+              {isEN ? 'Reactions from some of our clients' : 'Reações de alguns de nossos clientes'}
             </h2>
-            <p className="text-base md:text-lg text-zinc-400 max-w-2xl mx-auto mb-5">
-              {isEN
-                ? 'No actors. No edits. Just real moments captured by real clients.'
-                : 'Sem atores. Sem edição. Só momentos reais de clientes que entregaram a página.'}
-            </p>
 
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/[0.03] ring-1 ring-white/10">
               <div className="flex">
@@ -94,7 +74,7 @@ const TestimonialsSection = () => {
               <span className="text-sm font-bold text-white">4.9</span>
               <span className="text-xs text-zinc-400">·</span>
               <span className="text-xs text-zinc-400 font-medium">
-                {isEN ? '+10.000 happy clients' : '+10.000 clientes felizes'}
+                {isEN ? '+10,000 happy clients' : '+10.000 clientes felizes'}
               </span>
             </div>
           </motion.div>
