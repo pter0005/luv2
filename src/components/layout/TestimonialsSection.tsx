@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { memo, useRef, useState } from 'react';
+import { memo, useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Star, Verified, Play, X } from 'lucide-react';
+import { Star, Verified, Play, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocale } from 'next-intl';
 
 // 22 prints reais de clientes — pasta /public/depoimentos.
@@ -19,11 +19,43 @@ const TestimonialsSection = () => {
   const isEN = locale === 'en';
   // Lightbox: string pra print, 'video' pra vídeo, null pra fechado.
   const [lightbox, setLightbox] = useState<string | 'video' | null>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Total de slides = vídeo (1) + prints (22) = 23
+  const totalSlides = 1 + REAL_TESTIMONIALS.length;
+
+  // Scroll snap: detecta qual slide tá centralizado pra atualizar índice
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const slideWidth = el.scrollWidth / totalSlides;
+        const idx = Math.round(el.scrollLeft / slideWidth);
+        setActiveIdx(Math.max(0, Math.min(totalSlides - 1, idx)));
+      }, 100);
+    };
+    el.addEventListener('scroll', onScroll);
+    return () => { el.removeEventListener('scroll', onScroll); clearTimeout(timer); };
+  }, [totalSlides]);
+
+  const scrollToIdx = (idx: number) => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const slideWidth = el.scrollWidth / totalSlides;
+    el.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
+  };
+
+  const next = () => scrollToIdx(Math.min(totalSlides - 1, activeIdx + 1));
+  const prev = () => scrollToIdx(Math.max(0, activeIdx - 1));
 
   return (
     <>
       <div className="relative w-full overflow-hidden py-16">
-        <div className="container relative z-10 max-w-6xl mx-auto px-4">
+        <div className="container relative z-10 max-w-5xl mx-auto px-4">
 
           {/* ═══ HEADER ═══ */}
           <motion.div
@@ -57,7 +89,6 @@ const TestimonialsSection = () => {
                 : 'Sem atores. Sem edição. Só momentos reais de clientes que entregaram a página.'}
             </p>
 
-            {/* Stars + count compacto */}
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/[0.03] ring-1 ring-white/10">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
@@ -72,110 +103,145 @@ const TestimonialsSection = () => {
             </div>
           </motion.div>
 
-          {/* ═══ MASONRY GRID — vídeo é o PRIMEIRO card, prints depois ═══
-              CSS columns garante layout natural (não força quadrado, não corta msg). */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="columns-1 sm:columns-2 lg:columns-3 gap-4 md:gap-6 [column-fill:_balance] max-w-5xl mx-auto"
-          >
-            {/* CARD VÍDEO — primeiro do grid, mesmo formato dos prints + botão play */}
-            <motion.button
+          {/* ═══ CAROUSEL — swipe lateral, 1 card por vez (mobile) ou 2-3 (desktop) ═══ */}
+          <div className="relative">
+            {/* Botões prev/next (visível só desktop) */}
+            <button
               type="button"
-              onClick={() => setLightbox('video')}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-100px' }}
-              transition={{ duration: 0.4 }}
-              className="group relative block w-full mb-4 md:mb-6 break-inside-avoid overflow-hidden rounded-2xl ring-1 ring-purple-400/30 hover:ring-purple-400/70 transition-all duration-300 hover:-translate-y-1 cursor-pointer aspect-[9/16]"
+              onClick={prev}
+              disabled={activeIdx === 0}
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="w-5 h-5 text-white" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              disabled={activeIdx === totalSlides - 1}
+              className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-20 w-12 h-12 rounded-full bg-black/70 backdrop-blur-md ring-1 ring-white/15 items-center justify-center hover:bg-black/90 hover:ring-purple-400/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Próximo"
+            >
+              <ChevronRight className="w-5 h-5 text-white" />
+            </button>
+
+            {/* Carousel container — scroll horizontal com snap */}
+            <div
+              ref={carouselRef}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 -mx-4 px-4 md:mx-0 md:px-0"
               style={{
-                background: 'linear-gradient(135deg, rgba(168,85,247,0.15), rgba(236,72,153,0.15))',
-                boxShadow: '0 12px 30px -8px rgba(168,85,247,0.4)',
+                scrollSnapType: 'x mandatory',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
               }}
             >
-              {/* Video thumbnail (frame inicial) */}
-              <video
-                src={VIDEO_SRC}
-                muted
-                playsInline
-                preload="metadata"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-
-              {/* Overlay escuro pra contraste do play */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40 group-hover:from-black/80 transition-all" />
-
-              {/* Tag "REAÇÃO REAL" pulsante */}
-              <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/95 backdrop-blur-md shadow-lg">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-[0.12em] text-white">
-                  {isEN ? 'Real' : 'Real'}
-                </span>
-              </div>
-
-              {/* Botão play GIGANTE no centro */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 rounded-full bg-white/15 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/25 transition-all duration-300 shadow-2xl">
-                  <Play className="w-9 h-9 text-white fill-white ml-1" />
-                </div>
-              </div>
-
-              {/* Caption no rodapé */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-                <p className="text-sm font-bold text-white mb-1">
-                  {isEN ? '🎬 Watch the reaction' : '🎬 Veja a reação'}
-                </p>
-                <p className="text-xs text-white/85 leading-tight">
-                  {isEN
-                    ? 'A mom seeing her surprise (23s)'
-                    : 'Mãe vendo a surpresa (23s)'}
-                </p>
-              </div>
-            </motion.button>
-
-            {/* PRINTS REAIS */}
-            {REAL_TESTIMONIALS.map((t, i) => (
+              {/* CARD VÍDEO — primeiro slide */}
               <motion.button
-                key={t.src}
                 type="button"
-                onClick={() => setLightbox(t.src)}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.4, delay: ((i + 1) % 4) * 0.05 }}
-                className="group relative block w-full mb-4 md:mb-6 break-inside-avoid overflow-hidden rounded-2xl ring-1 ring-white/10 hover:ring-purple-400/60 transition-all duration-300 hover:-translate-y-1 cursor-zoom-in"
+                onClick={() => setLightbox('video')}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4 }}
+                className="group relative shrink-0 snap-center w-[85%] sm:w-[60%] md:w-[40%] lg:w-[32%] aspect-[9/16] overflow-hidden rounded-3xl ring-2 ring-purple-400/40 hover:ring-purple-400/80 transition-all cursor-pointer"
                 style={{
-                  background: '#0a0a0a',
-                  boxShadow: '0 8px 24px -8px rgba(0,0,0,0.6)',
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))',
+                  boxShadow: '0 16px 40px -12px rgba(168,85,247,0.5)',
                 }}
               >
-                <Image
-                  src={t.src}
-                  alt={t.alt}
-                  width={400}
-                  height={400}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-[1.03]"
-                  loading="lazy"
-                  unoptimized
+                {/* Video — preload auto carrega FULL pra mostrar primeiro frame */}
+                <video
+                  src={VIDEO_SRC}
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-                {/* Verified badge no hover */}
-                <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md">
-                    <Verified className="w-3 h-3 text-white" />
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                      {isEN ? 'Verified' : 'Verificado'}
-                    </span>
+
+                {/* Overlay escuro */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/40 group-hover:from-black/90 transition-all" />
+
+                {/* Tag REAL pulsante */}
+                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/95 backdrop-blur-md shadow-lg">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.12em] text-white">
+                    {isEN ? 'Real' : 'Real'}
+                  </span>
+                </div>
+
+                {/* Play button GIGANTE */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-white/15 backdrop-blur-md ring-2 ring-white/40 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/25 transition-all duration-300 shadow-2xl">
+                    <Play className="w-11 h-11 text-white fill-white ml-1.5" />
                   </div>
                 </div>
+
+                {/* Caption */}
+                <div className="absolute bottom-0 left-0 right-0 p-5 text-left">
+                  <p className="text-base font-bold text-white mb-1">
+                    {isEN ? '🎬 Watch the reaction' : '🎬 Veja a reação'}
+                  </p>
+                  <p className="text-sm text-white/85 leading-tight">
+                    {isEN
+                      ? 'Reaction video (23s)'
+                      : 'Vídeo da reação (23s)'}
+                  </p>
+                </div>
               </motion.button>
-            ))}
-          </motion.div>
+
+              {/* PRINTS REAIS — cada um é um slide */}
+              {REAL_TESTIMONIALS.map((t, i) => (
+                <motion.button
+                  key={t.src}
+                  type="button"
+                  onClick={() => setLightbox(t.src)}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.3) }}
+                  className="group relative shrink-0 snap-center w-[85%] sm:w-[60%] md:w-[40%] lg:w-[32%] overflow-hidden rounded-3xl ring-1 ring-white/10 hover:ring-purple-400/60 transition-all cursor-zoom-in flex items-center justify-center"
+                  style={{
+                    background: '#0a0a0a',
+                    boxShadow: '0 12px 30px -8px rgba(0,0,0,0.6)',
+                  }}
+                >
+                  <Image
+                    src={t.src}
+                    alt={t.alt}
+                    width={500}
+                    height={500}
+                    sizes="(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 32vw"
+                    className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+                    loading={i < 3 ? 'eager' : 'lazy'}
+                    unoptimized
+                  />
+                  <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md">
+                      <Verified className="w-3 h-3 text-white" />
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                        {isEN ? 'Verified' : 'Verificado'}
+                      </span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Indicador de posição (X de Y) — mobile + desktop */}
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <span className="text-xs text-zinc-400 font-medium">
+                <strong className="text-white text-sm">{activeIdx + 1}</strong>
+                <span className="mx-1.5 text-zinc-600">/</span>
+                <span>{totalSlides}</span>
+              </span>
+              <span className="text-xs text-zinc-600 ml-3">
+                {isEN ? '· Swipe / arraste pro lado' : '· Arrasta pro lado pra ver mais'}
+              </span>
+            </div>
+          </div>
 
           {/* ═══ CTA FINAL ═══ */}
           <motion.div
@@ -201,7 +267,7 @@ const TestimonialsSection = () => {
         </div>
       </div>
 
-      {/* ═══ LIGHTBOX — vídeo OU print ampliado ═══ */}
+      {/* ═══ LIGHTBOX ═══ */}
       {lightbox && (
         <div
           className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200"
@@ -221,6 +287,7 @@ const TestimonialsSection = () => {
                 autoPlay
                 controls
                 playsInline
+                preload="auto"
                 className="w-full h-auto rounded-2xl ring-1 ring-white/10 max-h-[85vh]"
               />
             ) : (
@@ -236,6 +303,11 @@ const TestimonialsSection = () => {
           </div>
         </div>
       )}
+
+      {/* Hide scrollbar pra carousel */}
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+      `}</style>
     </>
   );
 };

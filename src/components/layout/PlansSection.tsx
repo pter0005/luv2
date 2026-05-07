@@ -271,7 +271,7 @@ function AdvancedCard() {
         {/* Features */}
         <ul className="space-y-1 mb-8 flex-grow">
           <PlanFeature text={isEN ? 'Photo gallery (up to 10 photos)' : 'Galeria de fotos (até 10 fotos)'} included />
-          <PlanFeature text={isEN ? 'Background music + voice note' : 'Música de fundo + gravação de voz'} included />
+          <PlanFeature text={isEN ? 'Background music' : 'Música de fundo personalizada'} included />
           <PlanFeature text={isEN ? '3D Timeline (up to 20 moments)' : 'Linha do Tempo 3D (até 20 momentos)'} included />
           <PlanFeature text={isEN ? 'Interactive Puzzle' : 'Quebra-cabeça Interativo'} icon={Puzzle} included highlight />
           <PlanFeature text={isEN ? 'Memory Match + Couple\'s Quiz' : 'Jogo da Memória + Quiz do Casal'} icon={Gamepad2} included highlight />
@@ -362,7 +362,7 @@ function EconomicCard() {
         {/* Features */}
         <ul className="space-y-1 mb-8 flex-grow">
           <PlanFeature text={isEN ? 'Photo gallery (up to 10 photos)' : 'Galeria de fotos (até 10 fotos)'} included />
-          <PlanFeature text={isEN ? 'Background music + voice note' : 'Música de fundo + gravação de voz'} included />
+          <PlanFeature text={isEN ? 'Background music' : 'Música de fundo personalizada'} included />
           <PlanFeature text={isEN ? '3D Timeline (up to 20 moments)' : 'Linha do Tempo 3D (até 20 momentos)'} included />
           <PlanFeature text={isEN ? 'Interactive Puzzle' : 'Quebra-cabeça Interativo'} icon={Puzzle} included />
           <PlanFeature text={isEN ? 'Memory Match + Couple\'s Quiz' : 'Jogo da Memória + Quiz do Casal'} icon={Gamepad2} included />

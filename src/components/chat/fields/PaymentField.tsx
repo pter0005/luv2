@@ -1053,9 +1053,10 @@ export default function PaymentField() {
         </div>
       </div>
 
-      {/* ORDER BUMP — Mensagem em áudio. Visual minimalista, consistente
-          com os outros cards (sem gradient gritante). */}
-      {!pixData && !giftToken && !audioRecording?.url && market === 'BR' && (
+      {/* ORDER BUMP — Mensagem em áudio. Aparece sempre que cliente ainda
+          não gravou áudio (mesmo com gift token — voz é add-on extra,
+          cliente paga R$2,90 mesmo se a página é gift). */}
+      {!pixData && !audioRecording?.url && market === 'BR' && (
         <div className="rounded-2xl p-5 bg-white/[0.03] ring-1 ring-white/10">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-purple-500/15 ring-1 ring-purple-400/30 flex items-center justify-center shrink-0">
