@@ -63,12 +63,14 @@ function computeTotalWith(
   input: PricingInput,
   prices: PriceTable,
 ): number {
-  // VIP é flat — preço fechado com TUDO incluído, add-ons não somam.
-  // Ancoragem psicológica: mostra "economia de $XX" no checkout.
+  // VIP é flat — preço fechado com a maior parte dos add-ons incluídos.
+  // EXCEÇÃO: mensagem de voz vira order bump pago em TODOS os planos
+  // (decisão dono — não dilui produto e abre receita extra).
   if (input.plan === 'vip') {
+    const voice = input.audioRecording?.url ? prices.voice : 0;
     const rawDiscount = Number(input.discountAmount ?? 0);
     const discount = isFinite(rawDiscount) && rawDiscount > 0 ? rawDiscount : 0;
-    return Math.max(1, Number((prices.vip - discount).toFixed(2)));
+    return Math.max(1, Number((prices.vip + voice - discount).toFixed(2)));
   }
 
   const base = input.plan === 'avancado' ? prices.avancado : prices.basico;

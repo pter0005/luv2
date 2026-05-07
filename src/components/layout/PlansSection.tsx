@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Star, Hourglass, DatabaseZap, Gamepad2, Puzzle, ShieldCheck, Zap, Users, ArrowRight, Sparkles, Crown, Gem, Mic } from 'lucide-react';
+import { Star, Hourglass, DatabaseZap, Gamepad2, Puzzle, ShieldCheck, Zap, Users, ArrowRight, Sparkles, Crown, Gem } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PlanFeature } from '@/components/layout/PlanFeature';
 import { memo, useEffect, useState } from 'react';
@@ -150,7 +150,6 @@ function VipCard() {
         <ul className="grid sm:grid-cols-2 gap-y-1 gap-x-6 mb-8">
           <PlanFeature text={isEN ? 'Photo gallery (up to 10)' : 'Galeria de fotos (até 10)'} included highlight />
           <PlanFeature text={isEN ? '3D Timeline (up to 20)' : 'Linha do Tempo 3D (até 20)'} included highlight />
-          <PlanFeature text={isEN ? 'Voice message recording' : 'Mensagem de voz gravada'} icon={Mic} included highlight />
           <PlanFeature text={isEN ? 'Digital Bouquet intro 💐' : 'Intro Buquê Digital 💐'} icon={Sparkles} included highlight />
           <PlanFeature text={isEN ? 'Puzzle + Memory + Quiz' : 'Quebra-cabeça + Memória + Quiz'} icon={Gamepad2} included highlight />
           <PlanFeature text={isEN ? '"Guess the word" game' : 'Jogo "Adivinhe a palavra"'} icon={Puzzle} included highlight />
